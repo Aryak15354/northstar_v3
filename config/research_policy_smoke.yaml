@@ -1,0 +1,69 @@
+freeze_active: false
+freeze_start_ist: "2026-02-17"
+freeze_days: 60
+
+modules_enabled:
+  strategy_lab: true
+  regime_lab: true
+  covariance_lab: false
+  monte_carlo_lab: false
+  parameter_optimizer: false
+
+output_restrictions:
+  mark_non_actionable_during_freeze: true
+  require_manual_promotion: true
+  block_auto_parameter_deployment: true
+  require_operator_approval: true
+
+historical_research:
+  enabled: true
+  random_state: 42
+  enable_deep_models: false
+  enable_hyperopt: false
+  candidate_acceptance_threshold: 0.55
+  min_ensemble_models: 2
+
+  dataset:
+    prices_path: "data/processed/prices.parquet"
+    fundamentals_path: "data/processed/fundamentals.parquet"
+    valuation_posterior_path: "data/processed/valuation_posterior.parquet"
+    live_returns_cutover_date: "2026-01-18"
+    target_col: "forward_return_5d"
+    target_horizon_days: 5
+    lookback_days: 900
+    max_tickers: 30
+    max_rows: 15000
+
+  training:
+    train_periods: 168
+    valid_periods: 21
+    test_periods: 21
+    step_periods: 21
+    max_windows: 1
+
+  enabled_models:
+    - random_forest
+  model_params:
+    random_forest:
+      n_estimators: 120
+      max_depth: 8
+      min_samples_leaf: 3
+      n_jobs: 1
+
+  n_macro_factors: 3
+  mc_paths: 800
+  mc_horizon: 10
+  mc_fit_rows: 12000
+  mc_stress_multiplier: 1.0
+  weekend_mc_paths: 1200
+  weekend_mc_horizon: 14
+  weekend_scenario_multipliers: [0.9, 1.0, 1.2]
+  mutation_rate: 0.25
+  options_opportunity_max_rows: 30
+  live_returns_cutover_date: "2026-01-18"
+
+  weekend_only_tasks:
+    extended_scenario_sweep: true
+
+  experiment_path: "data/research/experiments.ndjson"
+  memory_path: "data/research/research_memory.json"

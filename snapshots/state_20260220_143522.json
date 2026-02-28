@@ -1,0 +1,557 @@
+{
+  "timestamp": "2026-02-20T14:35:22.022231+05:30",
+  "cycle": 1771578326,
+  "regime": "rising_vol_buy",
+  "market_data": {
+    "option_contracts": 3229,
+    "NIFTY_price": 25454.35,
+    "BANKNIFTY_price": 60739.55
+  },
+  "portfolio_greeks": {
+    "delta": -32.39790000000001,
+    "gamma": 0.8566,
+    "theta": -2771.3206,
+    "vega": 3470.048
+  },
+  "total_pnl": 2417.250000000002,
+  "realized_pnl": 2141.25,
+  "unrealized_pnl": 276.000000000002,
+  "today_pnl": 276.000000000002,
+  "positions": [
+    {
+      "symbol": "POS_20260217_233337_600501_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": 327.800000000002,
+      "delta": -19.36,
+      "gamma": 0.0704,
+      "vega": 970.5563999999999,
+      "theta": -1265.9328,
+      "notional": 17296.4
+    },
+    {
+      "symbol": "POS_20260217_233338_760239_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": -40.60000000000002,
+      "delta": -11.2723,
+      "gamma": 0.5394,
+      "vega": 24.9922,
+      "theta": -76.57159999999999,
+      "notional": 1059.9499999999998
+    },
+    {
+      "symbol": "POS_20260218_101736_552709_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": -11.200000000000003,
+      "delta": -3.1096,
+      "gamma": 0.1488,
+      "vega": 6.8944,
+      "theta": -21.123199999999997,
+      "notional": 292.4
+    },
+    {
+      "symbol": "POS_20260220_110022_986702_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": 0.0,
+      "delta": 0.6720000000000006,
+      "gamma": 0.049,
+      "vega": 1233.8025,
+      "theta": -703.8465,
+      "notional": 15470.0
+    },
+    {
+      "symbol": "POS_20260220_112522_434397_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": 0.0,
+      "delta": 0.6720000000000006,
+      "gamma": 0.049,
+      "vega": 1233.8025,
+      "theta": -703.8465,
+      "notional": 15470.0
+    }
+  ],
+  "performance_metrics": {
+    "total_trades": 4,
+    "win_rate": 0.5,
+    "sharpe_ratio": 0.0,
+    "sortino_ratio": 0.0
+  },
+  "risk_metrics": {
+    "var_95": 49588.75,
+    "cvar_95": 61985.9375,
+    "max_drawdown": 0.0,
+    "current_drawdown": 0.0
+  },
+  "strategy_allocations": {
+    "Short Vol": 0.0,
+    "Long Vol": 1.0
+  },
+  "centralized_pnl": {
+    "timestamp": "2026-02-20T14:35:22.022231+05:30",
+    "components": {
+      "options_live": {
+        "unrealized_pnl": 276.000000000002,
+        "realized_pnl_closed_positions": 2141.25,
+        "ytd_net_pnl_after_costs_and_tax": 1047.6689049999986,
+        "ytd_tax_liability": 642.3749999999994,
+        "ytd_total_costs": 451.206095,
+        "active_positions": 5,
+        "closed_positions": 4
+      },
+      "v3_weekly_portfolio": {
+        "equity": 19761923.04537854,
+        "daily_return": 0.0006915070728801872,
+        "total_pnl_from_series_start": 14731381.04753572,
+        "as_of": "2026-02-20 00:00:00"
+      },
+      "shadow_portfolio": {
+        "portfolio_value": 10082313.960376997,
+        "daily_pnl": 82313.96037699655,
+        "daily_return": 0.008231396037699531,
+        "total_pnl_from_series_start": -112004.64795483276,
+        "as_of": "2026-02-20 07:27:04.084036+00:00"
+      }
+    },
+    "aggregates": {
+      "combined_net_pnl_estimate": 14620424.068485886,
+      "options_share_pct": 7.165790130932207e-05,
+      "weekly_portfolio_share_pct": 1.0075891765197837,
+      "shadow_share_pct": -0.007660834421092968,
+      "tax_aware_net_gate": true
+    }
+  },
+  "execution_metrics": {
+    "fill_rate": 1.0,
+    "avg_slippage": 0.0,
+    "total_orders": 8,
+    "rejected_orders": 0
+  },
+  "alpha_os": {
+    "timestamp": "2026-02-20T09:05:26.212703+00:00",
+    "mode": "shadow",
+    "strategy_weights": {
+      "mom_6m": 0.03580787023997814,
+      "mom_vol_adj": 0.057928164740579165,
+      "regime_conditional": 0.05950811099908362,
+      "sector_tilt_mom": 0.00255061442146248,
+      "mom_12m": 0.12124252878305708,
+      "dual_momentum": 0.08621113223547641,
+      "mom_3m_6m_12m": 0.06363690438226312
+    },
+    "gross_target": 0.42688532580190003,
+    "net_target": 0.42688532580190003,
+    "used_fallback": false,
+    "fallback_level": null,
+    "reason_codes": [
+      "hard_risk_veto_active",
+      "Portfolio risk cap exceeded: Total risk \u20b950,031 (cap: \u20b950,000). Current open risk: \u20b949,589, Proposed trade risk: \u20b9442",
+      "meta_hysteresis_band_active",
+      "meta_max_delta_cap_applied",
+      "shadow_divergence_elevated",
+      "shadow_mode_dual_write"
+    ],
+    "diagnostics": {
+      "contract": {
+        "ok": true,
+        "reason": "ok"
+      },
+      "surface": {
+        "iv_percentile_252d": 0.0,
+        "term_structure_slope": 0.5509031198686374,
+        "skew_curvature": 42.88367307672681,
+        "realized_implied_spread": -0.05730000000000002,
+        "vol_of_vol_proxy": 0.49156167470840473
+      },
+      "flow": {
+        "crowding_score": 1.0,
+        "oi_concentration": 0.015869999980313642,
+        "dealer_gamma_proxy": 0.00042184295158216996,
+        "skew_position_bias": 42.88367307672681
+      },
+      "stress": {
+        "scenarios": [
+          {
+            "scenario": "2008_crisis",
+            "spot_move_sigma": -3.5,
+            "pnl": -620.377005255551,
+            "pnl_pct": -0.0012374779882437814
+          },
+          {
+            "scenario": "2018_volmageddon",
+            "spot_move_sigma": -2.2,
+            "pnl": -1166.9097902095266,
+            "pnl_pct": -0.0023276574847509424
+          },
+          {
+            "scenario": "2020_covid",
+            "spot_move_sigma": -4.0,
+            "pnl": 430.78212849338297,
+            "pnl_pct": 0.0008592894275953595
+          },
+          {
+            "scenario": "2022_inflation",
+            "spot_move_sigma": -2.8,
+            "pnl": -1328.4633320141727,
+            "pnl_pct": -0.0026499114532450175
+          }
+        ],
+        "tail_loss_p10": -1279.997269472779,
+        "gap_risk_score": 0.0025532352626967954
+      },
+      "allocator_metrics": {},
+      "carry": {
+        "implied_variance": 0.0144,
+        "expected_realized_variance": 0.04000000000000001,
+        "raw_carry": -0.025600000000000008,
+        "carry_score": -6.4666128334302035,
+        "conviction": 1.0
+      },
+      "dispersion": {
+        "dispersion_spread": 0.0,
+        "stance": "neutral",
+        "implied_corr": 0.0
+      },
+      "strategy_correlation": {
+        "correlation_matrix": {},
+        "violations": [],
+        "effective_rank": 1,
+        "compression_ratio": 1.0
+      },
+      "drift": {
+        "timestamp": "2026-02-20T09:05:26.215406+00:00",
+        "drift_detected": false,
+        "severity": "normal",
+        "flags": {
+          "log_likelihood_decay": false,
+          "entropy_rise": false,
+          "transition_instability": false,
+          "emission_shift": false
+        },
+        "metrics": {
+          "log_likelihood_latest": null,
+          "log_likelihood_roll": null,
+          "entropy_latest": 1.3862943611158907,
+          "entropy_roll": 1.3862943611158913,
+          "transition_kl": 0.0,
+          "emission_distance_latest": null,
+          "emission_distance_roll": null
+        },
+        "recommended_actions": {
+          "gross_reduction_fraction": 0.0,
+          "risk_aversion_multiplier": 1.0,
+          "retrain_eligibility_flag": false
+        },
+        "baseline": {
+          "ll_mean": 0.0,
+          "ll_std": 1.0,
+          "entropy_mean": 1.3862943611158907,
+          "emission_mean": 0.0
+        }
+      },
+      "survival_core": {
+        "state": {
+          "active": false,
+          "active_cycles": 0,
+          "activated_at": null,
+          "trigger_count": 1,
+          "conditions": {
+            "crisis_probability": false,
+            "convexity_score": false,
+            "drawdown": false,
+            "entropy": true
+          },
+          "reason_codes": [],
+          "directives": {
+            "gross_multiplier": 1.0,
+            "disable_short_convexity": false,
+            "cvar_only": false,
+            "vol_target_multiplier": 1.0,
+            "meta_freeze_shrink_only": false,
+            "lock_new_risk": false
+          }
+        },
+        "directives_applied": {
+          "active": false,
+          "short_convexity_disabled": false,
+          "gross_clamped": false,
+          "reason_codes": [],
+          "lock_new_risk": false
+        }
+      },
+      "shadow_divergence_index": {
+        "timestamp": "2026-02-20T09:05:26.216846+00:00",
+        "regime": "LOW_VOL",
+        "sdi": 0.9750003516867266,
+        "band": "migration_instability",
+        "components": {
+          "weight_divergence_l1": 2.0,
+          "convexity_divergence_abs": 0.0,
+          "strategy_inclusion_divergence": 0.875,
+          "expected_return_divergence_abs": 1.7584336326298635e-07
+        },
+        "regime_stats": {
+          "count": 265.0,
+          "mean_sdi": 0.9742245161331571,
+          "p90_sdi": 0.9750003516867266,
+          "latest_sdi": 0.9750003516867266
+        }
+      },
+      "alpha_os_weights": {
+        "long_straddle": 0.85
+      },
+      "legacy_weights": {
+        "mom_6m": 0.03580787023997814,
+        "mom_vol_adj": 0.057928164740579165,
+        "regime_conditional": 0.05950811099908362,
+        "sector_tilt_mom": 0.00255061442146248,
+        "mom_12m": 0.12124252878305708,
+        "dual_momentum": 0.08621113223547641,
+        "mom_3m_6m_12m": 0.06363690438226312
+      }
+    },
+    "regime_snapshot": {
+      "timestamp": "2026-02-20T09:05:26.215267+00:00",
+      "probabilities": {
+        "LOW_VOL": 0.25,
+        "HIGH_VOL": 0.25,
+        "CRISIS": 0.25,
+        "TRANSITION": 0.25
+      },
+      "confidence": 0.0,
+      "source": "fallback_uniform",
+      "model_path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/models/regime_hmm_latest.pkl",
+      "model_version": "unavailable",
+      "stale": true,
+      "reason_codes": [
+        "missing_frozen_hmm_model"
+      ]
+    },
+    "strategy_posteriors": [
+      {
+        "strategy_name": "long_straddle",
+        "posterior_mean": 2.0687454501527806e-07,
+        "posterior_variance": 0.009999998703421798,
+        "volatility": 555.4316324167072,
+        "adjusted_sharpe": 3.7245725592238093e-10,
+        "credibility": 0.5000000001862286,
+        "regime_means": {},
+        "regime_variances": {},
+        "crowding_penalty": 0.1353352832366127,
+        "convexity_penalty": 0.022787518224638727,
+        "information_ratio": 0.0
+      }
+    ],
+    "risk_budget": {
+      "gross_cap": 0.901084363105551,
+      "net_cap": 0.6,
+      "gross_used": 0.42688532580190003,
+      "net_used": 0.42688532580190003,
+      "convexity_score": 0.003403675321251147,
+      "gap_risk_score": 0.0025532352626967954,
+      "crowding_score": 1.0,
+      "liquidity_adjusted_vega": 1705.7426061985502,
+      "veto_active": true,
+      "veto_reasons": [
+        "Portfolio risk cap exceeded: Total risk \u20b950,031 (cap: \u20b950,000). Current open risk: \u20b949,589, Proposed trade risk: \u20b9442"
+      ],
+      "hard_limits": {
+        "gross_cap": 0.901084363105551,
+        "net_cap": 0.6
+      },
+      "soft_limits": {
+        "vol_target": 0.18,
+        "cvar_target": 0.24,
+        "drawdown_probability_max": 0.25,
+        "liquidity_penalty_max": 0.7,
+        "convexity_preference_max": 0.8
+      }
+    },
+    "meta_feedback": {
+      "regret_ewma": 0.49999999922561444,
+      "confidence_ewma": 0.5000000007743848,
+      "credibility_relative_change": 0.24999999941184342,
+      "adjustment_multiplier": 1.0,
+      "hysteresis_active": true,
+      "max_delta_applied": true,
+      "exposure_floor_applied": false,
+      "reason_codes": [
+        "meta_hysteresis_band_active",
+        "meta_max_delta_cap_applied"
+      ]
+    },
+    "legacy_allocation": {
+      "timestamp": "2026-02-20T12:56:56.957608",
+      "date": "2026-02-20",
+      "regime": {
+        "macro_regime": "late-expansion",
+        "vol_regime": "mid",
+        "liquidity_regime": "neutral",
+        "risk_on_prob": 0.687501185071329
+      },
+      "no_edge_state": {
+        "state": "NORMAL",
+        "exposure_cap": 0.8,
+        "reasons": [],
+        "date": "2026-02-20"
+      },
+      "allocations": {
+        "mom_6m": 0.03580787023997814,
+        "mom_vol_adj": 0.057928164740579165,
+        "regime_conditional": 0.05950811099908362,
+        "sector_tilt_mom": 0.00255061442146248,
+        "mom_12m": 0.12124252878305708,
+        "dual_momentum": 0.08621113223547641,
+        "mom_3m_6m_12m": 0.06363690438226312
+      },
+      "strategy_health": {
+        "mom_6m": 4.138421238736475,
+        "risk_parity_vol": -0.22441833749815435,
+        "mom_vol_adj": 5.37310408598574,
+        "quality_tilt": -0.20885886213223645,
+        "regime_conditional": 4.9058482661445355,
+        "northstar": -0.39381343138355407,
+        "quality_value_combo": -0.22344953518864352,
+        "liquidity_weighted": -0.22325645408260736,
+        "equal_weight_top": -0.22474409600214432,
+        "sector_tilt_mom": 3.9253566588752067,
+        "mom_12m": 5.098729839222352,
+        "dual_momentum": 5.378314670157315,
+        "mom_3m_6m_12m": 5.093163547937292,
+        "value_tilt": -0.22300851954031134,
+        "sector_neutral_eq": -0.05623020622943596,
+        "low_vol": -0.22074360929904763
+      },
+      "edge_health": {
+        "mom_6m": 0.778390111121306,
+        "risk_parity_vol": 0.0,
+        "mom_vol_adj": 0.5914862268054826,
+        "quality_tilt": 0.0,
+        "regime_conditional": 0.778390111121306,
+        "northstar": 0.35,
+        "quality_value_combo": 0.0,
+        "liquidity_weighted": 0.0,
+        "equal_weight_top": 0.0,
+        "sector_tilt_mom": 0.2534911913694367,
+        "mom_12m": 0.778390111121306,
+        "dual_momentum": 0.8073065748542282,
+        "mom_3m_6m_12m": 0.7783901111213062,
+        "value_tilt": 0.0,
+        "sector_neutral_eq": 0.0,
+        "low_vol": 0.0
+      },
+      "total_strategies": 7,
+      "alive_strategies": 7,
+      "total_exposure": 0.4268853258019,
+      "exposure_cap": 0.8,
+      "alpha_os": {
+        "timestamp": "2026-02-20T09:00:26.268918+00:00",
+        "mode": "shadow",
+        "used_fallback": false,
+        "fallback_level": null,
+        "reason_codes": [
+          "hard_risk_veto_active",
+          "Portfolio risk cap exceeded: Total risk \u20b950,031 (cap: \u20b950,000). Current open risk: \u20b949,589, Proposed trade risk: \u20b9442",
+          "meta_hysteresis_band_active",
+          "meta_max_delta_cap_applied",
+          "shadow_divergence_elevated",
+          "shadow_mode_dual_write"
+        ],
+        "effective_strategy_weights": {
+          "mom_6m": 0.03580787023997814,
+          "mom_vol_adj": 0.057928164740579165,
+          "regime_conditional": 0.05950811099908362,
+          "sector_tilt_mom": 0.00255061442146248,
+          "mom_12m": 0.12124252878305708,
+          "dual_momentum": 0.08621113223547641,
+          "mom_3m_6m_12m": 0.06363690438226312
+        },
+        "alpha_strategy_weights": {
+          "long_straddle": 0.85
+        },
+        "drift": {
+          "timestamp": "2026-02-20T09:00:26.271270+00:00",
+          "drift_detected": false,
+          "severity": "normal",
+          "flags": {
+            "log_likelihood_decay": false,
+            "entropy_rise": false,
+            "transition_instability": false,
+            "emission_shift": false
+          },
+          "metrics": {
+            "log_likelihood_latest": null,
+            "log_likelihood_roll": null,
+            "entropy_latest": 1.3862943611158907,
+            "entropy_roll": 1.3862943611158913,
+            "transition_kl": 0.0,
+            "emission_distance_latest": null,
+            "emission_distance_roll": null
+          },
+          "recommended_actions": {
+            "gross_reduction_fraction": 0.0,
+            "risk_aversion_multiplier": 1.0,
+            "retrain_eligibility_flag": false
+          },
+          "baseline": {
+            "ll_mean": 0.0,
+            "ll_std": 1.0,
+            "entropy_mean": 1.3862943611158907,
+            "emission_mean": 0.0
+          }
+        },
+        "survival_core": {
+          "state": {
+            "active": false,
+            "active_cycles": 0,
+            "activated_at": null,
+            "trigger_count": 1,
+            "conditions": {
+              "crisis_probability": false,
+              "convexity_score": false,
+              "drawdown": false,
+              "entropy": true
+            },
+            "reason_codes": [],
+            "directives": {
+              "gross_multiplier": 1.0,
+              "disable_short_convexity": false,
+              "cvar_only": false,
+              "vol_target_multiplier": 1.0,
+              "meta_freeze_shrink_only": false,
+              "lock_new_risk": false
+            }
+          },
+          "directives_applied": {
+            "active": false,
+            "short_convexity_disabled": false,
+            "gross_clamped": false,
+            "reason_codes": [],
+            "lock_new_risk": false
+          }
+        },
+        "shadow_divergence_index": {
+          "timestamp": "2026-02-20T09:00:26.272323+00:00",
+          "regime": "LOW_VOL",
+          "sdi": 0.9750003516867266,
+          "band": "migration_instability",
+          "components": {
+            "weight_divergence_l1": 2.0,
+            "convexity_divergence_abs": 0.0,
+            "strategy_inclusion_divergence": 0.875,
+            "expected_return_divergence_abs": 1.7584336326298635e-07
+          },
+          "regime_stats": {
+            "count": 264.0,
+            "mean_sdi": 0.9742215773621208,
+            "p90_sdi": 0.9750003516867266,
+            "latest_sdi": 0.9750003516867266
+          }
+        }
+      }
+    }
+  }
+}

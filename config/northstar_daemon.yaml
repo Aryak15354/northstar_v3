@@ -1,0 +1,173 @@
+# Northstar Daemon Configuration
+# Master process manager for resilient live trading + governed research
+
+# System Profile: minimal (live+governance only) or full (live+governance+research)
+system_profile: minimal  # Start with minimal for first production week
+
+# Recovery mode (rebuild state from ledger, disable research, minimal risk)
+recovery_mode: false
+
+# Recovery controls
+recovery_controls:
+  auto_exit_clean_cycles: 3  # Leave recovery mode after 3 clean governance cycles (unless manual recovery requested)
+
+# Live Engine Configuration
+live_engine:
+  interval_seconds: 300  # 5 minutes between cycles
+  underlyings:
+    - NIFTY
+    - BANKNIFTY
+    - FINNIFTY
+  market_hours_only: true
+  aggressive_mode: false
+  portfolio_overlay: true
+  portfolio_overlay_max_stocks: 5
+
+# Governance Configuration
+governance_interval_minutes: 5  # Run governance checks every 5 minutes
+progress_log_interval_seconds: 120  # Print one-line daemon progress/status every 2 minutes
+portfolio_risk_cap_pct: 0.10   # 10% of net equity as risk cap
+
+# Resource Limits and Monitoring
+resource_limits:
+  memory_threshold: 85.0    # Restart research worker if memory > 85% for 3 checks
+  cpu_threshold: 70.0       # Backward-compatible market-hours threshold
+  cpu_threshold_market_hours: 70.0
+  cpu_threshold_off_hours: 45.0
+  research_throttle_release_margin: 8.0
+  research_pause_seconds_on_cpu_throttle: 900.0
+  daemon_loop_sleep_seconds: 20.0
+  low_power_mode: true
+  heartbeat_timeout_multiplier: 2.0  # Restart if heartbeat stale > 2x interval
+
+# Time and Clock Configuration
+time_config:
+  target_timezone: "Asia/Kolkata"
+  drift_threshold_seconds: 5.0  # Maximum allowed clock drift
+  reference_sources:
+    - "http://worldtimeapi.org/api/timezone/Asia/Kolkata"
+    - "https://timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata"
+
+# Research Engine Configuration (only used if system_profile: full)
+research_engine:
+  enabled: false  # Disabled in minimal profile
+  interval_seconds: 3600
+  policy_config: "config/research_policy.yaml"
+  log_level: "INFO"
+  throttle_during_market_hours: true
+  memory_limit_mb: 2048
+  cpu_priority: "low"
+  max_cpu_cores: 1
+  max_blas_threads: 1
+  nice_increment: 15
+  
+  # Research modules
+  modules:
+    strategy_lab: true
+    regime_lab: true
+    covariance_lab: false  # Disabled for performance
+    monte_carlo_lab: false # Disabled for performance
+    parameter_optimizer: false  # Manual only, no auto-deployment
+
+# Freeze Policy (Research Governance)
+freeze_policy:
+  freeze_active: true
+  freeze_start_ist: "2026-02-17"
+  freeze_days: 60
+  allow_emergency_override: true
+
+# Auto De-scaling Policy
+auto_descaling:
+  enabled: true
+  triggers:
+    drawdown_threshold: 0.15      # 15% drawdown triggers tier-down
+    survival_mode_frequency: 5    # Tier-down if survival mode triggered 5+ times
+    drift_severity_sustained: 300 # Tier-down if high drift for 5+ minutes
+
+# Governance Event Logging
+governance_logging:
+  enabled: true
+  log_file: "data/options/live/governance_events.parquet"
+  email_alerts:
+    enabled: false  # Disabled for now
+    smtp_server: ""
+    recipients: []
+    cooldown_minutes: 60  # Dedupe alerts
+
+# Alerts and Notifications
+alerts:
+  survival_core_activation: true
+  drift_alert: true
+  fallback_tier_2_plus: true
+  sdi_threshold: 0.4
+  drawdown_threshold: 0.10
+  accounting_integrity_mismatch: true
+  heartbeat_stale_restart: true
+  recovery_mode_entry_exit: true
+
+# Operational Limits
+operational_limits:
+  base_capital: 500000
+  max_weekly_trades: 20
+  max_daily_new_positions: 5
+  max_position_size_pct: 0.05  # 5% of equity per position
+  max_underlying_concentration: 0.30  # 30% in single underlying
+
+# Black Swan and Crisis Management
+crisis_management:
+  black_swan_triggers:
+    vix_spike_threshold: 40
+    market_gap_threshold: 0.05  # 5% gap
+    correlation_breakdown_threshold: 0.2
+  
+  crisis_actions:
+    auto_reduce_positions: true
+    block_new_risk: true
+    increase_monitoring_frequency: true
+    alert_operator: true
+
+# Logging Configuration
+logging:
+  level: INFO
+  file: "logs/northstar_daemon.log"
+  max_size_mb: 100
+  backup_count: 5
+  
+  # Component-specific logging
+  components:
+    state_io: INFO
+    recovery: INFO
+    integrity: INFO
+    clock_guard: INFO
+    resource_monitor: INFO
+
+# Paths (relative to project root)
+paths:
+  data_dir: "data/options/live"
+  logs_dir: "logs"
+  config_dir: "config"
+  scripts_dir: "scripts"
+  
+  # State files
+  runtime_state: "data/options/live/options_runtime_state.json"
+  dashboard_state: "data/options/live/options_dashboard_state.json"
+  trade_ledger: "data/options/trade_ledger.parquet"
+  
+  # Lock and WAL files
+  process_lock: "data/options/live/options_engine.lock"
+  write_journal: "data/options/live/write_journal.log"
+  
+  # Heartbeat and status
+  heartbeat: "data/options/live/live_engine_heartbeat.json"
+  daemon_status: "data/options/live/northstar_daemon_status.json"
+  
+  # Recovery and snapshots
+  recovery_report: "data/options/live/state_recovery_report.json"
+  eod_snapshots: "data/options/live/eod_snapshots"
+
+# Development and Testing
+development:
+  mock_market_data: false
+  skip_time_checks: false
+  fast_governance_interval: false  # Use 30s instead of 5min for testing
+  enable_debug_logging: false

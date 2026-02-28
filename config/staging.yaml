@@ -1,0 +1,71 @@
+# Staging Configuration
+# For pre-production testing with paper trading
+
+# Position Limits (same as production but with paper trading)
+position_limits:
+  per_underlying: 100
+  total: 500
+  max_concentration: 0.20
+
+# Greeks Limits
+greeks_limits:
+  delta: 1000
+  gamma: 500
+  vega: 10000
+  theta: -500
+  rho: 5000
+
+# Risk Thresholds
+risk_thresholds:
+  var_95: 50000
+  var_99: 100000
+  cvar_95: 75000
+  max_drawdown: 0.15
+
+# Regime-Conditional Adjustments
+regime_adjustments:
+  crisis:
+    position_limits_multiplier: 0.5
+    short_vol_allowed: false
+    max_leverage: 1.0
+  high_vol:
+    position_limits_multiplier: 0.75
+    short_vol_allowed: true
+    max_leverage: 1.5
+  low_vol:
+    position_limits_multiplier: 1.0
+    short_vol_allowed: true
+    max_leverage: 2.0
+
+# Execution Parameters
+execution:
+  default_order_type: "LIMIT"
+  limit_price_offset: 0.05
+  time_in_force: "DAY"
+  preferred_venues: ["CBOE"]  # Single venue for staging
+  min_liquidity: 1000
+  paper_trading: true  # PAPER TRADING ENABLED
+
+# Performance Monitoring
+monitoring:
+  pnl_update_frequency: 60
+  greeks_update_frequency: 30
+  risk_check_frequency: 300
+  performance_degradation_threshold: 0.3
+
+# State Persistence
+persistence:
+  snapshot_frequency: 300
+  snapshot_directory: "snapshots/staging/"
+  max_snapshots: 50
+
+# Monte Carlo
+monte_carlo_workers: 4
+
+# Margin
+margin_buffer: 1.5
+
+# Logging (more verbose for staging)
+logging:
+  level: "DEBUG"
+  file: "logs/staging.log"

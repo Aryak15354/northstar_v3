@@ -1,0 +1,2038 @@
+{
+  "fingerprints": [
+    {
+      "ticker": "360ONE.NS",
+      "n_obs": 273,
+      "r_squared": 0.5760975275990657,
+      "adj_r_squared": 0.03915439589121561,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 2,
+          "beta": -0.023461529934208934,
+          "t_stat": -7.069072727982245,
+          "p_value": 1.0843370645829964e-10
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 2, beta -0.023, t -7.07)"
+    },
+    {
+      "ticker": "3MINDIA.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AADHARHFC.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AARTIIND.NS",
+      "n_obs": 273,
+      "r_squared": 0.7134449486825807,
+      "adj_r_squared": 0.35047521701384954,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 1,
+          "beta": -0.004559947736752873,
+          "t_stat": -7.5098439150617216,
+          "p_value": 1.1178169501135926e-11
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.908475547592514,
+          "t_stat": 4.360050343711453,
+          "p_value": 2.747715366768766e-05
+        },
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.018592676622604592,
+          "t_stat": 4.027465318273288,
+          "p_value": 9.880006391926877e-05
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 1, beta -0.005, t -7.51) | market_return (lag 0, beta +0.908, t +4.36) | quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 1, beta +0.019, t +4.03)"
+    },
+    {
+      "ticker": "AAVAS.NS",
+      "n_obs": 273,
+      "r_squared": 0.6237887337511637,
+      "adj_r_squared": 0.14725446316930446,
+      "n_significant": 5,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.011688415460487158,
+          "t_stat": 13.02676558294074,
+          "p_value": 1.0
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8112432620999107,
+          "t_stat": 3.679976920435791,
+          "p_value": 0.00034957181003858473
+        },
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": -0.02530123555501912,
+          "t_stat": -3.6616176961975437,
+          "p_value": 0.0003728946727936666
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.00431843440308523,
+          "t_stat": 3.5124946355703304,
+          "p_value": 0.0006248993576272177
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 4,
+          "beta": 0.005167948310471617,
+          "t_stat": 3.23427232232298,
+          "p_value": 0.0015724292413217267
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta +0.012, t +13.03) | market_return (lag 0, beta +0.811, t +3.68) | quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 1, beta -0.025, t -3.66) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.004, t +3.51) | monthly_other_CURRENCY WITH THE PUBLIC (lag 4, beta +0.005, t +3.23)"
+    },
+    {
+      "ticker": "ABB.NS",
+      "n_obs": 273,
+      "r_squared": 0.5818329380278884,
+      "adj_r_squared": 0.05215465952988041,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.789358170191919,
+          "t_stat": 6.65603719009976,
+          "p_value": 8.688902930487075e-10
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.789, t +6.66)"
+    },
+    {
+      "ticker": "ABBOTINDIA.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ABCAPITAL.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ABFRL.NS",
+      "n_obs": 273,
+      "r_squared": 0.6616647013501878,
+      "adj_r_squared": 0.23310665639375905,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.1493418842074175,
+          "t_stat": 9.578590613106279,
+          "p_value": 2.220446049250313e-16
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.149, t +9.58)"
+    },
+    {
+      "ticker": "ABLBL.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ABREL.NS",
+      "n_obs": 273,
+      "r_squared": 0.5366351576515453,
+      "adj_r_squared": -0.05029364265649727,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": -0.01197794026812041,
+          "t_stat": -8.906375971483781,
+          "p_value": 6.439293542825908e-15
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.40168664482309,
+          "t_stat": 5.009249619087839,
+          "p_value": 1.8839482487376102e-06
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta -0.012, t -8.91) | market_return (lag 0, beta +1.402, t +5.01)"
+    },
+    {
+      "ticker": "ABSLAMC.NS",
+      "n_obs": 273,
+      "r_squared": 0.5376737618186221,
+      "adj_r_squared": -0.04793947321112313,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.5374824890295459,
+          "t_stat": 4.787557837169957,
+          "p_value": 4.826818909009489e-06
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.537, t +4.79)"
+    },
+    {
+      "ticker": "ACC.NS",
+      "n_obs": 273,
+      "r_squared": 0.6345102413635044,
+      "adj_r_squared": 0.17155654709060997,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8308190287871859,
+          "t_stat": 7.25196566344415,
+          "p_value": 4.249089968766384e-11
+        },
+        {
+          "variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 8,
+          "beta": -0.012772053420023702,
+          "t_stat": -5.5396282522706715,
+          "p_value": 1.7977693267390293e-07
+        },
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 2,
+          "beta": 0.015996758105517633,
+          "t_stat": 3.9825866360980826,
+          "p_value": 0.00011681760014892184
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.831, t +7.25) | quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT (lag 8, beta -0.013, t -5.54) | quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 2, beta +0.016, t +3.98)"
+    },
+    {
+      "ticker": "ACE.NS",
+      "n_obs": 273,
+      "r_squared": 0.6967374589168231,
+      "adj_r_squared": 0.31260490687813247,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.3154692530205123,
+          "t_stat": 11.938947356248613,
+          "p_value": 1.0
+        },
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT",
+          "lag": 4,
+          "beta": -0.1809909829766558,
+          "t_stat": -4.234377792196951,
+          "p_value": 4.491360748271056e-05
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.315, t +11.94) | quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT (lag 4, beta -0.181, t -4.23)"
+    },
+    {
+      "ticker": "ACMESOLAR.NS",
+      "n_obs": 273,
+      "r_squared": 0.49022483103313397,
+      "adj_r_squared": -0.15549038299156304,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 1,
+          "beta": -0.0027851394510373818,
+          "t_stat": -13.407892478528284,
+          "p_value": 1.0
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 1, beta -0.003, t -13.41)"
+    },
+    {
+      "ticker": "ADANIENSOL.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ADANIENT.NS",
+      "n_obs": 273,
+      "r_squared": 0.6716963144917568,
+      "adj_r_squared": 0.2558449795146488,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.026365259842840275,
+          "t_stat": 6.774124412989469,
+          "p_value": 4.817499732467923e-10
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta +0.026, t +6.77)"
+    },
+    {
+      "ticker": "ADANIGREEN.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ADANIPORTS.NS",
+      "n_obs": 273,
+      "r_squared": 0.6780950212416065,
+      "adj_r_squared": 0.270348714814308,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.264795960773223,
+          "t_stat": 20.14405081896089,
+          "p_value": 1.0
+        },
+        {
+          "variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 8,
+          "beta": -0.00957869083678437,
+          "t_stat": -4.6055437851909975,
+          "p_value": 1.024813523109458e-05
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.265, t +20.14) | quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR (lag 8, beta -0.010, t -4.61)"
+    },
+    {
+      "ticker": "ADANIPOWER.NS",
+      "n_obs": 273,
+      "r_squared": 0.566162375883629,
+      "adj_r_squared": 0.016634718669559234,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.009976723829808153,
+          "t_stat": 15.290185186202839,
+          "p_value": 1.0
+        },
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT",
+          "lag": 1,
+          "beta": -0.18101325538977042,
+          "t_stat": -8.227635752999058,
+          "p_value": 2.5202062658991053e-13
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.010, t +15.29) | quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT (lag 1, beta -0.181, t -8.23)"
+    },
+    {
+      "ticker": "AEGISLOG.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AEGISVOPAK.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AFCONS.NS",
+      "n_obs": 273,
+      "r_squared": 0.6268297534598528,
+      "adj_r_squared": 0.15414744117566637,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 1,
+          "beta": -0.0018105889855383232,
+          "t_stat": -4.481345517598263,
+          "p_value": 1.6951286772259877e-05
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.0036700863743252573,
+          "t_stat": 4.448722361264474,
+          "p_value": 1.9318919616928554e-05
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 1, beta -0.002, t -4.48) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.004, t +4.45)"
+    },
+    {
+      "ticker": "AFFLE.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AGARWALEYE.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AIAENG.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AIIL.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AJANTPHARM.NS",
+      "n_obs": 273,
+      "r_squared": 0.5480678240004383,
+      "adj_r_squared": -0.024379598932339874,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 0,
+          "beta": -0.009750475823156156,
+          "t_stat": -17.915825390638833,
+          "p_value": 1.0
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 1,
+          "beta": -0.007499743768726627,
+          "t_stat": -17.444641363416405,
+          "p_value": 1.0
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR (lag 0, beta -0.010, t -17.92) | monthly_other_CURRENCY WITH THE PUBLIC (lag 1, beta -0.007, t -17.44)"
+    },
+    {
+      "ticker": "AKUMS.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AKZOINDIA.NS",
+      "n_obs": 273,
+      "r_squared": 0.5700658351488359,
+      "adj_r_squared": 0.025482559670694682,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.6091022733353262,
+          "t_stat": 4.14338811680727,
+          "p_value": 6.372863937120776e-05
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.609, t +4.14)"
+    },
+    {
+      "ticker": "ALKEM.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ALKYLAMINE.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ALOKINDS.NS",
+      "n_obs": 273,
+      "r_squared": 0.606202144013321,
+      "adj_r_squared": 0.10739152643019412,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.7183326176054554,
+          "t_stat": 7.356471592502272,
+          "p_value": 2.4781510177263044e-11
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.718, t +7.36)"
+    },
+    {
+      "ticker": "AMBER.NS",
+      "n_obs": 273,
+      "r_squared": 0.5980094444285624,
+      "adj_r_squared": 0.0888214073714082,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.42659740376510497,
+          "t_stat": 19.884401110234585,
+          "p_value": 1.0
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.427, t +19.88)"
+    },
+    {
+      "ticker": "AMBUJACEM.NS",
+      "n_obs": 273,
+      "r_squared": 0.6167990418442267,
+      "adj_r_squared": 0.13141116151358068,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.9363939303214871,
+          "t_stat": 4.664831067669269,
+          "p_value": 8.035222806679343e-06
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.936, t +4.66)"
+    },
+    {
+      "ticker": "ANANDRATHI.NS",
+      "n_obs": 273,
+      "r_squared": 0.5596049551860964,
+      "adj_r_squared": 0.0017712317551519252,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": -0.007400661047301879,
+          "t_stat": -4.162225987083082,
+          "p_value": 5.9299756317354735e-05
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.5518020073962795,
+          "t_stat": 3.7889078138144896,
+          "p_value": 0.00023720999291398925
+        }
+      ],
+      "top_drivers_text": "monthly_other_TOTAL REVENUE (lag 4, beta -0.007, t -4.16) | market_return (lag 0, beta +0.552, t +3.79)"
+    },
+    {
+      "ticker": "ANANTRAJ.NS",
+      "n_obs": 273,
+      "r_squared": 0.5409802822798967,
+      "adj_r_squared": -0.0404446934989009,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.458125782443177,
+          "t_stat": 8.484832080463574,
+          "p_value": 6.328271240363392e-14
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.458, t +8.48)"
+    },
+    {
+      "ticker": "ANGELONE.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "APARINDS.NS",
+      "n_obs": 273,
+      "r_squared": 0.5712127214621213,
+      "adj_r_squared": 0.028082168647474925,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT",
+          "lag": 0,
+          "beta": 0.14423088702186904,
+          "t_stat": 3.7468607488796266,
+          "p_value": 0.0002757624515772328
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT (lag 0, beta +0.144, t +3.75)"
+    },
+    {
+      "ticker": "APLAPOLLO.NS",
+      "n_obs": 273,
+      "r_squared": 0.5404822948860277,
+      "adj_r_squared": -0.04157346492500391,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.1355693608372335,
+          "t_stat": 5.228268327787152,
+          "p_value": 7.257444512021038e-07
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.136, t +5.23)"
+    },
+    {
+      "ticker": "APLLTD.NS",
+      "n_obs": 273,
+      "r_squared": 0.5889072976221522,
+      "adj_r_squared": 0.06818987461021175,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 8,
+          "beta": -0.004513296126835778,
+          "t_stat": -5.8830152251338,
+          "p_value": 3.670749726403244e-08
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 8, beta -0.005, t -5.88)"
+    },
+    {
+      "ticker": "APOLLOHOSP.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "APOLLOTYRE.NS",
+      "n_obs": 273,
+      "r_squared": 0.690591363902749,
+      "adj_r_squared": 0.29867375817956443,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.3597495540559033,
+          "t_stat": 9.619122881082982,
+          "p_value": 1.0
+        },
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT",
+          "lag": 4,
+          "beta": -0.09167901706170796,
+          "t_stat": -4.110235419228498,
+          "p_value": 7.230350582831946e-05
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.360, t +9.62) | quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT (lag 4, beta -0.092, t -4.11)"
+    },
+    {
+      "ticker": "APTUS.NS",
+      "n_obs": 273,
+      "r_squared": 0.5710999462184433,
+      "adj_r_squared": 0.027826544761804795,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 0,
+          "beta": 0.00982261755346189,
+          "t_stat": 22.16934844455065,
+          "p_value": 1.0
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.7262051051306552,
+          "t_stat": 7.295477448425668,
+          "p_value": 3.395794756499981e-11
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR (lag 0, beta +0.010, t +22.17) | market_return (lag 0, beta +0.726, t +7.30)"
+    },
+    {
+      "ticker": "ARE&M.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ASAHIINDIA.NS",
+      "n_obs": 273,
+      "r_squared": 0.5392172689557828,
+      "adj_r_squared": -0.044440857033559045,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 0,
+          "beta": -0.03792513733212812,
+          "t_stat": -50.0,
+          "p_value": 1.0
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 0, beta -0.038, t -50.00)"
+    },
+    {
+      "ticker": "ASHOKLEY.NS",
+      "n_obs": 273,
+      "r_squared": 0.6565536534818792,
+      "adj_r_squared": 0.22152161455892616,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.011313822368819748,
+          "t_stat": 5.546325949563678,
+          "p_value": 1.7437590527080715e-07
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.011, t +5.55)"
+    },
+    {
+      "ticker": "ASIANPAINT.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ASTERDM.NS",
+      "n_obs": 273,
+      "r_squared": 0.6217081850757464,
+      "adj_r_squared": 0.1425385528383586,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8270698399702883,
+          "t_stat": 6.075871122896159,
+          "p_value": 1.472499433496921e-08
+        },
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": -0.015121749372717362,
+          "t_stat": -3.8253840640323373,
+          "p_value": 0.00020796631115760356
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.827, t +6.08) | monthly_other_TOTAL REVENUE (lag 4, beta -0.015, t -3.83)"
+    },
+    {
+      "ticker": "ASTRAL.NS",
+      "n_obs": 273,
+      "r_squared": 0.5771568867539314,
+      "adj_r_squared": 0.041555609975577834,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": -0.00867850017032925,
+          "t_stat": -4.639394424613218,
+          "p_value": 8.921291750452198e-06
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.005002839633726775,
+          "t_stat": 3.5379135044859877,
+          "p_value": 0.0005728590699836111
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta -0.009, t -4.64) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.005, t +3.54)"
+    },
+    {
+      "ticker": "ASTRAZEN.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ATGL.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ATHERENERG.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "ATUL.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "AUBANK.NS",
+      "n_obs": 273,
+      "r_squared": 0.7661884624306511,
+      "adj_r_squared": 0.47002718150947576,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.6976943017712705,
+          "t_stat": 6.958029901443692,
+          "p_value": 1.9066503931242096e-10
+        },
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": -0.0188396131429152,
+          "t_stat": -5.759400653297819,
+          "p_value": 6.540691210865646e-08
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.00514776100301807,
+          "t_stat": 4.7520065870377595,
+          "p_value": 5.599385759502695e-06
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.698, t +6.96) | quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 1, beta -0.019, t -5.76) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.005, t +4.75)"
+    },
+    {
+      "ticker": "AUROPHARMA.NS",
+      "n_obs": 273,
+      "r_squared": 0.6216226512634886,
+      "adj_r_squared": 0.14234467619724078,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.5644960764689589,
+          "t_stat": 4.97618188766418,
+          "p_value": 2.1712745719160154e-06
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.007890454320832128,
+          "t_stat": -3.5005803177798964,
+          "p_value": 0.0006507957146639765
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.564, t +4.98) | monthly_other_CURRENCY WITH THE PUBLIC (lag 2, beta -0.008, t -3.50)"
+    },
+    {
+      "ticker": "AWL.NS",
+      "n_obs": 273,
+      "r_squared": 0.5313654227797373,
+      "adj_r_squared": -0.06223837503259544,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.018648121031263128,
+          "t_stat": 5.1049539931194445,
+          "p_value": 1.2453896687247834e-06
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.9190165429649602,
+          "t_stat": 4.412739554821481,
+          "p_value": 2.229991210089821e-05
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 1, beta +0.019, t +5.10) | market_return (lag 0, beta +0.919, t +4.41)"
+    },
+    {
+      "ticker": "AXISBANK.NS",
+      "n_obs": 273,
+      "r_squared": 0.681771330880954,
+      "adj_r_squared": 0.2786816833301624,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 2,
+          "beta": -0.01716999872560359,
+          "t_stat": -22.115000338900686,
+          "p_value": 1.0
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8288069878112663,
+          "t_stat": 5.254672755497846,
+          "p_value": 6.458796033559366e-07
+        },
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 8,
+          "beta": -0.006640472935598288,
+          "t_stat": -4.409259709616619,
+          "p_value": 2.261064139474911e-05
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 2, beta -0.017, t -22.12) | market_return (lag 0, beta +0.829, t +5.25) | monthly_other_TOTAL REVENUE (lag 8, beta -0.007, t -4.41)"
+    },
+    {
+      "ticker": "BAJAJ-AUTO.NS",
+      "n_obs": 273,
+      "r_squared": 0.6506260206722904,
+      "adj_r_squared": 0.20808564685719155,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.006046534696932518,
+          "t_stat": 10.277281365784454,
+          "p_value": 1.0
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8535105435908329,
+          "t_stat": 3.8829358377882865,
+          "p_value": 0.0001686873998054672
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.006, t +10.28) | market_return (lag 0, beta +0.854, t +3.88)"
+    },
+    {
+      "ticker": "BAJAJFINSV.NS",
+      "n_obs": 273,
+      "r_squared": 0.7508281839378576,
+      "adj_r_squared": 0.4352105502591438,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.1936027773250428,
+          "t_stat": 8.988855053431,
+          "p_value": 3.9968028886505635e-15
+        },
+        {
+          "variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 8,
+          "beta": 0.01891241596394759,
+          "t_stat": 8.20560221594241,
+          "p_value": 2.8332891588433995e-13
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.194, t +8.99) | quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT (lag 8, beta +0.019, t +8.21)"
+    },
+    {
+      "ticker": "BAJAJHFL.NS",
+      "n_obs": 273,
+      "r_squared": 0.6561798556654275,
+      "adj_r_squared": 0.2206743395083023,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 8,
+          "beta": -0.008477013872187513,
+          "t_stat": -7.094292686751316,
+          "p_value": 9.534306677494442e-11
+        },
+        {
+          "variable": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End)",
+          "lag": 8,
+          "beta": 0.004179622944954363,
+          "t_stat": 4.9634981979702495,
+          "p_value": 2.2924285170145e-06
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.24631737774424314,
+          "t_stat": 3.95728847130723,
+          "p_value": 0.00012831484419995043
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT (lag 8, beta -0.008, t -7.09) | monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End) (lag 8, beta +0.004, t +4.96) | market_return (lag 0, beta +0.246, t +3.96)"
+    },
+    {
+      "ticker": "BAJAJHLDNG.NS",
+      "n_obs": 273,
+      "r_squared": 0.5542174537049482,
+      "adj_r_squared": -0.010440438268783936,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.0096570623500927,
+          "t_stat": 8.83419332338632,
+          "p_value": 9.547918011776346e-15
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.010, t +8.83)"
+    },
+    {
+      "ticker": "BAJFINANCE.NS",
+      "n_obs": 273,
+      "r_squared": 0.7081070527628547,
+      "adj_r_squared": 0.33837598626247056,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.0270503788678549,
+          "t_stat": 8.809377790826556,
+          "p_value": 1.0880185641326534e-14
+        },
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 1,
+          "beta": -0.009252126539914638,
+          "t_stat": -3.8080551409002754,
+          "p_value": 0.0002214038884273961
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.027, t +8.81) | quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 1, beta -0.009, t -3.81)"
+    },
+    {
+      "ticker": "BALKRISIND.NS",
+      "n_obs": 273,
+      "r_squared": 0.646905669648683,
+      "adj_r_squared": 0.1996528512036816,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 4,
+          "beta": 0.020941736165887046,
+          "t_stat": 6.438912359402544,
+          "p_value": 2.5401949432790616e-09
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 4, beta +0.021, t +6.44)"
+    },
+    {
+      "ticker": "BALRAMCHIN.NS",
+      "n_obs": 273,
+      "r_squared": 0.5941893970665717,
+      "adj_r_squared": 0.0801626333508959,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.939271561558533,
+          "t_stat": 5.424825929060471,
+          "p_value": 3.02306474964098e-07
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.939, t +5.42)"
+    },
+    {
+      "ticker": "BANDHANBNK.NS",
+      "n_obs": 273,
+      "r_squared": 0.6691114209561733,
+      "adj_r_squared": 0.24998588750065942,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.015867453470043747,
+          "t_stat": 7.690810543870064,
+          "p_value": 4.338973624840037e-12
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.008315244764259171,
+          "t_stat": 6.284973934857151,
+          "p_value": 5.382585710478338e-09
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.008217720466990808,
+          "t_stat": 3.929155692603168,
+          "p_value": 0.0001423666071349583
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 1, beta +0.016, t +7.69) | monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta +0.008, t +6.28) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.008, t +3.93)"
+    },
+    {
+      "ticker": "BANKBARODA.NS",
+      "n_obs": 273,
+      "r_squared": 0.7045199671224247,
+      "adj_r_squared": 0.3302452588108292,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": 0.013410900918693411,
+          "t_stat": 7.989359530245226,
+          "p_value": 8.972822485020515e-13
+        },
+        {
+          "variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 1,
+          "beta": -0.008156347883290534,
+          "t_stat": -3.6141826259266283,
+          "p_value": 0.0004401595066318986
+        }
+      ],
+      "top_drivers_text": "monthly_other_TOTAL REVENUE (lag 4, beta +0.013, t +7.99) | quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR (lag 1, beta -0.008, t -3.61)"
+    },
+    {
+      "ticker": "BANKINDIA.NS",
+      "n_obs": 273,
+      "r_squared": 0.6281764751549123,
+      "adj_r_squared": 0.1572000103511345,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.2692073115976101,
+          "t_stat": 5.168829146348041,
+          "p_value": 9.423849698375619e-07
+        },
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT",
+          "lag": 0,
+          "beta": -0.09372926576202419,
+          "t_stat": -4.974963543801783,
+          "p_value": 2.182636418046613e-06
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.269, t +5.17) | quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT (lag 0, beta -0.094, t -4.97)"
+    },
+    {
+      "ticker": "BASF.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "BATAINDIA.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "BAYERCROP.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "BBTC.NS",
+      "n_obs": 273,
+      "r_squared": 0.6753952301069026,
+      "adj_r_squared": 0.26422918824231256,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT",
+          "lag": 8,
+          "beta": 0.10134859829781363,
+          "t_stat": 4.871816963354029,
+          "p_value": 3.385913225573134e-06
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8151353012929112,
+          "t_stat": 3.6670998282370175,
+          "p_value": 0.00036578048908797456
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT (lag 8, beta +0.101, t +4.87) | market_return (lag 0, beta +0.815, t +3.67)"
+    },
+    {
+      "ticker": "BDL.NS",
+      "n_obs": 273,
+      "r_squared": 0.6272880121994728,
+      "adj_r_squared": 0.15518616098547178,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 8,
+          "beta": 0.010529733953730483,
+          "t_stat": 5.660130676429427,
+          "p_value": 1.0353436463717003e-07
+        }
+      ],
+      "top_drivers_text": "monthly_other_TOTAL REVENUE (lag 8, beta +0.011, t +5.66)"
+    },
+    {
+      "ticker": "BEL.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "BEML.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "BERGEPAINT.NS",
+      "n_obs": 273,
+      "r_squared": 0.5702399339635689,
+      "adj_r_squared": 0.025877183650756086,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT",
+          "lag": 8,
+          "beta": 0.08377858211642529,
+          "t_stat": 4.511949159241252,
+          "p_value": 1.4986431234431663e-05
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.6410692297677457,
+          "t_stat": 3.6127319603074732,
+          "p_value": 0.00044238714269728696
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GROSS FIXED CAPITAL FORMATION CURRENT (lag 8, beta +0.084, t +4.51) | market_return (lag 0, beta +0.641, t +3.61)"
+    },
+    {
+      "ticker": "BHARATFORG.NS",
+      "n_obs": 273,
+      "r_squared": 0.691156818373518,
+      "adj_r_squared": 0.299955454979974,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.009240513803212072,
+          "t_stat": 14.39174696492322,
+          "p_value": 1.0
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta +0.009, t +14.39)"
+    },
+    {
+      "ticker": "BHARTIARTL.NS",
+      "n_obs": 273,
+      "r_squared": 0.6892096293538275,
+      "adj_r_squared": 0.2955418265353422,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.6837593546699652,
+          "t_stat": 6.121957437539442,
+          "p_value": 1.1812234745889327e-08
+        },
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 8,
+          "beta": -0.010841658727211378,
+          "t_stat": -4.395327984872986,
+          "p_value": 2.3896960894109753e-05
+        },
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 4,
+          "beta": -0.01555800722007157,
+          "t_stat": -4.294740520802528,
+          "p_value": 3.551247731259366e-05
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.684, t +6.12) | monthly_other_TOTAL REVENUE (lag 8, beta -0.011, t -4.40) | quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 4, beta -0.016, t -4.29)"
+    },
+    {
+      "ticker": "BHARTIHEXA.NS",
+      "n_obs": 273,
+      "r_squared": 0.4516452029040784,
+      "adj_r_squared": -0.24293754008408897,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 8,
+          "beta": 0.013485353519053054,
+          "t_stat": 4.439994473955494,
+          "p_value": 2.0004549084351453e-05
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT (lag 8, beta +0.013, t +4.44)"
+    },
+    {
+      "ticker": "BHEL.NS",
+      "n_obs": 273,
+      "r_squared": 0.672261163401449,
+      "adj_r_squared": 0.25712530370995124,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.6616706558089072,
+          "t_stat": 4.845187883156516,
+          "p_value": 3.788931294268494e-06
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.662, t +4.85)"
+    },
+    {
+      "ticker": "BIKAJI.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "BIOCON.NS",
+      "n_obs": 273,
+      "r_squared": 0.6535074251709019,
+      "adj_r_squared": 0.21461683038737767,
+      "n_significant": 4,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.005456292246805226,
+          "t_stat": -5.687960591838323,
+          "p_value": 9.106462184327313e-08
+        },
+        {
+          "variable": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End)",
+          "lag": 2,
+          "beta": -0.004506489407640188,
+          "t_stat": -4.646200928544528,
+          "p_value": 8.675339106201108e-06
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.6947458666991222,
+          "t_stat": 4.035665282646183,
+          "p_value": 9.58088711733307e-05
+        },
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 2,
+          "beta": 0.052925763213644346,
+          "t_stat": 3.895883174007237,
+          "p_value": 0.00016088072105135964
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 2, beta -0.005, t -5.69) | monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End) (lag 2, beta -0.005, t -4.65) | market_return (lag 0, beta +0.695, t +4.04) | monthly_other_TOTAL REVENUE (lag 2, beta +0.053, t +3.90)"
+    },
+    {
+      "ticker": "BLS.NS",
+      "n_obs": 273,
+      "r_squared": 0.6686594458236947,
+      "adj_r_squared": 0.24896141053370802,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.238459501184314,
+          "t_stat": 5.461533787283948,
+          "p_value": 2.561867682437935e-07
+        },
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": 0.019719354047462678,
+          "t_stat": 3.5768276039046003,
+          "p_value": 0.0005010381661467722
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.01327224292643157,
+          "t_stat": 3.478947776279442,
+          "p_value": 0.0007004167895696689
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.238, t +5.46) | monthly_other_TOTAL REVENUE (lag 4, beta +0.020, t +3.58) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.013, t +3.48)"
+    },
+    {
+      "ticker": "BLUEDART.NS",
+      "n_obs": 273,
+      "r_squared": 0.5732346720163504,
+      "adj_r_squared": 0.03266525657039421,
+      "n_significant": 4,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 8,
+          "beta": -0.03252822026723463,
+          "t_stat": -9.851662696061615,
+          "p_value": 1.0
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.6540476280699549,
+          "t_stat": 8.363886267134491,
+          "p_value": 1.212363542890671e-13
+        },
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 8,
+          "beta": -0.009112219490519512,
+          "t_stat": -4.036244768552794,
+          "p_value": 9.560079325066084e-05
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.0024551472963459144,
+          "t_stat": -3.814970317239453,
+          "p_value": 0.0002159454946792927
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT (lag 8, beta -0.033, t -9.85) | market_return (lag 0, beta +0.654, t +8.36) | monthly_other_TOTAL REVENUE (lag 8, beta -0.009, t -4.04) | monthly_other_CURRENCY WITH THE PUBLIC (lag 2, beta -0.002, t -3.81)"
+    },
+    {
+      "ticker": "BLUEJET.NS",
+      "n_obs": 273,
+      "r_squared": 0.6281618388853657,
+      "adj_r_squared": 0.15716683480682891,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 1,
+          "beta": -0.007363800576521636,
+          "t_stat": -5.470508490211252,
+          "p_value": 2.460026182760089e-07
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 1, beta -0.007, t -5.47)"
+    },
+    {
+      "ticker": "BLUESTARCO.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "BOSCHLTD.NS",
+      "n_obs": 273,
+      "r_squared": 0.611695391476647,
+      "adj_r_squared": 0.1198428873470665,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.9842434202207996,
+          "t_stat": 10.804487845237935,
+          "p_value": 1.0
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.003516260519024024,
+          "t_stat": 3.5551037482638663,
+          "p_value": 0.0005400111221049997
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.984, t +10.80) | monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta +0.004, t +3.56)"
+    },
+    {
+      "ticker": "BPCL.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "BRIGADE.NS",
+      "n_obs": 273,
+      "r_squared": 0.6897221840897655,
+      "adj_r_squared": 0.29670361727013506,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.9495855746004658,
+          "t_stat": 8.579763858781817,
+          "p_value": 3.7969627442180354e-14
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.007902777111934694,
+          "t_stat": 3.571408812017149,
+          "p_value": 0.0005105031530516779
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.950, t +8.58) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.008, t +3.57)"
+    },
+    {
+      "ticker": "BRITANNIA.NS",
+      "n_obs": 273,
+      "r_squared": 0.5781476134337119,
+      "adj_r_squared": 0.043801257116413694,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 2,
+          "beta": 0.008511089056865689,
+          "t_stat": 4.388748497999354,
+          "p_value": 2.452867955282656e-05
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 2, beta +0.009, t +4.39)"
+    },
+    {
+      "ticker": "BSE.NS",
+      "n_obs": 273,
+      "r_squared": 0.6429982179833167,
+      "adj_r_squared": 0.19079596076218452,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.3656629303451842,
+          "t_stat": 4.3396462854979685,
+          "p_value": 2.9777956557452967e-05
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.366, t +4.34)"
+    },
+    {
+      "ticker": "BSOFT.NS",
+      "n_obs": 273,
+      "r_squared": 0.6760515698535379,
+      "adj_r_squared": 0.26571689166801915,
+      "n_significant": 4,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": -0.015041794920316348,
+          "t_stat": -5.251608072621138,
+          "p_value": 6.54690024637361e-07
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8710000753759248,
+          "t_stat": 3.9885607885799086,
+          "p_value": 0.00011424977161911265
+        },
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT",
+          "lag": 0,
+          "beta": 0.2333786464277703,
+          "t_stat": 3.972788926565986,
+          "p_value": 0.00012114855405331859
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": -0.00587404662143799,
+          "t_stat": -3.907240771281886,
+          "p_value": 0.00015431707470980882
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta -0.015, t -5.25) | market_return (lag 0, beta +0.871, t +3.99) | quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT (lag 0, beta +0.233, t +3.97) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta -0.006, t -3.91)"
+    },
+    {
+      "ticker": "CAMPUS.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "CAMS.NS",
+      "n_obs": 273,
+      "r_squared": 0.6773401651476949,
+      "adj_r_squared": 0.26863770766810846,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.7565603106925365,
+          "t_stat": 8.870867822525632,
+          "p_value": 7.771561172376096e-15
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.757, t +8.87)"
+    },
+    {
+      "ticker": "CANBK.NS",
+      "n_obs": 273,
+      "r_squared": 0.6934023971945182,
+      "adj_r_squared": 0.30504543364090797,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.143368590554931,
+          "t_stat": 12.206042596371521,
+          "p_value": 1.0
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.143, t +12.21)"
+    },
+    {
+      "ticker": "CANFINHOME.NS",
+      "n_obs": 273,
+      "r_squared": 0.6522678233983743,
+      "adj_r_squared": 0.2118070663696484,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.005064183181119848,
+          "t_stat": -5.725523053145578,
+          "p_value": 7.654142164525979e-08
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.0692508765644242,
+          "t_stat": 4.702120885363351,
+          "p_value": 6.888433111695846e-06
+        },
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 2,
+          "beta": -0.015070025993921989,
+          "t_stat": -4.501574938072049,
+          "p_value": 1.5626487214204232e-05
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 2, beta -0.005, t -5.73) | market_return (lag 0, beta +1.069, t +4.70) | quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 2, beta -0.015, t -4.50)"
+    },
+    {
+      "ticker": "CAPLIPOINT.NS",
+      "n_obs": 273,
+      "r_squared": 0.5608124155107556,
+      "adj_r_squared": 0.004508141824379308,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.0027877671592564,
+          "t_stat": 4.24378268189626,
+          "p_value": 4.330600537127971e-05
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.003, t +4.24)"
+    },
+    {
+      "ticker": "CARBORUNIV.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "CASTROLIND.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "CCL.NS",
+      "n_obs": 273,
+      "r_squared": 0.5690303971619959,
+      "adj_r_squared": 0.023135566900523985,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - MERCHANDISE - DEBIT INR",
+          "lag": 8,
+          "beta": -0.10686554885132571,
+          "t_stat": -5.172978830691014,
+          "p_value": 9.25406391738548e-07
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - MERCHANDISE - DEBIT INR (lag 8, beta -0.107, t -5.17)"
+    },
+    {
+      "ticker": "CDSL.NS",
+      "n_obs": 273,
+      "r_squared": 0.6556841886885219,
+      "adj_r_squared": 0.21955082769398282,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.2383498379397035,
+          "t_stat": 4.823591900527446,
+          "p_value": 4.149611035009215e-06
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.238, t +4.82)"
+    },
+    {
+      "ticker": "CEATLTD.NS",
+      "n_obs": 273,
+      "r_squared": 0.678942854012041,
+      "adj_r_squared": 0.2722704690939596,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 1,
+          "beta": -0.02380935944813081,
+          "t_stat": -4.504234450228206,
+          "p_value": 1.5459933568218176e-05
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.9549075888036984,
+          "t_stat": 4.108348064005672,
+          "p_value": 7.282352663806613e-05
+        },
+        {
+          "variable": "quarterly_other_BoP - CURRENT ACCOUNT DEBIT INR",
+          "lag": 4,
+          "beta": 0.13496263095935243,
+          "t_stat": 3.8779803990579818,
+          "p_value": 0.00017176971618981796
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT (lag 1, beta -0.024, t -4.50) | market_return (lag 0, beta +0.955, t +4.11) | quarterly_other_BoP - CURRENT ACCOUNT DEBIT INR (lag 4, beta +0.135, t +3.88)"
+    },
+    {
+      "ticker": "CENTRALBK.NS",
+      "n_obs": 273,
+      "r_squared": 0.6000837959447525,
+      "adj_r_squared": 0.09352327080810563,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.241364730848105,
+          "t_stat": 7.215198159787064,
+          "p_value": 5.133293790038351e-11
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.241, t +7.22)"
+    },
+    {
+      "ticker": "CENTURYPLY.NS",
+      "n_obs": 273,
+      "r_squared": 0.6191895734458499,
+      "adj_r_squared": 0.136829699810593,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.013307017539985587,
+          "t_stat": 4.947483056401583,
+          "p_value": 2.454818888164567e-06
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.1830776568792387,
+          "t_stat": 4.284485786555386,
+          "p_value": 3.696366216821012e-05
+        }
+      ],
+      "top_drivers_text": "monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.013, t +4.95) | market_return (lag 0, beta +1.183, t +4.28)"
+    },
+    {
+      "ticker": "CERA.NS",
+      "n_obs": 273,
+      "r_squared": 0.5964871744359862,
+      "adj_r_squared": 0.0853709287215687,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End)",
+          "lag": 4,
+          "beta": 0.008817463958425571,
+          "t_stat": 5.075138236918057,
+          "p_value": 1.4174972549074738e-06
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.5587006431162324,
+          "t_stat": 3.7092042108901246,
+          "p_value": 0.0003152703004891677
+        },
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.021447880782351606,
+          "t_stat": 3.6459354714179693,
+          "p_value": 0.00039397558681586453
+        }
+      ],
+      "top_drivers_text": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End) (lag 4, beta +0.009, t +5.08) | market_return (lag 0, beta +0.559, t +3.71) | quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 1, beta +0.021, t +3.65)"
+    },
+    {
+      "ticker": "CESC.NS",
+      "n_obs": 273,
+      "r_squared": 0.5547210697300915,
+      "adj_r_squared": -0.0092989086117925,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 8,
+          "beta": -0.013853410296554156,
+          "t_stat": -9.592487395636605,
+          "p_value": 2.220446049250313e-16
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8441274454728048,
+          "t_stat": 4.960860134042118,
+          "p_value": 2.31844023157457e-06
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD (lag 8, beta -0.014, t -9.59) | market_return (lag 0, beta +0.844, t +4.96)"
+    },
+    {
+      "ticker": "CGCL.NS",
+      "n_obs": 273,
+      "r_squared": 0.5923075931467457,
+      "adj_r_squared": 0.07589721113262371,
+      "n_significant": 4,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 0,
+          "beta": -0.03293338689232011,
+          "t_stat": -50.0,
+          "p_value": 1.0
+        },
+        {
+          "variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT",
+          "lag": 8,
+          "beta": 0.18192186759368068,
+          "t_stat": 50.0,
+          "p_value": 1.0
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": -0.005482892489269563,
+          "t_stat": -4.420118340575078,
+          "p_value": 2.1654585029784457e-05
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.5292453739057253,
+          "t_stat": 3.4288975033643974,
+          "p_value": 0.0008291996717193495
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT (lag 0, beta -0.033, t -50.00) | quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT (lag 8, beta +0.182, t +50.00) | monthly_other_CURRENCY WITH THE PUBLIC (lag 0, beta -0.005, t -4.42) | market_return (lag 0, beta +0.529, t +3.43)"
+    },
+    {
+      "ticker": "CGPOWER.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "CHALET.NS",
+      "n_obs": 273,
+      "r_squared": 0.6081878065641608,
+      "adj_r_squared": 0.11189236154543114,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "monthly_other_TOTAL REVENUE",
+          "lag": 8,
+          "beta": -0.01173631382486047,
+          "t_stat": -10.921248019387109,
+          "p_value": 1.0
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.912833077125518,
+          "t_stat": 9.674181948035432,
+          "p_value": 2.220446049250313e-16
+        }
+      ],
+      "top_drivers_text": "monthly_other_TOTAL REVENUE (lag 8, beta -0.012, t -10.92) | market_return (lag 0, beta +0.913, t +9.67)"
+    },
+    {
+      "ticker": "CHAMBLFERT.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "CHENNPETRO.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "CHOICEIN.NS",
+      "top_drivers": [],
+      "message": "no_significant_relationships"
+    },
+    {
+      "ticker": "CHOLAFIN.NS",
+      "n_obs": 273,
+      "r_squared": 0.674743087732206,
+      "adj_r_squared": 0.262750998859667,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.8693487080143072,
+          "t_stat": 40.6302431837433,
+          "p_value": 1.0
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.869, t +40.63)"
+    },
+    {
+      "ticker": "CHOLAHLDNG.NS",
+      "n_obs": 273,
+      "r_squared": 0.589583512261376,
+      "adj_r_squared": 0.06972262779245209,
+      "n_significant": 3,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.9519451734120663,
+          "t_stat": 9.914397702842152,
+          "p_value": 1.0
+        },
+        {
+          "variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.00620093091366042,
+          "t_stat": 5.7150876865842815,
+          "p_value": 8.033124143658199e-08
+        },
+        {
+          "variable": "quarterly_other_BoP - CURRENT ACCOUNT DEBIT INR",
+          "lag": 2,
+          "beta": -0.1442740801012008,
+          "t_stat": -3.7282837512006934,
+          "p_value": 0.00029462625396670106
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +0.952, t +9.91) | monthly_other_CURRENCY WITH THE PUBLIC (lag 8, beta +0.006, t +5.72) | quarterly_other_BoP - CURRENT ACCOUNT DEBIT INR (lag 2, beta -0.144, t -3.73)"
+    },
+    {
+      "ticker": "CIPLA.NS",
+      "n_obs": 273,
+      "r_squared": 0.5756907792710348,
+      "adj_r_squared": 0.038232433014345646,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 1,
+          "beta": -0.01788321031832788,
+          "t_stat": -4.595499412773673,
+          "p_value": 1.0677260340541395e-05
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 1, beta -0.018, t -4.60)"
+    },
+    {
+      "ticker": "CLEAN.NS",
+      "n_obs": 273,
+      "r_squared": 0.6091336039752743,
+      "adj_r_squared": 0.11403616901062164,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 8,
+          "beta": -0.013286154626653899,
+          "t_stat": -8.962351928150197,
+          "p_value": 4.884981308350689e-15
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GDP AT MARKET PRICES CONSTANT (lag 8, beta -0.013, t -8.96)"
+    },
+    {
+      "ticker": "COALINDIA.NS",
+      "n_obs": 273,
+      "r_squared": 0.6379810533043175,
+      "adj_r_squared": 0.17942372082311975,
+      "n_significant": 2,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 8,
+          "beta": 0.00844549499370504,
+          "t_stat": 7.685165166267581,
+          "p_value": 4.469535852535955e-12
+        },
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 0.7821401240242281,
+          "t_stat": 5.076265321708833,
+          "p_value": 1.410589429928777e-06
+        }
+      ],
+      "top_drivers_text": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR (lag 8, beta +0.008, t +7.69) | market_return (lag 0, beta +0.782, t +5.08)"
+    },
+    {
+      "ticker": "COCHINSHIP.NS",
+      "n_obs": 273,
+      "r_squared": 0.5847726280830168,
+      "adj_r_squared": 0.05881795698817138,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.446435034394626,
+          "t_stat": 5.5660607161221645,
+          "p_value": 1.5936856367915198e-07
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.446, t +5.57)"
+    },
+    {
+      "ticker": "COFORGE.NS",
+      "n_obs": 273,
+      "r_squared": 0.6525596462573233,
+      "adj_r_squared": 0.2124685315165995,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "market_return",
+          "lag": 0,
+          "beta": 1.1245414439954862,
+          "t_stat": 3.790789014336149,
+          "p_value": 0.00023561081230694114
+        }
+      ],
+      "top_drivers_text": "market_return (lag 0, beta +1.125, t +3.79)"
+    },
+    {
+      "ticker": "COHANCE.NS",
+      "n_obs": 273,
+      "r_squared": 0.44781285744228794,
+      "adj_r_squared": -0.2516241897974807,
+      "n_significant": 1,
+      "top_drivers": [
+        {
+          "variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 1,
+          "beta": -0.007381437710331948,
+          "t_stat": -5.837584310541583,
+          "p_value": 4.542242915128725e-08
+        }
+      ],
+      "top_drivers_text": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT (lag 1, beta -0.007, t -5.84)"
+    }
+  ]
+}

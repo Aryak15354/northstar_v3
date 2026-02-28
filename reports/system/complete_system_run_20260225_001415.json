@@ -1,0 +1,86 @@
+{
+  "execution_summary": {
+    "start_time": "2026-02-25T00:14:14.103532",
+    "end_time": "2026-02-25T00:14:15.677163",
+    "total_duration_seconds": 1.573418,
+    "total_duration_minutes": 0.03
+  },
+  "phase_results": {
+    "real_data_policy": {
+      "duration": 0.1859440803527832,
+      "status": "success",
+      "details": [
+        "Real-data-only policy enforcement completed"
+      ]
+    },
+    "data_ingestion": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "system_update": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "backtesting": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "shadow_trading": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "performance_analysis": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "alpha_generation": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "integration_alignment": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "dashboard_launch": {
+      "duration": 0,
+      "status": "warning",
+      "details": [
+        "Skipped dashboard launch (--no-dashboard)"
+      ]
+    }
+  },
+  "execution_log": [
+    {
+      "timestamp": "2026-02-25T00:14:15.676332",
+      "phase": "real_data_policy",
+      "status": "success",
+      "message": "Real-data-only policy enforcement completed",
+      "duration_seconds": 0.1859440803527832
+    },
+    {
+      "timestamp": "2026-02-25T00:14:15.676721",
+      "phase": "dashboard_launch",
+      "status": "warning",
+      "message": "Skipped dashboard launch (--no-dashboard)",
+      "duration_seconds": 0
+    }
+  ],
+  "system_status": {
+    "data_fresh": false,
+    "system_updated": false,
+    "backtests_complete": false,
+    "shadow_trading_active": false,
+    "performance_analyzed": false,
+    "integration_aligned": false,
+    "dashboard_running": false,
+    "freeze_active": false,
+    "freeze_triggers": []
+  }
+}

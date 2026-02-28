@@ -1,0 +1,303 @@
+# Stock Options Mapping
+# Maps stock symbols to Upstox instrument keys (ISIN-based)
+#
+# Format: NSE_EQ|<ISIN_CODE>
+# 
+# To find ISIN for a stock:
+# 1. Go to NSE website: https://www.nseindia.com/
+# 2. Search for the stock
+# 3. Find ISIN code in stock details
+# 4. Add to this file
+
+# Top Liquid Stocks with Options (by market cap and volume)
+stocks:
+  # Banking & Financial Services
+  HDFCBANK:
+    isin: INE040A01034
+    name: HDFC Bank
+    lot_size: 550
+    sector: Banking
+  
+  ICICIBANK:
+    isin: INE090A01021
+    name: ICICI Bank
+    lot_size: 700
+    sector: Banking
+  
+  SBIN:
+    isin: INE062A01020
+    name: State Bank of India
+    lot_size: 1500
+    sector: Banking
+  
+  AXISBANK:
+    isin: INE238A01034
+    name: Axis Bank
+    lot_size: 1200
+    sector: Banking
+  
+  KOTAKBANK:
+    isin: INE237A01028
+    name: Kotak Mahindra Bank
+    lot_size: 400
+    sector: Banking
+  
+  BAJFINANCE:
+    isin: INE296A01024
+    name: Bajaj Finance
+    lot_size: 125
+    sector: NBFC
+  
+  # IT Services
+  TCS:
+    isin: INE467B01029
+    name: Tata Consultancy Services
+    lot_size: 175
+    sector: IT
+  
+  INFY:
+    isin: INE009A01021
+    name: Infosys
+    lot_size: 400
+    sector: IT
+  
+  WIPRO:
+    isin: INE075A01022
+    name: Wipro
+    lot_size: 1200
+    sector: IT
+  
+  HCLTECH:
+    isin: INE860A01027
+    name: HCL Technologies
+    lot_size: 550
+    sector: IT
+  
+  TECHM:
+    isin: INE669C01036
+    name: Tech Mahindra
+    lot_size: 550
+    sector: IT
+  
+  # Energy & Oil
+  RELIANCE:
+    isin: INE002A01018
+    name: Reliance Industries
+    lot_size: 500
+    sector: Energy
+  
+  ONGC:
+    isin: INE213A01029
+    name: Oil & Natural Gas Corporation
+    lot_size: 2800
+    sector: Oil & Gas
+  
+  BPCL:
+    isin: INE029A01011
+    name: Bharat Petroleum
+    lot_size: 1400
+    sector: Oil & Gas
+  
+  # Automobiles
+  MARUTI:
+    isin: INE585B01010
+    name: Maruti Suzuki
+    lot_size: 50
+    sector: Automobile
+  
+  TATAMOTORS:
+    isin: INE155A01022
+    name: Tata Motors
+    lot_size: 1500
+    sector: Automobile
+  
+  M&M:
+    isin: INE101A01026
+    name: Mahindra & Mahindra
+    lot_size: 300
+    sector: Automobile
+  
+  EICHERMOT:
+    isin: INE066A01021
+    name: Eicher Motors
+    lot_size: 175
+    sector: Automobile
+  
+  # FMCG
+  HINDUNILVR:
+    isin: INE030A01027
+    name: Hindustan Unilever
+    lot_size: 300
+    sector: FMCG
+  
+  ITC:
+    isin: INE154A01025
+    name: ITC Limited
+    lot_size: 1600
+    sector: FMCG
+  
+  NESTLEIND:
+    isin: INE239A01016
+    name: Nestle India
+    lot_size: 25
+    sector: FMCG
+  
+  BRITANNIA:
+    isin: INE216A01030
+    name: Britannia Industries
+    lot_size: 150
+    sector: FMCG
+  
+  # Pharma
+  SUNPHARMA:
+    isin: INE044A01036
+    name: Sun Pharmaceutical
+    lot_size: 550
+    sector: Pharma
+  
+  DRREDDY:
+    isin: INE089A01023
+    name: Dr. Reddy's Laboratories
+    lot_size: 125
+    sector: Pharma
+  
+  CIPLA:
+    isin: INE059A01026
+    name: Cipla
+    lot_size: 700
+    sector: Pharma
+  
+  DIVISLAB:
+    isin: INE361B01024
+    name: Divi's Laboratories
+    lot_size: 200
+    sector: Pharma
+  
+  # Metals & Mining
+  TATASTEEL:
+    isin: INE081A01020
+    name: Tata Steel
+    lot_size: 4300
+    sector: Metals
+  
+  HINDALCO:
+    isin: INE038A01020
+    name: Hindalco Industries
+    lot_size: 1400
+    sector: Metals
+  
+  JSWSTEEL:
+    isin: INE019A01038
+    name: JSW Steel
+    lot_size: 800
+    sector: Metals
+  
+  COALINDIA:
+    isin: INE522F01014
+    name: Coal India
+    lot_size: 2100
+    sector: Mining
+  
+  VEDL:
+    isin: INE205A01025
+    name: Vedanta Limited
+    lot_size: 2100
+    sector: Metals
+  
+  # Infrastructure & Construction
+  LT:
+    isin: INE018A01030
+    name: Larsen & Toubro
+    lot_size: 225
+    sector: Infrastructure
+  
+  ADANIPORTS:
+    isin: INE742F01042
+    name: Adani Ports
+    lot_size: 600
+    sector: Infrastructure
+  
+  POWERGRID:
+    isin: INE752E01010
+    name: Power Grid Corporation
+    lot_size: 2400
+    sector: Power
+  
+  NTPC:
+    isin: INE733E01010
+    name: NTPC Limited
+    lot_size: 2700
+    sector: Power
+  
+  # Telecom
+  BHARTIARTL:
+    isin: INE397D01024
+    name: Bharti Airtel
+    lot_size: 550
+    sector: Telecom
+  
+  # Cement
+  ULTRACEMCO:
+    isin: INE481G01011
+    name: UltraTech Cement
+    lot_size: 75
+    sector: Cement
+  
+  GRASIM:
+    isin: INE047A01021
+    name: Grasim Industries
+    lot_size: 350
+    sector: Cement
+  
+  SHREECEM:
+    isin: INE070A01015
+    name: Shree Cement
+    lot_size: 25
+    sector: Cement
+  
+  # Consumer Durables
+  TITAN:
+    isin: INE280A01028
+    name: Titan Company
+    lot_size: 250
+    sector: Consumer Durables
+  
+  ASIANPAINT:
+    isin: INE021A01026
+    name: Asian Paints
+    lot_size: 250
+    sector: Paints
+
+# Selection Criteria for Trading
+# Only trade stocks that meet ALL criteria:
+selection_criteria:
+  min_market_cap_cr: 10000        # ₹10,000 crore minimum
+  min_avg_daily_volume: 1000000   # 10 lakh shares minimum
+  min_option_oi: 10000            # Minimum open interest
+  max_bid_ask_spread_pct: 0.10    # 10% max spread (stricter than indices)
+  min_contracts_available: 50     # Minimum option contracts
+
+# Recommended stocks for beginners (highest liquidity)
+recommended_for_beginners:
+  - RELIANCE
+  - TCS
+  - INFY
+  - HDFCBANK
+  - ICICIBANK
+  - ITC
+  - SBIN
+  - BHARTIARTL
+
+# High volatility stocks (more premium, more risk)
+high_volatility:
+  - TATAMOTORS
+  - VEDL
+  - TATASTEEL
+  - ADANIPORTS
+  - COALINDIA
+
+# Notes:
+# - All stocks have monthly expiries (last Thursday)
+# - Some stocks may have weekly expiries (check API)
+# - Lot sizes are as of Feb 2026 (verify with API)
+# - ISINs are permanent identifiers

@@ -1,0 +1,102 @@
+# Execution Venues Configuration
+
+venues:
+  # CBOE (Chicago Board Options Exchange)
+  - name: "CBOE"
+    enabled: true
+    priority: 1
+    api_endpoint: "https://api.cboe.com"
+    api_key: "${CBOE_API_KEY}"  # Set in environment
+    api_secret: "${CBOE_API_SECRET}"
+    connection_timeout: 30
+    order_timeout: 60
+    max_retries: 3
+    features:
+      - "options"
+      - "equities"
+    liquidity_tier: "high"
+    
+  # ISE (International Securities Exchange)
+  - name: "ISE"
+    enabled: true
+    priority: 2
+    api_endpoint: "https://api.ise.com"
+    api_key: "${ISE_API_KEY}"
+    api_secret: "${ISE_API_SECRET}"
+    connection_timeout: 30
+    order_timeout: 60
+    max_retries: 3
+    features:
+      - "options"
+    liquidity_tier: "high"
+    
+  # PHLX (Philadelphia Stock Exchange)
+  - name: "PHLX"
+    enabled: true
+    priority: 3
+    api_endpoint: "https://api.phlx.com"
+    api_key: "${PHLX_API_KEY}"
+    api_secret: "${PHLX_API_SECRET}"
+    connection_timeout: 30
+    order_timeout: 60
+    max_retries: 3
+    features:
+      - "options"
+    liquidity_tier: "medium"
+    
+  # AMEX (American Stock Exchange)
+  - name: "AMEX"
+    enabled: false  # Disabled by default
+    priority: 4
+    api_endpoint: "https://api.amex.com"
+    api_key: "${AMEX_API_KEY}"
+    api_secret: "${AMEX_API_SECRET}"
+    connection_timeout: 30
+    order_timeout: 60
+    max_retries: 3
+    features:
+      - "options"
+    liquidity_tier: "medium"
+
+# Routing Rules
+routing:
+  # Default routing strategy
+  strategy: "best_price"  # Options: best_price, fastest_fill, smart_route
+  
+  # Smart routing parameters
+  smart_route:
+    consider_liquidity: true
+    consider_latency: true
+    consider_fill_rate: true
+    liquidity_weight: 0.4
+    latency_weight: 0.3
+    fill_rate_weight: 0.3
+    
+  # Failover
+  failover:
+    enabled: true
+    max_venue_failures: 3
+    failure_window: 300  # seconds
+    auto_disable_failed_venue: true
+    
+  # Order splitting
+  split_large_orders:
+    enabled: true
+    threshold: 100  # contracts
+    max_venues: 3
+
+# Venue Health Monitoring
+monitoring:
+  health_check_interval: 60  # seconds
+  latency_threshold: 1000  # ms
+  error_rate_threshold: 0.05  # 5%
+  
+# Execution Quality Tracking
+quality_tracking:
+  enabled: true
+  metrics:
+    - "fill_rate"
+    - "average_slippage"
+    - "average_latency"
+    - "rejection_rate"
+  reporting_interval: 3600  # seconds (1 hour)

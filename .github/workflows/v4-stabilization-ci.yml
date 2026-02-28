@@ -1,0 +1,271 @@
+name: v4-stabilization-ci
+
+on:
+  pull_request:
+    branches: ["main", "stabilization", "v4-stabilization"]
+  push:
+    branches: ["main", "stabilization", "v4-stabilization"]
+
+concurrency:
+  group: v4-stabilization-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NORTHSTAR_STRICT_MODE: "1"
+  NORTHSTAR_CI_GATE: "1"
+  RISK_RANDOM_SEED: "42"
+  PYTHONHASHSEED: "42"
+  TZ: "UTC"
+  LC_ALL: "C.UTF-8"
+  LANG: "C.UTF-8"
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Clean runtime state
+        run: bash scripts/ci/clean_ci_runtime_state.sh
+
+  gate_static_integrity:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Parse active python files
+        run: |
+          python - <<'PY'
+          import ast
+          import json
+          from pathlib import Path
+          bad=[]
+          root=Path('.')
+          baseline_path = root / 'audit/reachability_baseline.json'
+          if not baseline_path.exists():
+              raise SystemExit('audit/reachability_baseline.json missing')
+          baseline = json.loads(baseline_path.read_text(encoding='utf-8'))
+          active = set(baseline.get('reachable_files', []))
+          for rel in sorted(active):
+              p = root / rel
+              if not p.exists() or p.suffix != '.py':
+                  continue
+              try:
+                  ast.parse(p.read_text(encoding='utf-8', errors='replace'), filename=str(p))
+              except Exception as e:
+                  bad.append((rel,str(e)))
+          if bad:
+              for rel,e in bad[:200]:
+                  print(f'{rel}: {e}')
+              raise SystemExit(1)
+          PY
+      - name: Zero-byte module check
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          bad=[]
+          root = Path('.')
+          baseline_path = root / 'audit/reachability_baseline.json'
+          if not baseline_path.exists():
+              raise SystemExit('audit/reachability_baseline.json missing')
+          baseline = json.loads(baseline_path.read_text(encoding='utf-8'))
+          active = set(baseline.get('reachable_files', []))
+          for rel in sorted(active):
+              p = root / rel
+              if not p.exists() or p.suffix != '.py':
+                  continue
+              if p.stat().st_size == 0:
+                  bad.append(rel)
+          if bad:
+              print('\n'.join(bad[:200]))
+              raise SystemExit(1)
+          PY
+      - name: No lazy imports in risk/execution path
+        run: python scripts/ci/check_no_lazy_imports_risk_path.py
+      - name: No direct wall-clock calls in risk/execution path
+        run: python scripts/ci/check_risk_clock_injection.py
+      - name: Risk policy immutability check
+        run: python scripts/ci/check_policy_immutability.py
+      - name: Execution anti-bypass check
+        run: python scripts/ci/check_execution_bypass.py
+      - name: Dashboard chart registry contract check
+        run: python scripts/ci/check_dashboard_chart_registry.py
+
+  gate_risk_safety:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Risk boundary epsilon checks
+        run: python scripts/ci/check_risk_float_boundaries.py
+      - name: Deterministic replay check
+        run: |
+          python - <<'PY'
+          from src.risk.risk_policy import RiskPolicy
+          from src.risk.risk_controller import RiskController
+          from src.risk.risk_types import RiskState, TradeProposal
+          class FixedClock:
+              def now(self):
+                  import datetime
+                  return datetime.datetime(2026,1,1,0,0,0, tzinfo=datetime.timezone.utc)
+          cfg={"portfolio_risk_cap_pct":0.04,"max_position_risk_pct":0.02,"max_drawdown_pct":0.10,"weekly_trade_cap":20,"aggressive":False,"event_calendar_max_age_days":14,"version_tag":"v4-ci","git_commit_hash":"ci"}
+          policy=RiskPolicy.from_config(cfg)
+          rc=RiskController(policy=policy, clock=FixedClock())
+          state=RiskState(current_equity=1_000_000,peak_equity=1_000_000,drawdown_pct=0.01,current_portfolio_risk_pct=0.01,weekly_trade_count=3)
+          proposal=TradeProposal(symbol='NIFTY',side='BUY',quantity=1,proposed_position_risk_pct=0.005)
+          d1=rc.evaluate_trade(proposal,state,open_positions=[])
+          d2=rc.evaluate_trade(proposal,state,open_positions=[])
+          if d1.policy_hash != d2.policy_hash or d1.decision_reason_code != d2.decision_reason_code or d1.projected_portfolio_risk_pct != d2.projected_portfolio_risk_pct:
+              raise SystemExit(1)
+          PY
+      - name: Options/risk test subset
+        run: pytest -q tests/options --maxfail=1
+
+  gate_runtime_integrity:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Run strict 3-command runtime gate
+        run: bash scripts/ci/run_runtime_gate.sh
+
+  gate_drift_detection:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Policy immutability and anti-bypass recheck
+        run: |
+          python scripts/ci/check_policy_immutability.py
+          python scripts/ci/check_execution_bypass.py
+
+  gate_risk_drift:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Scan for hardcoded risk drift literals
+        run: python scripts/ci/check_risk_drift_literals.py
+
+  gate_reachability_regression:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Reachability regression guard
+        run: python scripts/ci/check_reachability_regression.py
+
+  gate_archive_isolation:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Archive import isolation
+        run: python scripts/ci/check_archive_import_isolation.py
+
+  ci_summary:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - gate_static_integrity
+      - gate_risk_safety
+      - gate_runtime_integrity
+      - gate_drift_detection
+      - gate_risk_drift
+      - gate_reachability_regression
+      - gate_archive_isolation
+    steps:
+      - name: Summarize gate outcomes
+        run: |
+          cat <<'JSON' > gate_outcomes.json
+          {
+            "gate_static_integrity": "${{ needs.gate_static_integrity.result }}",
+            "gate_risk_safety": "${{ needs.gate_risk_safety.result }}",
+            "gate_runtime_integrity": "${{ needs.gate_runtime_integrity.result }}",
+            "gate_drift_detection": "${{ needs.gate_drift_detection.result }}",
+            "gate_risk_drift": "${{ needs.gate_risk_drift.result }}",
+            "gate_reachability_regression": "${{ needs.gate_reachability_regression.result }}",
+            "gate_archive_isolation": "${{ needs.gate_archive_isolation.result }}"
+          }
+          JSON
+          cat gate_outcomes.json
+          if grep -q '"failure"\|"cancelled"\|"skipped"' gate_outcomes.json; then
+            exit 1
+          fi
+      - name: Upload gate outcomes artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-gate-outcomes
+          path: gate_outcomes.json

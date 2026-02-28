@@ -1,0 +1,89 @@
+# Dashboard Chart Master List (2026-02-28)
+
+## Summary
+- generated_at: 2026-02-28T16:48:58.051126+00:00
+- total_charts: 77
+- direct_charts: 51
+- contract_charts: 26
+- live_surface_charts: 9
+- charts_with_issues: 0
+- issue_counts:
+
+## All Charts
+- [direct] line=1534 fn=_render_chart_with_contract key=<dynamic> chart_id= issues=none
+- [direct] line=1988 fn=render_mission_control key=mission_control_research_learning_curve chart_id= issues=none
+- [direct] line=2030 fn=render_research_mode_compact key=research_mode_dataset_partition_rows chart_id= issues=none
+- [direct] line=2034 fn=render_research_mode_compact key=research_mode_returns_partition_pnl chart_id= issues=none
+- [direct] line=2052 fn=render_research_mode_compact key=research_mode_weekend_stress_sweep chart_id= issues=none
+- [direct] line=2080 fn=render_experimentation_lab key=experimentation_lab_trajectory chart_id= issues=none
+- [contract] line=2235 fn=render_system_health key=system_health_runtime_metrics chart_id=system_health_runtime_metrics issues=none
+- [direct] line=2558 fn=render_v3_analytics key=v3_analytics_compact_equity_drawdown chart_id= issues=none
+- [direct] line=2598 fn=render_v3_analytics key=v3_analytics_compact_rolling_risk_efficiency chart_id= issues=none
+- [direct] line=2630 fn=render_v3_analytics key=v3_analytics_compact_vs_benchmark chart_id= issues=none
+- [direct] line=2670 fn=render_advanced_intelligence key=adv_intel_compact_posterior_gap_hist chart_id= issues=none
+- [direct] line=2694 fn=render_advanced_intelligence key=adv_intel_compact_opportunity_surface chart_id= issues=none
+- [direct] line=2712 fn=render_advanced_intelligence key=adv_intel_compact_macro_matrix chart_id= issues=none
+- [direct] line=2747 fn=render_advanced_intelligence key=adv_intel_compact_allocation_engine_heatmap chart_id= issues=none
+- [direct] line=2863 fn=render_wave_analysis key=wave_analysis_price_structure_swings chart_id= issues=none
+- [direct] line=2896 fn=render_wave_analysis key=wave_analysis_cycles_fft_power chart_id= issues=none
+- [direct] line=2918 fn=render_wave_analysis key=wave_analysis_cycles_autocorrelation chart_id= issues=none
+- [direct] line=2949 fn=render_wave_analysis key=wave_analysis_forecast_trend_cycle chart_id= issues=none
+- [direct] line=2959 fn=render_wave_analysis key=wave_analysis_diagnostics_returns_volatility chart_id= issues=none
+- [contract] line=2988 fn=render_edge_health key=portfolio_edge_health_primary chart_id=portfolio_edge_health issues=none
+- [contract] line=3005 fn=render_edge_health key=portfolio_edge_health_scatter chart_id=portfolio_edge_health issues=none
+- [contract] line=3024 fn=render_exit_risk key=portfolio_exit_risk_bar chart_id=portfolio_exit_risk issues=none
+- [contract] line=3049 fn=render_exit_risk key=portfolio_exit_risk_map chart_id=portfolio_exit_risk issues=none
+- [direct] line=3234 fn=render_alpha_os_control_tower key=alphaos_compact_regime_probability_surface chart_id= issues=none
+- [direct] line=3275 fn=render_alpha_os_control_tower key=alphaos_compact_survival_diagnostics chart_id= issues=none
+- [direct] line=3289 fn=render_alpha_os_control_tower key=alphaos_compact_drawdown_surface chart_id= issues=none
+- [contract] line=3359 fn=render_real_time_monitor key=system_health_sector_allocation chart_id=system_health_sector_allocation issues=none
+- [contract] line=3649 fn=render_macro_news_pressure_index key=market_state_macro_news_pressure chart_id=market_state_macro_news_pressure issues=none
+- [contract] line=3657 fn=render_macro_news_pressure_index key=news_layer_macro_news_pressure chart_id=news_layer_macro_news_pressure issues=none
+- [direct] line=3667 fn=render_macro_news_pressure_index key=causal_flow_macro_news_pressure chart_id= issues=none
+- [direct] line=3669 fn=render_macro_news_pressure_index key=sector_sentiment_macro_news_pressure chart_id= issues=none
+- [direct] line=3671 fn=render_macro_news_pressure_index key=macro_news_pressure_generic chart_id= issues=none
+- [contract] line=3818 fn=render_sector_sentiment_vs_flows key=market_state_sector_sentiment_vs_flows chart_id=market_state_sector_sentiment_vs_flows issues=none
+- [contract] line=3826 fn=render_sector_sentiment_vs_flows key=news_layer_sector_sentiment_vs_flows chart_id=news_layer_sector_sentiment_vs_flows issues=none
+- [direct] line=3836 fn=render_sector_sentiment_vs_flows key=causal_flow_sector_sentiment_vs_flows chart_id= issues=none
+- [direct] line=3838 fn=render_sector_sentiment_vs_flows key=sector_sentiment_vs_flows_generic chart_id= issues=none
+- [direct] line=3840 fn=render_sector_sentiment_vs_flows key=sector_sentiment_vs_flows_generic chart_id= issues=none
+- [direct] line=3940 fn=render_belief_vs_news_divergence key=news_layer_belief_news_divergence chart_id= issues=none
+- [direct] line=3988 fn=render_event_shock_surface key=news_layer_event_shock_surface chart_id= issues=none
+- [contract] line=4187 fn=render_market_pressure_surface key=market_pressure_surface chart_id=market_pressure_surface issues=none
+- [contract] line=4367 fn=render_portfolio_expression_surface key=portfolio_expression_surface chart_id=portfolio_expression_surface issues=none
+- [contract] line=4520 fn=render_survival_engine_surface key=survival_engine_surface chart_id=survival_engine_surface issues=none
+- [contract] line=4614 fn=render_news_shock_surface key=news_shock_surface chart_id=news_layer_narrative_shock_intensity issues=none
+- [contract] line=4650 fn=render_system_health_surface key=system_health_surface_runtime_metrics chart_id=system_health_runtime_metrics issues=none
+- [contract] line=4685 fn=render_system_health_surface key=system_health_surface_sector_allocation chart_id=system_health_sector_allocation issues=none
+- [contract] line=4742 fn=render_market_state_layer key=market_state_regime_pressure chart_id=market_state_regime_pressure issues=none
+- [contract] line=4773 fn=render_market_state_layer key=market_state_macro_heatmap chart_id=market_state_macro_heatmap issues=none
+- [direct] line=4841 fn=render_intelligence_layer key=intelligence_belief_skill_evolution chart_id= issues=none
+- [direct] line=4863 fn=render_intelligence_layer key=intelligence_regret_score chart_id= issues=none
+- [direct] line=4887 fn=render_intelligence_layer key=intelligence_posterior_gap_hist chart_id= issues=none
+- [direct] line=4917 fn=render_intelligence_layer key=intelligence_opportunity_surface chart_id= issues=none
+- [contract] line=4974 fn=render_portfolio_expression_layer key=portfolio_expression_vs_benchmark chart_id=portfolio_expression_vs_benchmark issues=none
+- [contract] line=5023 fn=render_portfolio_expression_layer key=portfolio_expression_allocation_heatmap chart_id=portfolio_expression_allocation_heatmap issues=none
+- [contract] line=5071 fn=render_risk_survival_layer key=risk_survival_drawdown_surface chart_id=risk_survival_drawdown_surface issues=none
+- [contract] line=5108 fn=render_risk_survival_layer key=risk_survival_drawdown_surface_fallback chart_id=risk_survival_drawdown_surface issues=none
+- [contract] line=5195 fn=render_risk_survival_layer key=risk_survival_crisis_probability chart_id=risk_survival_crisis_probability issues=none
+- [contract] line=5225 fn=render_risk_survival_layer key=risk_survival_regime_entropy chart_id=risk_survival_regime_entropy issues=none
+- [contract] line=5262 fn=render_risk_survival_layer key=risk_survival_systemic_stress chart_id=risk_survival_systemic_stress issues=none
+- [contract] line=5331 fn=render_news_narrative_layer key=news_layer_narrative_shock_intensity chart_id=news_layer_narrative_shock_intensity issues=none
+- [direct] line=5472 fn=render_causal_flow_panel key=causal_flow_global_panel chart_id= issues=none
+- [direct] line=5474 fn=render_causal_flow_panel key=causal_flow_panel_generic chart_id= issues=none
+- [direct] line=5535 fn=render_regime_belief_allocation_elasticity_surface key=cross_layer_regime_allocation_elasticity chart_id= issues=none
+- [direct] line=5554 fn=render_regime_belief_allocation_elasticity_surface key=cross_layer_belief_allocation_elasticity chart_id= issues=none
+- [direct] line=5632 fn=render_narrative_regime_transition_map key=cross_layer_narrative_transition_map chart_id= issues=none
+- [direct] line=5758 fn=render_macro_portfolio_transmission_network key=cross_layer_macro_transmission_network chart_id= issues=none
+- [direct] line=5854 fn=render_crisis_replay_with_narrative_overlay key=cross_layer_crisis_replay_overlay chart_id= issues=none
+- [direct] line=5935 fn=render_belief_performance_decay_curve key=cross_layer_belief_decay_curve chart_id= issues=none
+- [direct] line=5988 fn=render_capital_convexity_map key=cross_layer_capital_convexity_map chart_id= issues=none
+- [direct] line=6009 fn=render_capital_convexity_map key=cross_layer_capital_convexity_latest chart_id= issues=none
+- [direct] line=6066 fn=render_macro_fragility_index key=cross_layer_fragility_entropy chart_id= issues=none
+- [direct] line=6086 fn=render_macro_fragility_index key=cross_layer_fragility_vs_drawdown chart_id= issues=none
+- [direct] line=6128 fn=render_sentiment_lead_lag_surface key=cross_layer_sentiment_lead_lag chart_id= issues=none
+- [direct] line=6172 fn=render_allocation_drift_vs_information_shock key=cross_layer_allocation_drift_vs_shock chart_id= issues=none
+- [direct] line=6190 fn=render_allocation_drift_vs_information_shock key=cross_layer_allocation_reaction_surface chart_id= issues=none
+- [direct] line=6259 fn=render_regime_vs_posterior_stability key=cross_layer_regime_vs_posterior_stability chart_id= issues=none
+- [direct] line=6358 fn=render_rbi_policy_shock_impact_grid key=cross_layer_rbi_policy_impact chart_id= issues=none
+- [direct] line=6453 fn=render_strategy_survival_probability_curve key=cross_layer_strategy_survival chart_id= issues=none

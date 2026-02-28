@@ -1,0 +1,81 @@
+stocks:
+  360ONE:
+    isin: INE466L01038
+    lot_size: 500
+    name: 360 ONE WAM Ltd.
+    sector: Financial Services
+  ABB:
+    isin: INE117A01022
+    lot_size: 125
+    name: ABB India Ltd.
+    sector: Capital Goods
+  ABCAPITAL:
+    isin: INE674K01013
+    lot_size: 3100
+    name: Aditya Birla Capital Ltd.
+    sector: Financial Services
+  ADANIENSOL:
+    isin: INE931S01010
+    lot_size: 675
+    name: Adani Energy Solutions Ltd.
+    sector: Power
+  ADANIENT:
+    isin: INE423A01024
+    lot_size: 309
+    name: Adani Enterprises Ltd.
+    sector: Metals & Mining
+  ADANIGREEN:
+    isin: INE364U01010
+    lot_size: 600
+    name: Adani Green Energy Ltd.
+    sector: Power
+  ADANIPORTS:
+    isin: INE742F01042
+    lot_size: 475
+    name: Adani Ports and Special Economic Zone Ltd.
+    sector: Services
+  ALKEM:
+    isin: INE540L01014
+    lot_size: 125
+    name: Alkem Laboratories Ltd.
+    sector: Healthcare
+  AMBER:
+    isin: INE371P01015
+    lot_size: 100
+    name: Amber Enterprises India Ltd.
+    sector: Consumer Durables
+  AMBUJACEM:
+    isin: INE079A01024
+    lot_size: 1050
+    name: Ambuja Cements Ltd.
+    sector: Construction Materials
+  ANGELONE:
+    isin: INE732I01013
+    lot_size: 250
+    name: Angel One Ltd.
+    sector: Financial Services
+  APLAPOLLO:
+    isin: INE702C01027
+    lot_size: 350
+    name: APL Apollo Tubes Ltd.
+    sector: Capital Goods
+  APOLLOHOSP:
+    isin: INE437A01024
+    lot_size: 125
+    name: Apollo Hospitals Enterprise Ltd.
+    sector: Healthcare
+  ASHOKLEY:
+    isin: INE208A01029
+    lot_size: 5000
+    name: Ashok Leyland Ltd.
+    sector: Capital Goods
+  ASIANPAINT:
+    isin: INE021A01026
+    lot_size: 250
+    name: Asian Paints Ltd.
+    sector: Consumer Durables
+  AUBANK:
+    isin: INE949L01017
+    lot_size: 1000
+    name: AU Small Finance Bank Ltd.
+    sector: Financial Services

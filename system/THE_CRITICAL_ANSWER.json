@@ -1,0 +1,23 @@
+{
+  "critical_question": "Would I invest my own money in this if I were blind to the code?",
+  "answer": "NO - I would not invest",
+  "verdict": "AVOID",
+  "confidence": "LOW",
+  "overall_score": 27.4945893693019,
+  "criteria_scores": {
+    "Return Adequacy": 17.974530516361398,
+    "Risk Management": 0,
+    "Risk-Adjusted Returns": 0,
+    "Crisis Resilience": 92.0038269608462
+  },
+  "key_metrics": {
+    "final_nav": 440560896.7901457,
+    "total_return": 3.4056089679014567,
+    "cagr": 0.0769617957745421,
+    "max_drawdown": 0.9393631529606071,
+    "sharpe_ratio": 0.2827576265871815,
+    "crisis_alpha": 0.0420038269608462
+  },
+  "timestamp": "2026-01-30T02:49:12.397465",
+  "system_hash": "864623f9a7d038cfa6e5844d244f80fd06902ba218af7a5d71e13d2686194f11"
+}

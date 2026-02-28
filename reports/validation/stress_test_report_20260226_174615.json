@@ -1,0 +1,31 @@
+{
+  "report_date": "2026-02-26",
+  "generated_at": "2026-02-26T17:46:15.194381",
+  "status": "AVAILABLE",
+  "data_range": {
+    "start": "2020-08-11",
+    "end": "2026-01-30",
+    "rows": 1355
+  },
+  "test_summary": {
+    "total_scenarios": 1,
+    "successful_scenarios": 1,
+    "success_rate": 1.0,
+    "avg_northstar_advantage": 0.013279387895071992,
+    "avg_drawdown_protection": 0.0,
+    "better_avg_performance": "True",
+    "all_scenarios_passed": true,
+    "scenario_performance": {
+      "2022 Bear Market": {
+        "northstar_return": 0.0,
+        "nifty_return": -0.013279387895071992,
+        "advantage": 0.013279387895071992,
+        "drawdown_protection": -0.0,
+        "success": "True"
+      }
+    }
+  },
+  "scenarios_tested": [
+    "2022 Bear Market"
+  ]
+}

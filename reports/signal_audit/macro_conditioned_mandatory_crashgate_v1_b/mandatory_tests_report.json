@@ -1,0 +1,22 @@
+{
+  "config": {
+    "lookback_days": 504,
+    "min_obs": 20,
+    "ref_horizon_days": 20,
+    "macro_factors_path": "data/macro/factors/macro_factors.parquet",
+    "macro_score_path": "data/macro/factors/macro_score.parquet",
+    "crash_blend": 0.65
+  },
+  "flags": {
+    "subperiod_nonnegative_ic": false,
+    "crisis_windows_positive_ic": true,
+    "universe_robust_ic_gt_0p05_top150_200_300": false,
+    "horizon_strengthens_at_40_60_vs_20": true
+  },
+  "files": {
+    "subperiod": "reports/signal_audit/macro_conditioned_mandatory_crashgate_v1_b/mandatory_subperiod_stability.csv",
+    "crisis": "reports/signal_audit/macro_conditioned_mandatory_crashgate_v1_b/mandatory_crisis_windows.csv",
+    "universe": "reports/signal_audit/macro_conditioned_mandatory_crashgate_v1_b/mandatory_universe_sensitivity.csv",
+    "horizon": "reports/signal_audit/macro_conditioned_mandatory_crashgate_v1_b/mandatory_horizon_sensitivity.csv"
+  }
+}

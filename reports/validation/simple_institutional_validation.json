@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-02-27T06:00:14.044790",
+  "data_status": {
+    "market_state": {
+      "exists": true,
+      "records": 64,
+      "size_mb": 0.03422069549560547
+    },
+    "portfolio_weights": {
+      "exists": true,
+      "records": 30,
+      "size_mb": 0.008596420288085938
+    },
+    "strategy_beliefs": {
+      "exists": true,
+      "records": 19,
+      "size_mb": 0.010245323181152344
+    }
+  },
+  "performance_metrics": {
+    "total_return": -0.020846515874073712,
+    "sharpe_ratio": -0.9528340291229596,
+    "max_drawdown": -0.02896983806074982,
+    "volatility": 0.021858534799742445,
+    "win_rate": 0.07936507936507936,
+    "as_of": "2026-02-26",
+    "window_days": 252
+  },
+  "risk_status": {
+    "exposure_ok": true,
+    "concentration_ok": true,
+    "volatility_ok": true,
+    "drawdown_ok": true
+  },
+  "system_health": {
+    "data_pipeline": true,
+    "dashboard": false,
+    "validation_suite": true
+  },
+  "scores": {
+    "data": 1.0,
+    "performance": 0.5,
+    "risk": 1.0,
+    "system": 0.6666666666666666,
+    "overall": 0.7916666666666666
+  }
+}

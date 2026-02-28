@@ -1,0 +1,24 @@
+DUPLICATE_PY_GROUPS 2
+CROSS_TREE_DUP_GROUPS 1
+
+GROUP size=19
+  scripts/analysis/generate_6month_live_trades.py
+  scripts/build_full_beta_drift_fabric.py
+  scripts/fetch_stock_option_chains.py
+  scripts/fix_rbi_data_integration.py
+  scripts/implement_task17_final_validation_certification.py
+  scripts/institutional_12month_working.py
+  scripts/test_dashboard_components.py
+  src/dashboard/enhanced_consistent_data_manager.py
+  src/dashboard/northstar_v3_production_dashboard.py
+  src/ingestion/rbi_cleaner.py
+  src/intelligence/market_brain/issue_resolver.py
+  src/intelligence/market_brain/real_data_brain.py
+  src/live/simple_shadow_trader.py
+  src/options/backtest_engine.py
+  src/options/backtest_reporter.py
+  src/options/mock_data.py
+  src/utils/helpers.py
+  tests/intelligence_observer/test_intelligence_observer_comprehensive.py
+  tests/options/test_properties.py
+

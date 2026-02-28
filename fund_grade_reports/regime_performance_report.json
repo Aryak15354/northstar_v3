@@ -1,0 +1,36 @@
+{
+  "regime_metrics": {
+    "bull_market": {
+      "return": 3.4871243978599056,
+      "sharpe": 1.4953313053178765,
+      "volatility": 0.9502646484813984,
+      "days": 550
+    },
+    "crisis": {
+      "return": 1.3991008349532401,
+      "sharpe": 0.4753305655651421,
+      "volatility": 0.9560749589778837,
+      "days": 1748
+    },
+    "bear_market": {
+      "return": 2.499866287479701,
+      "sharpe": 1.414790891931084,
+      "volatility": 1.6542163966329315,
+      "days": 347
+    },
+    "normal": {
+      "return": 2.3739541255386682,
+      "sharpe": 2.6948543473341093,
+      "volatility": 2.9257552317129014,
+      "days": 95
+    },
+    "high_volatility": {
+      "return": 2.9270513132684544,
+      "sharpe": 0.7028023879915356,
+      "volatility": 0.4985564137155345,
+      "days": 2738
+    }
+  },
+  "best_regime": "bull_market",
+  "worst_regime": "crisis"
+}

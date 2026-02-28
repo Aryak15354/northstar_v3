@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-02-28T16:59:12.819372+00:00",
+  "aum": 100000000.0,
+  "market_stress_detected": true,
+  "unconstrained": {
+    "positions": 30,
+    "gross_invested": 0.09689698305972035
+  },
+  "constrained": {
+    "positions": 30,
+    "gross_invested": 0.7999999999999998,
+    "cash_weight": 0.20000000000000018,
+    "rejected_positions": {},
+    "capped_positions": {},
+    "redistributed_weight": 0.7515515084701399
+  },
+  "capacity_recommendation": {
+    "capacity_knee_aum": 215788972.30156672,
+    "max_recommended_aum": 215788972.30156672
+  },
+  "exports": {
+    "curve_csv": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/capacity/capacity_walk_forward_curves.csv",
+    "report_json": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/capacity/capacity_walk_forward_curves.json"
+  }
+}

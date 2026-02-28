@@ -1,0 +1,16 @@
+pandas
+numpy
+yfinance
+pyarrow
+fastparquet
+ta
+requests
+growwapi
+streamlit
+plotly
+scikit-learn
+tqdm
+python-dateutil
+selenium
+webdriver-manager
+openpyxl

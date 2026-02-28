@@ -1,0 +1,289 @@
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8517
+  Network URL: http://192.168.7.6:8517
+
+✅ TensorFlow available (CPU-only mode for M1 Mac compatibility)
+[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/streamlit/runtime/scriptrunner/[0m[1mexec_code.py[0m:129 in exec_func_with_error_handling    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/streamlit/runtime/scriptrunner/[0m[1mscript_runner.py[0m:671 in code_to_exec                 [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/Downloads/northstar/northstar_v3/src/dashboard/[0m[1mnorthstar_v3_ulti[0m [31m [0m
+[31m [0m [1mmate_integrated_dashboard.py[0m:2946 in <module>                                        [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m2943 [0m                                                                              [31m [0m
+[31m [0m   [2m2944 [0m                                                                              [31m [0m
+[31m [0m   [2m2945 [0m[94mif[0m [91m__name__[0m == [33m"[0m[33m__main__[0m[33m"[0m:                                                    [31m [0m
+[31m [0m [31m❱ [0m2946 [2m│   [0mmain()                                                                    [31m [0m
+[31m [0m   [2m2947 [0m                                                                              [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/Downloads/northstar/northstar_v3/src/dashboard/[0m[1mnorthstar_v3_ulti[0m [31m [0m
+[31m [0m [1mmate_integrated_dashboard.py[0m:2942 in main                                            [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m2939 [0m                                                                              [31m [0m
+[31m [0m   [2m2940 [0m[94mdef[0m[90m [0m[92mmain[0m() -> [94mNone[0m:                                                           [31m [0m
+[31m [0m   [2m2941 [0m[2m│   [0mdashboard = NorthstarV3UltimateIntegratedDashboard()                      [31m [0m
+[31m [0m [31m❱ [0m2942 [2m│   [0mdashboard.render()                                                        [31m [0m
+[31m [0m   [2m2943 [0m                                                                              [31m [0m
+[31m [0m   [2m2944 [0m                                                                              [31m [0m
+[31m [0m   [2m2945 [0m[94mif[0m [91m__name__[0m == [33m"[0m[33m__main__[0m[33m"[0m:                                                    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/Downloads/northstar/northstar_v3/src/dashboard/[0m[1mnorthstar_v3_ulti[0m [31m [0m
+[31m [0m [1mmate_integrated_dashboard.py[0m:2913 in render                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m2910 [0m[2m│   │   [0m[94mwith[0m tabs[[94m2[0m]:                                                         [31m [0m
+[31m [0m   [2m2911 [0m[2m│   │   │   [0m[96mself[0m.render_v3_analytics(data)                                    [31m [0m
+[31m [0m   [2m2912 [0m[2m│   │   [0m[94mwith[0m tabs[[94m3[0m]:                                                         [31m [0m
+[31m [0m [31m❱ [0m2913 [2m│   │   │   [0m[96mself[0m.render_advanced_intelligence(data)                           [31m [0m
+[31m [0m   [2m2914 [0m[2m│   │   [0m[94mwith[0m tabs[[94m4[0m]:                                                         [31m [0m
+[31m [0m   [2m2915 [0m[2m│   │   │   [0m[96mself[0m.render_wave_analysis(data)                                   [31m [0m
+[31m [0m   [2m2916 [0m[2m│   │   [0m[94mwith[0m tabs[[94m5[0m]:                                                         [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/Downloads/northstar/northstar_v3/src/dashboard/[0m[1mnorthstar_v3_ulti[0m [31m [0m
+[31m [0m [1mmate_integrated_dashboard.py[0m:1407 in render_advanced_intelligence                    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1404 [0m[2m│   │   │   │   │   │   [0mcolor_col = [33m"[0m[33msector_category[0m[33m"[0m [94mif[0m [33m"[0m[33msector_category[0m[33m"[0m [95min[0m [31m [0m
+[31m [0m   [2m1405 [0m[2m│   │   │   │   │   │   [0msize_col = [33m"[0m[33mmoat_score_v2[0m[33m"[0m [94mif[0m [33m"[0m[33mmoat_score_v2[0m[33m"[0m [95min[0m scat [31m [0m
+[31m [0m   [2m1406 [0m[2m│   │   │   │   │   │   [0mhover_cols = [c [94mfor[0m c [95min[0m [[33m"[0m[33mticker[0m[33m"[0m, [33m"[0m[33mvaluation_framew[0m [31m [0m
+[31m [0m [31m❱ [0m1407 [2m│   │   │   │   │   │   [0mfig = px.scatter(                                     [31m [0m
+[31m [0m   [2m1408 [0m[2m│   │   │   │   │   │   │   [0mscatter,                                          [31m [0m
+[31m [0m   [2m1409 [0m[2m│   │   │   │   │   │   │   [0mx=[33m"[0m[33mforensic_penalty[0m[33m"[0m,                             [31m [0m
+[31m [0m   [2m1410 [0m[2m│   │   │   │   │   │   │   [0my=[33m"[0m[33mtrue_undervaluation[0m[33m"[0m,                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/plotly/express/[0m[1m_chart_types.py[0m:69 in scatter                                        [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m  66 [0m[2;33m│   [0m[33mIn a scatter plot, each row of `data_frame` is represented by a symbol[0m    [31m [0m
+[31m [0m   [2m  67 [0m[2;33m│   [0m[33mmark in 2D space.[0m                                                         [31m [0m
+[31m [0m   [2m  68 [0m[2;33m│   [0m[33m"""[0m                                                                       [31m [0m
+[31m [0m [31m❱ [0m  69 [2m│   [0m[94mreturn[0m make_figure(args=[96mlocals[0m(), constructor=go.Scatter)                 [31m [0m
+[31m [0m   [2m  70 [0m                                                                              [31m [0m
+[31m [0m   [2m  71 [0m                                                                              [31m [0m
+[31m [0m   [2m  72 [0mscatter.[91m__doc__[0m = make_docstring(scatter, append_dict=_cartesian_append_dict) [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/plotly/express/[0m[1m_core.py[0m:2705 in make_figure                                         [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m2702 [0m[2m│   │   │   [0mpatch, fit_results = make_trace_kwargs(                           [31m [0m
+[31m [0m   [2m2703 [0m[2m│   │   │   │   [0margs, trace_spec, group, mapping_labels.copy(), sizeref       [31m [0m
+[31m [0m   [2m2704 [0m[2m│   │   │   [0m)                                                                 [31m [0m
+[31m [0m [31m❱ [0m2705 [2m│   │   │   [0mtrace.update(patch)                                               [31m [0m
+[31m [0m   [2m2706 [0m[2m│   │   │   [0m[94mif[0m fit_results [95mis[0m [95mnot[0m [94mNone[0m:                                       [31m [0m
+[31m [0m   [2m2707 [0m[2m│   │   │   │   [0mtrendline_rows.append(mapping_labels.copy())                  [31m [0m
+[31m [0m   [2m2708 [0m[2m│   │   │   │   [0mtrendline_rows[-[94m1[0m][[33m"[0m[33mpx_fit_results[0m[33m"[0m] = fit_results            [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/plotly/[0m[1mbasedatatypes.py[0m:5197 in update                                              [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m5194 [0m[2m│   │   │   │   [0mBaseFigure._perform_update([96mself[0m, dict1, overwrite=overwrite)  [31m [0m
+[31m [0m   [2m5195 [0m[2m│   │   │   │   [0mBaseFigure._perform_update([96mself[0m, kwargs, overwrite=overwrite) [31m [0m
+[31m [0m   [2m5196 [0m[2m│   │   [0m[94melse[0m:                                                                 [31m [0m
+[31m [0m [31m❱ [0m5197 [2m│   │   │   [0mBaseFigure._perform_update([96mself[0m, dict1, overwrite=overwrite)      [31m [0m
+[31m [0m   [2m5198 [0m[2m│   │   │   [0mBaseFigure._perform_update([96mself[0m, kwargs, overwrite=overwrite)     [31m [0m
+[31m [0m   [2m5199 [0m[2m│   │   [0m                                                                      [31m [0m
+[31m [0m   [2m5200 [0m[2m│   │   [0m[94mreturn[0m [96mself[0m                                                           [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/plotly/[0m[1mbasedatatypes.py[0m:3971 in _perform_update                                     [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m3968 [0m[2m│   │   │   │   [0m[94mif[0m [96misinstance[0m(validator, CompoundValidator) [95mand[0m [96misinstance[0m(va [31m [0m
+[31m [0m   [2m3969 [0m[2m│   │   │   │   │   [0m[2m# Update compound objects recursively[0m                     [31m [0m
+[31m [0m   [2m3970 [0m[2m│   │   │   │   │   [0m[2m# plotly_obj[key].update(val)[0m                             [31m [0m
+[31m [0m [31m❱ [0m3971 [2m│   │   │   │   │   [0mBaseFigure._perform_update(plotly_obj[key], val)          [31m [0m
+[31m [0m   [2m3972 [0m[2m│   │   │   │   [0m[94melif[0m [96misinstance[0m(validator, CompoundArrayValidator):           [31m [0m
+[31m [0m   [2m3973 [0m[2m│   │   │   │   │   [0m[94mif[0m plotly_obj[key]:                                       [31m [0m
+[31m [0m   [2m3974 [0m[2m│   │   │   │   │   │   [0m[2m# plotly_obj has an existing non-empty array for key[0m  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/plotly/[0m[1mbasedatatypes.py[0m:3992 in _perform_update                                     [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m3989 [0m[2m│   │   │   │   │   │   [0mplotly_obj[key] = val                                 [31m [0m
+[31m [0m   [2m3990 [0m[2m│   │   │   │   [0m[94melse[0m:                                                         [31m [0m
+[31m [0m   [2m3991 [0m[2m│   │   │   │   │   [0m[2m# Assign non-compound value[0m                               [31m [0m
+[31m [0m [31m❱ [0m3992 [2m│   │   │   │   │   [0mplotly_obj[key] = val                                     [31m [0m
+[31m [0m   [2m3993 [0m[2m│   │   [0m                                                                      [31m [0m
+[31m [0m   [2m3994 [0m[2m│   │   [0m[94melif[0m [96misinstance[0m(plotly_obj, [96mtuple[0m):                                   [31m [0m
+[31m [0m   [2m3995 [0m[2m│   │   │   [0m[94mif[0m [96mlen[0m(update_obj) == [94m0[0m:                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/plotly/[0m[1mbasedatatypes.py[0m:4932 in __setitem__                                         [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m4929 [0m[2m│   │   │   │   [0m                                                              [31m [0m
+[31m [0m   [2m4930 [0m[2m│   │   │   │   [0m[2m# ### Handle simple property ###[0m                              [31m [0m
+[31m [0m   [2m4931 [0m[2m│   │   │   │   [0m[94melse[0m:                                                         [31m [0m
+[31m [0m [31m❱ [0m4932 [2m│   │   │   │   │   [0m[96mself[0m._set_prop(prop, value)                               [31m [0m
+[31m [0m   [2m4933 [0m[2m│   │   │   [0m[94melse[0m:                                                             [31m [0m
+[31m [0m   [2m4934 [0m[2m│   │   │   │   [0m[2m# Make sure properties dict is initialized[0m                    [31m [0m
+[31m [0m   [2m4935 [0m[2m│   │   │   │   [0m[96mself[0m._init_props()                                            [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/plotly/[0m[1mbasedatatypes.py[0m:5276 in _set_prop                                           [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m5273 [0m[2m│   │   │   [0m[94mif[0m [96mself[0m._skip_invalid:                                            [31m [0m
+[31m [0m   [2m5274 [0m[2m│   │   │   │   [0m[94mreturn[0m                                                        [31m [0m
+[31m [0m   [2m5275 [0m[2m│   │   │   [0m[94melse[0m:                                                             [31m [0m
+[31m [0m [31m❱ [0m5276 [2m│   │   │   │   [0m[94mraise[0m err                                                     [31m [0m
+[31m [0m   [2m5277 [0m[2m│   │   [0m                                                                      [31m [0m
+[31m [0m   [2m5278 [0m[2m│   │   [0m[2m# val is None[0m                                                         [31m [0m
+[31m [0m   [2m5279 [0m[2m│   │   [0m[2m# -----------[0m                                                         [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/plotly/[0m[1mbasedatatypes.py[0m:5271 in _set_prop                                           [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m5268 [0m[2m│   │   [0mvalidator = [96mself[0m._get_validator(prop)                                 [31m [0m
+[31m [0m   [2m5269 [0m[2m│   │   [0m                                                                      [31m [0m
+[31m [0m   [2m5270 [0m[2m│   │   [0m[94mtry[0m:                                                                  [31m [0m
+[31m [0m [31m❱ [0m5271 [2m│   │   │   [0mval = validator.validate_coerce(val)                              [31m [0m
+[31m [0m   [2m5272 [0m[2m│   │   [0m[94mexcept[0m [96mValueError[0m [94mas[0m err:                                             [31m [0m
+[31m [0m   [2m5273 [0m[2m│   │   │   [0m[94mif[0m [96mself[0m._skip_invalid:                                            [31m [0m
+[31m [0m   [2m5274 [0m[2m│   │   │   │   [0m[94mreturn[0m                                                        [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/_plotly_utils/[0m[1mbasevalidators.py[0m:796 in validate_coerce                              [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 793 [0m[2m│   │   │   │   │   │   [0m:[94m10[0m                                                   [31m [0m
+[31m [0m   [2m 794 [0m[2m│   │   │   │   │   [0m].tolist()                                                [31m [0m
+[31m [0m   [2m 795 [0m[2m│   │   │   │   │   [0m                                                          [31m [0m
+[31m [0m [31m❱ [0m 796 [2m│   │   │   │   │   [0m[96mself[0m.raise_invalid_elements(some_invalid_els)             [31m [0m
+[31m [0m   [2m 797 [0m[2m│   │   │   [0m                                                                  [31m [0m
+[31m [0m   [2m 798 [0m[2m│   │   │   [0mv = v_array  [2m# Always numeric numpy array[0m                         [31m [0m
+[31m [0m   [2m 799 [0m[2m│   │   [0m[94melif[0m [96mself[0m.array_ok [95mand[0m is_simple_array(v):                            [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/Users/aryakghoshal/miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages[0m [31m [0m
+[31m [0m [2m/_plotly_utils/[0m[1mbasevalidators.py[0m:328 in raise_invalid_elements                       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 325 [0m[2m│   [0m                                                                          [31m [0m
+[31m [0m   [2m 326 [0m[2m│   [0m[94mdef[0m[90m [0m[92mraise_invalid_elements[0m([96mself[0m, invalid_els):                            [31m [0m
+[31m [0m   [2m 327 [0m[2m│   │   [0m[94mif[0m invalid_els:                                                       [31m [0m
+[31m [0m [31m❱ [0m 328 [2m│   │   │   [0m[94mraise[0m [96mValueError[0m(                                                 [31m [0m
+[31m [0m   [2m 329 [0m[2;90m│   │   │   │   [0m[33m"""[0m                                                           [31m [0m
+[31m [0m   [2m 330 [0m[2;33m│   [0m[33mInvalid element(s) received for the '{name}' property of {pname}[0m          [31m [0m
+[31m [0m   [2m 331 [0m[2;33m│   │   [0m[33mInvalid elements include: {invalid}[0m                                   [31m [0m
+[31m────────────────────────────────────────────────────────────────────────────────────────[0m
+[1;91mValueError: [0m
+    Invalid [1;35melement[0m[1m([0ms[1m)[0m received for the [32m'size'[0m property of scatter.marker
+        Invalid elements include: [1m[[0m[1;36m-328.7247817525736[0m[1m][0m
+
+    The [32m'size'[0m property is a number and may be specified as:
+      - An int or float in the interval [1m[[0m[1;36m0[0m, inf[1m][0m
+      - A tuple, list, or one-dimensional numpy array of the above
+Usage: streamlit run [OPTIONS] [TARGET] [ARGS]...
+Try 'streamlit run --help' for help.
+
+Error: Invalid value: File does not exist: streamlit_app.py
+2026-02-16 11:05:34,914 - options.config - INFO - Environment variables loaded from .env.options
+2026-02-16 11:05:34,933 - options.config - INFO - Configuration validation passed
+2026-02-16 11:05:34,933 - options.config - INFO - Configuration loaded successfully from config/options_trading.yaml
+2026-02-16 11:05:35,024 - src.options.stock_options_loader - INFO - Loaded 205 stocks with options
+2026-02-16 11:05:35,024 - options.upstox - INFO - UpstoxAdapter initialized
+2026-02-16 11:05:35,024 - src.options.strategy_generator - INFO - StrategyGenerator initialized
+2026-02-16 11:05:35,025 - src.options.trade_eligibility_validator - INFO - Loaded 31 events from calendar
+2026-02-16 11:05:35,025 - src.options.trade_eligibility_validator - INFO - TradeEligibilityValidator initialized
+2026-02-16 11:05:35,025 - src.options.capital_scaling_engine - INFO - CapitalScalingEngine initialized
+2026-02-16 11:05:35,025 - options.survival_rules - INFO - SurvivalRulesEngine initialized with base capital: ₹500,000
+2026-02-16 11:05:35,025 - options.position_manager - INFO - PositionManager initialized
+2026-02-16 11:05:35,025 - options.pnl_tracker - INFO - TaxAwarePnLTracker initialized with tax rate: 30.0%
+2026-02-16 11:05:35,025 - options.trade_ledger - INFO - Using existing trade ledger at data/options/trade_ledger.parquet
+2026-02-16 11:05:35,025 - options.events - INFO - OptionsEventPublisher initialized
+2026-02-16 11:05:35,028 - options.integrated_engine - INFO - Starting continuous mode with 300.0s (5.0min) interval
+2026-02-16 11:05:35,028 - options.integrated_engine - INFO - Running integrated options cycle at 2026-02-16T11:05:35+05:30
+2026-02-16 11:05:35,459 - options.upstox - INFO - Fetching option chain for NIFTY expiry 2026-02-17
+2026-02-16 11:05:36,330 - options.upstox - INFO - Fetched 186 option contracts
+2026-02-16 11:05:36,332 - options.upstox - INFO - Fetching option chain for NIFTY expiry 2026-02-24
+2026-02-16 11:05:37,331 - options.upstox - INFO - Fetched 202 option contracts
+2026-02-16 11:05:37,332 - options.upstox - INFO - Fetching option chain for NIFTY expiry 2026-03-02
+2026-02-16 11:05:38,786 - options.upstox - WARNING - Removed 1 invalid option contracts
+2026-02-16 11:05:38,791 - options.upstox - INFO - Fetched 185 option contracts
+2026-02-16 11:05:38,796 - options.upstox - INFO - Fetching option chain for NIFTY expiry 2026-03-10
+2026-02-16 11:05:39,393 - options.upstox - WARNING - Removed 77 invalid option contracts
+2026-02-16 11:05:39,394 - options.upstox - INFO - Fetched 85 option contracts
+2026-02-16 11:05:39,466 - src.options.strategy_generator - INFO - Generating strategy for regime: rising_vol_buy, underlying: NIFTY
+2026-02-16 11:05:39,466 - src.options.strategy_generator - INFO - Generating Calendar Spread strategy
+2026-02-16 11:05:39,468 - src.options.strategy_generator - WARNING - No expiry found between 30 and 45 days
+2026-02-16 11:05:39,471 - src.options.strategy_generator - INFO - Generated Calendar Spread: debit=4847.38, max_loss=4847.38, RR=0.44
+2026-02-16 11:05:39,472 - src.options.strategy_generator - INFO - Generating Long Straddle strategy
+2026-02-16 11:05:39,472 - src.options.strategy_generator - WARNING - No expiry found between 30 and 60 days
+2026-02-16 11:05:39,479 - src.options.strategy_generator - INFO - Generated Long Straddle: cost=37869.00, max_profit=75738.00, RR=0.50
+2026-02-16 11:05:39,479 - src.options.strategy_generator - INFO - Generating Calendar Spread strategy
+2026-02-16 11:05:39,479 - src.options.strategy_generator - WARNING - No expiry found between 30 and 45 days
+2026-02-16 11:05:39,489 - src.options.strategy_generator - INFO - Generated Calendar Spread: debit=4847.38, max_loss=4847.38, RR=0.44
+2026-02-16 11:05:39,489 - src.options.strategy_generator - INFO - Generating Iron Condor strategy
+2026-02-16 11:05:39,515 - src.options.strategy_generator - INFO - Generated Iron Condor: credit=-5772.00, max_loss=52000.00, RR=inf
+2026-02-16 11:05:39,520 - src.options.trade_eligibility_validator - INFO - Validating trade eligibility for calendar_spread
+2026-02-16 11:05:39,537 - src.options.trade_eligibility_validator - INFO - Trade ELIGIBLE (size adjustment: 100%, warnings: 0)
+2026-02-16 11:05:40,315 - options.upstox - INFO - Fetching option chain for BANKNIFTY expiry 2026-02-24
+2026-02-16 11:05:41,348 - options.upstox - WARNING - Removed 7 invalid option contracts
+2026-02-16 11:05:41,348 - options.upstox - INFO - Fetched 261 option contracts
+2026-02-16 11:05:41,349 - options.upstox - INFO - Fetching option chain for BANKNIFTY expiry 2026-03-30
+2026-02-16 11:05:42,369 - options.upstox - WARNING - Removed 39 invalid option contracts
+2026-02-16 11:05:42,369 - options.upstox - INFO - Fetched 235 option contracts
+2026-02-16 11:05:42,371 - options.upstox - INFO - Fetching option chain for BANKNIFTY expiry 2026-04-28
+2026-02-16 11:05:43,353 - options.upstox - WARNING - Removed 190 invalid option contracts
+2026-02-16 11:05:43,354 - options.upstox - INFO - Fetched 78 option contracts
+2026-02-16 11:05:43,355 - options.upstox - INFO - Fetching option chain for BANKNIFTY expiry 2026-06-30
+2026-02-16 11:05:44,356 - options.upstox - WARNING - Removed 22 invalid option contracts
+2026-02-16 11:05:44,356 - options.upstox - INFO - Fetched 2 option contracts
+2026-02-16 11:05:44,396 - src.options.strategy_generator - INFO - Generating strategy for regime: rising_vol_buy, underlying: BANKNIFTY
+2026-02-16 11:05:44,396 - src.options.strategy_generator - INFO - Generating Calendar Spread strategy
+2026-02-16 11:05:44,399 - src.options.strategy_generator - INFO - Generated Calendar Spread: debit=21414.00, max_loss=21414.00, RR=1.20
+2026-02-16 11:05:44,399 - src.options.strategy_generator - INFO - Generating Long Straddle strategy
+2026-02-16 11:05:44,405 - src.options.strategy_generator - INFO - Generated Long Straddle: cost=58037.25, max_profit=116074.50, RR=0.50
+2026-02-16 11:05:44,405 - src.options.strategy_generator - INFO - Generating Calendar Spread strategy
+2026-02-16 11:05:44,407 - src.options.strategy_generator - INFO - Generated Calendar Spread: debit=21414.00, max_loss=21414.00, RR=1.20
+2026-02-16 11:05:44,407 - src.options.strategy_generator - INFO - Generating Iron Condor strategy
+2026-02-16 11:05:44,408 - src.options.strategy_generator - WARNING - No expiry found between 15 and 30 days
+2026-02-16 11:05:44,414 - src.options.strategy_generator - INFO - Generated Iron Condor: credit=-10293.00, max_loss=54000.00, RR=inf
+2026-02-16 11:05:44,414 - src.options.trade_eligibility_validator - INFO - Validating trade eligibility for long_straddle
+2026-02-16 11:05:44,419 - src.options.trade_eligibility_validator - INFO - Trade ELIGIBLE (size adjustment: 100%, warnings: 0)
+2026-02-16 11:05:45,329 - options.upstox - INFO - Fetching option chain for FINNIFTY expiry 2026-02-24
+2026-02-16 11:05:46,357 - options.upstox - WARNING - Removed 76 invalid option contracts
+2026-02-16 11:05:46,358 - options.upstox - INFO - Fetched 152 option contracts
+2026-02-16 11:05:46,359 - options.upstox - INFO - Fetching option chain for FINNIFTY expiry 2026-03-30
+2026-02-16 11:05:47,354 - options.upstox - WARNING - Removed 118 invalid option contracts
+2026-02-16 11:05:47,354 - options.upstox - INFO - Fetched 10 option contracts
+2026-02-16 11:05:47,356 - options.upstox - INFO - Fetching option chain for FINNIFTY expiry 2026-04-28
+2026-02-16 11:05:48,368 - options.upstox - WARNING - Removed 128 invalid option contracts
+2026-02-16 11:05:48,369 - options.upstox - INFO - Fetched 0 option contracts
+2026-02-16 11:05:48,393 - src.options.strategy_generator - INFO - Generating strategy for regime: rising_vol_buy, underlying: FINNIFTY
+2026-02-16 11:05:48,393 - src.options.strategy_generator - INFO - Generating Calendar Spread strategy
+2026-02-16 11:05:48,395 - src.options.strategy_generator - WARNING - No far-term option found at strike 28150.0
+2026-02-16 11:05:48,395 - src.options.strategy_generator - INFO - Generating Long Straddle strategy
+2026-02-16 11:05:48,396 - src.options.strategy_generator - WARNING - No ATM call found
+2026-02-16 11:05:48,396 - src.options.strategy_generator - INFO - Generating Calendar Spread strategy
+2026-02-16 11:05:48,398 - src.options.strategy_generator - WARNING - No far-term option found at strike 28150.0
+2026-02-16 11:05:48,398 - src.options.strategy_generator - INFO - Generating Iron Condor strategy
+2026-02-16 11:05:48,399 - src.options.strategy_generator - WARNING - No expiry found between 15 and 30 days
+2026-02-16 11:05:48,403 - src.options.strategy_generator - WARNING - Could not find all required strikes for Iron Condor
+2026-02-16 11:05:49,387 - options.upstox - INFO - Fetching option chain for MIDCPNIFTY expiry 2026-02-24
+2026-02-16 11:05:50,411 - options.upstox - WARNING - Removed 45 invalid option contracts
+2026-02-16 11:05:50,412 - options.upstox - INFO - Fetched 193 option contracts
+2026-02-16 11:05:50,413 - options.upstox - INFO - Fetching option chain for MIDCPNIFTY expiry 2026-03-30
+2026-02-16 11:05:51,438 - options.upstox - WARNING - Removed 196 invalid option contracts
+2026-02-16 11:05:51,438 - options.upstox - INFO - Fetched 40 option contracts
+2026-02-16 11:05:51,439 - options.upstox - INFO - Fetching option chain for MIDCPNIFTY expiry 2026-04-28
+2026-02-16 11:05:52,404 - options.upstox - WARNING - Removed 227 invalid option contracts
+2026-02-16 11:05:52,404 - options.upstox - INFO - Fetched 1 option contracts
+2026-02-16 11:05:52,430 - src.options.strategy_generator - INFO - Generating strategy for regime: rising_vol_buy, underlying: MIDCPNIFTY
+2026-02-16 11:05:52,430 - src.options.strategy_generator - INFO - Generating Calendar Spread strategy
+2026-02-16 11:05:52,432 - src.options.strategy_generator - INFO - Generated Calendar Spread: debit=24414.00, max_loss=24414.00, RR=1.15
+2026-02-16 11:05:52,432 - src.options.strategy_generator - INFO - Generating Long Straddle strategy
+2026-02-16 11:05:52,433 - src.options.strategy_generator - WARNING - No ATM put found
+2026-02-16 11:05:52,434 - src.options.strategy_generator - INFO - Generating Calendar Spread strategy
+2026-02-16 11:05:52,435 - src.options.strategy_generator - INFO - Generated Calendar Spread: debit=24414.00, max_loss=24414.00, RR=1.15
+2026-02-16 11:05:52,435 - src.options.strategy_generator - INFO - Generating Iron Condor strategy
+2026-02-16 11:05:52,435 - src.options.strategy_generator - WARNING - No expiry found between 15 and 30 days
+2026-02-16 11:05:52,439 - src.options.strategy_generator - WARNING - Could not find all required strikes for Iron Condor
+2026-02-16 11:05:52,439 - src.options.trade_eligibility_validator - INFO - Validating trade eligibility for calendar_spread
+2026-02-16 11:05:52,444 - src.options.trade_eligibility_validator - INFO - Trade ELIGIBLE (size adjustment: 100%, warnings: 0)
+2026-02-16 11:05:52,448 - options.integrated_engine - WARNING - No expiries available for NIFTYIT; skipping this underlying for now
+2026-02-16 11:05:54,367 - options.upstox - WARNING - Request failed (attempt 1/3), retrying in 1s: 400 Client Error: Bad Request for url: https://api.upstox.com/v2/option/contract?instrument_key=NSE_INDEX%3ANifty+Auto
+2026-02-16 11:05:55,444 - options.upstox - WARNING - Request failed (attempt 2/3), retrying in 2s: 400 Client Error: Bad Request for url: https://api.upstox.com/v2/option/contract?instrument_key=NSE_INDEX%3ANifty+Auto
+2026-02-16 11:05:57,578 - options.upstox - ERROR - Request failed after 3 attempts: 400 Client Error: Bad Request for url: https://api.upstox.com/v2/option/contract?instrument_key=NSE_INDEX%3ANifty+Auto
+2026-02-16 11:05:57,580 - options.upstox - WARNING - Could not fetch expiries for NIFTYAUTO: 400 Client Error: Bad Request for url: https://api.upstox.com/v2/option/contract?instrument_key=NSE_INDEX%3ANifty+Auto
+2026-02-16 11:05:57,580 - options.integrated_engine - WARNING - No expiries available for NIFTYAUTO; skipping this underlying for now
+2026-02-16 11:05:58,666 - options.upstox - WARNING - Request failed (attempt 1/3), retrying in 1s: 400 Client Error: Bad Request for url: https://api.upstox.com/v2/option/contract?instrument_key=NSE_INDEX%3ANifty+Pharma
+2026-02-16 11:05:59,747 - options.upstox - WARNING - Request failed (attempt 2/3), retrying in 2s: 400 Client Error: Bad Request for url: https://api.upstox.com/v2/option/contract?instrument_key=NSE_INDEX%3ANifty+Pharma

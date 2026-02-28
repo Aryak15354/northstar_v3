@@ -1,0 +1,480 @@
+{
+  "sector_reports": [
+    {
+      "sector": "Consumer Goods",
+      "n_companies": 31,
+      "top_macro_drivers": [
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.0010608978195184064,
+          "t_stat": 1.4513518319010663
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.0014826316691565044,
+          "t_stat": 1.4213167264095148
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.0003963952102106048,
+          "t_stat": 1.0298809045412867
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": -0.0021186512546276575,
+          "t_stat": 0.9994667709304759
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.00022688403080019373,
+          "t_stat": 0.8543045093082776
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 2,
+          "beta": 4.503119180771604e-05,
+          "t_stat": 0.5961285148537554
+        },
+        {
+          "macro_variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 2,
+          "beta": 0.002740646252010974,
+          "t_stat": 0.5366458702066375
+        },
+        {
+          "macro_variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 4,
+          "beta": 0.0030182991016305767,
+          "t_stat": 0.302787369967767
+        },
+        {
+          "macro_variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 0,
+          "beta": -0.012334533263936362,
+          "t_stat": 0.29299321647507526
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 0,
+          "beta": -0.0010071389461693853,
+          "t_stat": 0.27037339458292764
+        }
+      ],
+      "average_lag": 3.0,
+      "median_beta": -0.00020214986805333672
+    },
+    {
+      "sector": "Energy",
+      "n_companies": 12,
+      "top_macro_drivers": [
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.0017001972126469047,
+          "t_stat": 0.9673579725145236
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 2,
+          "beta": -0.004639006233812027,
+          "t_stat": 0.9242975660955062
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.0040375255510126,
+          "t_stat": 0.8238537501781855
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.0016562412464551054,
+          "t_stat": 0.7947975143446508
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": -0.0023242617947772937,
+          "t_stat": 0.7008266697439327
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 2,
+          "beta": 0.00678020504549975,
+          "t_stat": 0.6239071759537023
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": 0.0015108699759485305,
+          "t_stat": 0.5819317615901964
+        },
+        {
+          "macro_variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 2,
+          "beta": -0.005069114281590569,
+          "t_stat": 0.5298437661078098
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 8,
+          "beta": 0.00033782580446729523,
+          "t_stat": 0.5276646544849944
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 0,
+          "beta": 0.0014881739965969232,
+          "t_stat": 0.48069607215070564
+        }
+      ],
+      "average_lag": 3.0,
+      "median_beta": -8.307984367351729e-05
+    },
+    {
+      "sector": "Industrials",
+      "n_companies": 1,
+      "top_macro_drivers": [
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 1,
+          "beta": -0.0018105889855383232,
+          "t_stat": 4.481345517598263
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.0036700863743252573,
+          "t_stat": 4.448722361264474
+        },
+        {
+          "macro_variable": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End)",
+          "lag": 4,
+          "beta": 0.007595378463782082,
+          "t_stat": 2.5903326013712777
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 4,
+          "beta": 0.006610516884837814,
+          "t_stat": 1.7734622521161596
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 2,
+          "beta": -0.015790566509694324,
+          "t_stat": 1.5438229530964132
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.0014005307975141533,
+          "t_stat": 1.4140223396163214
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": -0.0017756760597840767,
+          "t_stat": 0.7011394324987784
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.0012952849927576689,
+          "t_stat": 0.675029117423898
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 8,
+          "beta": -0.0028926331966855744,
+          "t_stat": 0.585408145392275
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": -0.0012460214400116102,
+          "t_stat": 0.579223900892667
+        }
+      ],
+      "average_lag": 3.0,
+      "median_beta": -0.0004689905412784368
+    },
+    {
+      "sector": "Information Technology",
+      "n_companies": 21,
+      "top_macro_drivers": [
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.0016426095562682601,
+          "t_stat": 1.478005188467331
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": -0.000780378446773744,
+          "t_stat": 1.0295811071373822
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": 0.0004538347027572303,
+          "t_stat": 1.0185059194132438
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.0017670964272877992,
+          "t_stat": 0.8771479451375009
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.0002730615419205534,
+          "t_stat": 0.7238440160687614
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 2,
+          "beta": -0.009360757613362282,
+          "t_stat": 0.5624317628100706
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 2,
+          "beta": 0.005516526085517432,
+          "t_stat": 0.5486890018181738
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 1,
+          "beta": 0.003114343454567448,
+          "t_stat": 0.5338233508787616
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 1,
+          "beta": 0.000893678671952623,
+          "t_stat": 0.41377958942251264
+        },
+        {
+          "macro_variable": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End)",
+          "lag": 2,
+          "beta": 0.0003440399232484986,
+          "t_stat": 0.41231987642356005
+        }
+      ],
+      "average_lag": 3.0,
+      "median_beta": 0.0005431479742139904
+    },
+    {
+      "sector": "Materials",
+      "n_companies": 8,
+      "top_macro_drivers": [
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.003484464375822687,
+          "t_stat": 2.109125586748029
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.001904591243087821,
+          "t_stat": 1.1150327773759336
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.0027527215344297527,
+          "t_stat": 1.0873335384944491
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.002756959812876353,
+          "t_stat": 0.9617170309754186
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 1,
+          "beta": -0.0006109779342577837,
+          "t_stat": 0.8629617339579002
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 2,
+          "beta": -0.0028430001508219856,
+          "t_stat": 0.829171008518758
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 8,
+          "beta": 0.004107785955817447,
+          "t_stat": 0.6114609286364356
+        },
+        {
+          "macro_variable": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End)",
+          "lag": 2,
+          "beta": -0.0011398100893252757,
+          "t_stat": 0.6081937185537808
+        },
+        {
+          "macro_variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 2,
+          "beta": -0.014460128670832389,
+          "t_stat": 0.4845623567475747
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 8,
+          "beta": -0.0033894594919680237,
+          "t_stat": 0.46618294504884134
+        }
+      ],
+      "average_lag": 3.0,
+      "median_beta": -0.0006375416633628915
+    },
+    {
+      "sector": "Other",
+      "n_companies": 45,
+      "top_macro_drivers": [
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 8,
+          "beta": 0.003164123648006853,
+          "t_stat": 1.7508202263129904
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.0006339025901048584,
+          "t_stat": 1.03345108886936
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": -0.0011023336255011284,
+          "t_stat": 0.8840458978461937
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 2,
+          "beta": -0.0019354192929502043,
+          "t_stat": 0.8543820051313706
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 0,
+          "beta": 0.0022942588731563645,
+          "t_stat": 0.849388418067026
+        },
+        {
+          "macro_variable": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End)",
+          "lag": 2,
+          "beta": -0.0017121984260700359,
+          "t_stat": 0.6621739041086151
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.0006270098356289379,
+          "t_stat": 0.6417332135972275
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER OFFICIAL,DEBIT INR",
+          "lag": 1,
+          "beta": 0.0018079120365212366,
+          "t_stat": 0.4266232194366501
+        },
+        {
+          "macro_variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 8,
+          "beta": -0.00483021993178533,
+          "t_stat": 0.3400594377674056
+        },
+        {
+          "macro_variable": "quarterly_other_GROSS FIXED CAPITAL FORMATION CONSTANT",
+          "lag": 2,
+          "beta": 0.04721211058853979,
+          "t_stat": 0.281800640711573
+        }
+      ],
+      "average_lag": 3.0,
+      "median_beta": -0.00019937123285925195
+    },
+    {
+      "sector": "Real Estate",
+      "n_companies": 2,
+      "top_macro_drivers": [
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 2,
+          "beta": 0.015138255384042298,
+          "t_stat": 2.9415915981694942
+        },
+        {
+          "macro_variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 8,
+          "beta": -0.015171495668638381,
+          "t_stat": 2.7698141261353357
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 2,
+          "beta": -0.004182262707252615,
+          "t_stat": 2.2604894648979665
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - CURRENT ACCOUNT DEBIT INR",
+          "lag": 4,
+          "beta": 0.03058468025250529,
+          "t_stat": 0.9677523868407881
+        },
+        {
+          "macro_variable": "quarterly_other_GDP AT MARKET PRICES CONSTANT",
+          "lag": 8,
+          "beta": 0.012135903525091776,
+          "t_stat": 0.9049604972559628
+        },
+        {
+          "macro_variable": "monthly_other_TOTAL REVENUE",
+          "lag": 4,
+          "beta": 0.0011041410874860443,
+          "t_stat": 0.7665335813177339
+        },
+        {
+          "macro_variable": "monthly_core_Exchange Rate of Indian Rupee vis-\u00e0-vis US Dollar (Month End)",
+          "lag": 2,
+          "beta": -0.0011297172871807062,
+          "t_stat": 0.7402712004869592
+        },
+        {
+          "macro_variable": "quarterly_other_GOVERNMENT FINAL CONSUMPTION EXPENDITURE CURRENT",
+          "lag": 2,
+          "beta": -0.016239032724276656,
+          "t_stat": 0.7195198653641276
+        },
+        {
+          "macro_variable": "quarterly_other_BoP - TRANSFER PRIVATE,CREDIT USD",
+          "lag": 1,
+          "beta": 0.003728937417978474,
+          "t_stat": 0.702549218655449
+        },
+        {
+          "macro_variable": "monthly_other_CURRENCY WITH THE PUBLIC",
+          "lag": 4,
+          "beta": -0.0013013895035559576,
+          "t_stat": 0.6577597335672694
+        }
+      ],
+      "average_lag": 3.0,
+      "median_beta": -0.0003937539108422042
+    }
+  ]
+}

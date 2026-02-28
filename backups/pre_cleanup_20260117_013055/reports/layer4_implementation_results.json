@@ -1,0 +1,221 @@
+{
+  "implementation_date": "2026-01-03T07:49:09.721221",
+  "layer": "Layer 4 - Regime-Aware Signal Specialists",
+  "test_results": {
+    "regime_detection": [
+      {
+        "date": "2023-01-15T00:00:00",
+        "regime": "expansion",
+        "confidence": 0.3,
+        "duration": 30,
+        "macro_indicators": {
+          "vix_proxy": 24.46680232184547,
+          "momentum_signal": 0.11593317099331128,
+          "yield_curve_slope": 1.0492
+        }
+      },
+      {
+        "date": "2023-06-15T00:00:00",
+        "regime": "expansion",
+        "confidence": 0.3,
+        "duration": 30,
+        "macro_indicators": {
+          "vix_proxy": 20.46135869100416,
+          "momentum_signal": 0.19720074352796516,
+          "yield_curve_slope": 0.2755000000000001
+        }
+      },
+      {
+        "date": "2023-12-15T00:00:00",
+        "regime": "recession",
+        "confidence": 0.4,
+        "duration": 30,
+        "macro_indicators": {
+          "vix_proxy": 16.78063745498231,
+          "momentum_signal": -0.4122414391946567,
+          "yield_curve_slope": 0.18189999999999973
+        }
+      },
+      {
+        "date": "2024-01-15T00:00:00",
+        "regime": "expansion",
+        "confidence": 0.3,
+        "duration": 30,
+        "macro_indicators": {
+          "vix_proxy": 23.950292610295765,
+          "momentum_signal": 0.5266430223156273,
+          "yield_curve_slope": 0.2524999999999995
+        }
+      }
+    ],
+    "specialist_validation": {
+      "momentum": [
+        {
+          "date": "2023-12-15T00:00:00",
+          "signals_generated": 5,
+          "avg_strength": 2.0,
+          "avg_confidence": 0.0,
+          "avg_regime_fit": 0.26,
+          "regime": "recession"
+        },
+        {
+          "date": "2024-01-15T00:00:00",
+          "signals_generated": 5,
+          "avg_strength": 2.0,
+          "avg_confidence": 0.0,
+          "avg_regime_fit": 0.51,
+          "regime": "expansion"
+        }
+      ],
+      "value": [
+        {
+          "date": "2023-12-15T00:00:00",
+          "signals_generated": 5,
+          "avg_strength": -0.160363660985048,
+          "avg_confidence": 0.16999999999999998,
+          "avg_regime_fit": 0.33999999999999997,
+          "regime": "expansion"
+        },
+        {
+          "date": "2024-01-15T00:00:00",
+          "signals_generated": 5,
+          "avg_strength": -0.1937435179645637,
+          "avg_confidence": 0.16999999999999998,
+          "avg_regime_fit": 0.33999999999999997,
+          "regime": "expansion"
+        }
+      ],
+      "quality": [
+        {
+          "date": "2023-12-15T00:00:00",
+          "signals_generated": 5,
+          "avg_strength": 0.07824423884042549,
+          "avg_confidence": 0.282,
+          "avg_regime_fit": 0.4699999999999999,
+          "regime": "expansion"
+        },
+        {
+          "date": "2024-01-15T00:00:00",
+          "signals_generated": 5,
+          "avg_strength": 0.06489638181549183,
+          "avg_confidence": 0.282,
+          "avg_regime_fit": 0.4699999999999999,
+          "regime": "expansion"
+        }
+      ],
+      "macro": [
+        {
+          "date": "2023-12-15T00:00:00",
+          "signals_generated": 5,
+          "avg_strength": 0.0070992,
+          "avg_confidence": 0.16000000000000003,
+          "avg_regime_fit": 0.33999999999999997,
+          "regime": "neutral"
+        },
+        {
+          "date": "2024-01-15T00:00:00",
+          "signals_generated": 5,
+          "avg_strength": 0.007221599999999999,
+          "avg_confidence": 0.16000000000000003,
+          "avg_regime_fit": 0.33999999999999997,
+          "regime": "neutral"
+        }
+      ]
+    },
+    "ranking_validation": [
+      {
+        "date": "2024-01-15T00:00:00",
+        "regime": "neutral",
+        "specialist_rankings": {
+          "momentum": {
+            "count": 10,
+            "min_rank": 0.1,
+            "max_rank": 0.6,
+            "mean_rank": 0.5499999999999999,
+            "std_rank": 0.15
+          },
+          "value": {
+            "count": 10,
+            "min_rank": 0.1,
+            "max_rank": 1.0,
+            "mean_rank": 0.55,
+            "std_rank": 0.2872281323269014
+          },
+          "quality": {
+            "count": 10,
+            "min_rank": 0.1,
+            "max_rank": 1.0,
+            "mean_rank": 0.5499999999999999,
+            "std_rank": 0.2872281323269014
+          },
+          "macro": {
+            "count": 10,
+            "min_rank": 0.15,
+            "max_rank": 0.95,
+            "mean_rank": 0.55,
+            "std_rank": 0.2673948391424188
+          }
+        }
+      }
+    ],
+    "adaptation_validation": [
+      {
+        "regime": "expansion",
+        "confidence": 0.9,
+        "regime_fits": {
+          "momentum": 0.93,
+          "value": 0.22000000000000003,
+          "quality": 0.41000000000000003,
+          "macro": 0.7500000000000001
+        }
+      },
+      {
+        "regime": "recession",
+        "confidence": 0.8,
+        "regime_fits": {
+          "momentum": 0.22000000000000003,
+          "value": 0.88,
+          "quality": 0.6599999999999999,
+          "macro": 0.6199999999999999
+        }
+      },
+      {
+        "regime": "crisis",
+        "confidence": 0.7,
+        "regime_fits": {
+          "momentum": 0.16,
+          "value": 0.75,
+          "quality": 0.85,
+          "macro": 0.51
+        }
+      }
+    ],
+    "temporal_integration": [
+      {
+        "date": "2024-01-15T00:00:00",
+        "data_accesses": 15,
+        "temporal_violations": 0,
+        "violation_rate": 0.0
+      }
+    ]
+  },
+  "performance_metrics": {
+    "signal_success_rate": 1.0,
+    "average_confidence": 0.153,
+    "average_regime_adaptation": 0.58,
+    "temporal_violation_rate": 0.0,
+    "total_tests_run": 13
+  },
+  "validation_summary": {
+    "checks_passed": "5",
+    "total_checks": 5,
+    "success_rate": 1.0,
+    "individual_checks": {
+      "regime_detection_working": true,
+      "specialists_generating_signals": true,
+      "cross_sectional_ranking_working": true,
+      "regime_adaptation_effective": "True",
+      "temporal_protection_integrated": true
+    }
+  }
+}

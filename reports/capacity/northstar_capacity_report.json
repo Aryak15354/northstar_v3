@@ -1,0 +1,132 @@
+{
+  "generated_at": "2026-02-26T12:16:44.211787+00:00",
+  "base_report": {
+    "generated_at": "2026-02-26T12:16:44.202285+00:00",
+    "baseline_cagr": 0.18,
+    "baseline_sharpe": 1.6,
+    "metrics": [
+      {
+        "aum": 25000000.0,
+        "cagr": 0.16199999999999998,
+        "sharpe": 1.3840000000000001,
+        "max_drawdown": 0.15,
+        "implementation_shortfall": 0.018000000000000016,
+        "turnover_penalty": 0.0,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 50000000.0,
+        "cagr": 0.16199999999999998,
+        "sharpe": 1.3840000000000001,
+        "max_drawdown": 0.15,
+        "implementation_shortfall": 0.018000000000000016,
+        "turnover_penalty": 0.0,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 75000000.0,
+        "cagr": 0.16199999999999998,
+        "sharpe": 1.3840000000000001,
+        "max_drawdown": 0.15,
+        "implementation_shortfall": 0.018000000000000016,
+        "turnover_penalty": 0.0,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 100000000.0,
+        "cagr": 0.16199999999999998,
+        "sharpe": 1.3840000000000001,
+        "max_drawdown": 0.15,
+        "implementation_shortfall": 0.018000000000000016,
+        "turnover_penalty": 0.0,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 150000000.0,
+        "cagr": 0.15110709042250972,
+        "sharpe": 1.216186129477956,
+        "max_drawdown": 0.16880122970389644,
+        "implementation_shortfall": 0.028892909577490272,
+        "turnover_penalty": 0.004055627081748736,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 200000000.0,
+        "cagr": 0.13956995792963564,
+        "sharpe": 1.031762310641281,
+        "max_drawdown": 0.1889219012998221,
+        "implementation_shortfall": 0.04043004207036435,
+        "turnover_penalty": 0.009,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 300000000.0,
+        "cagr": 0.1150634690412311,
+        "sharpe": 0.6329883471513753,
+        "max_drawdown": 0.23211578456539655,
+        "implementation_shortfall": 0.06493653095876889,
+        "turnover_penalty": 0.019972250497221206,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 400000000.0,
+        "cagr": 0.08909485976297223,
+        "sharpe": 0.20524927362504441,
+        "max_drawdown": 0.27834094929274733,
+        "implementation_shortfall": 0.09090514023702777,
+        "turnover_penalty": 0.03183698643339689,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 500000000.0,
+        "cagr": 0.06197765201968654,
+        "sharpe": 0.0,
+        "max_drawdown": 0.3269594492191822,
+        "implementation_shortfall": 0.11802234798031346,
+        "turnover_penalty": 0.044321198880416975,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 650000000.0,
+        "cagr": 0.01955529159435475,
+        "sharpe": 0.0,
+        "max_drawdown": 0.4035419244646944,
+        "implementation_shortfall": 0.16044470840564523,
+        "turnover_penalty": 0.06392336112676322,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 800000000.0,
+        "cagr": 0.0,
+        "sharpe": 0.0,
+        "max_drawdown": 0.4837719759624955,
+        "implementation_shortfall": 0.18,
+        "turnover_penalty": 0.084353917284533,
+        "stress_multiplier": 1.0
+      },
+      {
+        "aum": 1000000000.0,
+        "cagr": 0.0,
+        "sharpe": 0.0,
+        "max_drawdown": 0.595467957738334,
+        "implementation_shortfall": 0.18,
+        "turnover_penalty": 0.11262152279558862,
+        "stress_multiplier": 1.0
+      }
+    ],
+    "capacity_knee_aum": 215788972.30156672,
+    "max_recommended_aum": 215788972.30156672,
+    "stress_adjusted_recommended_aum": 215788972.30156672
+  },
+  "stress_report_path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/capacity/northstar_capacity_stress_report.json",
+  "curve_exports": {
+    "curve_csv": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/capacity/northstar_capacity_curves.csv",
+    "report_json": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/capacity/northstar_capacity_curves.json"
+  },
+  "final_recommendation": {
+    "capacity_knee_aum": 215788972.30156672,
+    "max_recommended_aum": 215788972.30156672,
+    "stress_adjusted_aum": 141095313.60494852,
+    "deployable_aum_recommendation": 141095313.60494852
+  }
+}

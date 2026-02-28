@@ -1,0 +1,119 @@
+name: v4-shadow-delta
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 3 * * *"
+
+concurrency:
+  group: v4-shadow-delta-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NORTHSTAR_STRICT_MODE: "1"
+  NORTHSTAR_CI_GATE: "1"
+  RISK_RANDOM_SEED: "42"
+  PYTHONHASHSEED: "42"
+  TZ: "UTC"
+  LC_ALL: "C.UTF-8"
+  LANG: "C.UTF-8"
+
+jobs:
+  shadow-delta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: Clean runtime state
+        run: bash scripts/ci/clean_ci_runtime_state.sh
+      - name: Run strict runtime gate before delta
+        run: bash scripts/ci/run_runtime_gate.sh
+      - name: Build shadow delta report
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          report_dir = root / 'reports/system'
+          latest_report = None
+          if report_dir.exists():
+              candidates = sorted(report_dir.glob('complete_system_run_*.json'))
+              if candidates:
+                  latest_report = candidates[-1]
+
+          reference = root / 'audit/v3_shadow_reference.json'
+          delta_path = root / 'audit/V3_vs_V4_RUNTIME_DELTA.md'
+          delta_path.parent.mkdir(parents=True, exist_ok=True)
+
+          expected_structural = [
+              'percent-point normalization removal',
+              'single canonical dashboard path',
+              'entrypoint contract contraction',
+          ]
+          policy_corrections = [
+              'aggressive default disabled',
+              'risk policy immutability enabled',
+              'execution authority gateway enforced',
+          ]
+          unexpected = []
+
+          if not reference.exists():
+              unexpected.append('missing audit/v3_shadow_reference.json baseline')
+
+          if latest_report is None:
+              unexpected.append('missing reports/system/complete_system_run_*.json candidate report')
+
+          candidate_payload = {}
+          if latest_report and latest_report.exists():
+              candidate_payload = json.loads(latest_report.read_text(encoding='utf-8'))
+
+          ref_payload = {}
+          if reference.exists():
+              ref_payload = json.loads(reference.read_text(encoding='utf-8'))
+
+          ref_freeze = bool(ref_payload.get('system_status', {}).get('freeze_active', False)) if isinstance(ref_payload, dict) else False
+          cand_freeze = bool(candidate_payload.get('system_status', {}).get('freeze_active', False)) if isinstance(candidate_payload, dict) else False
+          if ref_payload and ref_freeze != cand_freeze:
+              unexpected.append(f'freeze_active mismatch: ref={ref_freeze} candidate={cand_freeze}')
+
+          lines = []
+          lines.append('# V3 vs V4 Runtime Delta')
+          lines.append('')
+          lines.append('## Expected Structural Deltas')
+          for item in expected_structural:
+              lines.append(f'- {item}')
+          lines.append('')
+          lines.append('## Policy Corrections')
+          for item in policy_corrections:
+              lines.append(f'- {item}')
+          lines.append('')
+          lines.append('## Unexpected Deltas')
+          if unexpected:
+              for item in unexpected:
+                  lines.append(f'- {item}')
+          else:
+              lines.append('- none')
+
+          delta_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          print(delta_path)
+
+          if unexpected:
+              raise SystemExit(1)
+          PY
+      - name: Upload shadow delta artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-shadow-delta
+          path: |
+            audit/V3_vs_V4_RUNTIME_DELTA.md
+            logs/ci/*.log
+            reports/system/*.json

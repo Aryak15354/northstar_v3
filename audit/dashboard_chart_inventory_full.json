@@ -1,0 +1,751 @@
+{
+  "summary": {
+    "generated_at": "2026-02-28T16:48:58.051126+00:00",
+    "total_charts": 77,
+    "direct_charts": 51,
+    "contract_charts": 26,
+    "live_surface_charts": 9,
+    "charts_with_issues": 0,
+    "issue_counts": {}
+  },
+  "entries": [
+    {
+      "kind": "direct",
+      "line": 1534,
+      "function": "_render_chart_with_contract",
+      "chart_id": "",
+      "key": "<dynamic>",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 1988,
+      "function": "render_mission_control",
+      "chart_id": "",
+      "key": "mission_control_research_learning_curve",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2030,
+      "function": "render_research_mode_compact",
+      "chart_id": "",
+      "key": "research_mode_dataset_partition_rows",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2034,
+      "function": "render_research_mode_compact",
+      "chart_id": "",
+      "key": "research_mode_returns_partition_pnl",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2052,
+      "function": "render_research_mode_compact",
+      "chart_id": "",
+      "key": "research_mode_weekend_stress_sweep",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2080,
+      "function": "render_experimentation_lab",
+      "chart_id": "",
+      "key": "experimentation_lab_trajectory",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 2235,
+      "function": "render_system_health",
+      "chart_id": "system_health_runtime_metrics",
+      "key": "system_health_runtime_metrics",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2558,
+      "function": "render_v3_analytics",
+      "chart_id": "",
+      "key": "v3_analytics_compact_equity_drawdown",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2598,
+      "function": "render_v3_analytics",
+      "chart_id": "",
+      "key": "v3_analytics_compact_rolling_risk_efficiency",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2630,
+      "function": "render_v3_analytics",
+      "chart_id": "",
+      "key": "v3_analytics_compact_vs_benchmark",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2670,
+      "function": "render_advanced_intelligence",
+      "chart_id": "",
+      "key": "adv_intel_compact_posterior_gap_hist",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2694,
+      "function": "render_advanced_intelligence",
+      "chart_id": "",
+      "key": "adv_intel_compact_opportunity_surface",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2712,
+      "function": "render_advanced_intelligence",
+      "chart_id": "",
+      "key": "adv_intel_compact_macro_matrix",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2747,
+      "function": "render_advanced_intelligence",
+      "chart_id": "",
+      "key": "adv_intel_compact_allocation_engine_heatmap",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2863,
+      "function": "render_wave_analysis",
+      "chart_id": "",
+      "key": "wave_analysis_price_structure_swings",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2896,
+      "function": "render_wave_analysis",
+      "chart_id": "",
+      "key": "wave_analysis_cycles_fft_power",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2918,
+      "function": "render_wave_analysis",
+      "chart_id": "",
+      "key": "wave_analysis_cycles_autocorrelation",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2949,
+      "function": "render_wave_analysis",
+      "chart_id": "",
+      "key": "wave_analysis_forecast_trend_cycle",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 2959,
+      "function": "render_wave_analysis",
+      "chart_id": "",
+      "key": "wave_analysis_diagnostics_returns_volatility",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 2988,
+      "function": "render_edge_health",
+      "chart_id": "portfolio_edge_health",
+      "key": "portfolio_edge_health_primary",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 3005,
+      "function": "render_edge_health",
+      "chart_id": "portfolio_edge_health",
+      "key": "portfolio_edge_health_scatter",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 3024,
+      "function": "render_exit_risk",
+      "chart_id": "portfolio_exit_risk",
+      "key": "portfolio_exit_risk_bar",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 3049,
+      "function": "render_exit_risk",
+      "chart_id": "portfolio_exit_risk",
+      "key": "portfolio_exit_risk_map",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3234,
+      "function": "render_alpha_os_control_tower",
+      "chart_id": "",
+      "key": "alphaos_compact_regime_probability_surface",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3275,
+      "function": "render_alpha_os_control_tower",
+      "chart_id": "",
+      "key": "alphaos_compact_survival_diagnostics",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3289,
+      "function": "render_alpha_os_control_tower",
+      "chart_id": "",
+      "key": "alphaos_compact_drawdown_surface",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 3359,
+      "function": "render_real_time_monitor",
+      "chart_id": "system_health_sector_allocation",
+      "key": "system_health_sector_allocation",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 3649,
+      "function": "render_macro_news_pressure_index",
+      "chart_id": "market_state_macro_news_pressure",
+      "key": "market_state_macro_news_pressure",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 3657,
+      "function": "render_macro_news_pressure_index",
+      "chart_id": "news_layer_macro_news_pressure",
+      "key": "news_layer_macro_news_pressure",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3667,
+      "function": "render_macro_news_pressure_index",
+      "chart_id": "",
+      "key": "causal_flow_macro_news_pressure",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3669,
+      "function": "render_macro_news_pressure_index",
+      "chart_id": "",
+      "key": "sector_sentiment_macro_news_pressure",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3671,
+      "function": "render_macro_news_pressure_index",
+      "chart_id": "",
+      "key": "macro_news_pressure_generic",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 3818,
+      "function": "render_sector_sentiment_vs_flows",
+      "chart_id": "market_state_sector_sentiment_vs_flows",
+      "key": "market_state_sector_sentiment_vs_flows",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 3826,
+      "function": "render_sector_sentiment_vs_flows",
+      "chart_id": "news_layer_sector_sentiment_vs_flows",
+      "key": "news_layer_sector_sentiment_vs_flows",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3836,
+      "function": "render_sector_sentiment_vs_flows",
+      "chart_id": "",
+      "key": "causal_flow_sector_sentiment_vs_flows",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3838,
+      "function": "render_sector_sentiment_vs_flows",
+      "chart_id": "",
+      "key": "sector_sentiment_vs_flows_generic",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3840,
+      "function": "render_sector_sentiment_vs_flows",
+      "chart_id": "",
+      "key": "sector_sentiment_vs_flows_generic",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3940,
+      "function": "render_belief_vs_news_divergence",
+      "chart_id": "",
+      "key": "news_layer_belief_news_divergence",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 3988,
+      "function": "render_event_shock_surface",
+      "chart_id": "",
+      "key": "news_layer_event_shock_surface",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4187,
+      "function": "render_market_pressure_surface",
+      "chart_id": "market_pressure_surface",
+      "key": "market_pressure_surface",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4367,
+      "function": "render_portfolio_expression_surface",
+      "chart_id": "portfolio_expression_surface",
+      "key": "portfolio_expression_surface",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4520,
+      "function": "render_survival_engine_surface",
+      "chart_id": "survival_engine_surface",
+      "key": "survival_engine_surface",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4614,
+      "function": "render_news_shock_surface",
+      "chart_id": "news_layer_narrative_shock_intensity",
+      "key": "news_shock_surface",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4650,
+      "function": "render_system_health_surface",
+      "chart_id": "system_health_runtime_metrics",
+      "key": "system_health_surface_runtime_metrics",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4685,
+      "function": "render_system_health_surface",
+      "chart_id": "system_health_sector_allocation",
+      "key": "system_health_surface_sector_allocation",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4742,
+      "function": "render_market_state_layer",
+      "chart_id": "market_state_regime_pressure",
+      "key": "market_state_regime_pressure",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4773,
+      "function": "render_market_state_layer",
+      "chart_id": "market_state_macro_heatmap",
+      "key": "market_state_macro_heatmap",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 4841,
+      "function": "render_intelligence_layer",
+      "chart_id": "",
+      "key": "intelligence_belief_skill_evolution",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 4863,
+      "function": "render_intelligence_layer",
+      "chart_id": "",
+      "key": "intelligence_regret_score",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 4887,
+      "function": "render_intelligence_layer",
+      "chart_id": "",
+      "key": "intelligence_posterior_gap_hist",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 4917,
+      "function": "render_intelligence_layer",
+      "chart_id": "",
+      "key": "intelligence_opportunity_surface",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 4974,
+      "function": "render_portfolio_expression_layer",
+      "chart_id": "portfolio_expression_vs_benchmark",
+      "key": "portfolio_expression_vs_benchmark",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 5023,
+      "function": "render_portfolio_expression_layer",
+      "chart_id": "portfolio_expression_allocation_heatmap",
+      "key": "portfolio_expression_allocation_heatmap",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 5071,
+      "function": "render_risk_survival_layer",
+      "chart_id": "risk_survival_drawdown_surface",
+      "key": "risk_survival_drawdown_surface",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 5108,
+      "function": "render_risk_survival_layer",
+      "chart_id": "risk_survival_drawdown_surface",
+      "key": "risk_survival_drawdown_surface_fallback",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 5195,
+      "function": "render_risk_survival_layer",
+      "chart_id": "risk_survival_crisis_probability",
+      "key": "risk_survival_crisis_probability",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 5225,
+      "function": "render_risk_survival_layer",
+      "chart_id": "risk_survival_regime_entropy",
+      "key": "risk_survival_regime_entropy",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 5262,
+      "function": "render_risk_survival_layer",
+      "chart_id": "risk_survival_systemic_stress",
+      "key": "risk_survival_systemic_stress",
+      "issues": []
+    },
+    {
+      "kind": "contract",
+      "line": 5331,
+      "function": "render_news_narrative_layer",
+      "chart_id": "news_layer_narrative_shock_intensity",
+      "key": "news_layer_narrative_shock_intensity",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5472,
+      "function": "render_causal_flow_panel",
+      "chart_id": "",
+      "key": "causal_flow_global_panel",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5474,
+      "function": "render_causal_flow_panel",
+      "chart_id": "",
+      "key": "causal_flow_panel_generic",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5535,
+      "function": "render_regime_belief_allocation_elasticity_surface",
+      "chart_id": "",
+      "key": "cross_layer_regime_allocation_elasticity",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5554,
+      "function": "render_regime_belief_allocation_elasticity_surface",
+      "chart_id": "",
+      "key": "cross_layer_belief_allocation_elasticity",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5632,
+      "function": "render_narrative_regime_transition_map",
+      "chart_id": "",
+      "key": "cross_layer_narrative_transition_map",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5758,
+      "function": "render_macro_portfolio_transmission_network",
+      "chart_id": "",
+      "key": "cross_layer_macro_transmission_network",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5854,
+      "function": "render_crisis_replay_with_narrative_overlay",
+      "chart_id": "",
+      "key": "cross_layer_crisis_replay_overlay",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5935,
+      "function": "render_belief_performance_decay_curve",
+      "chart_id": "",
+      "key": "cross_layer_belief_decay_curve",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 5988,
+      "function": "render_capital_convexity_map",
+      "chart_id": "",
+      "key": "cross_layer_capital_convexity_map",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6009,
+      "function": "render_capital_convexity_map",
+      "chart_id": "",
+      "key": "cross_layer_capital_convexity_latest",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6066,
+      "function": "render_macro_fragility_index",
+      "chart_id": "",
+      "key": "cross_layer_fragility_entropy",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6086,
+      "function": "render_macro_fragility_index",
+      "chart_id": "",
+      "key": "cross_layer_fragility_vs_drawdown",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6128,
+      "function": "render_sentiment_lead_lag_surface",
+      "chart_id": "",
+      "key": "cross_layer_sentiment_lead_lag",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6172,
+      "function": "render_allocation_drift_vs_information_shock",
+      "chart_id": "",
+      "key": "cross_layer_allocation_drift_vs_shock",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6190,
+      "function": "render_allocation_drift_vs_information_shock",
+      "chart_id": "",
+      "key": "cross_layer_allocation_reaction_surface",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6259,
+      "function": "render_regime_vs_posterior_stability",
+      "chart_id": "",
+      "key": "cross_layer_regime_vs_posterior_stability",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6358,
+      "function": "render_rbi_policy_shock_impact_grid",
+      "chart_id": "",
+      "key": "cross_layer_rbi_policy_impact",
+      "issues": []
+    },
+    {
+      "kind": "direct",
+      "line": 6453,
+      "function": "render_strategy_survival_probability_curve",
+      "chart_id": "",
+      "key": "cross_layer_strategy_survival",
+      "issues": []
+    }
+  ],
+  "freshness": {
+    "market_pressure_surface": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (1.4h)",
+      "message": "Within SLA (48h)",
+      "block": false
+    },
+    "market_state_macro_heatmap": {
+      "status": "expired",
+      "badge": "\ud83d\udd34 Expired (711.8h)",
+      "message": "Expired beyond SLA 48h",
+      "block": true
+    },
+    "market_state_macro_news_pressure": {
+      "status": "stale",
+      "badge": "\ud83d\udfe1 Stale (39.8h)",
+      "message": "SLA 24h breached",
+      "block": false
+    },
+    "market_state_regime_pressure": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (1.4h)",
+      "message": "Within SLA (24h)",
+      "block": false
+    },
+    "market_state_sector_sentiment_vs_flows": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (39.8h)",
+      "message": "Within SLA (48h)",
+      "block": false
+    },
+    "news_layer_macro_news_pressure": {
+      "status": "stale",
+      "badge": "\ud83d\udfe1 Stale (39.8h)",
+      "message": "SLA 24h breached",
+      "block": false
+    },
+    "news_layer_narrative_shock_intensity": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (15.8h)",
+      "message": "Within SLA (24h)",
+      "block": false
+    },
+    "news_layer_sector_sentiment_vs_flows": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (39.8h)",
+      "message": "Within SLA (48h)",
+      "block": false
+    },
+    "portfolio_edge_health": {
+      "status": "unknown",
+      "badge": "\u26aa Freshness Unknown",
+      "message": "No dataset freshness metadata",
+      "block": false
+    },
+    "portfolio_exit_risk": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (0.1h)",
+      "message": "Within SLA (48h)",
+      "block": false
+    },
+    "portfolio_expression_allocation_heatmap": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (15.8h)",
+      "message": "Within SLA (48h)",
+      "block": false
+    },
+    "portfolio_expression_surface": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (39.8h)",
+      "message": "Within SLA (48h)",
+      "block": false
+    },
+    "portfolio_expression_vs_benchmark": {
+      "status": "stale",
+      "badge": "\ud83d\udfe1 Stale (39.8h)",
+      "message": "SLA 24h breached",
+      "block": false
+    },
+    "risk_survival_crisis_probability": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (1.4h)",
+      "message": "Within SLA (24h)",
+      "block": false
+    },
+    "risk_survival_drawdown_surface": {
+      "status": "stale",
+      "badge": "\ud83d\udfe1 Stale (39.8h)",
+      "message": "SLA 24h breached",
+      "block": false
+    },
+    "risk_survival_regime_entropy": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (1.4h)",
+      "message": "Within SLA (24h)",
+      "block": false
+    },
+    "risk_survival_systemic_stress": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (15.8h)",
+      "message": "Within SLA (24h)",
+      "block": false
+    },
+    "survival_engine_surface": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (39.8h)",
+      "message": "Within SLA (48h)",
+      "block": false
+    },
+    "system_health_runtime_metrics": {
+      "status": "unknown",
+      "badge": "\u26aa Freshness Unknown",
+      "message": "No dataset freshness metadata",
+      "block": false
+    },
+    "system_health_sector_allocation": {
+      "status": "fresh",
+      "badge": "\ud83d\udfe2 Fresh (15.8h)",
+      "message": "Within SLA (48h)",
+      "block": false
+    }
+  }
+}

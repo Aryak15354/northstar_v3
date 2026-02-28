@@ -1,0 +1,7 @@
+{
+  "max_sector_weight": 0.3,
+  "max_stock_weight": 0.1,
+  "min_stocks_per_sector": 2,
+  "sector_neutralization": true,
+  "risk_free_rate": 0.06
+}

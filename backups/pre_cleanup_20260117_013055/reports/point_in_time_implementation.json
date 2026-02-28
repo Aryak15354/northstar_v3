@@ -1,0 +1,621 @@
+{
+  "timestamp": "2026-01-03T07:36:42.712045",
+  "violations_found": 21,
+  "test_results": {
+    "2023-01-15": {
+      "RELIANCE.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": -0.037256810952088326,
+          "scramble_results": [
+            -0.037256810952088326,
+            -0.037256810952088326,
+            -0.037256810952088326,
+            -0.037256810952088326,
+            -0.037256810952088326
+          ],
+          "iterations": 5,
+          "symbol": "RELIANCE.NS",
+          "current_time": "2023-01-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "RELIANCE.NS",
+          "current_time": "2023-01-15T00:00:00"
+        }
+      },
+      "TCS.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.04223286938330861,
+          "scramble_results": [
+            0.04223286938330861,
+            0.04223286938330861,
+            0.04223286938330861,
+            0.04223286938330861,
+            0.04223286938330861
+          ],
+          "iterations": 5,
+          "symbol": "TCS.NS",
+          "current_time": "2023-01-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "TCS.NS",
+          "current_time": "2023-01-15T00:00:00"
+        }
+      },
+      "INFY.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": -0.010997366543302745,
+          "scramble_results": [
+            -0.010997366543302745,
+            -0.010997366543302745,
+            -0.010997366543302745,
+            -0.010997366543302745,
+            -0.010997366543302745
+          ],
+          "iterations": 5,
+          "symbol": "INFY.NS",
+          "current_time": "2023-01-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "INFY.NS",
+          "current_time": "2023-01-15T00:00:00"
+        }
+      }
+    },
+    "2023-06-15": {
+      "RELIANCE.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.04844068741036156,
+          "scramble_results": [
+            0.04844068741036156,
+            0.04844068741036156,
+            0.04844068741036156,
+            0.04844068741036156,
+            0.04844068741036156
+          ],
+          "iterations": 5,
+          "symbol": "RELIANCE.NS",
+          "current_time": "2023-06-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "RELIANCE.NS",
+          "current_time": "2023-06-15T00:00:00"
+        }
+      },
+      "TCS.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.01343627914843104,
+          "scramble_results": [
+            0.01343627914843104,
+            0.01343627914843104,
+            0.01343627914843104,
+            0.01343627914843104,
+            0.01343627914843104
+          ],
+          "iterations": 5,
+          "symbol": "TCS.NS",
+          "current_time": "2023-06-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "TCS.NS",
+          "current_time": "2023-06-15T00:00:00"
+        }
+      },
+      "INFY.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.04667943809754482,
+          "scramble_results": [
+            0.04667943809754482,
+            0.04667943809754482,
+            0.04667943809754482,
+            0.04667943809754482,
+            0.04667943809754482
+          ],
+          "iterations": 5,
+          "symbol": "INFY.NS",
+          "current_time": "2023-06-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "INFY.NS",
+          "current_time": "2023-06-15T00:00:00"
+        }
+      }
+    },
+    "2023-12-15": {
+      "RELIANCE.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.056145340468919835,
+          "scramble_results": [
+            0.056145340468919835,
+            0.056145340468919835,
+            0.056145340468919835,
+            0.056145340468919835,
+            0.056145340468919835
+          ],
+          "iterations": 5,
+          "symbol": "RELIANCE.NS",
+          "current_time": "2023-12-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "RELIANCE.NS",
+          "current_time": "2023-12-15T00:00:00"
+        }
+      },
+      "TCS.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.10113596649098777,
+          "scramble_results": [
+            0.10113596649098777,
+            0.10113596649098777,
+            0.10113596649098777,
+            0.10113596649098777,
+            0.10113596649098777
+          ],
+          "iterations": 5,
+          "symbol": "TCS.NS",
+          "current_time": "2023-12-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "TCS.NS",
+          "current_time": "2023-12-15T00:00:00"
+        }
+      },
+      "INFY.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.09103923474369824,
+          "scramble_results": [
+            0.09103923474369824,
+            0.09103923474369824,
+            0.09103923474369824,
+            0.09103923474369824,
+            0.09103923474369824
+          ],
+          "iterations": 5,
+          "symbol": "INFY.NS",
+          "current_time": "2023-12-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "INFY.NS",
+          "current_time": "2023-12-15T00:00:00"
+        }
+      }
+    },
+    "2024-01-15": {
+      "RELIANCE.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.11231624998695922,
+          "scramble_results": [
+            0.11231624998695922,
+            0.11231624998695922,
+            0.11231624998695922,
+            0.11231624998695922,
+            0.11231624998695922
+          ],
+          "iterations": 5,
+          "symbol": "RELIANCE.NS",
+          "current_time": "2024-01-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "RELIANCE.NS",
+          "current_time": "2024-01-15T00:00:00"
+        }
+      },
+      "TCS.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.012708642657713654,
+          "scramble_results": [
+            0.012708642657713654,
+            0.012708642657713654,
+            0.012708642657713654,
+            0.012708642657713654,
+            0.012708642657713654
+          ],
+          "iterations": 5,
+          "symbol": "TCS.NS",
+          "current_time": "2024-01-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "TCS.NS",
+          "current_time": "2024-01-15T00:00:00"
+        }
+      },
+      "INFY.NS": {
+        "momentum": {
+          "status": "completed",
+          "passed": true,
+          "original_result": 0.05038247815947661,
+          "scramble_results": [
+            0.05038247815947661,
+            0.05038247815947661,
+            0.05038247815947661,
+            0.05038247815947661,
+            0.05038247815947661
+          ],
+          "iterations": 5,
+          "symbol": "INFY.NS",
+          "current_time": "2024-01-15T00:00:00"
+        },
+        "valuation": {
+          "status": "completed",
+          "passed": true,
+          "original_result": {
+            "pe": 15.0,
+            "pb": 2.0
+          },
+          "scramble_results": [
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            },
+            {
+              "pe": 15.0,
+              "pb": 2.0
+            }
+          ],
+          "iterations": 5,
+          "symbol": "INFY.NS",
+          "current_time": "2024-01-15T00:00:00"
+        }
+      }
+    }
+  },
+  "recommendations": [
+    "Fix temporal violations in code",
+    "Integrate TemporalGuard into all data access",
+    "Add scramble tests to CI/CD pipeline",
+    "Run honest walk-forward test",
+    "Measure real vs biased performance"
+  ]
+}

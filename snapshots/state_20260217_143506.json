@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-02-17T14:35:06.827770+05:30",
+  "cycle": 1771319176,
+  "regime": "low_vol_sell",
+  "market_data": {
+    "option_contracts": 3082,
+    "NIFTY_price": 25694.35,
+    "BANKNIFTY_price": 61140.35
+  },
+  "portfolio_greeks": {
+    "delta": 4.072200000000027,
+    "gamma": 15.0941,
+    "theta": -3201.5914999999995,
+    "vega": 4568.403600000001
+  },
+  "total_pnl": -253.59999999999934,
+  "realized_pnl": -26.499999999999346,
+  "unrealized_pnl": -227.1,
+  "today_pnl": -227.1,
+  "positions": [
+    {
+      "symbol": "POS_20260217_142844_460835_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": -219.00000000000003,
+      "delta": 2.2338000000000306,
+      "gamma": 7.577399999999999,
+      "vega": 518.9424,
+      "theta": -1143.0048000000002,
+      "notional": 16315.5
+    },
+    {
+      "symbol": "POS_20260217_142848_457886_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": -8.099999999999971,
+      "delta": 2.9483999999999924,
+      "gamma": 7.3872,
+      "vega": 61.0092,
+      "theta": -160.8012,
+      "notional": 2276.1
+    },
+    {
+      "symbol": "POS_20260217_143511_526526_long_strangle",
+      "option_type": "long_strangle",
+      "quantity": 1,
+      "pnl": 0.0,
+      "delta": -1.1099999999999959,
+      "gamma": 0.1295,
+      "vega": 3988.452,
+      "theta": -1897.7854999999997,
+      "notional": 15863.75
+    }
+  ],
+  "performance_metrics": {
+    "total_trades": 2,
+    "win_rate": 0.5,
+    "sharpe_ratio": 0.0,
+    "sortino_ratio": 0.0
+  },
+  "risk_metrics": {
+    "var_95": 34455.35,
+    "cvar_95": 43069.1875,
+    "max_drawdown": 0.0,
+    "current_drawdown": 0.0
+  },
+  "strategy_allocations": {
+    "Short Vol": 0.0,
+    "Long Vol": 1.0
+  },
+  "centralized_pnl": {
+    "timestamp": "2026-02-17T14:35:06.827770+05:30",
+    "components": {
+      "options_live": {
+        "unrealized_pnl": -227.1,
+        "realized_pnl_closed_positions": -26.499999999999346,
+        "ytd_net_pnl_after_costs_and_tax": -282.8680505,
+        "ytd_tax_liability": 30.45,
+        "ytd_total_costs": 225.9180505,
+        "active_positions": 3,
+        "closed_positions": 2
+      },
+      "v3_weekly_portfolio": {
+        "equity": 19770648.888637334,
+        "daily_return": 0.0014267719635791371,
+        "total_pnl_from_series_start": 14740106.890794514,
+        "as_of": "2026-02-16 00:00:00"
+      },
+      "shadow_portfolio": {
+        "portfolio_value": 9840003.08071117,
+        "daily_pnl": -159996.91928883083,
+        "daily_return": -0.015999691928883078,
+        "total_pnl_from_series_start": -354315.52762066014,
+        "as_of": "2026-02-17 04:52:57.068867+00:00"
+      }
+    },
+    "aggregates": {
+      "combined_net_pnl_estimate": 14385508.495123353,
+      "options_share_pct": -1.966340297222663e-05,
+      "weekly_portfolio_share_pct": 1.0246496949198125,
+      "shadow_share_pct": -0.024630031516840168,
+      "tax_aware_net_gate": true
+    }
+  },
+  "execution_metrics": {
+    "fill_rate": 1.0,
+    "avg_slippage": 0.0,
+    "total_orders": 7,
+    "rejected_orders": 0
+  }
+}

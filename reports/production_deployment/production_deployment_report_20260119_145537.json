@@ -1,0 +1,229 @@
+{
+  "deployment_summary": {
+    "total_phases": 4,
+    "successful_phases": 3,
+    "overall_success": false,
+    "deployment_timestamp": "20260119_145537"
+  },
+  "phase_results": {
+    "shadow_validation": {
+      "phase": "DeploymentPhase.SHADOW_VALIDATION",
+      "status": "ValidationStatus.COMPLETED",
+      "start_date": "2025-12-20 14:55:37.481162+00:00",
+      "end_date": "2026-01-19 14:55:37.481162+00:00",
+      "validation_score": 0.8,
+      "criteria_met": {
+        "trading_days": false,
+        "sharpe_ratio": "True",
+        "max_drawdown": "True",
+        "win_rate": true,
+        "conviction_consistency": true
+      },
+      "performance_metrics": {
+        "total_return": 0.053331579187283006,
+        "average_daily_return": 0.008888596531213834,
+        "volatility": 0.012248258830990703,
+        "sharpe_ratio": 11.21158955902791,
+        "max_drawdown": -0.004724908603830277,
+        "win_rate": 0.6666666666666666,
+        "conviction_consistency": 0.75,
+        "trading_days": 6,
+        "total_pnl": 1592026.394568272
+      },
+      "recommendations": [
+        "Shadow trading validation successful - proceed to discipline period"
+      ],
+      "next_phase_approved": true,
+      "detailed_report_path": "reports/shadow_validation/shadow_validation_report_20251220_20260119.json"
+    },
+    "discipline_period": {
+      "phase": "DeploymentPhase.DISCIPLINE_PERIOD",
+      "status": "ValidationStatus.COMPLETED",
+      "start_date": "2025-10-21 14:55:37.499731+00:00",
+      "end_date": "2026-01-19 14:55:37.499736+00:00",
+      "validation_score": 1.0,
+      "criteria_met": {
+        "trading_days": true,
+        "sharpe_ratio": true,
+        "max_drawdown": true,
+        "win_rate": true,
+        "conviction_consistency": true,
+        "override_resistance": true,
+        "constraint_compliance": true
+      },
+      "performance_metrics": {
+        "total_return": 0.08,
+        "sharpe_ratio": 1.35,
+        "max_drawdown": -0.035,
+        "win_rate": 0.68,
+        "conviction_consistency": 0.82,
+        "override_attempts": 3,
+        "successful_overrides": 0,
+        "trading_days": 63,
+        "capital_constraints_violated": 0,
+        "emergency_stops_triggered": 0
+      },
+      "recommendations": [
+        "Discipline period successful - proceed to production deployment"
+      ],
+      "next_phase_approved": true,
+      "detailed_report_path": null
+    },
+    "safeguards_implementation": {
+      "phase": "DeploymentPhase.SAFEGUARDS_IMPLEMENTATION",
+      "status": "ValidationStatus.COMPLETED",
+      "start_date": "2026-01-19 14:55:37.500897+00:00",
+      "end_date": "2026-01-19 14:55:37.502300+00:00",
+      "validation_score": 1.0,
+      "criteria_met": {
+        "anti_override_system": true,
+        "truth_review_system": true,
+        "decision_logging": true,
+        "integration_tests": true
+      },
+      "performance_metrics": {
+        "safeguard_test_score": 1.0
+      },
+      "recommendations": [
+        "Psychological safeguards implemented and tested successfully"
+      ],
+      "next_phase_approved": true,
+      "detailed_report_path": null
+    },
+    "production_deployment": {
+      "phase": "DeploymentPhase.PRODUCTION_DEPLOYMENT",
+      "status": "ValidationStatus.FAILED",
+      "start_date": "2026-01-19 14:55:37.503181+00:00",
+      "end_date": "2026-01-19 14:55:37.510752+00:00",
+      "validation_score": 0.4,
+      "criteria_met": {
+        "production_certificate": false,
+        "kill_switches_active": false,
+        "monitoring_systems": false,
+        "capital_allocation": true,
+        "regulatory_compliance": true
+      },
+      "performance_metrics": {
+        "production_readiness_score": 0.4
+      },
+      "recommendations": [
+        "Production deployment failed - address issues before retry"
+      ],
+      "next_phase_approved": false,
+      "detailed_report_path": null
+    }
+  },
+  "deployment_state": {
+    "current_phase": "production_deployment",
+    "phase_results": {
+      "shadow_validation": {
+        "phase": "DeploymentPhase.SHADOW_VALIDATION",
+        "status": "ValidationStatus.COMPLETED",
+        "start_date": "2025-12-20 14:55:37.481162+00:00",
+        "end_date": "2026-01-19 14:55:37.481162+00:00",
+        "validation_score": 0.8,
+        "criteria_met": {
+          "trading_days": false,
+          "sharpe_ratio": "True",
+          "max_drawdown": "True",
+          "win_rate": true,
+          "conviction_consistency": true
+        },
+        "performance_metrics": {
+          "total_return": 0.053331579187283006,
+          "average_daily_return": 0.008888596531213834,
+          "volatility": 0.012248258830990703,
+          "sharpe_ratio": 11.21158955902791,
+          "max_drawdown": -0.004724908603830277,
+          "win_rate": 0.6666666666666666,
+          "conviction_consistency": 0.75,
+          "trading_days": 6,
+          "total_pnl": 1592026.394568272
+        },
+        "recommendations": [
+          "Shadow trading validation successful - proceed to discipline period"
+        ],
+        "next_phase_approved": true,
+        "detailed_report_path": "reports/shadow_validation/shadow_validation_report_20251220_20260119.json"
+      },
+      "discipline_period": {
+        "phase": "DeploymentPhase.DISCIPLINE_PERIOD",
+        "status": "ValidationStatus.COMPLETED",
+        "start_date": "2025-10-21 14:55:37.499731+00:00",
+        "end_date": "2026-01-19 14:55:37.499736+00:00",
+        "validation_score": 1.0,
+        "criteria_met": {
+          "trading_days": true,
+          "sharpe_ratio": true,
+          "max_drawdown": true,
+          "win_rate": true,
+          "conviction_consistency": true,
+          "override_resistance": true,
+          "constraint_compliance": true
+        },
+        "performance_metrics": {
+          "total_return": 0.08,
+          "sharpe_ratio": 1.35,
+          "max_drawdown": -0.035,
+          "win_rate": 0.68,
+          "conviction_consistency": 0.82,
+          "override_attempts": 3,
+          "successful_overrides": 0,
+          "trading_days": 63,
+          "capital_constraints_violated": 0,
+          "emergency_stops_triggered": 0
+        },
+        "recommendations": [
+          "Discipline period successful - proceed to production deployment"
+        ],
+        "next_phase_approved": true,
+        "detailed_report_path": null
+      },
+      "safeguards_implementation": {
+        "phase": "DeploymentPhase.SAFEGUARDS_IMPLEMENTATION",
+        "status": "ValidationStatus.COMPLETED",
+        "start_date": "2026-01-19 14:55:37.500897+00:00",
+        "end_date": "2026-01-19 14:55:37.502300+00:00",
+        "validation_score": 1.0,
+        "criteria_met": {
+          "anti_override_system": true,
+          "truth_review_system": true,
+          "decision_logging": true,
+          "integration_tests": true
+        },
+        "performance_metrics": {
+          "safeguard_test_score": 1.0
+        },
+        "recommendations": [
+          "Psychological safeguards implemented and tested successfully"
+        ],
+        "next_phase_approved": true,
+        "detailed_report_path": null
+      },
+      "production_deployment": {
+        "phase": "DeploymentPhase.PRODUCTION_DEPLOYMENT",
+        "status": "ValidationStatus.FAILED",
+        "start_date": "2026-01-19 14:55:37.503181+00:00",
+        "end_date": "2026-01-19 14:55:37.510752+00:00",
+        "validation_score": 0.4,
+        "criteria_met": {
+          "production_certificate": false,
+          "kill_switches_active": false,
+          "monitoring_systems": false,
+          "capital_allocation": true,
+          "regulatory_compliance": true
+        },
+        "performance_metrics": {
+          "production_readiness_score": 0.4
+        },
+        "recommendations": [
+          "Production deployment failed - address issues before retry"
+        ],
+        "next_phase_approved": false,
+        "detailed_report_path": null
+      }
+    },
+    "deployment_start_date": null,
+    "production_approved": false
+  }
+}

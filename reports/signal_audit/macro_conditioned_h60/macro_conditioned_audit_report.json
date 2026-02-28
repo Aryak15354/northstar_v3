@@ -1,0 +1,77 @@
+{
+  "horizon_days": 60,
+  "lookback_days": 504,
+  "min_obs": 20,
+  "sample": {
+    "assets": 499,
+    "rows": 833653,
+    "start_date": "2017-10-06T00:00:00",
+    "end_date": "2025-11-20T00:00:00"
+  },
+  "unconditional_signal_ic": [
+    {
+      "signal": "signal_momentum_1m",
+      "mean_ic": 0.04224995112339157,
+      "std_ic": 0.22370347931820708,
+      "stability_ratio": 0.18886586499306574,
+      "pct_positive": 0.5854092526690391,
+      "n_days": 2248
+    },
+    {
+      "signal": "signal_momentum_3m",
+      "mean_ic": 0.04104028234473541,
+      "std_ic": 0.21698995837275858,
+      "stability_ratio": 0.18913447724725543,
+      "pct_positive": 0.6218861209964412,
+      "n_days": 2248
+    },
+    {
+      "signal": "signal_low_volatility",
+      "mean_ic": 0.01435890285466594,
+      "std_ic": 0.24505059520110073,
+      "stability_ratio": 0.05859566610267691,
+      "pct_positive": 0.4919928825622776,
+      "n_days": 2248
+    },
+    {
+      "signal": "signal_liquidity",
+      "mean_ic": -0.021799419992764038,
+      "std_ic": 0.19499799763944484,
+      "stability_ratio": -0.11179304534742761,
+      "pct_positive": 0.4248220640569395,
+      "n_days": 2248
+    },
+    {
+      "signal": "signal_reversal_5d",
+      "mean_ic": -0.034884523254741714,
+      "std_ic": 0.22379593317845506,
+      "stability_ratio": -0.1558764842564175,
+      "pct_positive": 0.4443950177935943,
+      "n_days": 2248
+    }
+  ],
+  "composite_ic_summary": [
+    {
+      "composite": "equal_weight",
+      "mean_ic": 0.021682599489659855,
+      "std_ic": 0.21666611437663685,
+      "stability_ratio": 0.10007379119730914,
+      "pct_positive": 0.5435943060498221,
+      "n_days": 2248
+    },
+    {
+      "composite": "regime_conditioned_rolling",
+      "mean_ic": 0.0926709114554204,
+      "std_ic": 0.22794943366786868,
+      "stability_ratio": 0.4065415296905084,
+      "pct_positive": 0.719306049822064,
+      "n_days": 2248
+    }
+  ],
+  "composite_uplift": {
+    "equal_weight_mean_ic": 0.021682599489659855,
+    "regime_conditioned_mean_ic": 0.0926709114554204,
+    "absolute_uplift": 0.07098831196576055,
+    "relative_uplift_vs_equal": 3.2739760746682585
+  }
+}

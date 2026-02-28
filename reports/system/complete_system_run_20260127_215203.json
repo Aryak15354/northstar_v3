@@ -1,0 +1,75 @@
+{
+  "execution_summary": {
+    "start_time": "2026-01-27T21:51:58.645914",
+    "end_time": "2026-01-27T21:52:03.040456",
+    "total_duration_seconds": 4.394527,
+    "total_duration_minutes": 0.07
+  },
+  "phase_results": {
+    "data_ingestion": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "system_update": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "backtesting": {
+      "duration": 0.8301618099212646,
+      "status": "failed",
+      "details": [
+        "12-month institutional validation completed",
+        "Enhanced stress tests (2008, COVID, 2022) completed",
+        "Walk-forward out-of-sample validation failed: Traceback (most recent call last):\n  File \"/Users/aryakghoshal/Downloads/northstar/northstar_v3/src/"
+      ]
+    },
+    "shadow_trading": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "performance_analysis": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "dashboard_launch": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    }
+  },
+  "execution_log": [
+    {
+      "timestamp": "2026-01-27T21:52:01.169255",
+      "phase": "backtesting",
+      "status": "success",
+      "message": "12-month institutional validation completed",
+      "duration_seconds": 2.523247003555298
+    },
+    {
+      "timestamp": "2026-01-27T21:52:02.210043",
+      "phase": "backtesting",
+      "status": "success",
+      "message": "Enhanced stress tests (2008, COVID, 2022) completed",
+      "duration_seconds": 1.0406672954559326
+    },
+    {
+      "timestamp": "2026-01-27T21:52:03.040336",
+      "phase": "backtesting",
+      "status": "failed",
+      "message": "Walk-forward out-of-sample validation failed: Traceback (most recent call last):\n  File \"/Users/aryakghoshal/Downloads/northstar/northstar_v3/src/",
+      "duration_seconds": 0.8301618099212646
+    }
+  ],
+  "system_status": {
+    "data_fresh": false,
+    "system_updated": false,
+    "backtests_complete": false,
+    "shadow_trading_active": false,
+    "performance_analyzed": false,
+    "dashboard_running": false
+  }
+}

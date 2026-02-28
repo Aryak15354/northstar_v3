@@ -1,0 +1,55 @@
+🚀 Quick Performance Profiling
+============================================================
+
+============================================================
+📊 Profiling Greeks Computation (100 positions)
+============================================================
+Greeks computation took 70.3ms (target <50ms)
+Greeks computation took 59.2ms (target <50ms)
+Greeks computation took 74.3ms (target <50ms)
+Greeks computation took 63.4ms (target <50ms)
+Greeks computation took 79.5ms (target <50ms)
+Greeks computation took 72.6ms (target <50ms)
+Greeks computation took 83.5ms (target <50ms)
+Greeks computation took 57.3ms (target <50ms)
+Greeks computation took 82.7ms (target <50ms)
+Greeks computation took 62.2ms (target <50ms)
+Greeks computation took 61.0ms (target <50ms)
+Greeks computation took 77.0ms (target <50ms)
+Greeks computation took 68.3ms (target <50ms)
+
+⏱️  Performance Metrics:
+  Average: 34.44ms
+  P50: 28.51ms
+  P95: 72.76ms
+  P99: 82.82ms
+  Target: <50ms
+  ❌ FAIL - P95 exceeds target by 22.76ms
+
+============================================================
+📊 Profiling State Update Propagation (20 updates)
+============================================================
+✅ VolatilityStateEngine initialized (version 1)
+  Update 1/20: 0.06ms
+  Update 6/20: 0.02ms
+  Update 11/20: 0.02ms
+  Update 16/20: 0.02ms
+
+⏱️  Performance Metrics:
+  Average: 0.04ms
+  P50: 0.03ms
+  P95: 0.09ms
+  P99: 0.09ms
+  Target: <100ms
+  ✅ PASS - P95 within target
+
+============================================================
+📊 SUMMARY
+============================================================
+Greeks Computation: FAIL
+  P95: 72.76ms (target <50ms)
+State Updates: PASS
+  P95: 0.09ms (target <100ms)
+============================================================
+
+✅ Profiling complete! Results saved to reports/quick_profile.txt

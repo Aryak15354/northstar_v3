@@ -1,0 +1,36 @@
+data_config:
+  data_sources:
+  - NSE
+  - BSE
+  - RBI
+  lookback_days: 252
+  min_history_days: 60
+  update_frequency: daily
+environment: production
+intelligence_config:
+  enable_mean_reversion: true
+  enable_momentum: true
+  enable_regime_detection: true
+  min_signal_strength: 0.4
+  signal_decay_days: 30
+market_config:
+  currency: INR
+  market_name: NSE
+  min_trade_size: 10000
+  settlement_days: 2
+  trading_hours:
+    end: '15:30'
+    start: 09:15
+    timezone: Asia/Kolkata
+portfolio_config:
+  max_positions: 15
+  min_positions: 8
+  rebalance_frequency: weekly
+  transaction_cost: 0.0015
+risk_config:
+  max_drawdown: -0.12
+  max_individual_weight: 0.05
+  max_portfolio_volatility: 0.18
+  max_sector_weight: 0.25
+  min_cash_buffer: 0.05
+  stop_loss_threshold: -0.08

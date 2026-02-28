@@ -1,0 +1,26 @@
+{
+  "report_date": "2026-02-28",
+  "generated_at": "2026-02-28T13:32:50.579927",
+  "window": {
+    "start": "2025-02-26",
+    "end": "2026-02-26"
+  },
+  "portfolio": {
+    "total_return": -0.020846515874073712,
+    "volatility_ann": 0.02190205042511785,
+    "sharpe": -0.9547295202041235,
+    "max_drawdown": -0.02896983806074982,
+    "win_rate": 0.0796812749003984,
+    "avg_daily_return": -8.297830989626699e-05
+  },
+  "benchmark": {
+    "total_return": 0.12298895060837634,
+    "volatility_ann": 0.11530536507053536,
+    "sharpe": 1.1694241581907472,
+    "max_drawdown": -0.0636728650082613,
+    "win_rate": 0.5175438596491229,
+    "avg_daily_return": 0.0005350828550892364
+  },
+  "excess_return": -0.14383546648245005,
+  "notes": "All metrics computed from real PnL + real NIFTY close series."
+}

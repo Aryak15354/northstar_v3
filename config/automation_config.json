@@ -1,0 +1,33 @@
+{
+  "execution_time": "06:00",
+  "days_of_week": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday"
+  ],
+  "timezone": "UTC",
+  "components": {
+    "data_ingestion": true,
+    "signal_generation": true,
+    "portfolio_optimization": true,
+    "risk_assessment": true,
+    "clustering_analysis": true,
+    "wave_analysis": true,
+    "validation": true,
+    "reporting": true,
+    "dashboard_update": true,
+    "system_health": true
+  },
+  "notifications": {
+    "email_enabled": false,
+    "email_recipients": [],
+    "slack_enabled": false,
+    "slack_webhook": ""
+  },
+  "retry_settings": {
+    "max_retries": 3,
+    "retry_delay": 300
+  }
+}

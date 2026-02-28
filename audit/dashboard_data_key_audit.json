@@ -1,0 +1,1010 @@
+{
+  "load_core_data_keys": [
+    "allocation_history",
+    "allocator_universe_alignment",
+    "alpha_os_drift_state",
+    "alpha_os_sdi_state",
+    "alpha_os_strategy_posteriors",
+    "alpha_os_timeseries",
+    "calendar_alignment_audit",
+    "capital_allocations",
+    "daemon_policy",
+    "daemon_status",
+    "daily_narrative",
+    "dataset_lineage",
+    "drift_monitor",
+    "edge_half_life",
+    "exposure_cash_contract",
+    "exposure_history",
+    "feature_lineage_map",
+    "governance_events",
+    "index_nifty100",
+    "index_nifty50",
+    "index_nifty500",
+    "integrity_artifacts",
+    "integrity_report",
+    "intelligent_state",
+    "liquidity_risk",
+    "live_heartbeat",
+    "macro_cleaned",
+    "macro_conditioned_composite",
+    "macro_conditioned_mandatory_report",
+    "macro_conditioned_report",
+    "macro_conditioned_snapshot",
+    "macro_conditioned_weights",
+    "macro_factors",
+    "macro_factors_v2",
+    "macro_impact_company_betas",
+    "macro_impact_fingerprints",
+    "macro_impact_metadata",
+    "macro_impact_sector_betas",
+    "macro_impact_sector_heatmap",
+    "macro_impact_sector_report",
+    "macro_transmission_adjusted",
+    "macro_transmission_expected",
+    "macro_transmission_jax_betas",
+    "macro_transmission_kalman",
+    "macro_transmission_metadata",
+    "macro_transmission_optimizer",
+    "macro_transmission_optimizer_summary",
+    "macro_transmission_stress",
+    "macro_transmission_sv_betas",
+    "macro_transmission_sv_summary",
+    "market_regime",
+    "market_state",
+    "model_freeze_state",
+    "narrative_events",
+    "narrative_state",
+    "nav_reconciliation",
+    "opportunity_surface",
+    "options_dashboard_state",
+    "options_policy",
+    "options_runtime_state",
+    "parameter_version",
+    "performance_summary",
+    "pnl",
+    "portfolio_analytics",
+    "portfolio_valuation_state",
+    "portfolio_weights",
+    "real_data_only_policy",
+    "regime_feed",
+    "regime_fingerprints",
+    "regime_misclassification_tolerance",
+    "regime_transitions",
+    "research_allocator_bridge",
+    "research_awareness",
+    "research_capital_simulation_report",
+    "research_experiments",
+    "research_governor_bridge",
+    "research_kernel_status",
+    "research_memory",
+    "research_model_training_results",
+    "research_monte_carlo_report",
+    "research_opportunity_surface",
+    "research_options_opportunities",
+    "research_parameter_search_results",
+    "research_policy",
+    "research_regime_candidate_scores",
+    "research_returns_partition",
+    "research_strategy_stability",
+    "research_weekend_sweep",
+    "risk_state",
+    "sector_flows",
+    "sector_rotation",
+    "shadow_pnl_series",
+    "shadow_snapshot",
+    "snapshot_integrity",
+    "state_recovery_report",
+    "strategy_beliefs",
+    "strategy_regret",
+    "survivorship_bias_audit",
+    "system_log",
+    "timing_signals",
+    "valuation",
+    "valuation_families",
+    "valuation_posterior",
+    "valuation_validation_deciles",
+    "valuation_validation_ic",
+    "valuation_validation_regime",
+    "valuation_validation_summary",
+    "volatility_state",
+    "walk_forward_results"
+  ],
+  "used_data_get_keys": [
+    "allocation_history",
+    "alpha_os_drift_state",
+    "alpha_os_sdi_state",
+    "alpha_os_strategy_posteriors",
+    "alpha_os_timeseries",
+    "capital_allocations",
+    "daemon_policy",
+    "daemon_status",
+    "daily_narrative",
+    "edge_half_life",
+    "governance_events",
+    "index_nifty100",
+    "index_nifty50",
+    "index_nifty500",
+    "integrity_artifacts",
+    "integrity_report",
+    "liquidity_risk",
+    "live_heartbeat",
+    "macro_cleaned",
+    "macro_conditioned_composite",
+    "macro_conditioned_mandatory_report",
+    "macro_conditioned_report",
+    "macro_conditioned_snapshot",
+    "macro_conditioned_weights",
+    "macro_factors",
+    "macro_factors_v2",
+    "macro_impact_company_betas",
+    "macro_impact_fingerprints",
+    "macro_impact_metadata",
+    "macro_impact_sector_betas",
+    "macro_impact_sector_heatmap",
+    "macro_transmission_adjusted",
+    "macro_transmission_expected",
+    "macro_transmission_jax_betas",
+    "macro_transmission_kalman",
+    "macro_transmission_metadata",
+    "macro_transmission_optimizer",
+    "macro_transmission_optimizer_summary",
+    "macro_transmission_stress",
+    "macro_transmission_sv_betas",
+    "macro_transmission_sv_summary",
+    "market_regime",
+    "narrative_events",
+    "narrative_state",
+    "opportunity_surface",
+    "options_dashboard_state",
+    "options_policy",
+    "options_runtime_state",
+    "performance_summary",
+    "pnl",
+    "portfolio_valuation_state",
+    "portfolio_weights",
+    "regime_feed",
+    "regime_transitions",
+    "research_allocator_bridge",
+    "research_awareness",
+    "research_capital_simulation_report",
+    "research_experiments",
+    "research_governor_bridge",
+    "research_kernel_status",
+    "research_model_training_results",
+    "research_monte_carlo_report",
+    "research_opportunity_surface",
+    "research_options_opportunities",
+    "research_parameter_search_results",
+    "research_policy",
+    "research_returns_partition",
+    "research_weekend_sweep",
+    "risk_state",
+    "sector_flows",
+    "sector_rotation",
+    "strategy_beliefs",
+    "strategy_regret",
+    "system_log",
+    "timing_signals",
+    "valuation",
+    "valuation_families",
+    "valuation_posterior",
+    "valuation_validation_deciles",
+    "valuation_validation_ic",
+    "valuation_validation_regime",
+    "valuation_validation_summary",
+    "volatility_state",
+    "walk_forward_results"
+  ],
+  "missing_keys": [],
+  "usage": {
+    "research_governor_bridge": [
+      {
+        "line": 1694,
+        "function": "_resolve_governor_bridge"
+      },
+      {
+        "line": 4851,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "research_kernel_status": [
+      {
+        "line": 1697,
+        "function": "_resolve_governor_bridge"
+      },
+      {
+        "line": 1903,
+        "function": "render_research_mode_compact"
+      },
+      {
+        "line": 4849,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "research_experiments": [
+      {
+        "line": 1836,
+        "function": "render_mission_control"
+      },
+      {
+        "line": 1958,
+        "function": "render_experimentation_lab"
+      },
+      {
+        "line": 2664,
+        "function": "render_v3_analytics"
+      }
+    ],
+    "macro_factors_v2": [
+      {
+        "line": 2065,
+        "function": "render_macro_valuation_compact"
+      },
+      {
+        "line": 8422,
+        "function": "render_macro_portfolio_transmission_network"
+      },
+      {
+        "line": 3201,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 7590,
+        "function": "render_market_state_layer"
+      }
+    ],
+    "portfolio_valuation_state": [
+      {
+        "line": 2082,
+        "function": "render_macro_valuation_compact"
+      },
+      {
+        "line": 4365,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "valuation_posterior": [
+      {
+        "line": 2084,
+        "function": "render_macro_valuation_compact"
+      },
+      {
+        "line": 8978,
+        "function": "render_regime_vs_posterior_stability"
+      },
+      {
+        "line": 7698,
+        "function": "render_intelligence_layer"
+      },
+      {
+        "line": 4364,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "governance_events": [
+      {
+        "line": 2142,
+        "function": "render_system_compact"
+      }
+    ],
+    "daily_narrative": [
+      {
+        "line": 2173,
+        "function": "render_command_center"
+      }
+    ],
+    "integrity_artifacts": [
+      {
+        "line": 2287,
+        "function": "render_system_health"
+      }
+    ],
+    "strategy_beliefs": [
+      {
+        "line": 2803,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 7353,
+        "function": "render_belief_vs_news_divergence"
+      },
+      {
+        "line": 9147,
+        "function": "render_strategy_survival_probability_curve"
+      },
+      {
+        "line": 7624,
+        "function": "render_intelligence_layer"
+      }
+    ],
+    "strategy_regret": [
+      {
+        "line": 2804,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 7676,
+        "function": "render_intelligence_layer"
+      }
+    ],
+    "allocation_history": [
+      {
+        "line": 2805,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 7808,
+        "function": "render_portfolio_expression_layer"
+      },
+      {
+        "line": 9173,
+        "function": "render_strategy_survival_probability_curve"
+      }
+    ],
+    "portfolio_weights": [
+      {
+        "line": 5516,
+        "function": "render_wave_analysis"
+      },
+      {
+        "line": 7499,
+        "function": "render_event_shock_surface"
+      },
+      {
+        "line": 8426,
+        "function": "render_macro_portfolio_transmission_network"
+      },
+      {
+        "line": 5708,
+        "function": "render_portfolio"
+      },
+      {
+        "line": 3858,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "volatility_state": [
+      {
+        "line": 5691,
+        "function": "render_portfolio"
+      }
+    ],
+    "liquidity_risk": [
+      {
+        "line": 5692,
+        "function": "render_portfolio"
+      },
+      {
+        "line": 5990,
+        "function": "render_exit_risk"
+      },
+      {
+        "line": 6027,
+        "function": "render_alert_feed"
+      },
+      {
+        "line": 7005,
+        "function": "render_state_ribbon"
+      }
+    ],
+    "alpha_os_timeseries": [
+      {
+        "line": 6140,
+        "function": "render_alpha_os_control_tower"
+      },
+      {
+        "line": 7000,
+        "function": "render_state_ribbon"
+      },
+      {
+        "line": 7927,
+        "function": "render_risk_survival_layer"
+      }
+    ],
+    "alpha_os_strategy_posteriors": [
+      {
+        "line": 6141,
+        "function": "render_alpha_os_control_tower"
+      }
+    ],
+    "market_regime": [
+      {
+        "line": 6942,
+        "function": "_latest_regime_snapshot"
+      },
+      {
+        "line": 7018,
+        "function": "render_state_ribbon"
+      },
+      {
+        "line": 7140,
+        "function": "render_macro_news_pressure_index"
+      },
+      {
+        "line": 3059,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 7547,
+        "function": "render_market_state_layer"
+      },
+      {
+        "line": 7948,
+        "function": "render_risk_survival_layer"
+      }
+    ],
+    "index_nifty50": [
+      {
+        "line": 7114,
+        "function": "render_macro_news_pressure_index"
+      },
+      {
+        "line": 7776,
+        "function": "render_portfolio_expression_layer"
+      },
+      {
+        "line": 2687,
+        "function": "render_v3_analytics"
+      },
+      {
+        "line": 5804,
+        "function": "render_portfolio"
+      },
+      {
+        "line": 2202,
+        "function": "render_command_center"
+      }
+    ],
+    "sector_flows": [
+      {
+        "line": 7223,
+        "function": "render_sector_sentiment_vs_flows"
+      },
+      {
+        "line": 8425,
+        "function": "render_macro_portfolio_transmission_network"
+      },
+      {
+        "line": 9049,
+        "function": "render_rbi_policy_shock_impact_grid"
+      },
+      {
+        "line": 4771,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "opportunity_surface": [
+      {
+        "line": 7720,
+        "function": "render_intelligence_layer"
+      },
+      {
+        "line": 4683,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "narrative_events": [
+      {
+        "line": 8099,
+        "function": "render_news_narrative_layer"
+      },
+      {
+        "line": 8611,
+        "function": "render_crisis_replay_with_narrative_overlay"
+      },
+      {
+        "line": 5148,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "research_policy": [
+      {
+        "line": 1709,
+        "function": "_derive_autonomous_brief"
+      },
+      {
+        "line": 5056,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "daemon_status": [
+      {
+        "line": 1710,
+        "function": "_derive_autonomous_brief"
+      },
+      {
+        "line": 1794,
+        "function": "render_mission_control"
+      },
+      {
+        "line": 1857,
+        "function": "render_live_mode_compact"
+      },
+      {
+        "line": 2121,
+        "function": "render_system_compact"
+      }
+    ],
+    "options_dashboard_state": [
+      {
+        "line": 1711,
+        "function": "_derive_autonomous_brief"
+      },
+      {
+        "line": 1795,
+        "function": "render_mission_control"
+      },
+      {
+        "line": 1859,
+        "function": "render_live_mode_compact"
+      },
+      {
+        "line": 6144,
+        "function": "render_alpha_os_control_tower"
+      },
+      {
+        "line": 7759,
+        "function": "render_portfolio_expression_layer"
+      },
+      {
+        "line": 8778,
+        "function": "render_capital_convexity_map"
+      }
+    ],
+    "valuation_validation_summary": [
+      {
+        "line": 1712,
+        "function": "_derive_autonomous_brief"
+      },
+      {
+        "line": 2083,
+        "function": "render_macro_valuation_compact"
+      },
+      {
+        "line": 4366,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "options_runtime_state": [
+      {
+        "line": 1796,
+        "function": "render_mission_control"
+      },
+      {
+        "line": 1860,
+        "function": "render_live_mode_compact"
+      }
+    ],
+    "live_heartbeat": [
+      {
+        "line": 1858,
+        "function": "render_live_mode_compact"
+      }
+    ],
+    "pnl": [
+      {
+        "line": 1879,
+        "function": "render_live_mode_compact"
+      },
+      {
+        "line": 2156,
+        "function": "render_command_center"
+      },
+      {
+        "line": 2538,
+        "function": "render_v3_analytics"
+      },
+      {
+        "line": 5690,
+        "function": "render_portfolio"
+      },
+      {
+        "line": 7775,
+        "function": "render_portfolio_expression_layer"
+      },
+      {
+        "line": 7866,
+        "function": "render_risk_survival_layer"
+      },
+      {
+        "line": 6639,
+        "function": "render_alpha_os_control_tower"
+      }
+    ],
+    "research_parameter_search_results": [
+      {
+        "line": 2026,
+        "function": "render_experimentation_lab"
+      }
+    ],
+    "macro_factors": [
+      {
+        "line": 2067,
+        "function": "render_macro_valuation_compact"
+      },
+      {
+        "line": 8424,
+        "function": "render_macro_portfolio_transmission_network"
+      },
+      {
+        "line": 3202,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 7592,
+        "function": "render_market_state_layer"
+      }
+    ],
+    "system_log": [
+      {
+        "line": 2228,
+        "function": "render_system_health"
+      },
+      {
+        "line": 6873,
+        "function": "render_real_time_monitor"
+      }
+    ],
+    "integrity_report": [
+      {
+        "line": 2286,
+        "function": "render_system_health"
+      }
+    ],
+    "timing_signals": [
+      {
+        "line": 2645,
+        "function": "render_v3_analytics"
+      }
+    ],
+    "performance_summary": [
+      {
+        "line": 2686,
+        "function": "render_v3_analytics"
+      }
+    ],
+    "regime_feed": [
+      {
+        "line": 2806,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 6143,
+        "function": "render_alpha_os_control_tower"
+      },
+      {
+        "line": 6943,
+        "function": "_latest_regime_snapshot"
+      }
+    ],
+    "macro_cleaned": [
+      {
+        "line": 3204,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_conditioned_composite": [
+      {
+        "line": 3352,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_conditioned_snapshot": [
+      {
+        "line": 3353,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_conditioned_weights": [
+      {
+        "line": 3354,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_impact_company_betas": [
+      {
+        "line": 3429,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 5365,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_impact_sector_betas": [
+      {
+        "line": 3430,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_impact_sector_heatmap": [
+      {
+        "line": 3431,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_kalman": [
+      {
+        "line": 3637,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_expected": [
+      {
+        "line": 3638,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_adjusted": [
+      {
+        "line": 3639,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_optimizer": [
+      {
+        "line": 3641,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_sv_summary": [
+      {
+        "line": 3643,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_sv_betas": [
+      {
+        "line": 3644,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_jax_betas": [
+      {
+        "line": 3645,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "valuation": [
+      {
+        "line": 4054,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "research_opportunity_surface": [
+      {
+        "line": 4684,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 4927,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "sector_rotation": [
+      {
+        "line": 4772,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "research_awareness": [
+      {
+        "line": 4845,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 1713,
+        "function": "_derive_autonomous_brief"
+      },
+      {
+        "line": 1901,
+        "function": "render_research_mode_compact"
+      }
+    ],
+    "research_returns_partition": [
+      {
+        "line": 4846,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 1714,
+        "function": "_derive_autonomous_brief"
+      },
+      {
+        "line": 1907,
+        "function": "render_research_mode_compact"
+      }
+    ],
+    "research_weekend_sweep": [
+      {
+        "line": 4847,
+        "function": "render_advanced_intelligence"
+      },
+      {
+        "line": 1908,
+        "function": "render_research_mode_compact"
+      }
+    ],
+    "research_options_opportunities": [
+      {
+        "line": 4848,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "narrative_state": [
+      {
+        "line": 5147,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "edge_half_life": [
+      {
+        "line": 5951,
+        "function": "render_edge_health"
+      },
+      {
+        "line": 6036,
+        "function": "render_alert_feed"
+      }
+    ],
+    "capital_allocations": [
+      {
+        "line": 6042,
+        "function": "render_alert_feed"
+      },
+      {
+        "line": 6142,
+        "function": "render_alpha_os_control_tower"
+      },
+      {
+        "line": 5215,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "alpha_os_drift_state": [
+      {
+        "line": 6145,
+        "function": "render_alpha_os_control_tower"
+      }
+    ],
+    "alpha_os_sdi_state": [
+      {
+        "line": 6146,
+        "function": "render_alpha_os_control_tower"
+      }
+    ],
+    "walk_forward_results": [
+      {
+        "line": 6147,
+        "function": "render_alpha_os_control_tower"
+      }
+    ],
+    "risk_state": [
+      {
+        "line": 6916,
+        "function": "render_real_time_monitor"
+      }
+    ],
+    "research_model_training_results": [
+      {
+        "line": 1992,
+        "function": "render_experimentation_lab"
+      }
+    ],
+    "regime_transitions": [
+      {
+        "line": 3123,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_conditioned_report": [
+      {
+        "line": 3355,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_conditioned_mandatory_report": [
+      {
+        "line": 3356,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_impact_metadata": [
+      {
+        "line": 3428,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_impact_fingerprints": [
+      {
+        "line": 3432,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_metadata": [
+      {
+        "line": 3636,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_stress": [
+      {
+        "line": 3640,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "macro_transmission_optimizer_summary": [
+      {
+        "line": 3642,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "valuation_families": [
+      {
+        "line": 4363,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "valuation_validation_deciles": [
+      {
+        "line": 4367,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "valuation_validation_ic": [
+      {
+        "line": 4368,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "valuation_validation_regime": [
+      {
+        "line": 4369,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "research_allocator_bridge": [
+      {
+        "line": 4850,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "daemon_policy": [
+      {
+        "line": 5057,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "options_policy": [
+      {
+        "line": 5058,
+        "function": "render_advanced_intelligence"
+      }
+    ],
+    "index_nifty100": [
+      {
+        "line": 5805,
+        "function": "render_portfolio"
+      }
+    ],
+    "index_nifty500": [
+      {
+        "line": 5806,
+        "function": "render_portfolio"
+      }
+    ],
+    "research_capital_simulation_report": [
+      {
+        "line": 2003,
+        "function": "render_experimentation_lab"
+      }
+    ],
+    "research_monte_carlo_report": [
+      {
+        "line": 2019,
+        "function": "render_experimentation_lab"
+      }
+    ]
+  }
+}

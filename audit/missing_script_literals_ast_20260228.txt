@@ -1,0 +1,293 @@
+17 .py
+  - scripts/cleanup/file_analyzer.py
+  - scripts/cleanup/import_updater.py
+  - scripts/cleanup/move_planner.py
+  - scripts/cleanup/periodic_cleanup.py
+  - scripts/complete_task14_fixes.py
+  - scripts/comprehensive_system_repair.py
+  - scripts/count_northstar_v3_lines.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+  - scripts/fix_remaining_robustness_issues.py
+  - scripts/fix_task14_5_state_management.py
+  - scripts/gate_triage.py
+  - scripts/gated_72h_manager.py
+  - scripts/implement_task17_final_validation.py
+  - src/cohesion/migration_helper.py
+  - tests/intelligence_observer/run_all_tests.py
+  - tests/validation/test_cleanup_import_integrity.py
+  - tests/validation/test_cleanup_structural_properties.py
+7 *.py
+  - scripts/cleanup/import_updater.py
+  - scripts/cleanup/move_planner.py
+  - scripts/consolidate_state_management.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+  - scripts/validate_living_system_final.py
+  - src/validation/audit_grade_reproducibility.py
+  - tests/validation/test_task13_canonical_state_properties.py
+6 src/intelligence/unified_intelligence_engine.py
+  - scripts/batch_syntax_fix.py
+  - scripts/complete_v3_system_and_dashboard_enhancement.py
+  - scripts/fix_critical_system_failures_v2.py
+  - scripts/fix_import_paths.py
+  - scripts/fix_remaining_syntax_errors.py
+  - system/check_system_status.py
+5 launch_dashboard.py
+  - organize_root_folder.py
+  - run.py
+  - scripts/launchers/launch_all_dashboards.py
+  - scripts/launchers/launch_brain_window.py
+  - scripts/launchers/launch_dashboard.py
+5 scripts/launch_brain_window.py
+  - scripts/launchers/launch_all_dashboards.py
+  - scripts/test_migration_compatibility.py
+  - scripts/validate_living_system_final.py
+  - src/core/compatibility.py
+  - src/core/legacy_wrappers.py
+4 __init__.py
+  - scripts/cleanup/import_updater.py
+  - scripts/fix_import_paths.py
+  - tests/validation/test_cleanup_import_integrity.py
+  - tests/validation/test_task13_canonical_state_properties.py
+4 src/dashboard/brain_window.py
+  - scripts/batch_syntax_fix.py
+  - scripts/fix_remaining_syntax_errors.py
+  - scripts/validate_living_system_final.py
+  - system/check_system_status.py
+4 src/dashboard/northstar_v3_dashboard.py
+  - scripts/complete_v3_system_and_dashboard_enhancement.py
+  - scripts/fix_dashboard_enhancements.py
+  - scripts/fix_dashboard_imports.py
+  - scripts/test_v3_enhancements.py
+3 dashboard/app.py
+  - scripts/simple_institutional_validation.py
+  - scripts/test_enhanced_dashboard.py
+  - tests/integration/validate_ns_uso_v3_integration.py
+3 eod_options_pipeline.py
+  - scripts/utilities/update_all_systems.py
+  - src/ingestion/data_pipeline_coordinator.py
+  - src/orchestrator/master_orchestrator.py
+3 launch_live_operation.py
+  - deployment/development/scripts/demo_task13_operation_orchestration.py
+  - scripts/demo_task13_operation_orchestration.py
+  - scripts/deploy_northstar_operations.py
+3 run_alpha_validation.py
+  - deployment/development/scripts/demo_task13_operation_orchestration.py
+  - scripts/demo_task13_operation_orchestration.py
+  - scripts/deploy_northstar_operations.py
+3 run_comprehensive_system_validation.py
+  - deployment/development/scripts/demo_task13_operation_orchestration.py
+  - scripts/demo_task13_operation_orchestration.py
+  - scripts/deploy_northstar_operations.py
+3 run_crisis_validation.py
+  - deployment/development/scripts/demo_task13_operation_orchestration.py
+  - scripts/demo_task13_operation_orchestration.py
+  - scripts/deploy_northstar_operations.py
+3 src/dashboard/unified_terminal_v3.py
+  - scripts/batch_syntax_fix.py
+  - scripts/fix_remaining_syntax_errors.py
+  - src/orchestrator/master_orchestrator.py
+3 src/risk/unified_risk_coordinator.py
+  - scripts/batch_syntax_fix.py
+  - scripts/fix_remaining_syntax_errors.py
+  - system/check_system_status.py
+2 launch_brain_window.py
+  - organize_root_folder.py
+  - scripts/validate_living_system_final.py
+2 production_health_monitor.py
+  - deployment/scripts/deploy_production.py
+  - scripts/implement_task16_production_deployment.py
+2 run_intelligent_market_state.py
+  - scripts/utilities/update_all_systems.py
+  - src/orchestrator/master_orchestrator.py
+2 run_market_brain_production.py
+  - scripts/northstar_v3_unified.py
+  - src/orchestrator/master_orchestrator.py
+2 run_portfolio_governor.py
+  - scripts/utilities/update_all_systems.py
+  - src/orchestrator/master_orchestrator.py
+2 src/cohesion/risk_engine.py
+  - scripts/implement_task17_final_validation.py
+  - scripts/implement_task18_final_checkpoint.py
+2 src/dashboard/northstar_v3_comprehensive_dashboard.py
+  - run_complete_v3_system.py
+  - scripts/test_enhanced_dashboard.py
+2 update_all_systems.py
+  - scripts/launchers/launch_integrated_northstar.py
+  - scripts/northstar_v3_unified.py
+2 validate_config.py
+  - deployment/scripts/deploy_production.py
+  - scripts/implement_task16_production_deployment.py
+1 *properties.py
+  - scripts/implement_task17_final_validation.py
+1 ./scripts/run_trading_day_orchestrator.py --dry-run
+  - scripts/verify_live_system.py
+1 _test.py
+  - scripts/consolidate_state_management.py
+1 authority_hierarchy_example.py
+  - scripts/consolidate_state_management.py
+1 automation_dashboard.py
+  - scripts/setup_daily_automation.py
+1 automation_observer.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 backtest_engine.py
+  - scripts/retrofit_northstar_temporal_protection.py
+1 basic_state_management.py
+  - scripts/fix_task14_5_state_management.py
+1 bayesian_engine.py
+  - scripts/retrofit_northstar_temporal_protection.py
+1 brain_window.py
+  - scripts/validate_living_system_final.py
+1 build_groww_option_universe.py
+  - scripts/build_groww_option_universe_multi_horizon.py
+1 causal_graph.py
+  - scripts/fix_critical_system_failures_v2.py
+1 check_system_status.py
+  - organize_root_folder.py
+1 compatibility.py
+  - scripts/validate_living_system_final.py
+1 component_integration.py
+  - scripts/fix_task14_5_state_management.py
+1 component_state_example.py
+  - scripts/consolidate_state_management.py
+1 consistent_data_manager.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 constitutional_cockpit.py
+  - scripts/demo_constitutional_cockpit.py
+1 daily_executor.py
+  - scripts/setup_daily_automation.py
+1 daily_shadow_trader.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 demo_task13_operation_orchestration.py
+  - scripts/deploy_northstar_operations.py
+1 demo_task14_analytics_dashboard.py
+  - scripts/deploy_northstar_operations.py
+1 deploy_production.py
+  - scripts/implement_task16_production_deployment.py
+1 generate_12month_performance_report.py
+  - src/automation/daily_executor.py
+1 heartbeat.py
+  - scripts/validate_living_system_final.py
+1 intelligence_observer.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 launch_all_dashboards.py
+  - organize_root_folder.py
+1 market_pulse.py
+  - scripts/fix_critical_system_failures_v2.py
+1 market_state.py
+  - scripts/retrofit_northstar_temporal_protection.py
+1 market_tensor.py
+  - scripts/fix_critical_system_failures_v2.py
+1 monitor_automation.py
+  - scripts/setup_daily_automation.py
+1 monthly_report_generator.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 northstar_clean_terminal.py
+  - scripts/launchers/launch_clean_terminal.py
+1 northstar_command_bridge.py
+  - scripts/launch_command_bridge.py
+1 northstar_intelligence_organism.py
+  - scripts/launchers/launch_integrated_northstar.py
+1 northstar_professional.py
+  - scripts/launchers/launch_integrated_northstar.py
+1 northstar_terminal.py
+  - scripts/launchers/launch_northstar_terminal.py
+1 northstar_trading_desk.py
+  - scripts/launchers/launch_integrated_northstar.py
+1 northstar_unified_terminal.py
+  - scripts/launchers/launch_unified_terminal.py
+1 northstar_v3_dashboard_methods.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 northstar_v3_unified.py
+  - scripts/validate_living_system_final.py
+1 real_data_loader.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 regime_memory.py
+  - scripts/fix_critical_system_failures_v2.py
+1 risk_observer.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 run_complete_northstar_system.py
+  - src/automation/daily_executor.py
+1 run_system_with_current_data.py
+  - organize_root_folder.py
+1 run_v3_sentiment_cycle.py
+  - scripts/run_ns_uso_sentiment_loop.py
+1 scripts/**/*.py
+  - src/validation/truth_mode_validator.py
+1 scripts/launch_comprehensive_dashboard.py
+  - scripts/create_comprehensive_sample_data.py
+1 scripts/launch_constitutional_cockpit.py
+  - scripts/test_constitutional_cockpit.py
+1 scripts/launch_enhanced_results_dashboard.py
+  - scripts/test_enhanced_dashboard.py
+1 scripts/launch_integrated_dashboard.py
+  - scripts/create_sample_dashboard_data.py
+1 scripts/migrate_hardcoded_references.py
+  - src/cohesion/migration_helper.py
+1 shadow_trading_scheduler.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 simple_shadow_trader.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 simple_system_update.py
+  - organize_root_folder.py
+1 snapshot_loader.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 src/**/*.py
+  - src/validation/truth_mode_validator.py
+1 src/cohesion/intelligence_engine.py
+  - scripts/implement_task17_final_validation.py
+1 src/dashboard/enhanced_v3_dashboard.py
+  - run_complete_v3_system.py
+1 src/dashboard/integrated_live_cockpit.py
+  - scripts/launch_integrated_live_system.py
+1 src/dashboard/northstar_command_bridge.py
+  - scripts/fix_remaining_syntax_errors.py
+1 src/dashboard/ultimate_northstar_dashboard.py
+  - scripts/test_enhanced_dashboard.py
+1 src/dashboard/utils/interactive_time_series_manager.py
+  - scripts/create_interactive_dashboard_complete.py
+1 src/intelligence/*.py
+  - scripts/fix_all_src_imports.py
+1 src/intelligence/intelligence_stack_original.py
+  - scripts/fix_all_src_imports.py
+1 src/main.py
+  - tests/validation/test_cleanup_import_integrity.py
+1 src/processing/market_regime.py
+  - scripts/runners/refresh_v3_artifacts.py
+1 src/validation/walk_forward_analysis_engine.py
+  - scripts/complete_v3_system_and_dashboard_enhancement.py
+1 state_file_manager.py
+  - tests/validation/test_task13_canonical_state_properties.py
+1 strategies.py
+  - scripts/retrofit_northstar_temporal_protection.py
+1 survival_instincts.py
+  - scripts/fix_critical_system_failures_v2.py
+1 task14_fixes_example.py
+  - scripts/complete_task14_fixes.py
+1 test_authority_firewall.py
+  - tests/intelligence_observer/run_all_tests.py
+1 test_comprehensive_system.py
+  - tests/intelligence_observer/run_all_tests.py
+1 test_constitutional_cockpit.py
+  - scripts/demo_constitutional_cockpit.py
+1 test_module.py
+  - tests/validation/test_cleanup_import_integrity.py
+1 test_northstar_integration.py
+  - tests/intelligence_observer/run_all_tests.py
+1 test_observer_core.py
+  - tests/intelligence_observer/run_all_tests.py
+1 test_output_artifacts.py
+  - tests/intelligence_observer/run_all_tests.py
+1 test_question_engines.py
+  - tests/intelligence_observer/run_all_tests.py
+1 test_v3_sentiment_integration.py
+  - organize_root_folder.py
+1 tests/**/*.py
+  - src/validation/truth_mode_validator.py
+1 validate_ns_uso_v3_integration.py
+  - organize_root_folder.py
+1 validation_observer.py
+  - scripts/fix_dashboard_mock_data_and_errors.py
+1 valuation_engines.py
+  - scripts/retrofit_northstar_temporal_protection.py
+1 weekly_rebalance.py
+  - scripts/fix_dashboard_mock_data_and_errors.py

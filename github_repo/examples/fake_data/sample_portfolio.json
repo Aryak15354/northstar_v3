@@ -1,0 +1,108 @@
+{
+  "portfolio_id": "DEMO_PORTFOLIO_001",
+  "timestamp": "2024-01-03T16:00:00Z",
+  "base_currency": "USD",
+  "total_value": 1000000.00,
+  "cash": 50000.00,
+  "positions": [
+    {
+      "symbol": "MOCK_TECH",
+      "quantity": 2000,
+      "average_cost": 145.50,
+      "current_price": 153.40,
+      "market_value": 306800.00,
+      "unrealized_pnl": 15800.00,
+      "weight": 0.3068,
+      "sector": "Technology",
+      "country": "US",
+      "currency": "USD"
+    },
+    {
+      "symbol": "MOCK_FINANCE",
+      "quantity": 1500,
+      "average_cost": 88.20,
+      "current_price": 92.30,
+      "market_value": 138450.00,
+      "unrealized_pnl": 6150.00,
+      "weight": 0.1385,
+      "sector": "Finance",
+      "country": "US",
+      "currency": "USD"
+    },
+    {
+      "symbol": "MOCK_HEALTHCARE",
+      "quantity": 1200,
+      "average_cost": 122.80,
+      "current_price": 129.80,
+      "market_value": 155760.00,
+      "unrealized_pnl": 8400.00,
+      "weight": 0.1558,
+      "sector": "Healthcare",
+      "country": "US",
+      "currency": "USD"
+    },
+    {
+      "symbol": "MOCK_ENERGY",
+      "quantity": 1800,
+      "average_cost": 76.40,
+      "current_price": 81.30,
+      "market_value": 146340.00,
+      "unrealized_pnl": 8820.00,
+      "weight": 0.1463,
+      "sector": "Energy",
+      "country": "US",
+      "currency": "USD"
+    },
+    {
+      "symbol": "MOCK_UTILITIES",
+      "quantity": 1000,
+      "average_cost": 95.60,
+      "current_price": 98.20,
+      "market_value": 98200.00,
+      "unrealized_pnl": 2600.00,
+      "weight": 0.0982,
+      "sector": "Utilities",
+      "country": "US",
+      "currency": "USD"
+    },
+    {
+      "symbol": "MOCK_MATERIALS",
+      "quantity": 800,
+      "average_cost": 110.30,
+      "current_price": 112.90,
+      "market_value": 90320.00,
+      "unrealized_pnl": 2080.00,
+      "weight": 0.0903,
+      "sector": "Materials",
+      "country": "US",
+      "currency": "USD"
+    }
+  ],
+  "sector_allocation": {
+    "Technology": 0.3068,
+    "Healthcare": 0.1558,
+    "Energy": 0.1463,
+    "Finance": 0.1385,
+    "Utilities": 0.0982,
+    "Materials": 0.0903,
+    "Cash": 0.0500
+  },
+  "risk_metrics": {
+    "gross_exposure": 0.9359,
+    "net_exposure": 0.9359,
+    "leverage": 0.94,
+    "beta": 1.12,
+    "var_95_1day": 18500.00,
+    "var_99_1day": 26800.00,
+    "expected_shortfall": 32100.00,
+    "max_drawdown_ytd": 0.0340
+  },
+  "performance_ytd": {
+    "total_return": 0.0417,
+    "benchmark_return": 0.0385,
+    "active_return": 0.0032,
+    "volatility": 0.1420,
+    "sharpe_ratio": 1.85,
+    "information_ratio": 0.42
+  }
+}

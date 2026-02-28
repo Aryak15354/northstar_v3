@@ -1,0 +1,12 @@
+scripts/launch_dashboard.sh -> src/dashboard/northstar_command_bridge.py
+scripts/quick_start_historical_collection.sh -> scripts/backtest_options_system.py
+scripts/launch_ultimate_dashboard.sh -> src/dashboard/ultimate_northstar_dashboard.py
+scripts/launch_comprehensive_dashboard.sh -> src/dashboard/northstar_v3_comprehensive_dashboard.py
+scripts/launch_clean_dashboard.sh -> src/dashboard/clean_northstar_dashboard.py
+scripts/manage_cron.sh -> PROJECT_ROOT/run_daily_v3.py
+scripts/manage_cron.sh -> PROJECT_ROOT/scripts/run_trading_day_orchestrator.py
+scripts/manage_cron.sh -> PROJECT_ROOT/scripts/backup_northstar_data.py
+scripts/manage_cron.sh -> daily_executor.py
+scripts/manage_cron.sh -> daily_executor.py
+deployment/development/start_northstar.sh -> scripts/start_system_integration.py
+deployment/development/start_northstar.sh -> scripts/start_monitoring.py

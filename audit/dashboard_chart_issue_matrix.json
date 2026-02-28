@@ -1,0 +1,2372 @@
+[
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 425,
+    "function": "render_upstox_chain_monitor",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Time",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 452,
+    "function": "render_upstox_chain_monitor",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Open Interest by Strike",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 511,
+    "function": "render_opportunity_surface",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Top Opportunity Scores",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 521,
+    "function": "render_opportunity_surface",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Top Opportunity Scores",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 573,
+    "function": "render_backtester",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Backtest Equity Curve",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 583,
+    "function": "render_backtester",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Backtest Equity Curve",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 591,
+    "function": "render_backtester",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Backtest Equity Curve",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1045,
+    "function": "render_portfolio_greeks",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Portfolio Greeks Over Time",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1093,
+    "function": "render_portfolio_greeks",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Per-Underlying Greek Profile",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1265,
+    "function": "render_tax_and_profitability",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "P&L Decomposition (Tax-Aware)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1288,
+    "function": "render_tax_and_profitability",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "\ud83e\udde9 Centralized V3 P&L",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1352,
+    "function": "render_advanced_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Decision Outcomes",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1366,
+    "function": "render_advanced_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Decision Outcomes",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1381,
+    "function": "render_advanced_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Objective Mix",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1411,
+    "function": "render_advanced_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Top Rejection Reasons",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1445,
+    "function": "render_advanced_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Realized P&L Path",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1491,
+    "function": "render_underlying_coverage",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Decision Status Distribution (Current Cycle)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1592,
+    "function": "render_strategy_pipeline",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Strategy Payoff Curve (at Expiry, premium-adjusted)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1614,
+    "function": "render_strategy_pipeline",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Strategy Greek Exposures",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1659,
+    "function": "render_strategy_pipeline",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Candidate Frontier: Max Loss vs Max Profit",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 346,
+    "function": "_render_strategy_edge_chart",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Strategy Edge Health Status",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 397,
+    "function": "_render_position_liquidity_chart",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Exit Risk",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 599,
+    "function": "_render_capital_allocation_impact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Capital Allocation: Proposed vs Edge-Adjusted",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 633,
+    "function": "_render_liquidity_risk_heatmap",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Position Liquidity Risk Heatmap",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 678,
+    "function": "_render_exit_cost_analysis",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Exit Cost vs Remaining Edge",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 696,
+    "function": "_render_integration_timeline",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Remaining Edge",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 449,
+    "function": "render_sentiment_trend",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 463,
+    "function": "render_sentiment_trend",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Sentiment Trend",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 491,
+    "function": "render_sector_narratives",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Sector Sentiment Score (color = conviction)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 501,
+    "function": "render_sector_narratives",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Sector Sentiment Score (color = conviction)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 630,
+    "function": "render_company_news_trends",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Sentiment Intensity Rank (Positive High \u2192 Negative Low)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 707,
+    "function": "render_event_company_impact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Average Impact Score by Event Type",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_dashboard_methods.py",
+    "line": 52,
+    "function": "render_dynamic_clustering",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Market Feature Clusters",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_dashboard_methods.py",
+    "line": 89,
+    "function": "render_wave_analysis",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Portfolio vs Trend",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1847,
+    "function": "render_mission_control",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Research Learning Curve (Candidate Score)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1885,
+    "function": "render_live_mode_compact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Live Equity Curve",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1897,
+    "function": "render_live_mode_compact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Live Equity Curve",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1932,
+    "function": "render_research_mode_compact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Research Dataset Partition (Rows)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1936,
+    "function": "render_research_mode_compact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Research Dataset Partition (Rows)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1954,
+    "function": "render_research_mode_compact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Research Dataset Partition (Rows)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1982,
+    "function": "render_experimentation_lab",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Experiment Trajectory",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2080,
+    "function": "render_macro_valuation_compact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Top Macro Factors (Latest)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY",
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2117,
+    "function": "render_macro_valuation_compact",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Posterior Gap Distribution",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY",
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2213,
+    "function": "render_command_center",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Portfolio vs NIFTY 50 (Normalized)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2264,
+    "function": "render_system_health",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Step Durations (s)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2577,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "",
+    "issues": [
+      "NO_EXPLICIT_KEY",
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2585,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "",
+    "issues": [
+      "NO_EXPLICIT_KEY",
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2609,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Rolling Volatility (%)",
+    "issues": [
+      "NO_EXPLICIT_KEY",
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2630,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Rolling Volatility (%)",
+    "issues": [
+      "NO_EXPLICIT_KEY",
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2655,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Setup Score Distribution",
+    "issues": [
+      "NO_EXPLICIT_KEY",
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2660,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Setup Score Distribution",
+    "issues": [
+      "NO_EXPLICIT_KEY",
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2683,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Research Candidate Score Drift",
+    "issues": [
+      "NO_EXPLICIT_KEY",
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2779,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "v3_analytics_benchmark_nav",
+    "chart_title_hint": "Portfolio vs Benchmark (Normalized NAV)",
+    "issues": [
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2789,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "v3_analytics_benchmark_te_ir",
+    "chart_title_hint": "Portfolio vs Benchmark (Normalized NAV)",
+    "issues": [
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2797,
+    "function": "render_v3_analytics",
+    "chart_call": "plotly_chart",
+    "chart_key": "v3_analytics_benchmark_beta",
+    "chart_title_hint": "Portfolio vs Benchmark (Normalized NAV)",
+    "issues": [
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2846,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2268",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2880,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2281",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2957,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2358",
+    "chart_title_hint": "Phase Space (belief_strength vs edge_health)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2978,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2379",
+    "chart_title_hint": "Belief Strength",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3017,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2418",
+    "chart_title_hint": "Allocation Over Time",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3054,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2455",
+    "chart_title_hint": "Allocation Heatmap (Recent)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3120,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2521",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3164,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2565",
+    "chart_title_hint": "Probability",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3175,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2576",
+    "chart_title_hint": "Probability",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3198,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2599",
+    "chart_title_hint": "Risk Pressure Index (z(vol) + z(corr))",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3263,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2664",
+    "chart_title_hint": "Macro Factors (Latest, Top 20)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3274,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2669",
+    "chart_title_hint": "Macro Factors (Latest, Top 20)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3315,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2710",
+    "chart_title_hint": "Macro Stress Ranking (Latest z-scores, Top 12)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3336,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2731",
+    "chart_title_hint": "Macro Stress Ranking (Latest z-scores, Top 12)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3348,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2743",
+    "chart_title_hint": "Cross-Factor Correlation (Top 10 Macro Drivers)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3389,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2784",
+    "chart_title_hint": "Composite IC Comparison",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3501,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2896",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3509,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2904",
+    "chart_title_hint": "Sector \u00d7 Macro Heatmap (Unique Factors)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3545,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2940",
+    "chart_title_hint": "Top 30 Company-Macro Transmission Links (|beta|)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3557,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l2952",
+    "chart_title_hint": "Top 30 Company-Macro Transmission Links (|beta|)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3634,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3029",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3689,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3084",
+    "chart_title_hint": "Expected Macro Change (Top 15 by |change|)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3732,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3127",
+    "chart_title_hint": "Current Kalman Betas (Top 25 Tickers \u00d7 Top 8 Macros)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3810,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3205",
+    "chart_title_hint": "Top Macro Drivers by Mean |beta|",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3828,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3223",
+    "chart_title_hint": "Top Macro Drivers by Mean |beta|",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3917,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3312",
+    "chart_title_hint": "Optimizer Top Weights (color = delta vs previous)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3948,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3343",
+    "chart_title_hint": "Stress Replay Portfolio Impact",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3969,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3359",
+    "chart_title_hint": "Stress Replay Portfolio Impact",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3997,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3378",
+    "chart_title_hint": "JAX Kalman vs Baseline Kalman Betas",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4051,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3430",
+    "chart_title_hint": "Macro Artifact Freshness Score (higher is fresher)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4151,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3522",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4163,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3534",
+    "chart_title_hint": "Valuation Composite Distribution (true_undervaluation)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4202,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3573",
+    "chart_title_hint": "Forensic Penalty vs Value Index",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4219,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3590",
+    "chart_title_hint": "Forensic Penalty vs Value Index",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4231,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3602",
+    "chart_title_hint": "Industry Mean Value Index (Top 15)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4290,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3661",
+    "chart_title_hint": "Buffett Score vs DCF Margin of Safety (size = moat)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4300,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3671",
+    "chart_title_hint": "Buffett Score vs DCF Margin of Safety (size = moat)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4327,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3698",
+    "chart_title_hint": "Moat Width Distribution",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4410,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3781",
+    "chart_title_hint": "Gap",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4425,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3796",
+    "chart_title_hint": "Gap",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4452,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3823",
+    "chart_title_hint": "Posterior Gap Distribution",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4465,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3836",
+    "chart_title_hint": "Posterior Gap Distribution",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4561,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3932",
+    "chart_title_hint": "Jacobian Eigenvalue Map (Valuation-Regime-Leverage)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4595,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l3966",
+    "chart_title_hint": "Return",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4633,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4004",
+    "chart_title_hint": "Decile Monotonicity by Horizon",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4651,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4022",
+    "chart_title_hint": "Decile Monotonicity by Horizon",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4678,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4049",
+    "chart_title_hint": "Valuation / Buffett / Forensic Trend (cross-sectional means)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4737,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4106",
+    "chart_title_hint": "Opportunity Surface (mispricing \u00d7 confirmation)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4767,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4136",
+    "chart_title_hint": "Opportunity Score Distribution",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4788,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4157",
+    "chart_title_hint": "Opportunity Score Distribution",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4793,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4162",
+    "chart_title_hint": "Flow Strength by Industry",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4824,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4193",
+    "chart_title_hint": "Flow Strength Trend (Top Industries)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4841,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4210",
+    "chart_title_hint": "Flow Strength Trend (Top Industries)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4902,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4271",
+    "chart_title_hint": "PnL Partition (Backtest vs Live)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4922,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4291",
+    "chart_title_hint": "PnL Partition (Backtest vs Live)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4942,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4316",
+    "chart_title_hint": "Weekend Scenario Sweep (survival vs drawdown)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5010,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4356",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5163,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4505",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5181,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4523",
+    "chart_title_hint": "Event-Type Frequency",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5189,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4531",
+    "chart_title_hint": "Event-Type Frequency",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5349,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4691",
+    "chart_title_hint": "Market Pressure by Source Type",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5383,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4725",
+    "chart_title_hint": "Top Macro\u2192Company Relationships by |beta|",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5412,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4754",
+    "chart_title_hint": "Relationship Trend Buckets",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5484,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4826",
+    "chart_title_hint": "Strategy-Level Return Contribution",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5495,
+    "function": "render_advanced_intelligence",
+    "chart_call": "plotly_chart",
+    "chart_key": "adv_intel_l4837",
+    "chart_title_hint": "Strategy-Level Return Contribution",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5588,
+    "function": "render_wave_analysis",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5621,
+    "function": "render_wave_analysis",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "FFT Power Spectrum (returns)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5643,
+    "function": "render_wave_analysis",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "FFT Power Spectrum (returns)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5674,
+    "function": "render_wave_analysis",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Wave Forecast (trend + cycle proxy)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5684,
+    "function": "render_wave_analysis",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Wave Forecast (trend + cycle proxy)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5776,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Holdings Map (invested weights)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5780,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Holdings Map (invested weights)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5786,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Holdings Map (invested weights)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5821,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "portfolio_tab_vs_benchmark",
+    "chart_title_hint": "Portfolio vs Benchmark (normalized)",
+    "issues": [
+      "DEAD_FUNCTION"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5840,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Portfolio vs Benchmark (normalized)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5861,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Active Return vs Benchmark (%)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5871,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Weight vs Realized Volatility",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5894,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Return Correlation (last 1y)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5914,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Return Correlation (last 1y)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5932,
+    "function": "render_portfolio",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Exit Risk vs Weight (invested)",
+    "issues": [
+      "DEAD_FUNCTION",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5974,
+    "function": "render_edge_health",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Edge Health by Strategy",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5986,
+    "function": "render_edge_health",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Edge Health by Strategy",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6000,
+    "function": "render_exit_risk",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Half-Life vs Edge Health",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6020,
+    "function": "render_exit_risk",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Exit Risk by Position",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6370,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Regime Probability Surface",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6398,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Regime Entropy + Confidence",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6426,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Gross Exposure vs Crisis Probability",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6488,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6527,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6552,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Meta Layer Adjustment: Raw/Meta/Final Gross Weights",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6576,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Convexity Heat Map",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6593,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Convexity Heat Map",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6622,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Survival-Core Activation Timeline",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6637,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "alphaos_risk_budget_usage",
+    "chart_title_hint": "Survival-Core Activation Timeline",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6652,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "alphaos_drawdown_surface_empirical",
+    "chart_title_hint": "Risk Budget Usage",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6680,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "alphaos_drawdown_surface_fallback",
+    "chart_title_hint": "Drawdown Probability Surface (Normal Approximation)",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6707,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Shadow Divergence Index",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6718,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Shadow Divergence Index",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6742,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Regime Drift Monitor",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6768,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Capital Efficiency (Expected Return / CVaR Proxy)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6800,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Regime-Weighted Covariance Matrix",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6855,
+    "function": "render_alpha_os_control_tower",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Crisis Replay Max Drawdown",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6908,
+    "function": "render_real_time_monitor",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Sector Allocation (current_positions.json)",
+    "issues": [
+      "NO_EXPLICIT_KEY",
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7194,
+    "function": "render_macro_news_pressure_index",
+    "chart_call": "plotly_chart",
+    "chart_key": "f'{key_prefix}_macro_news_pressure'",
+    "chart_title_hint": "Macro News Pressure Index (Sentiment vs NIFTY vs Regime)",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7341,
+    "function": "render_sector_sentiment_vs_flows",
+    "chart_call": "plotly_chart",
+    "chart_key": "f'{key_prefix}_sector_sentiment_vs_flows'",
+    "chart_title_hint": "Sector Sentiment vs Sector Flows",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7441,
+    "function": "render_belief_vs_news_divergence",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Belief vs News Divergence",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7489,
+    "function": "render_event_shock_surface",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Event Shock Surface (Ticker \u00d7 Event Type)",
+    "issues": [
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7577,
+    "function": "render_market_state_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "market_state_regime_pressure",
+    "chart_title_hint": "Regime Confidence + Risk Pressure",
+    "issues": [
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7603,
+    "function": "render_market_state_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "market_state_macro_heatmap",
+    "chart_title_hint": "Macro Factor Heatmap (Change-Z, Recent Active Periods)",
+    "issues": [
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7665,
+    "function": "render_intelligence_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "intelligence_belief_skill_evolution",
+    "chart_title_hint": "",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7687,
+    "function": "render_intelligence_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "intelligence_regret_score",
+    "chart_title_hint": "Regret Score (Higher = Worse)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7711,
+    "function": "render_intelligence_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "intelligence_posterior_gap_hist",
+    "chart_title_hint": "Valuation Posterior Gap Distribution",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7741,
+    "function": "render_intelligence_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "intelligence_opportunity_surface",
+    "chart_title_hint": "Opportunity Surface (mispricing \u00d7 confirmation)",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7799,
+    "function": "render_portfolio_expression_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "portfolio_expression_vs_benchmark",
+    "chart_title_hint": "Portfolio vs Benchmark (Normalized)",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7843,
+    "function": "render_portfolio_expression_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "portfolio_expression_allocation_heatmap",
+    "chart_title_hint": "Allocation Heatmap (Recent)",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7886,
+    "function": "render_risk_survival_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "risk_survival_drawdown_surface",
+    "chart_title_hint": "Drawdown Probability Surface (Empirical Forward Returns)",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7918,
+    "function": "render_risk_survival_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "risk_survival_drawdown_surface_fallback",
+    "chart_title_hint": "Drawdown Probability Surface (Normal Approximation)",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8000,
+    "function": "render_risk_survival_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "risk_survival_crisis_probability",
+    "chart_title_hint": "Crisis Probability",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8023,
+    "function": "render_risk_survival_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "risk_survival_fallback_ladder",
+    "chart_title_hint": "Fallback Ladder Usage",
+    "issues": [
+      "FALLBACK_MODEL_VISUAL"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8054,
+    "function": "render_risk_survival_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "risk_survival_systemic_stress",
+    "chart_title_hint": "News-Based Systemic Stress Index",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8118,
+    "function": "render_news_narrative_layer",
+    "chart_call": "plotly_chart",
+    "chart_key": "news_layer_narrative_shock_intensity",
+    "chart_title_hint": "Narrative Shock Intensity",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8252,
+    "function": "render_causal_flow_panel",
+    "chart_call": "plotly_chart",
+    "chart_key": "f'{key_prefix}_causal_flow_panel'",
+    "chart_title_hint": "Causal Flow Panel: Macro -> Regime -> Belief -> Allocation -> PnL",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8313,
+    "function": "render_regime_belief_allocation_elasticity_surface",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_regime_allocation_elasticity",
+    "chart_title_hint": "Regime -> Allocation Elasticity Surface",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8332,
+    "function": "render_regime_belief_allocation_elasticity_surface",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_belief_allocation_elasticity",
+    "chart_title_hint": "Regime -> Allocation Elasticity Surface",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8410,
+    "function": "render_narrative_regime_transition_map",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_narrative_transition_map",
+    "chart_title_hint": "Narrative Shock Precursor Map (Transition Probability by Shock Decile)",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8536,
+    "function": "render_macro_portfolio_transmission_network",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_macro_transmission_network",
+    "chart_title_hint": "Dynamic Macro -> Sector -> Portfolio Transmission Network",
+    "issues": [
+      "STALE_INPUTS_7D+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8632,
+    "function": "render_crisis_replay_with_narrative_overlay",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_crisis_replay_overlay",
+    "chart_title_hint": "",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8713,
+    "function": "render_belief_performance_decay_curve",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_belief_decay_curve",
+    "chart_title_hint": "Belief -> Subsequent Active Return (Decay Curve)",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8766,
+    "function": "render_capital_convexity_map",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_capital_convexity_map",
+    "chart_title_hint": "Capital Convexity Map (Crisis Prob vs Net Gamma)",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8787,
+    "function": "render_capital_convexity_map",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_capital_convexity_latest",
+    "chart_title_hint": "Capital Convexity Map (latest point)",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8844,
+    "function": "render_macro_fragility_index",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_fragility_entropy",
+    "chart_title_hint": "Macro Fragility Index vs Regime Entropy",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8864,
+    "function": "render_macro_fragility_index",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_fragility_vs_drawdown",
+    "chart_title_hint": "Macro Fragility Index vs Regime Entropy",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8906,
+    "function": "render_sentiment_lead_lag_surface",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_sentiment_lead_lag",
+    "chart_title_hint": "Sentiment Lead-Lag Surface (Corr with future active returns)",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8950,
+    "function": "render_allocation_drift_vs_information_shock",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_allocation_drift_vs_shock",
+    "chart_title_hint": "Allocation Drift vs Information Shock",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8968,
+    "function": "render_allocation_drift_vs_information_shock",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_allocation_reaction_surface",
+    "chart_title_hint": "Allocation Drift vs Information Shock",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 9037,
+    "function": "render_regime_vs_posterior_stability",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_regime_vs_posterior_stability",
+    "chart_title_hint": "Regime Stability vs Posterior Stability",
+    "issues": [
+      "SEVERE_STALE_INPUTS"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 9136,
+    "function": "render_rbi_policy_shock_impact_grid",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_rbi_policy_impact",
+    "chart_title_hint": "RBI Policy Shock Impact Grid (Sector response by horizon)",
+    "issues": [
+      "STALE_INPUTS_24H+"
+    ],
+    "severity": "medium"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 9231,
+    "function": "render_strategy_survival_probability_curve",
+    "chart_call": "plotly_chart",
+    "chart_key": "cross_layer_strategy_survival",
+    "chart_title_hint": "Strategy Survival Probability Curve",
+    "issues": [],
+    "severity": "ok"
+  },
+  {
+    "file": "src/dashboard/strategy_intelligence_panel.py",
+    "line": 103,
+    "function": "render_belief_heatmap",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Strategy Trustworthiness Matrix",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/strategy_intelligence_panel.py",
+    "line": 165,
+    "function": "render_regret_leaderboard",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Cumulative Regret Distribution",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/strategy_intelligence_panel.py",
+    "line": 204,
+    "function": "render_capital_weights",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Current Capital Allocation",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  },
+  {
+    "file": "src/dashboard/strategy_intelligence_panel.py",
+    "line": 276,
+    "function": "render_strategy_lifecycle",
+    "chart_call": "plotly_chart",
+    "chart_key": "",
+    "chart_title_hint": "Strategy Status Evolution",
+    "issues": [
+      "UNREACHABLE_MODULE",
+      "NO_EXPLICIT_KEY"
+    ],
+    "severity": "high"
+  }
+]

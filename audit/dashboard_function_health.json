@@ -1,0 +1,908 @@
+{
+  "key_availability": {
+    "market_state": {
+      "status": "ok_df",
+      "detail": "rows=69 cols=52"
+    },
+    "intelligent_state": {
+      "status": "ok_df",
+      "detail": "rows=63 cols=67"
+    },
+    "market_regime": {
+      "status": "ok_df",
+      "detail": "rows=63 cols=7"
+    },
+    "exposure_history": {
+      "status": "ok_df",
+      "detail": "rows=1 cols=6"
+    },
+    "risk_state": {
+      "status": "ok_df",
+      "detail": "rows=1 cols=4"
+    },
+    "portfolio_weights": {
+      "status": "ok_df",
+      "detail": "rows=30 cols=11"
+    },
+    "portfolio_analytics": {
+      "status": "ok_dict",
+      "detail": "keys=12"
+    },
+    "pnl": {
+      "status": "ok_df",
+      "detail": "rows=7821 cols=3"
+    },
+    "daily_narrative": {
+      "status": "ok_df",
+      "detail": "rows=15 cols=7"
+    },
+    "regime_feed": {
+      "status": "ok_dict",
+      "detail": "keys=9"
+    },
+    "options_dashboard_state": {
+      "status": "ok_dict",
+      "detail": "keys=33"
+    },
+    "options_runtime_state": {
+      "status": "ok_dict",
+      "detail": "keys=35"
+    },
+    "daemon_status": {
+      "status": "ok_dict",
+      "detail": "keys=14"
+    },
+    "live_heartbeat": {
+      "status": "ok_dict",
+      "detail": "keys=4"
+    },
+    "state_recovery_report": {
+      "status": "ok_dict",
+      "detail": "keys=10"
+    },
+    "governance_events": {
+      "status": "ok_df",
+      "detail": "rows=997 cols=11"
+    },
+    "system_log": {
+      "status": "ok_dict",
+      "detail": "keys=8"
+    },
+    "edge_half_life": {
+      "status": "ok_dict",
+      "detail": "keys=2"
+    },
+    "liquidity_risk": {
+      "status": "ok_df",
+      "detail": "rows=30 cols=11"
+    },
+    "capital_allocations": {
+      "status": "ok_dict",
+      "detail": "keys=2"
+    },
+    "alpha_os_timeseries": {
+      "status": "ok_df",
+      "detail": "rows=304 cols=55"
+    },
+    "alpha_os_strategy_posteriors": {
+      "status": "ok_df",
+      "detail": "rows=296 cols=14"
+    },
+    "alpha_os_drift_state": {
+      "status": "ok_dict",
+      "detail": "keys=7"
+    },
+    "alpha_os_sdi_state": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "walk_forward_results": {
+      "status": "ok_dict",
+      "detail": "keys=5"
+    },
+    "allocation_history": {
+      "status": "ok_df",
+      "detail": "rows=215 cols=38"
+    },
+    "index_nifty50": {
+      "status": "ok_df",
+      "detail": "rows=1268 cols=7"
+    },
+    "index_nifty100": {
+      "status": "ok_df",
+      "detail": "rows=1268 cols=7"
+    },
+    "index_nifty500": {
+      "status": "ok_df",
+      "detail": "rows=1269 cols=7"
+    },
+    "sector_flows": {
+      "status": "ok_df",
+      "detail": "rows=4751 cols=15"
+    },
+    "sector_rotation": {
+      "status": "ok_df",
+      "detail": "rows=4751 cols=10"
+    },
+    "strategy_beliefs": {
+      "status": "ok_df",
+      "detail": "rows=3 cols=3"
+    },
+    "strategy_regret": {
+      "status": "ok_df",
+      "detail": "rows=16 cols=7"
+    },
+    "performance_summary": {
+      "status": "ok_df",
+      "detail": "rows=1355 cols=7"
+    },
+    "macro_factors": {
+      "status": "ok_df",
+      "detail": "rows=435 cols=5"
+    },
+    "macro_factors_v2": {
+      "status": "ok_df",
+      "detail": "rows=3905 cols=5"
+    },
+    "macro_conditioned_report": {
+      "status": "ok_dict",
+      "detail": "keys=10"
+    },
+    "macro_conditioned_composite": {
+      "status": "ok_df",
+      "detail": "rows=2 cols=6"
+    },
+    "macro_conditioned_snapshot": {
+      "status": "ok_df",
+      "detail": "rows=497 cols=10"
+    },
+    "macro_conditioned_weights": {
+      "status": "ok_df",
+      "detail": "rows=1 cols=7"
+    },
+    "macro_conditioned_mandatory_report": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "macro_impact_metadata": {
+      "status": "ok_dict",
+      "detail": "keys=4"
+    },
+    "macro_impact_company_betas": {
+      "status": "ok_df",
+      "detail": "rows=18000 cols=10"
+    },
+    "macro_impact_sector_betas": {
+      "status": "ok_df",
+      "detail": "rows=1050 cols=7"
+    },
+    "macro_impact_sector_heatmap": {
+      "status": "ok_df",
+      "detail": "rows=7 cols=21"
+    },
+    "macro_impact_fingerprints": {
+      "status": "ok_dict",
+      "detail": "keys=1"
+    },
+    "macro_impact_sector_report": {
+      "status": "ok_dict",
+      "detail": "keys=1"
+    },
+    "macro_transmission_metadata": {
+      "status": "ok_dict",
+      "detail": "keys=12"
+    },
+    "macro_transmission_kalman": {
+      "status": "ok_df",
+      "detail": "rows=2400 cols=6"
+    },
+    "macro_transmission_expected": {
+      "status": "ok_df",
+      "detail": "rows=20 cols=4"
+    },
+    "macro_transmission_adjusted": {
+      "status": "ok_df",
+      "detail": "rows=120 cols=5"
+    },
+    "macro_transmission_stress": {
+      "status": "ok_dict",
+      "detail": "keys=2"
+    },
+    "macro_transmission_optimizer": {
+      "status": "ok_df",
+      "detail": "rows=120 cols=4"
+    },
+    "macro_transmission_optimizer_summary": {
+      "status": "ok_dict",
+      "detail": "keys=6"
+    },
+    "macro_transmission_sv_summary": {
+      "status": "ok_df",
+      "detail": "rows=40 cols=7"
+    },
+    "macro_transmission_sv_betas": {
+      "status": "ok_df",
+      "detail": "rows=320 cols=4"
+    },
+    "macro_transmission_jax_betas": {
+      "status": "ok_df",
+      "detail": "rows=320 cols=5"
+    },
+    "macro_cleaned": {
+      "status": "ok_df",
+      "detail": "rows=435 cols=856"
+    },
+    "valuation": {
+      "status": "ok_df",
+      "detail": "rows=500 cols=215"
+    },
+    "valuation_families": {
+      "status": "ok_df",
+      "detail": "rows=500 cols=56"
+    },
+    "valuation_posterior": {
+      "status": "ok_df",
+      "detail": "rows=500 cols=13"
+    },
+    "portfolio_valuation_state": {
+      "status": "ok_df",
+      "detail": "rows=1 cols=8"
+    },
+    "valuation_validation_summary": {
+      "status": "ok_dict",
+      "detail": "keys=13"
+    },
+    "valuation_validation_deciles": {
+      "status": "ok_df",
+      "detail": "rows=10 cols=5"
+    },
+    "valuation_validation_ic": {
+      "status": "ok_df",
+      "detail": "rows=1 cols=8"
+    },
+    "valuation_validation_regime": {
+      "status": "ok_df",
+      "detail": "rows=1 cols=6"
+    },
+    "opportunity_surface": {
+      "status": "ok_df",
+      "detail": "rows=500 cols=6"
+    },
+    "research_opportunity_surface": {
+      "status": "ok_df",
+      "detail": "rows=60 cols=16"
+    },
+    "research_returns_partition": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_awareness": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_options_opportunities": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_weekend_sweep": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_kernel_status": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_allocator_bridge": {
+      "status": "ok_dict",
+      "detail": "keys=2"
+    },
+    "research_governor_bridge": {
+      "status": "ok_dict",
+      "detail": "keys=5"
+    },
+    "research_model_training_results": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_capital_simulation_report": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_parameter_search_results": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_strategy_stability": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_regime_candidate_scores": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_monte_carlo_report": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "research_memory": {
+      "status": "ok_dict",
+      "detail": "keys=4"
+    },
+    "research_experiments": {
+      "status": "ok_df",
+      "detail": "rows=175 cols=9"
+    },
+    "research_policy": {
+      "status": "ok_dict",
+      "detail": "keys=16"
+    },
+    "daemon_policy": {
+      "status": "ok_dict",
+      "detail": "keys=19"
+    },
+    "options_policy": {
+      "status": "ok_dict",
+      "detail": "keys=17"
+    },
+    "volatility_state": {
+      "status": "ok_df",
+      "detail": "rows=500 cols=5"
+    },
+    "timing_signals": {
+      "status": "ok_df",
+      "detail": "rows=500 cols=8"
+    },
+    "regime_transitions": {
+      "status": "ok_df",
+      "detail": "rows=2 cols=2"
+    },
+    "regime_fingerprints": {
+      "status": "ok_df",
+      "detail": "rows=119 cols=22"
+    },
+    "narrative_state": {
+      "status": "ok_df",
+      "detail": "rows=44 cols=19"
+    },
+    "narrative_events": {
+      "status": "ok_df",
+      "detail": "rows=22 cols=10"
+    },
+    "shadow_snapshot": {
+      "status": "ok_dict",
+      "detail": "keys=8"
+    },
+    "shadow_pnl_series": {
+      "status": "ok_df",
+      "detail": "rows=23 cols=6"
+    },
+    "integrity_report": {
+      "status": "ok_dict",
+      "detail": "keys=5"
+    },
+    "integrity_artifacts": {
+      "status": "ok_df",
+      "detail": "rows=30 cols=13"
+    },
+    "model_freeze_state": {
+      "status": "ok_dict",
+      "detail": "keys=5"
+    },
+    "nav_reconciliation": {
+      "status": "ok_dict",
+      "detail": "keys=9"
+    },
+    "parameter_version": {
+      "status": "ok_dict",
+      "detail": "keys=8"
+    },
+    "snapshot_integrity": {
+      "status": "ok_dict",
+      "detail": "keys=6"
+    },
+    "calendar_alignment_audit": {
+      "status": "ok_dict",
+      "detail": "keys=3"
+    },
+    "drift_monitor": {
+      "status": "ok_dict",
+      "detail": "keys=4"
+    },
+    "regime_misclassification_tolerance": {
+      "status": "ok_dict",
+      "detail": "keys=8"
+    },
+    "survivorship_bias_audit": {
+      "status": "ok_dict",
+      "detail": "keys=9"
+    },
+    "real_data_only_policy": {
+      "status": "ok_dict",
+      "detail": "keys=5"
+    },
+    "exposure_cash_contract": {
+      "status": "ok_dict",
+      "detail": "keys=7"
+    },
+    "allocator_universe_alignment": {
+      "status": "ok_dict",
+      "detail": "keys=9"
+    },
+    "dataset_lineage": {
+      "status": "ok_dict",
+      "detail": "keys=4"
+    },
+    "feature_lineage_map": {
+      "status": "ok_dict",
+      "detail": "keys=2"
+    }
+  },
+  "function_health": [
+    {
+      "function": "render_advanced_intelligence",
+      "plotly_charts": 65,
+      "data_keys": [
+        "allocation_history",
+        "capital_allocations",
+        "daemon_policy",
+        "macro_cleaned",
+        "macro_conditioned_composite",
+        "macro_conditioned_mandatory_report",
+        "macro_conditioned_report",
+        "macro_conditioned_snapshot",
+        "macro_conditioned_weights",
+        "macro_factors",
+        "macro_factors_v2",
+        "macro_impact_company_betas",
+        "macro_impact_fingerprints",
+        "macro_impact_metadata",
+        "macro_impact_sector_betas",
+        "macro_impact_sector_heatmap",
+        "macro_transmission_adjusted",
+        "macro_transmission_expected",
+        "macro_transmission_jax_betas",
+        "macro_transmission_kalman",
+        "macro_transmission_metadata",
+        "macro_transmission_optimizer",
+        "macro_transmission_optimizer_summary",
+        "macro_transmission_stress",
+        "macro_transmission_sv_betas",
+        "macro_transmission_sv_summary",
+        "market_regime",
+        "narrative_events",
+        "narrative_state",
+        "opportunity_surface",
+        "options_policy",
+        "portfolio_valuation_state",
+        "portfolio_weights",
+        "regime_feed",
+        "regime_transitions",
+        "research_allocator_bridge",
+        "research_awareness",
+        "research_governor_bridge",
+        "research_kernel_status",
+        "research_opportunity_surface",
+        "research_options_opportunities",
+        "research_policy",
+        "research_returns_partition",
+        "research_weekend_sweep",
+        "sector_flows",
+        "sector_rotation",
+        "strategy_beliefs",
+        "strategy_regret",
+        "valuation",
+        "valuation_families",
+        "valuation_posterior",
+        "valuation_validation_deciles",
+        "valuation_validation_ic",
+        "valuation_validation_regime",
+        "valuation_validation_summary"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 55,
+      "health": "healthy"
+    },
+    {
+      "function": "render_alpha_os_control_tower",
+      "plotly_charts": 18,
+      "data_keys": [
+        "alpha_os_drift_state",
+        "alpha_os_sdi_state",
+        "alpha_os_strategy_posteriors",
+        "alpha_os_timeseries",
+        "capital_allocations",
+        "options_dashboard_state",
+        "pnl",
+        "regime_feed",
+        "walk_forward_results"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 9,
+      "health": "healthy"
+    },
+    {
+      "function": "render_v3_analytics",
+      "plotly_charts": 10,
+      "data_keys": [
+        "index_nifty50",
+        "performance_summary",
+        "pnl",
+        "research_experiments",
+        "timing_signals"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 5,
+      "health": "healthy"
+    },
+    {
+      "function": "render_portfolio",
+      "plotly_charts": 10,
+      "data_keys": [
+        "index_nifty100",
+        "index_nifty50",
+        "index_nifty500",
+        "liquidity_risk",
+        "pnl",
+        "portfolio_weights",
+        "volatility_state"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 7,
+      "health": "healthy"
+    },
+    {
+      "function": "render_wave_analysis",
+      "plotly_charts": 5,
+      "data_keys": [
+        "portfolio_weights"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_risk_survival_layer",
+      "plotly_charts": 5,
+      "data_keys": [
+        "alpha_os_timeseries",
+        "market_regime",
+        "pnl"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 3,
+      "health": "healthy"
+    },
+    {
+      "function": "render_intelligence_layer",
+      "plotly_charts": 4,
+      "data_keys": [
+        "opportunity_surface",
+        "strategy_beliefs",
+        "strategy_regret",
+        "valuation_posterior"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 4,
+      "health": "healthy"
+    },
+    {
+      "function": "render_research_mode_compact",
+      "plotly_charts": 3,
+      "data_keys": [
+        "research_awareness",
+        "research_kernel_status",
+        "research_returns_partition",
+        "research_weekend_sweep"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 4,
+      "health": "healthy"
+    },
+    {
+      "function": "render_edge_health",
+      "plotly_charts": 2,
+      "data_keys": [
+        "edge_half_life"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_exit_risk",
+      "plotly_charts": 2,
+      "data_keys": [
+        "liquidity_risk"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_regime_belief_allocation_elasticity_surface",
+      "plotly_charts": 2,
+      "data_keys": [],
+      "bad_key_count": 0,
+      "total_keys": 0,
+      "health": "healthy"
+    },
+    {
+      "function": "render_macro_fragility_index",
+      "plotly_charts": 2,
+      "data_keys": [],
+      "bad_key_count": 0,
+      "total_keys": 0,
+      "health": "healthy"
+    },
+    {
+      "function": "render_allocation_drift_vs_information_shock",
+      "plotly_charts": 2,
+      "data_keys": [],
+      "bad_key_count": 0,
+      "total_keys": 0,
+      "health": "healthy"
+    },
+    {
+      "function": "render_live_mode_compact",
+      "plotly_charts": 2,
+      "data_keys": [
+        "daemon_status",
+        "live_heartbeat",
+        "options_dashboard_state",
+        "options_runtime_state",
+        "pnl"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 5,
+      "health": "healthy"
+    },
+    {
+      "function": "render_portfolio_expression_layer",
+      "plotly_charts": 2,
+      "data_keys": [
+        "allocation_history",
+        "index_nifty50",
+        "options_dashboard_state",
+        "pnl"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 4,
+      "health": "healthy"
+    },
+    {
+      "function": "render_capital_convexity_map",
+      "plotly_charts": 2,
+      "data_keys": [
+        "options_dashboard_state"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_macro_valuation_compact",
+      "plotly_charts": 2,
+      "data_keys": [
+        "macro_factors",
+        "macro_factors_v2",
+        "portfolio_valuation_state",
+        "valuation_posterior",
+        "valuation_validation_summary"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 5,
+      "health": "healthy"
+    },
+    {
+      "function": "render_market_state_layer",
+      "plotly_charts": 2,
+      "data_keys": [
+        "macro_factors",
+        "macro_factors_v2",
+        "market_regime"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 3,
+      "health": "healthy"
+    },
+    {
+      "function": "render_macro_news_pressure_index",
+      "plotly_charts": 1,
+      "data_keys": [
+        "index_nifty50",
+        "market_regime"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 2,
+      "health": "healthy"
+    },
+    {
+      "function": "render_sector_sentiment_vs_flows",
+      "plotly_charts": 1,
+      "data_keys": [
+        "sector_flows"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_belief_vs_news_divergence",
+      "plotly_charts": 1,
+      "data_keys": [
+        "strategy_beliefs"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_causal_flow_panel",
+      "plotly_charts": 1,
+      "data_keys": [],
+      "bad_key_count": 0,
+      "total_keys": 0,
+      "health": "healthy"
+    },
+    {
+      "function": "render_narrative_regime_transition_map",
+      "plotly_charts": 1,
+      "data_keys": [],
+      "bad_key_count": 0,
+      "total_keys": 0,
+      "health": "healthy"
+    },
+    {
+      "function": "render_macro_portfolio_transmission_network",
+      "plotly_charts": 1,
+      "data_keys": [
+        "macro_factors",
+        "macro_factors_v2",
+        "portfolio_weights",
+        "sector_flows"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 4,
+      "health": "healthy"
+    },
+    {
+      "function": "render_crisis_replay_with_narrative_overlay",
+      "plotly_charts": 1,
+      "data_keys": [
+        "narrative_events"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_belief_performance_decay_curve",
+      "plotly_charts": 1,
+      "data_keys": [],
+      "bad_key_count": 0,
+      "total_keys": 0,
+      "health": "healthy"
+    },
+    {
+      "function": "render_sentiment_lead_lag_surface",
+      "plotly_charts": 1,
+      "data_keys": [],
+      "bad_key_count": 0,
+      "total_keys": 0,
+      "health": "healthy"
+    },
+    {
+      "function": "render_regime_vs_posterior_stability",
+      "plotly_charts": 1,
+      "data_keys": [
+        "valuation_posterior"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_rbi_policy_shock_impact_grid",
+      "plotly_charts": 1,
+      "data_keys": [
+        "sector_flows"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_strategy_survival_probability_curve",
+      "plotly_charts": 1,
+      "data_keys": [
+        "allocation_history",
+        "strategy_beliefs"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 2,
+      "health": "healthy"
+    },
+    {
+      "function": "render_event_shock_surface",
+      "plotly_charts": 1,
+      "data_keys": [
+        "portfolio_weights"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_mission_control",
+      "plotly_charts": 1,
+      "data_keys": [
+        "daemon_status",
+        "options_dashboard_state",
+        "options_runtime_state",
+        "research_experiments"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 4,
+      "health": "healthy"
+    },
+    {
+      "function": "render_news_narrative_layer",
+      "plotly_charts": 1,
+      "data_keys": [
+        "narrative_events"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 1,
+      "health": "healthy"
+    },
+    {
+      "function": "render_experimentation_lab",
+      "plotly_charts": 1,
+      "data_keys": [
+        "research_capital_simulation_report",
+        "research_experiments",
+        "research_model_training_results",
+        "research_monte_carlo_report",
+        "research_parameter_search_results"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 5,
+      "health": "healthy"
+    },
+    {
+      "function": "render_command_center",
+      "plotly_charts": 1,
+      "data_keys": [
+        "daily_narrative",
+        "index_nifty50",
+        "pnl"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 3,
+      "health": "healthy"
+    },
+    {
+      "function": "render_system_health",
+      "plotly_charts": 1,
+      "data_keys": [
+        "integrity_artifacts",
+        "integrity_report",
+        "system_log"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 3,
+      "health": "healthy"
+    },
+    {
+      "function": "render_real_time_monitor",
+      "plotly_charts": 1,
+      "data_keys": [
+        "risk_state",
+        "system_log"
+      ],
+      "bad_key_count": 0,
+      "total_keys": 2,
+      "health": "healthy"
+    }
+  ]
+}

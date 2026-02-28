@@ -1,0 +1,8 @@
+{
+  "as_of": "2024-12-30T00:00:00Z",
+  "universe": "US_LARGE_CAP",
+  "features": [
+    {"id": "AAPL", "macro_regime": "disinflation", "sector_breadth": 0.62, "stress": 0.18},
+    {"id": "MSFT", "macro_regime": "disinflation", "sector_breadth": 0.58, "stress": 0.16}
+  ]
+}

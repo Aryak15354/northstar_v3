@@ -1,0 +1,229 @@
+{
+  "execution_summary": {
+    "start_time": "2026-02-24T21:42:38.287776",
+    "end_time": "2026-02-24T21:45:37.626528",
+    "total_duration_seconds": 179.338563,
+    "total_duration_minutes": 2.99
+  },
+  "phase_results": {
+    "data_ingestion": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Index data update (NIFTY benchmarks) completed",
+        "Integrated data update (RBI macro + YFinance + Market State Spine) completed",
+        "Verified: data/macro/raw/",
+        "Verified: data/raw/prices_daily/",
+        "Verified: data/processed/market_state.parquet"
+      ]
+    },
+    "system_update": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Simple system update (Data + Portfolio) completed",
+        "Refresh V3 artifacts (real-data pipeline for dashboard) completed",
+        "Skipped integrated options paper-trading cycle (--skip-options-cycle)",
+        "Generated: data/processed/strategy_beliefs.parquet",
+        "Generated: data/processed/portfolio_weights.parquet",
+        "Generated: data/processed/market_state.parquet",
+        "Generated: data/processed/system_status.json",
+        "Generated: data/options/live/options_dashboard_state.json",
+        "Generated: data/options/trade_ledger.parquet"
+      ]
+    },
+    "backtesting": {
+      "duration": 0,
+      "status": "warning",
+      "details": [
+        "Skipped in --quick mode"
+      ]
+    },
+    "shadow_trading": {
+      "duration": 0,
+      "status": "warning",
+      "details": [
+        "Skipped in --quick mode"
+      ]
+    },
+    "performance_analysis": {
+      "duration": 0,
+      "status": "warning",
+      "details": [
+        "Skipped in --quick mode"
+      ]
+    },
+    "alpha_generation": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Alpha snapshot saved (30 positions, 25 candidates)"
+      ]
+    },
+    "integration_alignment": {
+      "duration": 0,
+      "status": "warning",
+      "details": [
+        "Skipped by --skip-integration-alignment"
+      ]
+    },
+    "dashboard_launch": {
+      "duration": 0,
+      "status": "warning",
+      "details": [
+        "Skipped dashboard launch (--no-dashboard)"
+      ]
+    }
+  },
+  "execution_log": [
+    {
+      "timestamp": "2026-02-24T21:42:58.032888",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Index data update (NIFTY benchmarks) completed",
+      "duration_seconds": 18.037174940109253
+    },
+    {
+      "timestamp": "2026-02-24T21:43:12.451092",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Integrated data update (RBI macro + YFinance + Market State Spine) completed",
+      "duration_seconds": 14.417453050613403
+    },
+    {
+      "timestamp": "2026-02-24T21:43:12.451521",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/macro/raw/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:43:12.451727",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/raw/prices_daily/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:43:12.451929",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/processed/market_state.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:43:13.042939",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Simple system update (Data + Portfolio) completed",
+      "duration_seconds": 0.5907590389251709
+    },
+    {
+      "timestamp": "2026-02-24T21:45:36.534739",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Refresh V3 artifacts (real-data pipeline for dashboard) completed",
+      "duration_seconds": 143.4913260936737
+    },
+    {
+      "timestamp": "2026-02-24T21:45:36.535289",
+      "phase": "system_update",
+      "status": "warning",
+      "message": "Skipped integrated options paper-trading cycle (--skip-options-cycle)",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:36.535565",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/strategy_beliefs.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:36.535767",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/portfolio_weights.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:36.535960",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/market_state.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:36.536150",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/system_status.json",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:36.537167",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/options/live/options_dashboard_state.json",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:36.537579",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/options/trade_ledger.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:37.625120",
+      "phase": "alpha_generation",
+      "status": "success",
+      "message": "Alpha snapshot saved (30 positions, 25 candidates)",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:37.625372",
+      "phase": "backtesting",
+      "status": "warning",
+      "message": "Skipped in --quick mode",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:37.625562",
+      "phase": "shadow_trading",
+      "status": "warning",
+      "message": "Skipped in --quick mode",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:37.625757",
+      "phase": "performance_analysis",
+      "status": "warning",
+      "message": "Skipped in --quick mode",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:37.625950",
+      "phase": "integration_alignment",
+      "status": "warning",
+      "message": "Skipped by --skip-integration-alignment",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-24T21:45:37.626141",
+      "phase": "dashboard_launch",
+      "status": "warning",
+      "message": "Skipped dashboard launch (--no-dashboard)",
+      "duration_seconds": 0
+    }
+  ],
+  "system_status": {
+    "data_fresh": true,
+    "system_updated": true,
+    "backtests_complete": false,
+    "shadow_trading_active": false,
+    "performance_analyzed": false,
+    "integration_aligned": false,
+    "dashboard_running": false
+  }
+}

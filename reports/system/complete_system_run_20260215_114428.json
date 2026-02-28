@@ -1,0 +1,70 @@
+{
+  "execution_summary": {
+    "start_time": "2026-02-15T11:44:15.538951",
+    "end_time": "2026-02-15T11:44:28.138411",
+    "total_duration_seconds": 12.599045,
+    "total_duration_minutes": 0.21
+  },
+  "phase_results": {
+    "data_ingestion": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "system_update": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "backtesting": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "shadow_trading": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "performance_analysis": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "alpha_generation": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "integration_alignment": {
+      "duration": 0,
+      "status": "pending",
+      "details": []
+    },
+    "dashboard_launch": {
+      "duration": 0,
+      "status": "warning",
+      "details": [
+        "Skipped dashboard launch (--no-dashboard)"
+      ]
+    }
+  },
+  "execution_log": [
+    {
+      "timestamp": "2026-02-15T11:44:28.137482",
+      "phase": "dashboard_launch",
+      "status": "warning",
+      "message": "Skipped dashboard launch (--no-dashboard)",
+      "duration_seconds": 0
+    }
+  ],
+  "system_status": {
+    "data_fresh": false,
+    "system_updated": false,
+    "backtests_complete": false,
+    "shadow_trading_active": false,
+    "performance_analyzed": false,
+    "integration_aligned": false,
+    "dashboard_running": false
+  }
+}

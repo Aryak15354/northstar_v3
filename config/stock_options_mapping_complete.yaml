@@ -1,0 +1,1053 @@
+stocks:
+  360ONE:
+    isin: INE466L01038
+    name: 360 ONE WAM Ltd.
+    lot_size: 500
+    sector: Financial Services
+  ABB:
+    isin: INE117A01022
+    name: ABB India Ltd.
+    lot_size: 125
+    sector: Capital Goods
+  APLAPOLLO:
+    isin: INE702C01027
+    name: APL Apollo Tubes Ltd.
+    lot_size: 350
+    sector: Capital Goods
+  AUBANK:
+    isin: INE949L01017
+    name: AU Small Finance Bank Ltd.
+    lot_size: 1000
+    sector: Financial Services
+  ADANIENSOL:
+    isin: INE931S01010
+    name: Adani Energy Solutions Ltd.
+    lot_size: 675
+    sector: Power
+  ADANIENT:
+    isin: INE423A01024
+    name: Adani Enterprises Ltd.
+    lot_size: 309
+    sector: Metals & Mining
+  ADANIGREEN:
+    isin: INE364U01010
+    name: Adani Green Energy Ltd.
+    lot_size: 600
+    sector: Power
+  ADANIPORTS:
+    isin: INE742F01042
+    name: Adani Ports and Special Economic Zone Ltd.
+    lot_size: 475
+    sector: Services
+  ABCAPITAL:
+    isin: INE674K01013
+    name: Aditya Birla Capital Ltd.
+    lot_size: 3100
+    sector: Financial Services
+  ALKEM:
+    isin: INE540L01014
+    name: Alkem Laboratories Ltd.
+    lot_size: 125
+    sector: Healthcare
+  AMBER:
+    isin: INE371P01015
+    name: Amber Enterprises India Ltd.
+    lot_size: 100
+    sector: Consumer Durables
+  AMBUJACEM:
+    isin: INE079A01024
+    name: Ambuja Cements Ltd.
+    lot_size: 1050
+    sector: Construction Materials
+  ANGELONE:
+    isin: INE732I01013
+    name: Angel One Ltd.
+    lot_size: 250
+    sector: Financial Services
+  APOLLOHOSP:
+    isin: INE437A01024
+    name: Apollo Hospitals Enterprise Ltd.
+    lot_size: 125
+    sector: Healthcare
+  ASHOKLEY:
+    isin: INE208A01029
+    name: Ashok Leyland Ltd.
+    lot_size: 5000
+    sector: Capital Goods
+  ASIANPAINT:
+    isin: INE021A01026
+    name: Asian Paints Ltd.
+    lot_size: 250
+    sector: Consumer Durables
+  ASTRAL:
+    isin: INE006I01046
+    name: Astral Ltd.
+    lot_size: 425
+    sector: Capital Goods
+  AUROPHARMA:
+    isin: INE406A01037
+    name: Aurobindo Pharma Ltd.
+    lot_size: 550
+    sector: Healthcare
+  DMART:
+    isin: INE192R01011
+    name: Avenue Supermarts Ltd.
+    lot_size: 150
+    sector: Consumer Services
+  AXISBANK:
+    isin: INE238A01034
+    name: Axis Bank Ltd.
+    lot_size: 625
+    sector: Financial Services
+  BSE:
+    isin: INE118H01025
+    name: BSE Ltd.
+    lot_size: 375
+    sector: Financial Services
+  BAJAJ-AUTO:
+    isin: INE917I01010
+    name: Bajaj Auto Ltd.
+    lot_size: 75
+    sector: Automobile and Auto Components
+  BAJFINANCE:
+    isin: INE296A01032
+    name: Bajaj Finance Ltd.
+    lot_size: 750
+    sector: Financial Services
+  BAJAJFINSV:
+    isin: INE918I01026
+    name: Bajaj Finserv Ltd.
+    lot_size: 250
+    sector: Financial Services
+  BAJAJHLDNG:
+    isin: INE118A01012
+    name: Bajaj Holdings & Investment Ltd.
+    lot_size: 50
+    sector: Financial Services
+  BANDHANBNK:
+    isin: INE545U01014
+    name: Bandhan Bank Ltd.
+    lot_size: 3600
+    sector: Financial Services
+  BANKBARODA:
+    isin: INE028A01039
+    name: Bank of Baroda
+    lot_size: 2925
+    sector: Financial Services
+  BANKINDIA:
+    isin: INE084A01016
+    name: Bank of India
+    lot_size: 5200
+    sector: Financial Services
+  BDL:
+    isin: INE171Z01026
+    name: Bharat Dynamics Ltd.
+    lot_size: 350
+    sector: Capital Goods
+  BEL:
+    isin: INE263A01024
+    name: Bharat Electronics Ltd.
+    lot_size: 1425
+    sector: Capital Goods
+  BHARATFORG:
+    isin: INE465A01025
+    name: Bharat Forge Ltd.
+    lot_size: 500
+    sector: Automobile and Auto Components
+  BHEL:
+    isin: INE257A01026
+    name: Bharat Heavy Electricals Ltd.
+    lot_size: 2625
+    sector: Capital Goods
+  BPCL:
+    isin: INE029A01011
+    name: Bharat Petroleum Corporation Ltd.
+    lot_size: 1975
+    sector: Oil Gas & Consumable Fuels
+  BHARTIARTL:
+    isin: INE397D01024
+    name: Bharti Airtel Ltd.
+    lot_size: 475
+    sector: Telecommunication
+  BIOCON:
+    isin: INE376G01013
+    name: Biocon Ltd.
+    lot_size: 2500
+    sector: Healthcare
+  BLUESTARCO:
+    isin: INE472A01039
+    name: Blue Star Ltd.
+    lot_size: 325
+    sector: Consumer Durables
+  BOSCHLTD:
+    isin: INE323A01026
+    name: Bosch Ltd.
+    lot_size: 25
+    sector: Automobile and Auto Components
+  BRITANNIA:
+    isin: INE216A01030
+    name: Britannia Industries Ltd.
+    lot_size: 125
+    sector: Fast Moving Consumer Goods
+  CGPOWER:
+    isin: INE067A01029
+    name: CG Power and Industrial Solutions Ltd.
+    lot_size: 850
+    sector: Capital Goods
+  CANBK:
+    isin: INE476A01022
+    name: Canara Bank
+    lot_size: 6750
+    sector: Financial Services
+  CDSL:
+    isin: INE736A01011
+    name: Central Depository Services (India) Ltd.
+    lot_size: 475
+    sector: Financial Services
+  CHOLAFIN:
+    isin: INE121A01024
+    name: Cholamandalam Investment and Finance Company Ltd.
+    lot_size: 625
+    sector: Financial Services
+  CIPLA:
+    isin: INE059A01026
+    name: Cipla Ltd.
+    lot_size: 375
+    sector: Healthcare
+  COALINDIA:
+    isin: INE522F01014
+    name: Coal India Ltd.
+    lot_size: 1350
+    sector: Oil Gas & Consumable Fuels
+  COFORGE:
+    isin: INE591G01025
+    name: Coforge Ltd.
+    lot_size: 375
+    sector: Information Technology
+  COLPAL:
+    isin: INE259A01022
+    name: Colgate Palmolive (India) Ltd.
+    lot_size: 225
+    sector: Fast Moving Consumer Goods
+  CAMS:
+    isin: INE596I01020
+    name: Computer Age Management Services Ltd.
+    lot_size: 750
+    sector: Financial Services
+  CONCOR:
+    isin: INE111A01025
+    name: Container Corporation of India Ltd.
+    lot_size: 1250
+    sector: Services
+  CROMPTON:
+    isin: INE299U01018
+    name: Crompton Greaves Consumer Electricals Ltd.
+    lot_size: 1800
+    sector: Consumer Durables
+  CUMMINSIND:
+    isin: INE298A01020
+    name: Cummins India Ltd.
+    lot_size: 200
+    sector: Capital Goods
+  DLF:
+    isin: INE271C01023
+    name: DLF Ltd.
+    lot_size: 825
+    sector: Realty
+  DABUR:
+    isin: INE016A01026
+    name: Dabur India Ltd.
+    lot_size: 1250
+    sector: Fast Moving Consumer Goods
+  DALBHARAT:
+    isin: INE00R701025
+    name: Dalmia Bharat Ltd.
+    lot_size: 325
+    sector: Construction Materials
+  DELHIVERY:
+    isin: INE148O01028
+    name: Delhivery Ltd.
+    lot_size: 2075
+    sector: Services
+  DIVISLAB:
+    isin: INE361B01024
+    name: Divi's Laboratories Ltd.
+    lot_size: 100
+    sector: Healthcare
+  DIXON:
+    isin: INE935N01020
+    name: Dixon Technologies (India) Ltd.
+    lot_size: 50
+    sector: Consumer Durables
+  DRREDDY:
+    isin: INE089A01031
+    name: Dr. Reddy's Laboratories Ltd.
+    lot_size: 625
+    sector: Healthcare
+  EICHERMOT:
+    isin: INE066A01021
+    name: Eicher Motors Ltd.
+    lot_size: 100
+    sector: Automobile and Auto Components
+  ETERNAL:
+    isin: INE758T01015
+    name: Eternal Ltd.
+    lot_size: 2425
+    sector: Consumer Services
+  EXIDEIND:
+    isin: INE302A01020
+    name: Exide Industries Ltd.
+    lot_size: 1800
+    sector: Automobile and Auto Components
+  NYKAA:
+    isin: INE388Y01029
+    name: FSN E-Commerce Ventures Ltd.
+    lot_size: 3125
+    sector: Consumer Services
+  FEDERALBNK:
+    isin: INE171A01029
+    name: Federal Bank Ltd.
+    lot_size: 5000
+    sector: Financial Services
+  FORTIS:
+    isin: INE061F01013
+    name: Fortis Healthcare Ltd.
+    lot_size: 775
+    sector: Healthcare
+  GAIL:
+    isin: INE129A01019
+    name: GAIL (India) Ltd.
+    lot_size: 3150
+    sector: Oil Gas & Consumable Fuels
+  GMRAIRPORT:
+    isin: INE776C01039
+    name: GMR Airports Ltd.
+    lot_size: 6975
+    sector: Services
+  GLENMARK:
+    isin: INE935A01035
+    name: Glenmark Pharmaceuticals Ltd.
+    lot_size: 375
+    sector: Healthcare
+  GODREJCP:
+    isin: INE102D01028
+    name: Godrej Consumer Products Ltd.
+    lot_size: 500
+    sector: Fast Moving Consumer Goods
+  GODREJPROP:
+    isin: INE484J01027
+    name: Godrej Properties Ltd.
+    lot_size: 275
+    sector: Realty
+  GRASIM:
+    isin: INE047A01021
+    name: Grasim Industries Ltd.
+    lot_size: 250
+    sector: Construction Materials
+  HCLTECH:
+    isin: INE860A01027
+    name: HCL Technologies Ltd.
+    lot_size: 350
+    sector: Information Technology
+  HDFCAMC:
+    isin: INE127D01025
+    name: HDFC Asset Management Company Ltd.
+    lot_size: 300
+    sector: Financial Services
+  HDFCBANK:
+    isin: INE040A01034
+    name: HDFC Bank Ltd.
+    lot_size: 550
+    sector: Financial Services
+  HDFCLIFE:
+    isin: INE795G01014
+    name: HDFC Life Insurance Company Ltd.
+    lot_size: 1100
+    sector: Financial Services
+  HAVELLS:
+    isin: INE176B01034
+    name: Havells India Ltd.
+    lot_size: 500
+    sector: Consumer Durables
+  HEROMOTOCO:
+    isin: INE158A01026
+    name: Hero MotoCorp Ltd.
+    lot_size: 150
+    sector: Automobile and Auto Components
+  HINDALCO:
+    isin: INE038A01020
+    name: Hindalco Industries Ltd.
+    lot_size: 700
+    sector: Metals & Mining
+  HAL:
+    isin: INE066F01020
+    name: Hindustan Aeronautics Ltd.
+    lot_size: 150
+    sector: Capital Goods
+  HINDPETRO:
+    isin: INE094A01015
+    name: Hindustan Petroleum Corporation Ltd.
+    lot_size: 2025
+    sector: Oil Gas & Consumable Fuels
+  HINDUNILVR:
+    isin: INE030A01027
+    name: Hindustan Unilever Ltd.
+    lot_size: 300
+    sector: Fast Moving Consumer Goods
+  HINDZINC:
+    isin: INE267A01025
+    name: Hindustan Zinc Ltd.
+    lot_size: 1225
+    sector: Metals & Mining
+  POWERINDIA:
+    isin: INE07Y701011
+    name: Hitachi Energy India Ltd.
+    lot_size: 50
+    sector: Capital Goods
+  HUDCO:
+    isin: INE031A01017
+    name: Housing & Urban Development Corporation Ltd.
+    lot_size: 2775
+    sector: Financial Services
+  ICICIBANK:
+    isin: INE090A01021
+    name: ICICI Bank Ltd.
+    lot_size: 700
+    sector: Financial Services
+  ICICIGI:
+    isin: INE765G01017
+    name: ICICI Lombard General Insurance Company Ltd.
+    lot_size: 325
+    sector: Financial Services
+  ICICIPRULI:
+    isin: INE726G01019
+    name: ICICI Prudential Life Insurance Company Ltd.
+    lot_size: 925
+    sector: Financial Services
+  IDFCFIRSTB:
+    isin: INE092T01019
+    name: IDFC First Bank Ltd.
+    lot_size: 9275
+    sector: Financial Services
+  ITC:
+    isin: INE154A01025
+    name: ITC Ltd.
+    lot_size: 1600
+    sector: Fast Moving Consumer Goods
+  INDIANB:
+    isin: INE562A01011
+    name: Indian Bank
+    lot_size: 1000
+    sector: Financial Services
+  IEX:
+    isin: INE022Q01020
+    name: Indian Energy Exchange Ltd.
+    lot_size: 3750
+    sector: Financial Services
+  INDHOTEL:
+    isin: INE053A01029
+    name: Indian Hotels Co. Ltd.
+    lot_size: 1000
+    sector: Consumer Services
+  IOC:
+    isin: INE242A01010
+    name: Indian Oil Corporation Ltd.
+    lot_size: 4875
+    sector: Oil Gas & Consumable Fuels
+  IRCTC:
+    isin: INE335Y01020
+    name: Indian Railway Catering And Tourism Corporation Ltd.
+    lot_size: 875
+    sector: Consumer Services
+  IRFC:
+    isin: INE053F01010
+    name: Indian Railway Finance Corporation Ltd.
+    lot_size: 4250
+    sector: Financial Services
+  IREDA:
+    isin: INE202E01016
+    name: Indian Renewable Energy Development Agency Ltd.
+    lot_size: 3450
+    sector: Financial Services
+  INDUSTOWER:
+    isin: INE121J01017
+    name: Indus Towers Ltd.
+    lot_size: 1700
+    sector: Telecommunication
+  INDUSINDBK:
+    isin: INE095A01012
+    name: IndusInd Bank Ltd.
+    lot_size: 700
+    sector: Financial Services
+  NAUKRI:
+    isin: INE663F01032
+    name: Info Edge (India) Ltd.
+    lot_size: 375
+    sector: Consumer Services
+  INFY:
+    isin: INE009A01021
+    name: Infosys Ltd.
+    lot_size: 400
+    sector: Information Technology
+  INOXWIND:
+    isin: INE066P01011
+    name: Inox Wind Ltd.
+    lot_size: 3575
+    sector: Capital Goods
+  INDIGO:
+    isin: INE646L01027
+    name: InterGlobe Aviation Ltd.
+    lot_size: 150
+    sector: Services
+  JSWENERGY:
+    isin: INE121E01018
+    name: JSW Energy Ltd.
+    lot_size: 1000
+    sector: Power
+  JSWSTEEL:
+    isin: INE019A01038
+    name: JSW Steel Ltd.
+    lot_size: 675
+    sector: Metals & Mining
+  JINDALSTEL:
+    isin: INE749A01030
+    name: Jindal Steel Ltd.
+    lot_size: 625
+    sector: Metals & Mining
+  JIOFIN:
+    isin: INE758E01017
+    name: Jio Financial Services Ltd.
+    lot_size: 2350
+    sector: Financial Services
+  JUBLFOOD:
+    isin: INE797F01020
+    name: Jubilant Foodworks Ltd.
+    lot_size: 1250
+    sector: Consumer Services
+  KEI:
+    isin: INE878B01027
+    name: KEI Industries Ltd.
+    lot_size: 175
+    sector: Capital Goods
+  KPITTECH:
+    isin: INE04I401011
+    name: KPIT Technologies Ltd.
+    lot_size: 425
+    sector: Information Technology
+  KALYANKJIL:
+    isin: INE303R01014
+    name: Kalyan Jewellers India Ltd.
+    lot_size: 1175
+    sector: Consumer Durables
+  KAYNES:
+    isin: INE918Z01012
+    name: Kaynes Technology India Ltd.
+    lot_size: 100
+    sector: Capital Goods
+  KFINTECH:
+    isin: INE138Y01010
+    name: Kfin Technologies Ltd.
+    lot_size: 500
+    sector: Financial Services
+  LTF:
+    isin: INE498L01015
+    name: L&T Finance Ltd.
+    lot_size: 2250
+    sector: Financial Services
+  LICHSGFIN:
+    isin: INE115A01026
+    name: LIC Housing Finance Ltd.
+    lot_size: 1000
+    sector: Financial Services
+  LTIM:
+    isin: INE214T01019
+    name: LTIMindtree Ltd.
+    lot_size: 150
+    sector: Information Technology
+  LT:
+    isin: INE018A01030
+    name: Larsen & Toubro Ltd.
+    lot_size: 175
+    sector: Construction
+  LAURUSLABS:
+    isin: INE947Q01028
+    name: Laurus Labs Ltd.
+    lot_size: 850
+    sector: Healthcare
+  LICI:
+    isin: INE0J1Y01017
+    name: Life Insurance Corporation of India
+    lot_size: 700
+    sector: Financial Services
+  LODHA:
+    isin: INE670K01029
+    name: Lodha Developers Ltd.
+    lot_size: 450
+    sector: Realty
+  LUPIN:
+    isin: INE326A01037
+    name: Lupin Ltd.
+    lot_size: 425
+    sector: Healthcare
+  M&M:
+    isin: INE101A01026
+    name: Mahindra & Mahindra Ltd.
+    lot_size: 200
+    sector: Automobile and Auto Components
+  MANAPPURAM:
+    isin: INE522D01027
+    name: Manappuram Finance Ltd.
+    lot_size: 3000
+    sector: Financial Services
+  MANKIND:
+    isin: INE634S01028
+    name: Mankind Pharma Ltd.
+    lot_size: 225
+    sector: Healthcare
+  MARICO:
+    isin: INE196A01026
+    name: Marico Ltd.
+    lot_size: 1200
+    sector: Fast Moving Consumer Goods
+  MARUTI:
+    isin: INE585B01010
+    name: Maruti Suzuki India Ltd.
+    lot_size: 50
+    sector: Automobile and Auto Components
+  MFSL:
+    isin: INE180A01020
+    name: Max Financial Services Ltd.
+    lot_size: 400
+    sector: Financial Services
+  MAXHEALTH:
+    isin: INE027H01010
+    name: Max Healthcare Institute Ltd.
+    lot_size: 525
+    sector: Healthcare
+  MAZDOCK:
+    isin: INE249Z01020
+    name: Mazagoan Dock Shipbuilders Ltd.
+    lot_size: 200
+    sector: Capital Goods
+  MPHASIS:
+    isin: INE356A01018
+    name: MphasiS Ltd.
+    lot_size: 275
+    sector: Information Technology
+  MUTHOOTFIN:
+    isin: INE414G01012
+    name: Muthoot Finance Ltd.
+    lot_size: 275
+    sector: Financial Services
+  NBCC:
+    isin: INE095N01031
+    name: NBCC (India) Ltd.
+    lot_size: 6500
+    sector: Construction
+  NHPC:
+    isin: INE848E01016
+    name: NHPC Ltd.
+    lot_size: 6400
+    sector: Power
+  NMDC:
+    isin: INE584A01023
+    name: NMDC Ltd.
+    lot_size: 6750
+    sector: Metals & Mining
+  NTPC:
+    isin: INE733E01010
+    name: NTPC Ltd.
+    lot_size: 1500
+    sector: Power
+  NATIONALUM:
+    isin: INE139A01034
+    name: National Aluminium Co. Ltd.
+    lot_size: 3750
+    sector: Metals & Mining
+  NESTLEIND:
+    isin: INE239A01024
+    name: Nestle India Ltd.
+    lot_size: 500
+    sector: Fast Moving Consumer Goods
+  NUVAMA:
+    isin: INE531F01023
+    name: Nuvama Wealth Management Ltd.
+    lot_size: 500
+    sector: Financial Services
+  OBEROIRLTY:
+    isin: INE093I01010
+    name: Oberoi Realty Ltd.
+    lot_size: 350
+    sector: Realty
+  ONGC:
+    isin: INE213A01029
+    name: Oil & Natural Gas Corporation Ltd.
+    lot_size: 2250
+    sector: Oil Gas & Consumable Fuels
+  OIL:
+    isin: INE274J01014
+    name: Oil India Ltd.
+    lot_size: 1400
+    sector: Oil Gas & Consumable Fuels
+  PAYTM:
+    isin: INE982J01020
+    name: One 97 Communications Ltd.
+    lot_size: 725
+    sector: Financial Services
+  OFSS:
+    isin: INE881D01027
+    name: Oracle Financial Services Software Ltd.
+    lot_size: 75
+    sector: Information Technology
+  POLICYBZR:
+    isin: INE417T01026
+    name: PB Fintech Ltd.
+    lot_size: 350
+    sector: Financial Services
+  PGEL:
+    isin: INE457L01029
+    name: PG Electroplast Ltd.
+    lot_size: 950
+    sector: Consumer Durables
+  PIIND:
+    isin: INE603J01030
+    name: PI Industries Ltd.
+    lot_size: 175
+    sector: Chemicals
+  PNBHOUSING:
+    isin: INE572E01012
+    name: PNB Housing Finance Ltd.
+    lot_size: 650
+    sector: Financial Services
+  PAGEIND:
+    isin: INE761H01022
+    name: Page Industries Ltd.
+    lot_size: 15
+    sector: Textiles
+  PATANJALI:
+    isin: INE619A01035
+    name: Patanjali Foods Ltd.
+    lot_size: 900
+    sector: Fast Moving Consumer Goods
+  PERSISTENT:
+    isin: INE262H01021
+    name: Persistent Systems Ltd.
+    lot_size: 100
+    sector: Information Technology
+  PETRONET:
+    isin: INE347G01014
+    name: Petronet LNG Ltd.
+    lot_size: 1900
+    sector: Oil Gas & Consumable Fuels
+  PHOENIXLTD:
+    isin: INE211B01039
+    name: Phoenix Mills Ltd.
+    lot_size: 350
+    sector: Realty
+  PIDILITIND:
+    isin: INE318A01026
+    name: Pidilite Industries Ltd.
+    lot_size: 500
+    sector: Chemicals
+  PPLPHARMA:
+    isin: INE0DK501011
+    name: Piramal Pharma Ltd.
+    lot_size: 2625
+    sector: Healthcare
+  POLYCAB:
+    isin: INE455K01017
+    name: Polycab India Ltd.
+    lot_size: 125
+    sector: Capital Goods
+  PFC:
+    isin: INE134E01011
+    name: Power Finance Corporation Ltd.
+    lot_size: 1300
+    sector: Financial Services
+  POWERGRID:
+    isin: INE752E01010
+    name: Power Grid Corporation of India Ltd.
+    lot_size: 1900
+    sector: Power
+  PREMIERENE:
+    isin: INE0BS701011
+    name: Premier Energies Ltd.
+    lot_size: 575
+    sector: Capital Goods
+  PRESTIGE:
+    isin: INE811K01011
+    name: Prestige Estates Projects Ltd.
+    lot_size: 450
+    sector: Realty
+  PNB:
+    isin: INE160A01022
+    name: Punjab National Bank
+    lot_size: 8000
+    sector: Financial Services
+  RBLBANK:
+    isin: INE976G01028
+    name: RBL Bank Ltd.
+    lot_size: 3175
+    sector: Financial Services
+  RECLTD:
+    isin: INE020B01018
+    name: REC Ltd.
+    lot_size: 1400
+    sector: Financial Services
+  RVNL:
+    isin: INE415G01027
+    name: Rail Vikas Nigam Ltd.
+    lot_size: 1525
+    sector: Construction
+  RELIANCE:
+    isin: INE002A01018
+    name: Reliance Industries Ltd.
+    lot_size: 500
+    sector: Oil Gas & Consumable Fuels
+  SBICARD:
+    isin: INE018E01016
+    name: SBI Cards and Payment Services Ltd.
+    lot_size: 800
+    sector: Financial Services
+  SBILIFE:
+    isin: INE123W01016
+    name: SBI Life Insurance Company Ltd.
+    lot_size: 375
+    sector: Financial Services
+  SRF:
+    isin: INE647A01010
+    name: SRF Ltd.
+    lot_size: 200
+    sector: Chemicals
+  SAMMAANCAP:
+    isin: INE148I01020
+    name: Sammaan Capital Ltd.
+    lot_size: 4300
+    sector: Financial Services
+  MOTHERSON:
+    isin: INE775A01035
+    name: Samvardhana Motherson International Ltd.
+    lot_size: 6150
+    sector: Automobile and Auto Components
+  SHREECEM:
+    isin: INE070A01015
+    name: Shree Cement Ltd.
+    lot_size: 25
+    sector: Construction Materials
+  SHRIRAMFIN:
+    isin: INE721A01047
+    name: Shriram Finance Ltd.
+    lot_size: 825
+    sector: Financial Services
+  SIEMENS:
+    isin: INE003A01024
+    name: Siemens Ltd.
+    lot_size: 175
+    sector: Capital Goods
+  SOLARINDS:
+    isin: INE343H01029
+    name: Solar Industries India Ltd.
+    lot_size: 50
+    sector: Chemicals
+  SONACOMS:
+    isin: INE073K01018
+    name: Sona BLW Precision Forgings Ltd.
+    lot_size: 1225
+    sector: Automobile and Auto Components
+  SBIN:
+    isin: INE062A01020
+    name: State Bank of India
+    lot_size: 750
+    sector: Financial Services
+  SAIL:
+    isin: INE114A01011
+    name: Steel Authority of India Ltd.
+    lot_size: 4700
+    sector: Metals & Mining
+  SUNPHARMA:
+    isin: INE044A01036
+    name: Sun Pharmaceutical Industries Ltd.
+    lot_size: 350
+    sector: Healthcare
+  SUPREMEIND:
+    isin: INE195A01028
+    name: Supreme Industries Ltd.
+    lot_size: 175
+    sector: Capital Goods
+  SUZLON:
+    isin: INE040H01021
+    name: Suzlon Energy Ltd.
+    lot_size: 9025
+    sector: Capital Goods
+  SWIGGY:
+    isin: INE00H001014
+    name: Swiggy Ltd.
+    lot_size: 1300
+    sector: Consumer Services
+  SYNGENE:
+    isin: INE398R01022
+    name: Syngene International Ltd.
+    lot_size: 1000
+    sector: Healthcare
+  TVSMOTOR:
+    isin: INE494B01023
+    name: TVS Motor Company Ltd.
+    lot_size: 175
+    sector: Automobile and Auto Components
+  TCS:
+    isin: INE467B01029
+    name: Tata Consultancy Services Ltd.
+    lot_size: 175
+    sector: Information Technology
+  TATACONSUM:
+    isin: INE192A01025
+    name: Tata Consumer Products Ltd.
+    lot_size: 550
+    sector: Fast Moving Consumer Goods
+  TATAELXSI:
+    isin: INE670A01012
+    name: Tata Elxsi Ltd.
+    lot_size: 100
+    sector: Information Technology
+  TMPV:
+    isin: INE155A01022
+    name: Tata Motors Passenger Vehicles Ltd.
+    lot_size: 800
+    sector: Automobile and Auto Components
+  TATAPOWER:
+    isin: INE245A01021
+    name: Tata Power Co. Ltd.
+    lot_size: 1450
+    sector: Power
+  TATASTEEL:
+    isin: INE081A01020
+    name: Tata Steel Ltd.
+    lot_size: 5500
+    sector: Metals & Mining
+  TATATECH:
+    isin: INE142M01025
+    name: Tata Technologies Ltd.
+    lot_size: 800
+    sector: Information Technology
+  TECHM:
+    isin: INE669C01036
+    name: Tech Mahindra Ltd.
+    lot_size: 600
+    sector: Information Technology
+  TITAN:
+    isin: INE280A01028
+    name: Titan Company Ltd.
+    lot_size: 175
+    sector: Consumer Durables
+  TORNTPHARM:
+    isin: INE685A01028
+    name: Torrent Pharmaceuticals Ltd.
+    lot_size: 250
+    sector: Healthcare
+  TORNTPOWER:
+    isin: INE813H01021
+    name: Torrent Power Ltd.
+    lot_size: 425
+    sector: Power
+  TRENT:
+    isin: INE849A01020
+    name: Trent Ltd.
+    lot_size: 100
+    sector: Consumer Services
+  TIINDIA:
+    isin: INE974X01010
+    name: Tube Investments of India Ltd.
+    lot_size: 200
+    sector: Automobile and Auto Components
+  UNOMINDA:
+    isin: INE405E01023
+    name: UNO Minda Ltd.
+    lot_size: 550
+    sector: Automobile and Auto Components
+  UPL:
+    isin: INE628A01036
+    name: UPL Ltd.
+    lot_size: 1355
+    sector: Chemicals
+  ULTRACEMCO:
+    isin: INE481G01011
+    name: UltraTech Cement Ltd.
+    lot_size: 50
+    sector: Construction Materials
+  UNIONBANK:
+    isin: INE692A01016
+    name: Union Bank of India
+    lot_size: 4425
+    sector: Financial Services
+  UNITDSPR:
+    isin: INE854D01024
+    name: United Spirits Ltd.
+    lot_size: 400
+    sector: Fast Moving Consumer Goods
+  VBL:
+    isin: INE200M01039
+    name: Varun Beverages Ltd.
+    lot_size: 1125
+    sector: Fast Moving Consumer Goods
+  VEDL:
+    isin: INE205A01025
+    name: Vedanta Ltd.
+    lot_size: 1150
+    sector: Metals & Mining
+  IDEA:
+    isin: INE669E01016
+    name: Vodafone Idea Ltd.
+    lot_size: 71475
+    sector: Telecommunication
+  VOLTAS:
+    isin: INE226A01021
+    name: Voltas Ltd.
+    lot_size: 375
+    sector: Consumer Durables
+  WAAREEENER:
+    isin: INE377N01017
+    name: Waaree Energies Ltd.
+    lot_size: 175
+    sector: Capital Goods
+  WIPRO:
+    isin: INE075A01022
+    name: Wipro Ltd.
+    lot_size: 3000
+    sector: Information Technology
+  YESBANK:
+    isin: INE528G01035
+    name: Yes Bank Ltd.
+    lot_size: 31100
+    sector: Financial Services
+  ZYDUSLIFE:
+    isin: INE010B01027
+    name: Zydus Lifesciences Ltd.
+    lot_size: 900
+    sector: Healthcare
+selection_criteria:
+  min_market_cap_cr: 10000
+  min_avg_daily_volume: 1000000
+  min_option_oi: 10000
+  max_bid_ask_spread_pct: 0.1
+  min_contracts_available: 50
+recommended_for_beginners:
+- ITC
+- ONGC
+- SBIN
+- NATIONALUM
+- TCS
+- GAIL
+- HINDZINC
+- VEDL
+- CANBK
+- LICI
+- TATASTEEL
+- COALINDIA
+- HDFCBANK
+- SAIL
+- WIPRO
+- BANKINDIA
+- PIIND
+- RELIANCE
+- SUNPHARMA
+- TIINDIA

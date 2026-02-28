@@ -1,0 +1,70 @@
+alert_settings:
+  alert_thresholds: {}
+  email_recipients: []
+  escalation_rules: {}
+  slack_webhook: null
+allowed_signal_types:
+- buy
+- sell
+- hold
+crisis_periods:
+- characteristics:
+  - credit_crunch
+  - liquidity_crisis
+  - volatility_spike
+  description: Global financial crisis triggered by subprime mortgage collapse
+  end_date: '2009-03-31T00:00:00'
+  name: 2008_financial_crisis
+  severity: extreme
+  start_date: '2007-10-01T00:00:00'
+- characteristics:
+  - pandemic_shock
+  - circuit_breakers
+  - policy_response
+  description: COVID-19 pandemic market crash and recovery
+  end_date: '2020-05-31T00:00:00'
+  name: 2020_covid_crash
+  severity: extreme
+  start_date: '2020-02-01T00:00:00'
+- characteristics:
+  - tech_bubble
+  - valuation_reset
+  - recession
+  description: Dot-com bubble burst and subsequent recession
+  end_date: '2002-10-31T00:00:00'
+  name: 2000_dotcom_bubble
+  severity: high
+  start_date: '2000-03-01T00:00:00'
+data_retention_days: 365
+enable_real_time_monitoring: true
+max_concurrent_operations: 2
+max_drawdown_threshold: 0.25
+max_execution_latency_ms: 500.0
+max_position_size: 10000
+max_processing_latency_ms: 100.0
+max_var_breaches: 5
+min_information_ratio: 0.3
+min_sharpe_ratio: 0.3
+monitoring_interval_seconds: 30
+operation_timeout_hours: 12
+performance_thresholds:
+  max_drawdown: 0.25
+  max_latency_ms: 100.0
+  max_var_breaches: 5.0
+  min_data_quality: 0.95
+  min_hit_rate: 0.52
+  min_information_ratio: 0.3
+  min_sharpe_ratio: 0.3
+  min_signal_quality: 0.6
+reporting_config:
+  auto_email: false
+  chart_style: professional
+  email_recipients: []
+  include_charts: true
+  output_directory: reports/operation
+  report_formats:
+  - html
+  - pdf
+  - json
+restricted_symbols: []
+validation_scenarios: []

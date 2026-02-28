@@ -1,0 +1,27 @@
+{
+  "report_generation_time": "2026-01-30T02:49:12.397061",
+  "system_hash": "864623f9a7d038cfa6e5844d244f80fd06902ba218af7a5d71e13d2686194f11",
+  "validation_period": "2005-2025",
+  "reports_generated": [
+    "equity_curve",
+    "regime_performance",
+    "crisis_behavior",
+    "alpha_attribution",
+    "turnover_performance",
+    "capacity_curve",
+    "signal_health"
+  ],
+  "final_verdict": {
+    "verdict": "NOT INVESTMENT WORTHY",
+    "confidence": "LOW",
+    "criteria_passed": "2/5",
+    "criteria_details": {
+      "positive_returns": true,
+      "acceptable_sharpe": "False",
+      "controlled_drawdown": false,
+      "reasonable_volatility": "False",
+      "positive_cagr": true
+    },
+    "final_answer": "Would I invest my own money? NOT INVESTMENT WORTHY"
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "generated_at": "2026-02-28T16:51:48.524753+00:00",
+  "baseline_total": 77,
+  "target_total": 90,
+  "waves": [
+    {
+      "wave": "Completed",
+      "from": 77,
+      "to": 77,
+      "estimated_reduction": 0,
+      "goal": "Emission target achieved (<=90)"
+    }
+  ],
+  "top_emitters": [
+    {
+      "function": "render_wave_analysis",
+      "charts": 5,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_macro_news_pressure_index",
+      "charts": 5,
+      "recommended_action": "Merge into one market/news pressure surface with toggle dimensions."
+    },
+    {
+      "function": "render_sector_sentiment_vs_flows",
+      "charts": 5,
+      "recommended_action": "Merge into one market/news pressure surface with toggle dimensions."
+    },
+    {
+      "function": "render_risk_survival_layer",
+      "charts": 5,
+      "recommended_action": "Unify drawdown/crisis/entropy into a single multi-layer risk card."
+    },
+    {
+      "function": "render_advanced_intelligence",
+      "charts": 4,
+      "recommended_action": "Convert to family tabs + small-multiples + overlays; keep deep views behind expanders."
+    },
+    {
+      "function": "render_intelligence_layer",
+      "charts": 4,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_research_mode_compact",
+      "charts": 3,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_v3_analytics",
+      "charts": 3,
+      "recommended_action": "Consolidate benchmark/performance/risk stats into a compact KPI+toggle card."
+    },
+    {
+      "function": "render_alpha_os_control_tower",
+      "charts": 3,
+      "recommended_action": "Merge overlapping risk diagnostics into one survival engine card set."
+    },
+    {
+      "function": "render_edge_health",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_exit_risk",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_system_health_surface",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_market_state_layer",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_portfolio_expression_layer",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_causal_flow_panel",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_regime_belief_allocation_elasticity_surface",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_capital_convexity_map",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_macro_fragility_index",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "render_allocation_drift_vs_information_shock",
+      "charts": 2,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    },
+    {
+      "function": "_render_chart_with_contract",
+      "charts": 1,
+      "recommended_action": "Fold into section-level card family and remove duplicate derivative views."
+    }
+  ]
+}

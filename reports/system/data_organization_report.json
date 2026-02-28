@@ -1,0 +1,36 @@
+{
+  "execution_time": "2026-01-19T22:02:13.080945",
+  "data_merge": {
+    "source": "data/raw/prices_daily_extended/",
+    "target": "data/raw/prices_daily/",
+    "backup_created": "data/raw/prices_daily_extended_backup/"
+  },
+  "file_organization": {
+    "directories_created": [
+      "reports/tasks",
+      "reports/phases",
+      "reports/system",
+      "reports/institutional",
+      "reports/shadow",
+      "reports/northstar",
+      "reports/capital",
+      "reports/final",
+      "reports/cleanup",
+      "reports/technical",
+      "reports/production",
+      "reports/validation",
+      "reports/completion",
+      "reports/summaries",
+      "reports/status",
+      "docs/comprehensive",
+      "docs/dashboards",
+      "docs/integration",
+      "docs/trading",
+      "docs/validation"
+    ]
+  },
+  "validator_update": {
+    "file": "scripts/institutional_walk_forward_complete.py",
+    "path_updated": "data/raw/prices_daily/"
+  }
+}

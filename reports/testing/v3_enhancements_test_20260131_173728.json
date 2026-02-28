@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-01-31T17:37:28.839533",
+  "tests": {
+    "Time-Series Manager": true,
+    "Alpha Generation": true,
+    "OOS Validation": true,
+    "Strategy Components": false,
+    "Dashboard Enhancements": false,
+    "Data Directories": false
+  },
+  "success_rate": 0.5,
+  "passed_tests": 3,
+  "total_tests": 6
+}

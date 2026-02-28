@@ -1,0 +1,206 @@
+[
+  {
+    "key": "valuation",
+    "latest_ts": "2025-12-31 00:00:00+00:00",
+    "age_hours": 1431.18,
+    "rows": 500
+  },
+  {
+    "key": "valuation_families",
+    "latest_ts": "2025-12-31 00:00:00+00:00",
+    "age_hours": 1431.18,
+    "rows": 500
+  },
+  {
+    "key": "valuation_posterior",
+    "latest_ts": "2025-12-31 00:00:00+00:00",
+    "age_hours": 1431.18,
+    "rows": 500
+  },
+  {
+    "key": "portfolio_valuation_state",
+    "latest_ts": "2025-12-31 00:00:00+00:00",
+    "age_hours": 1431.18,
+    "rows": 1
+  },
+  {
+    "key": "valuation_validation_deciles",
+    "latest_ts": "2025-12-31 00:00:00+00:00",
+    "age_hours": 1431.18,
+    "rows": 10
+  },
+  {
+    "key": "valuation_validation_ic",
+    "latest_ts": "2025-12-31 00:00:00+00:00",
+    "age_hours": 1431.18,
+    "rows": 1
+  },
+  {
+    "key": "exposure_history",
+    "latest_ts": "2026-01-16 21:22:03.229340+00:00",
+    "age_hours": 1025.82,
+    "rows": 1
+  },
+  {
+    "key": "risk_state",
+    "latest_ts": "2026-01-16 21:22:03.227001+00:00",
+    "age_hours": 1025.82,
+    "rows": 1
+  },
+  {
+    "key": "performance_summary",
+    "latest_ts": "2026-01-30 00:00:00+00:00",
+    "age_hours": 711.18,
+    "rows": 1355
+  },
+  {
+    "key": "macro_factors",
+    "latest_ts": "2026-01-30 00:00:00+00:00",
+    "age_hours": 711.18,
+    "rows": 435
+  },
+  {
+    "key": "macro_cleaned",
+    "latest_ts": "2026-01-30 00:00:00+00:00",
+    "age_hours": 711.18,
+    "rows": 435
+  },
+  {
+    "key": "macro_conditioned_snapshot",
+    "latest_ts": "2026-02-01 00:00:00+00:00",
+    "age_hours": 663.18,
+    "rows": 497
+  },
+  {
+    "key": "macro_conditioned_weights",
+    "latest_ts": "2026-02-01 00:00:00+00:00",
+    "age_hours": 663.18,
+    "rows": 1
+  },
+  {
+    "key": "governance_events",
+    "latest_ts": "2026-02-22 22:12:40.098204+00:00",
+    "age_hours": 136.97,
+    "rows": 997
+  },
+  {
+    "key": "shadow_pnl_series",
+    "latest_ts": "2026-02-26 00:00:00+00:00",
+    "age_hours": 63.18,
+    "rows": 23
+  },
+  {
+    "key": "pnl",
+    "latest_ts": "2026-02-27 00:00:00+00:00",
+    "age_hours": 39.18,
+    "rows": 7821
+  },
+  {
+    "key": "index_nifty50",
+    "latest_ts": "2026-02-27 00:00:00+00:00",
+    "age_hours": 39.18,
+    "rows": 1268
+  },
+  {
+    "key": "index_nifty100",
+    "latest_ts": "2026-02-27 00:00:00+00:00",
+    "age_hours": 39.18,
+    "rows": 1268
+  },
+  {
+    "key": "index_nifty500",
+    "latest_ts": "2026-02-27 00:00:00+00:00",
+    "age_hours": 39.18,
+    "rows": 1269
+  },
+  {
+    "key": "sector_flows",
+    "latest_ts": "2026-02-27 00:00:00+00:00",
+    "age_hours": 39.18,
+    "rows": 4751
+  },
+  {
+    "key": "sector_rotation",
+    "latest_ts": "2026-02-27 00:00:00+00:00",
+    "age_hours": 39.18,
+    "rows": 4751
+  },
+  {
+    "key": "portfolio_weights",
+    "latest_ts": "2026-02-28 00:00:00+00:00",
+    "age_hours": 15.18,
+    "rows": 30
+  },
+  {
+    "key": "daily_narrative",
+    "latest_ts": "2026-02-28 00:00:00+00:00",
+    "age_hours": 15.18,
+    "rows": 15
+  },
+  {
+    "key": "allocation_history",
+    "latest_ts": "2026-02-28 00:00:00+00:00",
+    "age_hours": 15.18,
+    "rows": 215
+  },
+  {
+    "key": "narrative_state",
+    "latest_ts": "2026-02-28 00:00:00+00:00",
+    "age_hours": 15.18,
+    "rows": 44
+  },
+  {
+    "key": "narrative_events",
+    "latest_ts": "2026-02-28 00:00:00+00:00",
+    "age_hours": 15.18,
+    "rows": 22
+  },
+  {
+    "key": "research_experiments",
+    "latest_ts": "2026-02-28 11:33:08.013079+00:00",
+    "age_hours": 3.63,
+    "rows": 175
+  },
+  {
+    "key": "market_state",
+    "latest_ts": "2026-02-28 14:18:43.480278+00:00",
+    "age_hours": 0.87,
+    "rows": 69
+  },
+  {
+    "key": "strategy_beliefs",
+    "latest_ts": "2026-02-28 14:18:43.954256+00:00",
+    "age_hours": 0.87,
+    "rows": 3
+  },
+  {
+    "key": "intelligent_state",
+    "latest_ts": "2026-02-28 14:20:05.180066+00:00",
+    "age_hours": 0.85,
+    "rows": 63
+  },
+  {
+    "key": "market_regime",
+    "latest_ts": "2026-02-28 14:20:05.180066+00:00",
+    "age_hours": 0.85,
+    "rows": 63
+  },
+  {
+    "key": "alpha_os_timeseries",
+    "latest_ts": "2026-02-28 14:20:37.164908+00:00",
+    "age_hours": 0.84,
+    "rows": 304
+  },
+  {
+    "key": "alpha_os_strategy_posteriors",
+    "latest_ts": "2026-02-28 14:20:37.164908+00:00",
+    "age_hours": 0.84,
+    "rows": 296
+  },
+  {
+    "key": "liquidity_risk",
+    "latest_ts": "2026-02-28 14:57:38.583843+00:00",
+    "age_hours": 0.22,
+    "rows": 30
+  }
+]

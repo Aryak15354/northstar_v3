@@ -1,0 +1,11 @@
+Northstar v3 — Market Data & Feature Architecture
+
+This is a placeholder PDF artifact. Replace with the official exported PDF deck.
+
+Pages:
+1. What problem it solves
+2. Why raw OHLCV is not enough
+3. The data layers
+4. How macro, flow, and equity signals are built
+5. How everything aligns in time
+6. How it feeds Njord

@@ -1,0 +1,211 @@
+# NS-USO V3 Batch Source Configuration
+# India-specific sources for Northstar V3 sentiment processing
+
+sources:
+  v3_batch:
+    region: India
+    trust_floor: 0.75
+    narrative_required: true
+    decay: static
+    trigger_events: false
+    max_lookback_days: 7
+    
+    # Tier-1: India Institutional Sources (Highest Trust)
+    tier1:
+      - name: "Reserve Bank of India"
+        url_patterns: ["rbi.org.in"]
+        trust_score: 0.95
+        policy_impact: high
+        categories: ["monetary_policy", "banking_regulation"]
+        
+      - name: "Ministry of Finance India"
+        url_patterns: ["finmin.nic.in"]
+        trust_score: 0.90
+        policy_impact: high
+        categories: ["fiscal_policy", "economic_policy"]
+        
+      - name: "Securities and Exchange Board of India"
+        url_patterns: ["sebi.gov.in"]
+        trust_score: 0.90
+        policy_impact: medium
+        categories: ["market_regulation", "investor_protection"]
+        
+      - name: "National Stock Exchange"
+        url_patterns: ["nseindia.com"]
+        trust_score: 0.85
+        policy_impact: medium
+        categories: ["market_structure", "trading_updates"]
+        
+      - name: "Bombay Stock Exchange"
+        url_patterns: ["bseindia.com"]
+        trust_score: 0.85
+        policy_impact: medium
+        categories: ["market_structure", "trading_updates"]
+    
+    # Tier-2: India Financial Media (High Trust)
+    tier2:
+      - name: "Economic Times"
+        url_patterns: ["economictimes.indiatimes.com"]
+        trust_score: 0.85
+        policy_impact: medium
+        categories: ["market_news", "economic_analysis"]
+        
+      - name: "Business Standard"
+        url_patterns: ["business-standard.com"]
+        trust_score: 0.80
+        policy_impact: medium
+        categories: ["market_news", "policy_analysis"]
+        
+      - name: "Mint"
+        url_patterns: ["livemint.com"]
+        trust_score: 0.80
+        policy_impact: medium
+        categories: ["market_news", "economic_trends"]
+        
+      - name: "Moneycontrol"
+        url_patterns: ["moneycontrol.com"]
+        trust_score: 0.75
+        policy_impact: low
+        categories: ["market_news", "stock_analysis"]
+        
+      - name: "Reuters India"
+        url_patterns: ["reuters.com/world/india"]
+        trust_score: 0.85
+        policy_impact: medium
+        categories: ["global_india", "economic_news"]
+        
+      - name: "Bloomberg India"
+        url_patterns: ["bloomberg.com/news/india"]
+        trust_score: 0.85
+        policy_impact: medium
+        categories: ["market_analysis", "economic_data"]
+    
+    # Tier-3: Contextual Sources (Medium Trust)
+    tier3:
+      - name: "IMF India"
+        url_patterns: ["imf.org/en/Countries/IND"]
+        trust_score: 0.80
+        policy_impact: medium
+        categories: ["global_macro", "india_outlook"]
+        
+      - name: "World Bank India"
+        url_patterns: ["worldbank.org/en/country/india"]
+        trust_score: 0.80
+        policy_impact: medium
+        categories: ["development_finance", "economic_outlook"]
+    
+    # Explicitly Excluded Sources
+    excluded:
+      - "twitter.com"
+      - "telegram.org"
+      - "reddit.com"
+      - "discord.com"
+      - "crypto news sites"
+      - "opinion blogs"
+      - "social media platforms"
+    
+    # Content Filters
+    filters:
+      min_content_length: 100
+      max_content_age_hours: 168  # 7 days
+      require_india_keywords: true
+      exclude_crypto: true
+      exclude_opinion: true
+      
+    # India-specific Keywords (for relevance scoring)
+    india_keywords:
+      high_relevance:
+        - "RBI"
+        - "Reserve Bank of India"
+        - "NIFTY"
+        - "SENSEX"
+        - "NSE"
+        - "BSE"
+        - "SEBI"
+        - "Indian rupee"
+        - "INR"
+        - "India GDP"
+        - "Indian economy"
+        
+      medium_relevance:
+        - "Mumbai"
+        - "Delhi"
+        - "Bangalore"
+        - "Indian markets"
+        - "Bombay Stock Exchange"
+        - "National Stock Exchange"
+        - "Indian banking"
+        - "Indian IT"
+        - "Indian pharma"
+        
+      sector_keywords:
+        Banking:
+          - "Indian banks"
+          - "HDFC"
+          - "ICICI"
+          - "SBI"
+          - "banking sector India"
+          
+        IT:
+          - "Indian IT"
+          - "TCS"
+          - "Infosys"
+          - "Wipro"
+          - "tech sector India"
+          
+        Pharma:
+          - "Indian pharma"
+          - "Sun Pharma"
+          - "Dr Reddy's"
+          - "Cipla"
+          - "pharmaceutical India"
+          
+        Auto:
+          - "Indian auto"
+          - "Maruti"
+          - "Tata Motors"
+          - "Mahindra"
+          - "automotive India"
+          
+        FMCG:
+          - "Indian FMCG"
+          - "Hindustan Unilever"
+          - "ITC"
+          - "Nestle India"
+          - "consumer goods India"
+
+# Processing Configuration
+processing:
+  sentiment_models:
+    primary: "finbert-india"  # Hypothetical India-tuned FinBERT
+    secondary: "llm-sentiment"  # LLM-based sentiment
+    
+  narrative_extraction:
+    min_narrative_length: 50
+    max_narratives_per_source: 3
+    require_policy_context: true
+    
+  batch_aggregation:
+    time_window_hours: 24
+    min_sources_per_theme: 2
+    confidence_threshold: 0.6
+    
+  output_format:
+    market_sentiment_frequency: "daily"
+    sector_narratives_frequency: "daily"
+    policy_context_frequency: "daily"
+    
+# Quality Assurance
+quality:
+  min_trust_score: 0.75
+  max_uncertainty: 0.5
+  require_narrative_cohesion: true
+  flag_contradictions: true
+  
+# Integration Settings
+integration:
+  v3_compatibility: true
+  batch_mode_only: true
+  no_live_triggers: true
+  no_shock_events: true
+  no_risk_authority_interaction: true

@@ -1,0 +1,254 @@
+{
+  "execution_summary": {
+    "start_time": "2026-02-06T01:18:34.649146",
+    "end_time": "2026-02-06T01:28:46.639433",
+    "total_duration_seconds": 611.990274,
+    "total_duration_minutes": 10.2
+  },
+  "phase_results": {
+    "data_ingestion": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Index data update (NIFTY benchmarks) completed",
+        "Market data update (YFinance) completed",
+        "RBI macro data update (RBI system integration) completed",
+        "Verified: data/macro/raw/",
+        "Verified: data/raw/prices_daily/",
+        "Verified: data/processed/market_state.parquet"
+      ]
+    },
+    "system_update": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "NS-USO V3 batch sentiment ingestion (India-specific) completed",
+        "Simple system update (Data + Portfolio) completed",
+        "Refresh V3 artifacts (real-data pipeline for dashboard) completed",
+        "Generated: data/processed/strategy_beliefs.parquet",
+        "Generated: data/processed/portfolio_weights.parquet",
+        "Generated: data/processed/market_state.parquet",
+        "Generated: data/processed/system_status.json"
+      ]
+    },
+    "backtesting": {
+      "duration": 1.400134801864624,
+      "status": "success",
+      "details": [
+        "12-month institutional validation completed",
+        "Enhanced stress tests (2008, COVID, 2022) completed",
+        "Walk-forward out-of-sample validation completed"
+      ]
+    },
+    "shadow_trading": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Shadow trading validation (1 day) completed",
+        "Generated: data/live/shadow_trading/positions/",
+        "Generated: data/live/shadow_trading/pnl/",
+        "Generated: data/live/shadow_trading/decisions/"
+      ]
+    },
+    "performance_analysis": {
+      "duration": 1.2118680477142334,
+      "status": "success",
+      "details": [
+        "12-month performance report generation completed",
+        "Final institutional validation completed"
+      ]
+    },
+    "alpha_generation": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Alpha snapshot saved (20 positions, 20 candidates)"
+      ]
+    },
+    "dashboard_launch": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "V3 dashboard launched (PID: 23427)"
+      ]
+    }
+  },
+  "execution_log": [
+    {
+      "timestamp": "2026-02-06T01:18:49.747358",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Index data update (NIFTY benchmarks) completed",
+      "duration_seconds": 6.366380929946899
+    },
+    {
+      "timestamp": "2026-02-06T01:21:09.569402",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Market data update (YFinance) completed",
+      "duration_seconds": 139.82183074951172
+    },
+    {
+      "timestamp": "2026-02-06T01:21:11.747635",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "RBI macro data update (RBI system integration) completed",
+      "duration_seconds": 2.177734136581421
+    },
+    {
+      "timestamp": "2026-02-06T01:21:11.747796",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/macro/raw/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:21:11.747818",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/raw/prices_daily/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:21:11.747832",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/processed/market_state.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:21:11.807209",
+      "phase": "system_update",
+      "status": "success",
+      "message": "NS-USO V3 batch sentiment ingestion (India-specific) completed",
+      "duration_seconds": 0.05929994583129883
+    },
+    {
+      "timestamp": "2026-02-06T01:21:15.296472",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Simple system update (Data + Portfolio) completed",
+      "duration_seconds": 3.4889848232269287
+    },
+    {
+      "timestamp": "2026-02-06T01:28:35.754781",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Refresh V3 artifacts (real-data pipeline for dashboard) completed",
+      "duration_seconds": 440.45803904533386
+    },
+    {
+      "timestamp": "2026-02-06T01:28:35.755127",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/strategy_beliefs.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:28:35.755155",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/portfolio_weights.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:28:35.755178",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/market_state.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:28:35.755190",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/system_status.json",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:28:36.864770",
+      "phase": "alpha_generation",
+      "status": "success",
+      "message": "Alpha snapshot saved (20 positions, 20 candidates)",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:28:40.050795",
+      "phase": "backtesting",
+      "status": "success",
+      "message": "12-month institutional validation completed",
+      "duration_seconds": 3.1859383583068848
+    },
+    {
+      "timestamp": "2026-02-06T01:28:41.525312",
+      "phase": "backtesting",
+      "status": "success",
+      "message": "Enhanced stress tests (2008, COVID, 2022) completed",
+      "duration_seconds": 1.4742119312286377
+    },
+    {
+      "timestamp": "2026-02-06T01:28:42.925769",
+      "phase": "backtesting",
+      "status": "success",
+      "message": "Walk-forward out-of-sample validation completed",
+      "duration_seconds": 1.400134801864624
+    },
+    {
+      "timestamp": "2026-02-06T01:28:44.179535",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Shadow trading validation (1 day) completed",
+      "duration_seconds": 1.2535269260406494
+    },
+    {
+      "timestamp": "2026-02-06T01:28:44.179879",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Generated: data/live/shadow_trading/positions/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:28:44.179903",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Generated: data/live/shadow_trading/pnl/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:28:44.179917",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Generated: data/live/shadow_trading/decisions/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-06T01:28:45.423313",
+      "phase": "performance_analysis",
+      "status": "success",
+      "message": "12-month performance report generation completed",
+      "duration_seconds": 1.2433290481567383
+    },
+    {
+      "timestamp": "2026-02-06T01:28:46.635427",
+      "phase": "performance_analysis",
+      "status": "success",
+      "message": "Final institutional validation completed",
+      "duration_seconds": 1.2118680477142334
+    },
+    {
+      "timestamp": "2026-02-06T01:28:46.639268",
+      "phase": "dashboard_launch",
+      "status": "success",
+      "message": "V3 dashboard launched (PID: 23427)",
+      "duration_seconds": 0
+    }
+  ],
+  "system_status": {
+    "data_fresh": true,
+    "system_updated": true,
+    "backtests_complete": true,
+    "shadow_trading_active": true,
+    "performance_analyzed": true,
+    "dashboard_running": true
+  }
+}

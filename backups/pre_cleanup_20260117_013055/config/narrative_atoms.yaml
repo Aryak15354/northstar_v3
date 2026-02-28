@@ -1,0 +1,327 @@
+macro_forces:
+  liquidity_tightening:
+    cause:
+      - RBI hiking rates
+      - bond yields rising 
+      - credit spreads widening
+    effect:
+      - growth stocks derate
+      - FII outflows accelerate
+      - margin compression
+    market_behavior:
+      - volatility rising
+      - breadth weakening
+      - defensive rotation
+    portfolio_action:
+      - reduce high beta exposure
+      - increase cash allocation
+      - rotate to quality names
+    failure_mode:
+      - false tightening signal
+      - policy reversal risk
+      - oversold bounce potential
+    historical_precedents:
+      - 2018_Q4: "RBI tightening cycle led to 12% market correction over 6 months"
+      - 2013_Q2: "Liquidity squeeze caused 8-15% IT underperformance vs defensives"
+    condition: macro_liquidity_change < -0.03
+    narrative: "Tightening liquidity conditions compress long-duration earnings multiples"
+    
+  inflation_acceleration:
+    cause:
+      - commodity price surge
+      - supply chain disruption
+      - wage inflation pressure
+    effect:
+      - margin pressure on corporates
+      - monetary policy tightening
+      - consumer demand slowdown
+    market_behavior:
+      - value outperforms growth
+      - commodity stocks rally
+      - bond yields rise
+    portfolio_action:
+      - rotate to pricing power stocks
+      - reduce duration exposure
+      - increase commodity allocation
+    failure_mode:
+      - transitory inflation narrative
+      - demand destruction
+      - policy over-tightening
+    historical_precedents:
+      - 2022_Q1: "Inflation surge led to 25% growth stock underperformance"
+      - 2008_Q1: "Commodity inflation preceded recession by 8 months"
+    condition: macro_cpi_change > 0.002
+    narrative: "Rising inflation pressures force monetary tightening and margin compression"
+    
+  fii_outflow_acceleration:
+    cause:
+      - global risk-off sentiment
+      - dollar strength
+      - emerging market concerns
+    effect:
+      - rupee weakness
+      - market liquidity drain
+      - domestic premium compression
+    market_behavior:
+      - large cap underperformance
+      - mid/small cap resilience
+      - sector rotation to domestic
+    portfolio_action:
+      - reduce FII-heavy sectors
+      - increase domestic consumption
+      - hedge currency exposure
+    failure_mode:
+      - FII flow reversal
+      - global risk-on return
+      - policy intervention
+    historical_precedents:
+      - 2022_Q1: "FII outflows of ₹1.2L cr led to 15% Nifty correction"
+      - 2018_Q4: "Global risk-off caused 8 weeks of sustained selling"
+    condition: fii_flows < -1000
+    narrative: "Foreign capital retreat creates domestic market pressure"
+portfolio_actions:
+  defensive_rotation:
+    cause:
+      - regime instability rising
+      - market stress indicators
+      - risk-off sentiment
+    effect:
+      - capital preservation
+      - volatility reduction
+      - downside protection
+    market_behavior:
+      - flight to quality
+      - defensive outperformance
+      - correlation breakdown
+    portfolio_action:
+      - increase cash allocation
+      - rotate to defensive sectors
+      - reduce cyclical exposure
+    failure_mode:
+      - premature defensive positioning
+      - opportunity cost risk
+      - false risk signal
+    historical_precedents:
+      - 2018_Q4: "Defensive rotation preserved 8% capital during correction"
+      - 2020_Q1: "Early defensive positioning avoided 25% drawdown"
+    condition: cash_allocation > 0.15
+    narrative: "Rotated capital to defensive positioning based on regime intelligence"
+    justification: "Historical precedent shows defensive outperformance in uncertain conditions"
+    
+  opportunistic_deployment:
+    cause:
+      - regime stability confirmation
+      - attractive valuations
+      - momentum acceleration
+    effect:
+      - maximum opportunity capture
+      - alpha generation
+      - regime-aligned positioning
+    market_behavior:
+      - trend continuation
+      - momentum effectiveness
+      - risk-on sentiment
+    portfolio_action:
+      - deploy excess cash
+      - increase risk allocation
+      - maximize factor exposure
+    failure_mode:
+      - regime transition risk
+      - momentum exhaustion
+      - valuation expansion limits
+    historical_precedents:
+      - 2009_Q2: "Opportunistic deployment captured 45% upside in recovery"
+      - 2016_Q4: "Low cash positioning maximized momentum cycle gains"
+    condition: cash_allocation < 0.08
+    narrative: "Opportunistic capital deployment to capture regime-specific opportunities"
+    justification: "Low cash levels reflect confidence in current regime stability"
+    
+  risk_calibration:
+    cause:
+      - volatility regime change
+      - correlation structure shift
+      - drawdown management
+    effect:
+      - risk-adjusted returns
+      - volatility control
+      - capital preservation
+    market_behavior:
+      - reduced position sizing
+      - increased diversification
+      - defensive positioning
+    portfolio_action:
+      - calibrate position sizes
+      - increase diversification
+      - implement risk controls
+    failure_mode:
+      - over-conservative positioning
+      - opportunity cost
+      - false risk signal
+    historical_precedents:
+      - 2011_Q3: "Risk calibration avoided European crisis contagion"
+      - 2015_Q3: "Position sizing preserved capital during China shock"
+    condition: total_risk < 0.15
+    narrative: "Risk calibration to maintain institutional standards"
+    justification: "Conservative risk management during uncertain periods"
+regime_signals:
+  regime_instability:
+    cause:
+      - conflicting macro signals
+      - strategy performance divergence
+      - market structure breakdown
+    effect:
+      - increased volatility
+      - correlation breakdown
+      - strategy rotation
+    market_behavior:
+      - whipsaw price action
+      - sector rotation acceleration
+      - risk-off episodes
+    portfolio_action:
+      - reduce position sizes
+      - increase diversification
+      - prepare for regime shift
+    failure_mode:
+      - false regime signal
+      - temporary instability
+      - mean reversion
+    historical_precedents:
+      - 2018_Q4: "Regime instability preceded 6-month correction cycle"
+      - 2020_Q1: "Stability breakdown led to crisis regime transition"
+    condition: regime_stability < 0.3
+    narrative: "Regime transition risk rising as stability metrics deteriorate"
+    
+  expansion_regime_maturity:
+    cause:
+      - extended bull market duration
+      - valuation expansion limits
+      - policy accommodation peak
+    effect:
+      - momentum strategy risks
+      - late-cycle dynamics
+      - rotation to quality
+    market_behavior:
+      - breadth deterioration
+      - leadership narrowing
+      - defensive outperformance
+    portfolio_action:
+      - reduce cyclical exposure
+      - increase quality allocation
+      - prepare defensive rotation
+    failure_mode:
+      - policy re-acceleration
+      - productivity surge
+      - external shock reset
+    historical_precedents:
+      - 2007_Q4: "Late expansion preceded 18-month bear market"
+      - 2000_Q1: "Euphoria peak led to 3-year correction cycle"
+    condition: regime_name == "Late_Expansion_Euphoria"
+    narrative: "Late-cycle conditions suggest momentum peak and quality rotation"
+    
+  crisis_regime_emergence:
+    cause:
+      - liquidity shock event
+      - systemic risk materialization
+      - confidence breakdown
+    effect:
+      - flight to quality
+      - correlation spike
+      - volatility explosion
+    market_behavior:
+      - indiscriminate selling
+      - credit spread widening
+      - safe haven demand
+    portfolio_action:
+      - maximize cash allocation
+      - focus on quality names
+      - eliminate leverage
+    failure_mode:
+      - policy intervention
+      - liquidity restoration
+      - confidence recovery
+    historical_precedents:
+      - 2008_Q4: "Crisis regime lasted 18 months with 55% peak drawdown"
+      - 2020_Q1: "Pandemic crisis required 6-month defensive positioning"
+    condition: regime_name in ["Crisis_Liquidity_Shock", "Crisis_Structural"]
+    narrative: "Crisis regime conditions require capital preservation focus"
+strategy_signals:
+  momentum_breakdown:
+    cause:
+      - trend exhaustion
+      - regime transition
+      - liquidity conditions change
+    effect:
+      - momentum factor decay
+      - mean reversion acceleration
+      - volatility spike
+    market_behavior:
+      - leadership rotation
+      - sector dispersion increase
+      - correlation breakdown
+    portfolio_action:
+      - reduce momentum allocation
+      - increase mean reversion strategies
+      - rotate to defensive factors
+    failure_mode:
+      - trend resumption
+      - momentum re-acceleration
+      - false breakdown signal
+    historical_precedents:
+      - 2018_Q4: "Momentum breakdown preceded 6-month value outperformance"
+      - 2000_Q2: "Tech momentum collapse led to 3-year value cycle"
+    condition: momentum_sharpe < 0.5
+    narrative: "Momentum strategies losing effectiveness as regime shifts"
+    
+  value_opportunity_emergence:
+    cause:
+      - valuation dispersion widening
+      - quality discount expansion
+      - contrarian opportunity
+    effect:
+      - value factor revival
+      - quality re-rating
+      - defensive outperformance
+    market_behavior:
+      - rotation from growth to value
+      - dividend yield premium
+      - balance sheet focus
+    portfolio_action:
+      - increase value allocation
+      - focus on quality value
+      - reduce growth premium
+    failure_mode:
+      - growth re-acceleration
+      - value trap risk
+      - earnings disappointment
+    historical_precedents:
+      - 2001_Q1: "Value outperformed growth by 35% over 2 years"
+      - 2009_Q1: "Crisis value opportunities generated 3-year alpha"
+    condition: value_sharpe > momentum_sharpe
+    narrative: "Value strategies outperforming as contrarian opportunities emerge"
+    
+  quality_defense_activation:
+    cause:
+      - market stress increase
+      - earnings uncertainty
+      - risk-off sentiment
+    effect:
+      - quality premium expansion
+      - balance sheet focus
+      - defensive rotation
+    market_behavior:
+      - flight to quality names
+      - margin stability premium
+      - low volatility outperformance
+    portfolio_action:
+      - increase quality allocation
+      - focus on balance sheet strength
+      - reduce speculative exposure
+    failure_mode:
+      - risk-on return
+      - growth re-acceleration
+      - quality overvaluation
+    historical_precedents:
+      - 2008_Q3: "Quality strategies provided 15% downside protection"
+      - 2020_Q1: "Balance sheet quality crucial during crisis"
+    condition: quality_max_drawdown < market_drawdown * 0.7
+    narrative: "Quality strategies providing crucial downside protection"

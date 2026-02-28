@@ -1,0 +1,7 @@
+{
+  "enable_auto_integration": true,
+  "integration_timeout_seconds": 300,
+  "health_check_interval_seconds": 60,
+  "max_retry_attempts": 3,
+  "enable_graceful_degradation": true
+}

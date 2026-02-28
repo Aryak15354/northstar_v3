@@ -1,0 +1,65 @@
+# Development Configuration
+# For testing and development purposes
+
+# Position Limits
+position_limits:
+  per_underlying: 10  # Small limits for testing
+  total: 50
+  max_concentration: 0.30  # 30% max per underlying
+
+# Greeks Limits
+greeks_limits:
+  delta: 100
+  gamma: 50
+  vega: 1000
+  theta: -100
+  rho: 500
+
+# Risk Thresholds
+risk_thresholds:
+  var_95: 5000  # $5k max VaR at 95%
+  var_99: 10000  # $10k max VaR at 99%
+  cvar_95: 7500  # $7.5k max CVaR at 95%
+  max_drawdown: 0.10  # 10% max drawdown
+
+# Regime-Conditional Adjustments
+regime_adjustments:
+  crisis:
+    position_limits_multiplier: 0.3
+    short_vol_allowed: false
+    max_leverage: 1.0
+  high_vol:
+    position_limits_multiplier: 0.5
+    short_vol_allowed: true
+    max_leverage: 1.2
+  low_vol:
+    position_limits_multiplier: 1.0
+    short_vol_allowed: true
+    max_leverage: 1.5
+
+# Execution Parameters
+execution:
+  default_order_type: "LIMIT"
+  limit_price_offset: 0.10  # 10 cents better than mid
+  time_in_force: "DAY"
+  preferred_venues: ["CBOE"]
+  min_liquidity: 100  # contracts
+
+# Performance Monitoring
+monitoring:
+  pnl_update_frequency: 60  # seconds
+  greeks_update_frequency: 30  # seconds
+  risk_check_frequency: 300  # seconds
+  performance_degradation_threshold: 0.3  # 30% Sharpe decline
+
+# State Persistence
+persistence:
+  snapshot_frequency: 300  # seconds (5 minutes)
+  snapshot_directory: "snapshots/"
+  max_snapshots: 50  # Keep last 50 snapshots
+
+# Monte Carlo
+monte_carlo_workers: 2  # Fewer workers for dev
+
+# Margin
+margin_buffer: 2.0  # 2x margin buffer for safety

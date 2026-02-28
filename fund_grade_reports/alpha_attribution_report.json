@@ -1,0 +1,10 @@
+{
+  "alpha_sources": {
+    "momentum_specialist": 0.23404527199708772,
+    "value_specialist": 0.23404527199708772,
+    "quality_specialist": 0.29786418400877945,
+    "macro_specialist": 0.23404527199708772
+  },
+  "primary_source": "quality_specialist",
+  "diversification_score": 0.7021358159912205
+}

@@ -1,0 +1,320 @@
+{
+  "generated": "2026-01-19T22:06:56.487478",
+  "structure": {
+    "demo": {
+      "count": 6,
+      "files": [
+        "comprehensive_report_20260118_103052.json",
+        "comprehensive_report_20260105_042509.html",
+        "system_report_20260118_103052.json",
+        "comprehensive_report_20260105_042509.json",
+        "system_report_20260105_042509.json",
+        "comprehensive_report_20260118_103052.html"
+      ]
+    },
+    "operation": {
+      "count": 33,
+      "files": [
+        "daily_operations_report_20260105_054718.json",
+        "system_validation_report_20260105_071019.json",
+        "integration_test_report_20260105_071853.json",
+        "daily_operations_report_20260105_054647.json",
+        "comprehensive_report_20260105_050911.json",
+        "daily_operations_report_20260105_054715.json",
+        "health_certificate_report_20260105_070830.json",
+        "daily_operations_report_20260105_055256.json",
+        "integration_test_report_20260105_071814.json",
+        "integration_test_report_20260105_071910.json",
+        "daily_operations_report_20260105_054641.json",
+        "system_validation_report_20260105_071005.json",
+        "comprehensive_report_20260105_051035.json",
+        "integration_test_report_20260105_071926.json",
+        "system_validation_report_20260105_070814.json",
+        "system_validation_report_20260105_070951.json",
+        "comprehensive_report_20260105_050911.pdf",
+        "daily_operations_report_20260105_054713.json",
+        "crisis_report_20260105_073626.json",
+        "daily_operations_report_20260105_054643.json",
+        "comprehensive_report_20260105_051035.pdf",
+        "health_certificate_report_20260105_071005.json",
+        "comprehensive_report_20260105_051035.html",
+        "daily_operations_report_20260105_054642.json",
+        "daily_operations_report_20260105_054716.json",
+        "daily_operations_report_20260105_054645.json",
+        "health_certificate_report_20260105_071019.json",
+        "comprehensive_report_20260105_050911.html",
+        "system_validation_report_20260105_070830.json",
+        "daily_operations_report_20260105_054644.json",
+        "daily_operations_report_20260105_054717.json",
+        "daily_operations_report_20260105_055258.json",
+        "daily_operations_report_20260105_054648.json"
+      ]
+    },
+    "shadow_validation": {
+      "count": 1,
+      "files": [
+        "shadow_validation_report_20251220_20260119.json"
+      ]
+    },
+    "tasks": {
+      "count": 41,
+      "files": [
+        "TASKS_11_12_COMPLETION_REPORT.md",
+        "TASK_8_COMPLETION_REPORT.md",
+        "TASKS_12_13_COMPLETION_REPORT.md",
+        "TASK_4_INTEGRATED_DASHBOARD_COMPLETE.md",
+        "TASKS_14_15_COMPLETION_REPORT.md",
+        "task17_final_validation_results.json",
+        "TASK_14_SUMMARY.md",
+        "TASKS_10_11_COMPLETION_REPORT.md",
+        "task10_stress_testing_validation_complete.json",
+        "task9_portfolio_aware_position_sizing_complete.json",
+        "TASKS_16_17_18_FINAL_COMPLETION_REPORT.md",
+        "task11_economic_causality_validation_complete.json",
+        "TASKS_2_7_2_8_COMPLETION_REPORT.md",
+        "task8_enhanced_bayesian_tribunal_complete.md",
+        "task15_completion_update.json",
+        "TASKS_15_16_COMPLETION_REPORT.md",
+        "TASK_13_COMPLETION_REPORT.md",
+        "task15_final_system_validation_complete.json",
+        "TASKS_2_9_2_10_COMPLETION_REPORT.md",
+        "TASKS_9_10_COMPLETION_REPORT.md",
+        "TASKS_4_4_4_6_COMPLETION_REPORT.md",
+        "V3_CLEANUP_TASKS_4_5_COMPLETION_REPORT.md",
+        "task17_completion_summary.json",
+        "TASKS_16_17_18_COMPLETION_REPORT.md",
+        "task14_comprehensive_fixes_20260105_033232.md",
+        "TASKS_3_7_COMPLETION_REPORT.md",
+        "TASKS_10_11_13_14_COMPLETION_REPORT.md",
+        "task14_4_circular_dependencies_fix_20260105_032732.md",
+        "TASKS_9_11_COMPLETION_REPORT.md",
+        "task18_final_checkpoint_results.json",
+        "task8_enhanced_bayesian_tribunal_complete.json",
+        "TASKS_4_1_4_3_COMPLETION_REPORT.md",
+        "task14_integration_system_wiring_complete.json",
+        "task6_signal_health_monitor_complete.md",
+        "TASK_14_COMPLETION_REPORT.md",
+        "task13_institutional_reporting_complete.json",
+        "TASK_1_COMPLETION_REPORT.md",
+        "task6_implementation_results.json",
+        "task12_real_time_health_monitoring_complete.json",
+        "TASKS_7_8_COMPLETION_REPORT.md",
+        "TASKS_5_6_COMPLETION_REPORT.md"
+      ]
+    },
+    "capital": {
+      "count": 1,
+      "files": [
+        "capital_grade_validation_report.json"
+      ]
+    },
+    "backtests": {
+      "count": 1,
+      "files": [
+        "comprehensive_backtest_20260105_050415.json"
+      ]
+    },
+    "shadow": {
+      "count": 2,
+      "files": [
+        "SHADOW_TRADING_SETUP.md",
+        "SHADOW_TRADING_INTEGRATION_COMPLETE.md"
+      ]
+    },
+    "completion": {
+      "count": 18,
+      "files": [
+        "V3_CLEANUP_PHASE1_COMPLETE.md",
+        "LIVING_SYSTEM_ENTRY_POINT_COMPLETE.md",
+        "TASK3_ALPHA_VALIDATOR_COMPLETE.md",
+        "FINAL_LIVING_SYSTEM_VALIDATION_COMPLETE.md",
+        "ENHANCED_EVENT_SYSTEM_COMPLETE.md",
+        "V3_CLEANUP_FINAL_COMPLETE.md",
+        "BRAIN_WINDOW_IMPLEMENTATION_COMPLETE.md",
+        "TASK8_ENHANCED_PORTFOLIO_SIMULATOR_COMPLETE.md",
+        "TASK16_PRODUCTION_DEPLOYMENT_COMPLETE.md",
+        "RBI_PIPELINE_COMPLETE.md",
+        "INTEGRATION_TESTING_VALIDATION_COMPLETE.md",
+        "TASK1_ADV_POSITION_GOVERNOR_COMPLETE.md",
+        "CORE_SYSTEM_INTEGRATION_CHECKPOINT_COMPLETE.md",
+        "TASK2_CRISIS_VALIDATOR_COMPLETE.md",
+        "TASK14_1_CONFIGURABLE_PARAMETERS_COMPLETE.md",
+        "TASK4_BACKTEST_ORCHESTRATOR_COMPLETE.md",
+        "TASK5_REALITY_CHECK_ENGINE_COMPLETE.md",
+        "HEALTH_MONITORING_SYSTEM_COMPLETE.md"
+      ]
+    },
+    "institutional": {
+      "count": 4,
+      "files": [
+        "INSTITUTIONAL_VALIDATION_COMPLETE.md",
+        "INSTITUTIONAL_12MONTH_VALIDATION.md",
+        "INSTITUTIONAL_SAFEGUARDS_COMPLETE.md",
+        "INSTITUTIONAL_VALIDATION_FINAL_COMPLETION.md"
+      ]
+    },
+    "status": {
+      "count": 0,
+      "files": []
+    },
+    "dashboard": {
+      "count": 0,
+      "files": []
+    },
+    "system": {
+      "count": 21,
+      "files": [
+        "TASK13_SYSTEM_INTEGRATION_VALIDATION_COMPLETE.md",
+        "LIVING_SYSTEM_ARCHITECTURE.md",
+        "CAPITAL_GRADE_SYSTEM_LAWS_IMPLEMENTATION.md",
+        "SYSTEM_INTEGRITY_REPAIR_STATUS.md",
+        "system_integration_report.md",
+        "TASK14_COMPLETE_SYSTEM_COHESION_FIXES.md",
+        "SYSTEM_INTEGRITY_INTEGRATION_COMPLETE.md",
+        "FINAL_SYSTEM_VALIDATION_CERTIFICATION_REPORT.md",
+        "TASK1_FOUNDATION_AUDIT_REPORT.md",
+        "system_integrity_repair_final.json",
+        "SYSTEM_INTEGRITY_REPAIR_FINAL_COMPLETE.md",
+        "TASK15_FINAL_SYSTEM_VALIDATION_SUMMARY.md",
+        "data_organization_report.json",
+        "SYSTEM_RECOVERY_SUMMARY.md",
+        "SYSTEM_INTEGRITY_DIAGNOSTIC_REPORT.md",
+        "SYSTEM_INTEGRITY_REPAIR_COMPLETE.md",
+        "SYSTEM_INTEGRITY_REPAIR_FINAL_STATUS.md",
+        "HARDCODED_REFERENCES_MIGRATION_REPORT.md",
+        "enhanced_organization_report.json",
+        "NORTHSTAR_V3_SYSTEM_CERTIFICATION.md",
+        "system_integrity_diagnostic.json"
+      ]
+    },
+    "cleanup": {
+      "count": 7,
+      "files": [
+        "coherence_audit_20251230_013857.md",
+        "cleanup_plan.md",
+        "coherence_audit_20251230_013045.md",
+        "coherence_audit_20251230_013528.md",
+        "coherence_audit_20251230_014609.md",
+        "V3_CLEANUP_TASK14_IMPORT_VALIDATION.md",
+        "V3_CLEANUP_TASK14_SUMMARY.md"
+      ]
+    },
+    "summaries": {
+      "count": 0,
+      "files": []
+    },
+    "production": {
+      "count": 1,
+      "files": [
+        "PRODUCTION_DEPLOYMENT_COMPLETE.md"
+      ]
+    },
+    "final": {
+      "count": 1,
+      "files": [
+        "FINAL_COMPREHENSIVE_COMPLETION_REPORT.md"
+      ]
+    },
+    "alpha_validation": {
+      "count": 1,
+      "files": [
+        "alpha_validation_demo_report.json"
+      ]
+    },
+    "crisis_validation": {
+      "count": 1,
+      "files": [
+        "crisis_validation_demo_report.json"
+      ]
+    },
+    "system_validation": {
+      "count": 0,
+      "files": []
+    },
+    "phases": {
+      "count": 3,
+      "files": [
+        "PHASE_1_CHECKPOINT_COMPLETE.md",
+        "PHASE_2_COMPLETION_REPORT.md",
+        "PHASE_4_SHADOW_REALITY_CHECKPOINT_COMPLETE.md"
+      ]
+    },
+    "performance": {
+      "count": 2,
+      "files": [
+        "PERFORMANCE_REPORT_12M_20260117.md",
+        "TASK6_PERFORMANCE_MONITOR_DEMO_20260105_052741.json"
+      ]
+    },
+    "data": {
+      "count": 3,
+      "files": [
+        "point_in_time_implementation.json",
+        "layer5_implementation_results.json",
+        "layer4_implementation_results.json"
+      ]
+    },
+    "risk": {
+      "count": 0,
+      "files": []
+    },
+    "production_deployment": {
+      "count": 2,
+      "files": [
+        "production_deployment_report_20260119_145646.json",
+        "production_deployment_report_20260119_145537.json"
+      ]
+    },
+    "northstar": {
+      "count": 6,
+      "files": [
+        "northstar_market_brief_2025-12-28.md",
+        "NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md",
+        "northstar_v3_final_summary.json",
+        "northstar_market_brief_2025-12-28.html",
+        "northstar_v3_code_analysis.json",
+        "NORTHSTAR_V3_ULTIMATE_COMPLETION_REPORT.md"
+      ]
+    },
+    "technical": {
+      "count": 7,
+      "files": [
+        "temporal_retrofit_report.json",
+        "temporal_protection_status_update.md",
+        "temporal_protection_validation_summary.md",
+        "temporal_protection_validation.json",
+        "TENSORFLOW_M1_FIX_AND_ROBUSTNESS_COMPLETION.md",
+        "robustness_fixes_applied.json",
+        "TENSORFLOW_M1_FIX_SUMMARY.md"
+      ]
+    },
+    "validation": {
+      "count": 15,
+      "files": [
+        "walk_forward_analysis_report_20260105_063118.json",
+        "walk_forward_analysis_report_20260105_063102.json",
+        "walk_forward_analysis_report_20260105_063505.json",
+        "FINAL_CHECKPOINT_VALIDATION_REPORT.md",
+        "CAPITAL_GRADE_VALIDATION_REPORT.md",
+        "TASK5_CHECKPOINT_VALIDATION_20260105_051035.md",
+        "TASK17_FINAL_VALIDATION_COMPLETE.md",
+        "WALK_FORWARD_ANALYSIS_RESULTS_2026-01-18.md",
+        "walk_forward_analysis_report_20260105_063449.json",
+        "SHADOW_REALITY_FINAL_VALIDATION_REPORT.md",
+        "stress_test_report_20260105_080223.json",
+        "walk_forward_analysis_report_20260105_062731.json",
+        "stress_test_report_20260105_080233.json",
+        "THE_HONEST_WALK_FORWARD_COMPLETE.md",
+        "walk_forward_analysis_report_20260105_063009.json"
+      ]
+    },
+    "root": {
+      "count": 2,
+      "files": [
+        "layer4_regime_specialists_complete.md",
+        "workspace_analysis.md"
+      ]
+    }
+  },
+  "total_files": 179
+}

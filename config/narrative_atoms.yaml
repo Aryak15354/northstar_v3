@@ -1,0 +1,114 @@
+macro_forces:
+  fii_outflows:
+    condition: fii_flows < -1000
+    historical_precedents:
+    - 2022_Q1
+    - 2018_Q4
+    - 2013_Q2
+    implications:
+    - market_pressure
+    - currency_weakness
+    narrative: Foreign capital retreat
+    strategy_impact: Domestic-focused strategies show relative resilience
+  inflation_rising:
+    condition: macro_cpi_change > 0.002
+    historical_precedents:
+    - 2018_Q3
+    - 2022_Q1
+    - 2008_Q1
+    implications:
+    - late_cycle_risk
+    - monetary_tightening_risk
+    narrative: Rising inflation pressures
+    strategy_impact: Momentum strategies typically underperform during inflationary
+      periods
+  liquidity_tightening:
+    condition: macro_liquidity_change < -0.03
+    historical_precedents:
+    - 2018_Q4
+    - 2013_Q2
+    implications:
+    - credit_stress
+    - momentum_weakness
+    narrative: Tightening liquidity conditions
+    strategy_impact: Quality and defensive strategies outperform during liquidity
+      stress
+  yield_curve_dynamics:
+    condition: yield_10y_2y_spread < 0.5
+    historical_precedents:
+    - 2019_Q3
+    - 2006_Q4
+    implications:
+    - recession_risk
+    - defensive_positioning
+    narrative: Yield curve flattening signals
+    strategy_impact: Duration and defensive strategies benefit from curve flattening
+portfolio_actions:
+  defensive_rotation:
+    condition: cash_allocation > 0.15
+    justification: Historical precedent shows defensive outperformance in uncertain
+      conditions
+    narrative: Increased defensive positioning
+    strategy_impact: Capital preservation takes priority over growth
+  opportunistic_positioning:
+    condition: cash_allocation < 0.08
+    justification: Low cash levels indicate confidence in current regime stability
+    narrative: Opportunistic capital deployment
+    strategy_impact: Maximum exposure to capture regime-specific opportunities
+  risk_reduction:
+    condition: total_risk < 0.15
+    justification: Conservative risk management during uncertain periods
+    narrative: Reduced portfolio risk profile
+    strategy_impact: Lower volatility strategies and increased diversification
+regime_signals:
+  crisis_regime:
+    action_required: true
+    condition: regime_name in ["Crisis_Liquidity_Shock", "Crisis_Structural"]
+    implications:
+    - capital_preservation
+    - quality_focus
+    narrative: Crisis regime conditions
+    strategy_impact: Quality and defensive strategies provide downside protection
+  expansion_regime:
+    condition: regime_name == "Expansion_Liquidity_Driven"
+    historical_precedents:
+    - '2003_2007'
+    - '2009_2015'
+    implications:
+    - momentum_effectiveness
+    - risk_on_positioning
+    narrative: Expansion regime with liquidity support
+    strategy_impact: Momentum and growth strategies historically outperform
+  regime_instability:
+    action_required: true
+    condition: regime_stability < 0.3
+    implications:
+    - strategy_rotation
+    - defensive_positioning
+    narrative: Regime transition risk rising
+    strategy_impact: Anticipatory positioning for regime shift becomes critical
+strategy_signals:
+  high_regret:
+    condition: avg_regret > 0.4
+    historical_context: High regret periods often precede strategy evolution
+    implications:
+    - strategy_rotation
+    - regime_adaptation
+    narrative: Strategy underperformance indicating regime mismatch
+    strategy_impact: Portfolio requires strategy rotation for regime alignment
+  high_volatility:
+    condition: volatility > 0.3
+    historical_context: High volatility periods require active risk management
+    implications:
+    - risk_management
+    - position_sizing
+    narrative: Elevated portfolio volatility
+    strategy_impact: Reduced position sizes and increased diversification needed
+  low_belief_strength:
+    condition: avg_belief_strength < 0.4
+    historical_context: Low conviction periods require defensive positioning
+    implications:
+    - strategy_uncertainty
+    - defensive_positioning
+    narrative: Reduced conviction in current strategy mix
+    strategy_impact: Increased cash allocation and defensive strategies warranted

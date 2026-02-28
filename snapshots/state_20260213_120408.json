@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-02-13T12:04:08.610239+05:30",
+  "cycle": 1770964529,
+  "regime": "rising_vol_buy",
+  "market_data": {
+    "option_contracts": 3263,
+    "NIFTY_price": 25564.05,
+    "BANKNIFTY_price": 60296.35
+  },
+  "portfolio_greeks": {
+    "delta": 0.0,
+    "gamma": 0.0,
+    "theta": 0.0,
+    "vega": 0.0
+  },
+  "total_pnl": -870.750000000011,
+  "realized_pnl": -870.750000000011,
+  "unrealized_pnl": 0,
+  "today_pnl": 0,
+  "positions": [],
+  "performance_metrics": {
+    "total_trades": 26,
+    "win_rate": 0.5384615384615384,
+    "sharpe_ratio": 0.0,
+    "sortino_ratio": 0.0
+  },
+  "risk_metrics": {
+    "var_95": 0.0,
+    "cvar_95": 0.0,
+    "max_drawdown": 0.0,
+    "current_drawdown": 0.0
+  },
+  "strategy_allocations": {
+    "Short Vol": 0.0,
+    "Long Vol": 0.0
+  },
+  "execution_metrics": {
+    "fill_rate": 1.0,
+    "avg_slippage": 0.0,
+    "total_orders": 191,
+    "rejected_orders": 0
+  }
+}

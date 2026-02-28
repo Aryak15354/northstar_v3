@@ -1,0 +1,3200 @@
+37 hashlib.sh
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - reports/institutional/INSTITUTIONAL_12MONTH_VALIDATION.md
+  - scripts/backup_northstar_data.py
+  - scripts/build_groww_option_universe.py
+  - scripts/cleanup/file_analyzer.py
+  - scripts/controlled_ledger_cutover.py
+  - scripts/diagnose_groww_permissions.py
+  - scripts/gate_triage.py
+  - scripts/gated_72h_manager.py
+  - scripts/institutional_12month_final.py
+  - scripts/institutional_12month_real_data.py
+  - scripts/institutional_12month_simple.py
+  - scripts/institutional_12month_walk_forward.py
+  - scripts/institutional_walk_forward_complete.py
+  - scripts/run_honest_walk_forward.py
+  - scripts/run_honest_walk_forward_clean.py
+  - scripts/run_institutional_12month_enhanced.py
+  - scripts/test_groww_sdk_historical.py
+  - scripts/test_run_determinism.py
+  - src/dashboard/northstar_v3_ultimate_integrated_dashboard.py
+  - src/dashboard/snapshot_loader.py
+  - src/intelligence/anti_override_system.py
+  - src/intelligence/crisis_conviction_contract.py
+  - src/intelligence_observer/audit/artifact_hashing.py
+  - src/intelligence_observer/audit/observer_audit_log.py
+  - src/options/runtime_guard.py
+  - src/options/state_io.py
+  - src/validation/audit_grade_reproducibility.py
+  - src/validation/basic_report_generator.py
+  - src/validation/enhanced_data_integrity_system.py
+  - src/validation/institutional_hardening.py
+  - src/validation/northstar_brain_state.py
+  - src/validation/provenance_system.py
+  - src/validation/truth_mode_validator.py
+  - tests/validation/test_cleanup_backup_completeness.py
+  - tests/validation/test_cleanup_no_data_loss.py
+  - tests/validation/test_cleanup_structural_properties.py
+32 src/intelligence/unified_intelligence_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - .kiro/specs/unified-volatility-engine/tasks.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - archive/deprecated/intelligence/MIGRATION_GUIDE.md
+  - docs/MIGRATION_GUIDE.md
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_ARCHITECTURE_GUIDE.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/completion_reports/SYNTAX_ERRORS_FIXED_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_PHASE_1_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_PHASE_2_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_PHASE_3_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_UNIFICATION_PROJECT_COMPLETE.md
+  - reports/system/system_status_20260123_001131.json
+  - reports/system/system_status_20260123_002244.json
+  - reports/system/system_status_20260127_215113.json
+  - reports/system/system_status_20260127_215511.json
+  - reports/system/system_status_20260128_193231.json
+  - reports/system/system_status_20260128_193250.json
+  - reports/system/system_status_20260128_193344.json
+  - reports/system/system_status_20260129_045950.json
+  - reports/system/system_status_20260131_161427.json
+  - reports/system/system_status_20260131_165045.json
+  - scripts/batch_syntax_fix.py
+  - scripts/complete_v3_system_and_dashboard_enhancement.py
+  - scripts/fix_critical_system_failures_v2.py
+  - scripts/fix_import_paths.py
+  - scripts/fix_remaining_syntax_errors.py
+  - src/volatility/intelligence_engine.py
+  - system/check_system_status.py
+28 src/risk/unified_risk_coordinator.py
+  - .kiro/specs/institutional-validation-layers/design.md
+  - .kiro/specs/options-trading-system/design.md
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - .kiro/specs/unified-volatility-engine/tasks.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - archive/deprecated/risk/MIGRATION_GUIDE.md
+  - docs/MIGRATION_GUIDE.md
+  - docs/V3_PRODUCTION_GRADE_UPGRADE.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_ARCHITECTURE_GUIDE.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/completion_reports/SYNTAX_ERRORS_FIXED_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_PHASE_4_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_UNIFICATION_PROJECT_COMPLETE.md
+  - reports/phases/PHASE_2_COMPLETION_REPORT.md
+  - reports/system/system_status_20260123_001131.json
+  - reports/system/system_status_20260123_002244.json
+  - reports/system/system_status_20260127_215113.json
+  - reports/system/system_status_20260127_215511.json
+  - reports/system/system_status_20260128_193231.json
+  - reports/system/system_status_20260128_193250.json
+  - reports/system/system_status_20260128_193344.json
+  - reports/system/system_status_20260129_045950.json
+  - reports/system/system_status_20260131_161427.json
+  - reports/system/system_status_20260131_165045.json
+  - scripts/batch_syntax_fix.py
+  - scripts/fix_remaining_syntax_errors.py
+  - system/check_system_status.py
+26 self.sh
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - deployment/development/scripts/launch_live_operation.py
+  - github_repo/src/intelligence/edge_half_life.py
+  - scripts/execute_shadow_trading_validation.py
+  - scripts/launch_live_operation.py
+  - scripts/production_deployment_dashboard.py
+  - src/automation/northstar_scheduler.py
+  - src/dashboard/observers/risk_observer.py
+  - src/dashboard/production_grade_dashboard.py
+  - src/integration/alpha_os_adapter.py
+  - src/operation/alpha_validator.py
+  - src/operation/live_operation_controller.py
+  - src/operation/master_operation_controller.py
+  - src/validation/automated_failure_detector.py
+  - src/validation/enhanced_institutional_report_generator.py
+  - src/validation/enhanced_shadow_portfolio_state.py
+  - src/validation/enhanced_walk_forward_engine.py
+  - src/validation/oos_validator.py
+  - src/validation/shadow_fund_orchestrator.py
+  - src/validation/shadow_portfolio_dashboard.py
+  - src/validation/shadow_portfolio_v3_integration.py
+  - src/valuation/core/sector_mapper.py
+  - src/volatility/capital_allocator.py
+  - src/volatility/strategy_ast.py
+  - tests/validation/test_tailwind_score_properties.py
+  - tests/validation/test_task7_dependency_injection_properties.py
+23 src/dashboard/brain_window.py
+  - .kiro/specs/archive/northstar-living-system/tasks.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - README.md
+  - docs/SYSTEM_READY.md
+  - docs/USAGE_GUIDE.md
+  - docs/completion_reports/SYNTAX_ERRORS_FIXED_COMPLETE.md
+  - reports/completion/BRAIN_WINDOW_IMPLEMENTATION_COMPLETE.md
+  - reports/completion/FINAL_LIVING_SYSTEM_VALIDATION_COMPLETE.md
+  - reports/system/system_status_20260123_001131.json
+  - reports/system/system_status_20260123_002244.json
+  - reports/system/system_status_20260127_215113.json
+  - reports/system/system_status_20260127_215511.json
+  - reports/system/system_status_20260128_193231.json
+  - reports/system/system_status_20260128_193250.json
+  - reports/system/system_status_20260128_193344.json
+  - reports/system/system_status_20260129_045950.json
+  - reports/system/system_status_20260131_161427.json
+  - reports/system/system_status_20260131_165045.json
+  - scripts/batch_syntax_fix.py
+  - scripts/fix_remaining_syntax_errors.py
+  - scripts/test_final_living_system_validation.py
+  - scripts/validate_living_system_final.py
+  - system/check_system_status.py
+13 matplotlib.py
+  - scripts/analyze_historical_volatility.py
+  - scripts/generate_institutional_report_complete.py
+  - scripts/generate_institutional_walkforward_report.py
+  - scripts/inspect_exposure.py
+  - scripts/institutional_walk_forward_complete.py
+  - scripts/signal_reality_audit.py
+  - scripts/validate_signal_strength.py
+  - src/macro_impact_engine/visualization.py
+  - src/macro_transmission_engine/kalman_filter.py
+  - src/validation/basic_report_generator.py
+  - src/validation/institutional_report_generator.py
+  - src/validation/performance_tracker.py
+  - src/validation/risk_state_dashboard.py
+12 __init__.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_TRANSMISSION_ENGINE_COMPLETE.md
+  - VALUATION_IMPLEMENTATION_COMPLETE.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+  - github_repo/SETUP_INSTRUCTIONS.md
+  - reports/tasks/TASK_1_COMPLETION_REPORT.md
+  - scripts/complete_tensorflow_m1_fix.py
+  - scripts/fix_corruption_tests.py
+  - scripts/fix_import_paths.py
+  - tests/validation/test_cleanup_import_integrity.py
+  - tests/validation/test_task13_canonical_state_properties.py
+12 check_system_status.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - README.md
+  - audit/DEEP_AUDIT_2026-02-28.md
+  - docs/DASHBOARD_INTEGRATION_COMPLETE.md
+  - docs/SYSTEM_READY.md
+  - docs/USAGE_GUIDE.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - organize_root_folder.py
+  - reports/cleanup/cleanup_plan.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+  - reports/tasks/V3_CLEANUP_TASKS_4_5_COMPLETION_REPORT.md
+12 eod_options_pipeline.py
+  - audit/DEEP_AUDIT_2026-02-28.md
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - scripts/README.md
+  - scripts/northstar_intelligence_organism.py
+  - scripts/northstar_professional.py
+  - src/ingestion/data_pipeline_coordinator.py
+  - src/orchestrator/master_orchestrator.py
+12 update_all_systems.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/market-brain/MARKET_BRAIN_ENHANCED_SUMMARY.md
+  - docs/market-brain/MARKET_BRAIN_PRODUCTION_SUMMARY.md
+  - docs/market-brain/MARKET_BRAIN_README.md
+  - scripts/README.md
+  - scripts/launchers/launch_integrated_northstar.py
+  - scripts/northstar_v3_unified.py
+11 launch_brain_window.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - README.md
+  - audit/DEEP_AUDIT_2026-02-28.md
+  - docs/DASHBOARD_INTEGRATION_COMPLETE.md
+  - docs/SYSTEM_READY.md
+  - docs/USAGE_GUIDE.md
+  - organize_root_folder.py
+  - scripts/validate_living_system_final.py
+11 scripts/launch_brain_window.py
+  - .kiro/specs/archive/northstar-living-system/tasks.md
+  - docs/completion_reports/LIVING_SYSTEM_MIGRATION_COMPLETE.md
+  - reports/completion/BRAIN_WINDOW_IMPLEMENTATION_COMPLETE.md
+  - reports/completion/FINAL_LIVING_SYSTEM_VALIDATION_COMPLETE.md
+  - scripts/enable_living_system_migration.py
+  - scripts/launchers/launch_all_dashboards.py
+  - scripts/test_final_living_system_validation.py
+  - scripts/test_migration_compatibility.py
+  - scripts/validate_living_system_final.py
+  - src/core/compatibility.py
+  - src/core/legacy_wrappers.py
+10 result.sh
+  - scripts/demo_comprehensive_operation.py
+  - scripts/demo_data_format_standardization.py
+  - scripts/institutional_12month_walk_forward.py
+  - scripts/task5_checkpoint_validation.py
+  - src/operation/backtest_orchestrator.py
+  - src/operation/crisis_validator.py
+  - src/operation/operation_controller.py
+  - src/operation/report_manager.py
+  - tests/validation/test_task2_crisis_validator_properties.py
+  - tests/validation/test_task4_backtest_orchestrator_properties.py
+10 src/dashboard/northstar_command_bridge.py
+  - docs/completion_reports/NEXT_STEPS_COMPLETE.md
+  - docs/completion_reports/NORTHSTAR_COMMAND_BRIDGE_COMPLETE.md
+  - docs/completion_reports/SYNTAX_ERRORS_FIXED_COMPLETE.md
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - scripts/activate_system.py
+  - scripts/fix_remaining_syntax_errors.py
+  - scripts/full_system_activation.py
+  - scripts/generate_portfolio.py
+  - scripts/launch_dashboard.sh
+  - scripts/run_full_intelligence.py
+10 tensor.sh
+  - scripts/build_beta_drift_fabric.py
+  - scripts/build_weekly_causal_fabric.py
+  - scripts/runners/run_market_brain.py
+  - scripts/runners/run_market_brain_production.py
+  - scripts/tests/test_market_brain.py
+  - src/intelligence/market_brain/beta_drift_fabric.py
+  - src/intelligence/market_brain/causal_graph.py
+  - src/intelligence/market_brain/market_tensor.py
+  - src/intelligence/market_brain/regime_memory.py
+  - src/intelligence/market_brain/weekly_fabric_builder.py
+9 _properties.py
+  - README.md
+  - docs/DEPLOYMENT_CHECKLIST.md
+  - docs/MIGRATION_GUIDE.md
+  - docs/SYSTEM_VALIDATION_REPORT.md
+  - docs/options/DEPLOYMENT_CHECKLIST.md
+  - tests/options/COMPLETION_SUMMARY.md
+  - tests/options/PROPERTY_TESTS_FINAL_REPORT.md
+  - tests/options/PROPERTY_TESTS_PROGRESS.md
+  - tests/options/PROPERTY_TESTS_STATUS.md
+9 run_market_brain_production.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/market-brain/MARKET_BRAIN_COMPREHENSIVE_INTEGRATION_SUMMARY.md
+  - docs/market-brain/MARKET_BRAIN_ENHANCED_SUMMARY.md
+  - docs/market-brain/MARKET_BRAIN_ISSUES_RESOLVED.md
+  - docs/market-brain/MARKET_BRAIN_PRODUCTION_SUMMARY.md
+  - scripts/README.md
+  - scripts/northstar_v3_unified.py
+  - scripts/utilities/update_all_systems.py
+  - src/orchestrator/master_orchestrator.py
+9 src/cohesion/intelligence_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - .kiro/specs/unified-volatility-engine/tasks.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - archive/deprecated/intelligence/MIGRATION_GUIDE.md
+  - docs/MIGRATION_GUIDE.md
+  - reports/capital/capital_grade_validation_report.json
+  - reports/tasks/task17_final_validation_results.json
+  - scripts/implement_task17_final_validation.py
+  - src/volatility/intelligence_engine.py
+9 src/dashboard/unified_terminal_v3.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_ARCHITECTURE_GUIDE.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/completion_reports/SYNTAX_ERRORS_FIXED_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_DASHBOARD_FIXES_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_PHASE_5_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_UNIFICATION_PROJECT_COMPLETE.md
+  - scripts/batch_syntax_fix.py
+  - scripts/fix_remaining_syntax_errors.py
+  - src/orchestrator/master_orchestrator.py
+9 x.sh
+  - .kiro/specs/probabilistic-forecasting-spine/TASK_0_README.md
+  - scripts/demo_task4_backtest_orchestrator.py
+  - scripts/macro_conditioned_signal_audit.py
+  - scripts/signal_reality_audit.py
+  - src/models/regime_probability_engine.py
+  - src/operation/backtest_orchestrator.py
+  - src/preprocessing/macro_blocks.py
+  - src/preprocessing/macro_blocks_v2.py
+  - src/research/alpha_factory/alpha_combiner.py
+8 r.sh
+  - scripts/demo_task4_backtest_orchestrator.py
+  - scripts/institutional_12month_walk_forward.py
+  - scripts/simple_walk_forward_validation.py
+  - src/operation/backtest_orchestrator.py
+  - src/operation/crisis_validator.py
+  - src/operation/master_operation_controller.py
+  - src/operation/operation_controller.py
+  - src/operation/report_manager.py
+8 src.validation.sh
+  - src/integration/alpha_os_adapter.py
+  - src/validation/alert_and_diagnostic_system.py
+  - src/validation/real_time_monitoring_integration.py
+  - src/validation/shadow_fund_orchestrator.py
+  - src/validation/shadow_logger.py
+  - src/validation/v3_architecture_integration.py
+  - tests/test_shadow_divergence_index.py
+  - tests/validation/test_shadow_logging_completeness_properties.py
+8 src/cohesion/risk_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - .kiro/specs/unified-volatility-engine/tasks.md
+  - archive/deprecated/risk/MIGRATION_GUIDE.md
+  - docs/MIGRATION_GUIDE.md
+  - reports/capital/capital_grade_validation_report.json
+  - reports/tasks/task17_final_validation_results.json
+  - scripts/implement_task17_final_validation.py
+  - scripts/implement_task18_final_checkpoint.py
+8 src/processing/market_regime.py
+  - .kiro/specs/unified-volatility-engine/tasks.md
+  - archive/deprecated/regime/MIGRATION_GUIDE.md
+  - docs/MIGRATION_GUIDE.md
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - scripts/runners/refresh_v3_artifacts.py
+  - src/volatility/regime_detector.py
+8 src/processing/volatility_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - .kiro/specs/unified-volatility-engine/tasks.md
+  - archive/deprecated/volatility/MIGRATION_GUIDE.md
+  - docs/MIGRATION_GUIDE.md
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - src/volatility/volatility_processor.py
+7 X.sh
+  - src/intelligence/market_brain/weekly_fabric_builder.py
+  - src/intelligence/market_brain/weekly_relationship_model.py
+  - src/macro_impact_engine/lagged_regression.py
+  - src/research/model_adapters.py
+  - src/research/sequence_builder.py
+  - src/validation/multi_dimensional_decomposer.py
+  - tests/test_macro_impact_engine.py
+6 dashboard/app.py
+  - docs/ENHANCED_RESULTS_ANALYSIS.md
+  - docs/NS_USO_V3_INTEGRATION_COMPLETE.md
+  - docs/archive/root_status_reports/ENHANCED_RESULTS_ANALYSIS_SUMMARY.md
+  - scripts/simple_institutional_validation.py
+  - scripts/test_enhanced_dashboard.py
+  - tests/integration/validate_ns_uso_v3_integration.py
+6 df.sh
+  - src/cohesion/data_format_standardizer.py
+  - src/cohesion/data_ingestion_validator.py
+  - src/preprocessing/macro_cleaner.py
+  - src/utils/data_standards.py
+  - src/utils/rbi_data_handler.py
+  - src/validation/multi_timeline_validation_result.py
+6 integrated_data_pipeline.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/SYSTEM_READY.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+  - docs/completion_reports/MARKET_UPDATE_FIX_COMPLETE.md
+6 launch_dashboard.py
+  - audit/DEEP_AUDIT_2026-02-28.md
+  - docs/DASHBOARD_INTEGRATION_COMPLETE.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - organize_root_folder.py
+  - run.py
+  - system/check_system_status.py
+6 market_state.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - reports/technical/temporal_retrofit_report.json
+  - scripts/retrofit_northstar_temporal_protection.py
+  - src/intelligence/market_brain/market_tensor.py
+6 northstar_professional.py
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+  - scripts/launchers/launch_integrated_northstar.py
+6 northstar_trading_desk.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+  - scripts/launchers/launch_integrated_northstar.py
+6 northstar_v3_unified.py
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+  - docs/phases/NORTHSTAR_V3_DASHBOARD_FIXES_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_PHASE_1_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_PHASE_2_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_UNIFICATION_PROJECT_COMPLETE.md
+6 run_portfolio_governor.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - scripts/README.md
+  - scripts/utilities/update_all_systems.py
+  - src/orchestrator/master_orchestrator.py
+6 src/dashboard/enhanced_v3_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - audit/DEEP_AUDIT_2026-02-28.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_FIXES_COMPLETE.md
+  - docs/archive/root_status_reports/TASK_5_COMPLETION_SUMMARY.md
+  - run_complete_v3_system.py
+6 src/dashboard/northstar_v3_comprehensive_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - audit/DEEP_AUDIT_2026-02-28.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - run_complete_v3_system.py
+  - scripts/launch_comprehensive_dashboard.sh
+  - scripts/test_enhanced_dashboard.py
+6 strategies.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - reports/technical/temporal_retrofit_report.json
+  - scripts/retrofit_northstar_temporal_protection.py
+5 capital_allocator.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+5 consistent_data_manager.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+  - scripts/fix_dashboard_mock_data_and_errors.py
+5 northstar_intelligence_organism.py
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+  - scripts/launchers/launch_integrated_northstar.py
+5 portfolio_governor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+5 price_fetcher.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/completion_reports/MARKET_UPDATE_FIX_COMPLETE.md
+5 rbi_scraper_fixed.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+5 results.sh
+  - scripts/task7_checkpoint_validation.py
+  - src/options/backtest_reporting.py
+  - src/options/backtest_simulation_engine.py
+  - src/validation/enhanced_walk_forward_engine.py
+  - tests/validation/test_enhanced_walk_forward_integration.py
+5 run_intelligent_market_state.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - scripts/README.md
+  - scripts/utilities/update_all_systems.py
+  - src/orchestrator/master_orchestrator.py
+5 scripts/backtest_options_system.py
+  - README_HISTORICAL_DATA.md
+  - docs/archive/root_status_reports/COMPLETE_HISTORICAL_DATA_SOLUTION.md
+  - docs/archive/root_status_reports/HISTORICAL_DATA_COLLECTION_SETUP.md
+  - docs/options/HISTORICAL_DATA_COLLECTION_GUIDE.md
+  - scripts/quick_start_historical_collection.sh
+5 scripts/launch_enhanced_results_dashboard.py
+  - docs/ENHANCED_RESULTS_ANALYSIS.md
+  - docs/archive/root_status_reports/ENHANCED_RESULTS_ANALYSIS_SUMMARY.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/archive/root_status_reports/REAL_DATA_DASHBOARD_READY.md
+  - scripts/test_enhanced_dashboard.py
+5 scripts/launch_working_dashboard.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/comprehensive/COMPREHENSIVE_VISUAL_DASHBOARD_COMPLETE.md
+  - docs/dashboards/VISUAL_DASHBOARD_ENHANCEMENT_COMPLETE.md
+  - docs/dashboards/WORKING_DASHBOARD_COMPLETE.md
+  - scripts/test_visual_dashboard.py
+5 src/dashboard/northstar_v3_dashboard.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - scripts/complete_v3_system_and_dashboard_enhancement.py
+  - scripts/fix_dashboard_enhancements.py
+  - scripts/fix_dashboard_imports.py
+  - scripts/test_v3_enhancements.py
+5 src/processing/options_volatility.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - .kiro/specs/unified-volatility-engine/tasks.md
+  - archive/deprecated/volatility/MIGRATION_GUIDE.md
+  - docs/MIGRATION_GUIDE.md
+  - src/volatility/volatility_processor.py
+5 unified_dashboard_coordinator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - docs/phases/NORTHSTAR_V3_PHASE_5_COMPLETE.md
+  - scripts/fix_remaining_syntax_errors.py
+5 validate_market_brain_data.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/market-brain/MARKET_BRAIN_ENHANCED_SUMMARY.md
+  - docs/market-brain/MARKET_BRAIN_ISSUES_RESOLVED.md
+  - docs/market-brain/MARKET_BRAIN_PRODUCTION_SUMMARY.md
+  - scripts/README.md
+5 w.sh
+  - scripts/institutional_12month_final.py
+  - scripts/institutional_12month_real_data.py
+  - scripts/institutional_12month_simple.py
+  - scripts/institutional_walk_forward_complete.py
+  - src/validation/institutional_walk_forward_validator.py
+4 apply_macro_overlay.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - src/backtest/macro_backtester.py
+4 attribution.sh
+  - examples/performance_monitoring_demo.py
+  - src/volatility/performance_monitor.py
+  - tests/test_performance_monitor.py
+  - tests/test_phase6_checkpoint.py
+4 backtest_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - reports/technical/temporal_retrofit_report.json
+  - scripts/retrofit_northstar_temporal_protection.py
+4 bayesian_capital_tribunal.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - archive/deprecated/regime/IMPORT_UPDATE_NEEDED.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+4 brain_window.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - scripts/fix_remaining_syntax_errors.py
+  - scripts/validate_living_system_final.py
+4 daily_executor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - scripts/manage_cron.sh
+  - scripts/setup_daily_automation.py
+4 data_loader.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+4 embeddings.sh
+  - scripts/fix_system_integrity_issues.py
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+  - src/intelligence/market_brain/m1_safe_regime_memory.py
+  - src/intelligence/market_brain/regime_memory.py
+4 financials_fetcher.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+4 force_market_update.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - docs/completion_reports/MARKET_UPDATE_FIX_COMPLETE.md
+4 integrate_official_nse_delisting_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+4 intelligence_stack.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+4 lagged_regression.py
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+4 launch_integrated_northstar.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - scripts/README.md
+4 launch_northstar_terminal.py
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/terminals/NORTHSTAR_TERMINAL_README.md
+  - scripts/README.md
+4 launch_unified_terminal.py
+  - docs/architecture/NORTHSTAR_V3_ARCHITECTURE_ANALYSIS.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/terminals/UNIFIED_TERMINAL_README.md
+  - scripts/README.md
+4 macro_regime.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - src/intelligence/regime_memory_system.py
+  - src/portfolio/macro_risk_controller.py
+  - src/scheduler/daily_update.py
+4 macro_risk_controller.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+4 manager.sh
+  - tests/intelligence_observer/demo_test_execution.py
+  - tests/intelligence_observer/final_system_demonstration.py
+  - tests/intelligence_observer/simple_validation_test.py
+  - tests/intelligence_observer/test_comprehensive_system.py
+4 market_regime.py
+  - archive/deprecated/regime/MIGRATION_GUIDE.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - scripts/runners/refresh_v3_artifacts.py
+4 northstar_v3_dashboard_methods.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+  - scripts/fix_dashboard_mock_data_and_errors.py
+4 rbi_processor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/SYSTEM_READY.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+4 real_data_loader.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+  - scripts/fix_dashboard_mock_data_and_errors.py
+4 rolling_beta.py
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+4 scripts/launch_integrated_dashboard.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/dashboards/INTEGRATED_DASHBOARD_COMPLETE.md
+  - reports/tasks/TASK_4_INTEGRATED_DASHBOARD_COMPLETE.md
+  - scripts/create_sample_dashboard_data.py
+4 sector_aggregation.py
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+4 sector_rotation.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+4 signal_health_monitor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - archive/deprecated/regime/IMPORT_UPDATE_NEEDED.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+4 src/dashboard/enhanced_results_analysis.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/archive/root_status_reports/ENHANCED_RESULTS_ANALYSIS_SUMMARY.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+4 src/dashboard/ultimate_northstar_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - scripts/launch_ultimate_dashboard.sh
+  - scripts/test_enhanced_dashboard.py
+4 src/processing/options_regime.py
+  - .kiro/specs/unified-volatility-engine/tasks.md
+  - archive/deprecated/regime/MIGRATION_GUIDE.md
+  - docs/MIGRATION_GUIDE.md
+  - src/volatility/regime_detector.py
+4 survival_instincts.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_ARCHITECTURE_GUIDE.md
+  - docs/market-brain/MARKET_BRAIN_README.md
+  - scripts/fix_critical_system_failures_v2.py
+4 temporal_guard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+  - reports/system/CAPITAL_GRADE_SYSTEM_LAWS_IMPLEMENTATION.md
+4 test_market_brain.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/market-brain/MARKET_BRAIN_ENHANCED_SUMMARY.md
+  - docs/market-brain/MARKET_BRAIN_README.md
+  - scripts/README.md
+4 unified_intelligence_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - scripts/fix_remaining_syntax_errors.py
+  - src/volatility/intelligence_engine.py
+4 unified_risk_coordinator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - docs/phases/NORTHSTAR_V3_PHASE_4_COMPLETE.md
+  - scripts/fix_remaining_syntax_errors.py
+4 v3_sentiment_panel.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+4 valuation_engine.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+4 valuation_engines.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/completion_reports/NEXT_STEPS_COMPLETE.md
+  - reports/technical/temporal_retrofit_report.json
+  - scripts/retrofit_northstar_temporal_protection.py
+4 volatility_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - archive/deprecated/volatility/MIGRATION_GUIDE.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+4 windows_array.sh
+  - scripts/build_simple_anticipatory_intelligence.py
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+  - src/intelligence/market_brain/m1_safe_regime_memory.py
+  - src/intelligence/market_brain/regime_memory.py
+3 M.sh
+  - src/macro_transmission_engine/bayesian_model.py
+  - src/macro_transmission_engine/kalman_filter.py
+  - src/macro_transmission_engine/macro_forecast.py
+3 _integration.py
+  - docs/DEPLOYMENT_CHECKLIST.md
+  - docs/MIGRATION_GUIDE.md
+  - docs/SYSTEM_VALIDATION_REPORT.md
+3 accounting_distortions.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+  - src/valuation/README.md
+3 automation_observer.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+  - scripts/fix_dashboard_mock_data_and_errors.py
+3 bayesian_engine.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - reports/technical/temporal_retrofit_report.json
+  - scripts/retrofit_northstar_temporal_protection.py
+3 causal_graph.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_ARCHITECTURE_GUIDE.md
+  - docs/market-brain/MARKET_BRAIN_README.md
+  - scripts/fix_critical_system_failures_v2.py
+3 cleanup_executor.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+  - reports/tasks/V3_CLEANUP_TASKS_4_5_COMPLETION_REPORT.md
+3 cohesion/intelligence_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - archive/deprecated/intelligence/MIGRATION_GUIDE.md
+  - src/volatility/intelligence_engine.py
+3 comprehensive_dashboard_enhancement.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 create_interactive_dashboard_complete.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 daily_shadow_trader.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - reports/system/live_folder_optimization.json
+  - scripts/fix_dashboard_mock_data_and_errors.py
+3 data_confidence.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+3 dcf_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+  - src/valuation/README.md
+3 debug_position_sizing.py
+  - reports/cleanup/cleanup_plan.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+  - reports/tasks/V3_CLEANUP_TASKS_4_5_COMPLETION_REPORT.md
+3 earnings_quality.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+  - src/valuation/README.md
+3 emergency_brake.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/risk/IMPORT_UPDATE_NEEDED.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+3 emergency_reduce.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+  - docs/archive/root_cleanup_20260214/OPTIONS_INTEGRATION_COMPLETE.md
+  - docs/archive/root_cleanup_20260214/READY_TO_TRADE_CHECKLIST.md
+3 enhance_dashboard_time_series_comprehensive.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 generate_12month_performance_report.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/phases/PHASE_1_CHECKPOINT_COMPLETE.md
+  - src/automation/daily_executor.py
+3 granger_tests.py
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+3 integrate_historical_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 intelligence_observer.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+  - scripts/fix_dashboard_mock_data_and_errors.py
+3 launch_clean_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 launch_enhanced_v3_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 launch_integrated_live_system.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 launch_ultimate_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 macro_cleaner.py
+  - docs/SYSTEM_READY.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+3 market_pulse.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_ARCHITECTURE_GUIDE.md
+  - docs/market-brain/MARKET_BRAIN_README.md
+  - scripts/fix_critical_system_failures_v2.py
+3 market_tensor.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_ARCHITECTURE_GUIDE.md
+  - docs/market-brain/MARKET_BRAIN_README.md
+  - scripts/fix_critical_system_failures_v2.py
+3 mat.sh
+  - src/intelligence/capital_allocator.py
+  - src/models/regime_probability_engine.py
+  - src/research/alpha_factory/alpha_combiner.py
+3 moat_score.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+  - src/valuation/README.md
+3 monitor_automation.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 monthly_report_generator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - reports/system/live_folder_optimization.json
+  - scripts/fix_dashboard_mock_data_and_errors.py
+3 move_planner.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+  - reports/tasks/V3_CLEANUP_TASKS_4_5_COMPLETION_REPORT.md
+3 normalized_financials.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+  - src/valuation/README.md
+3 northstar_command_bridge.py
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - scripts/fix_remaining_syntax_errors.py
+  - scripts/launch_command_bridge.py
+3 northstar_v3_ultimate_integrated_dashboard.py
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+3 opportunity_surface.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+3 options_volatility.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - archive/deprecated/volatility/MIGRATION_GUIDE.md
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+3 owner_earnings.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+  - src/valuation/README.md
+3 preprocessing.py
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+3 regime_aware_specialists.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - archive/deprecated/regime/MIGRATION_GUIDE.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+3 regime_detector.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - archive/deprecated/regime/MIGRATION_GUIDE.md
+3 regime_memory.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_ARCHITECTURE_GUIDE.md
+  - docs/market-brain/MARKET_BRAIN_README.md
+  - scripts/fix_critical_system_failures_v2.py
+3 report_generator.py
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+3 risk_observer.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+  - scripts/fix_dashboard_mock_data_and_errors.py
+3 run_honest_walk_forward.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+3 run_integrated_options_paper_engine.py
+  - NORTHSTAR_V2_IMPLEMENTATION_COMPLETE.md
+  - docs/archive/root_cleanup_20260214/INTEGRATION_SUMMARY.md
+  - docs/archive/root_cleanup_20260214/OPTIONS_INTEGRATION_COMPLETE.md
+3 run_market_brain.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/market-brain/MARKET_BRAIN_README.md
+  - scripts/README.md
+3 scripts/launch_comprehensive_dashboard.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/comprehensive/COMPREHENSIVE_DASHBOARD_REAL_DATA_COMPLETE.md
+  - scripts/create_comprehensive_sample_data.py
+3 scripts/launch_enhanced_v3_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/archive/root_status_reports/DATA_CONSISTENCY_FIXED.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+3 scripts/launch_ultimate_real_data_cockpit.py
+  - scripts/activate_full_northstar_v3_system.py
+  - scripts/quick_activate_v3_essentials.py
+  - scripts/update_real_data.py
+3 scripts/migrate_hardcoded_references.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - reports/AUDIT_V3_DATA_INTEGRITY_AND_SYNTHETIC_USAGE_REPORT.md
+  - src/cohesion/migration_helper.py
+3 scripts/start_monitoring.py
+  - deployment/development/procedures/startup_procedure.md
+  - deployment/development/start_northstar.sh
+  - scripts/deploy_northstar_operations.py
+3 scripts/start_system_integration.py
+  - deployment/development/procedures/startup_procedure.md
+  - deployment/development/start_northstar.sh
+  - scripts/deploy_northstar_operations.py
+3 setup_daily_automation.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 shadow_trading_scheduler.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - reports/system/live_folder_optimization.json
+  - scripts/fix_dashboard_mock_data_and_errors.py
+3 snapshot_loader.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - docs/CONSTITUTIONAL_COCKPIT.md
+  - scripts/fix_dashboard_mock_data_and_errors.py
+3 src.execution.sh
+  - scripts/run_honest_walk_forward.py
+  - scripts/run_honest_walk_forward_clean.py
+  - src/execution/shadow_fund_engine.py
+3 src/dashboard/clean_northstar_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - scripts/launch_clean_dashboard.sh
+3 src/processing/pipeline.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - src/portfolio/apply_macro_overlay.py
+3 stability_tests.py
+  - MACRO_IMPACT_ENGINE_IMPLEMENTATION_COMPLETE.md
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+  - docs/MACRO_IMPACT_ENGINE_GUIDE.md
+3 status.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+  - docs/archive/root_cleanup_20260214/OPTIONS_INTEGRATION_COMPLETE.md
+  - docs/archive/root_cleanup_20260214/READY_TO_TRADE_CHECKLIST.md
+3 strategy_narrative_engine.py
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - docs/terminals/NORTHSTAR_TERMINAL_README.md
+  - scripts/fix_remaining_syntax_errors.py
+3 technical_engine.py
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+3 test_enhanced_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+3 test_import_debug.py
+  - reports/cleanup/cleanup_plan.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+  - reports/tasks/V3_CLEANUP_TASKS_4_5_COMPLETION_REPORT.md
+3 ultimate_dashboard_overhaul.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 unified_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/archive/root_cleanup_20260214/REAL_DATA_INTEGRATION_COMPLETE.md
+3 unified_portfolio_coordinator.py
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - docs/phases/NORTHSTAR_V3_PHASE_4_COMPLETE.md
+  - scripts/fix_remaining_syntax_errors.py
+3 unified_terminal_v3.py
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - docs/phases/NORTHSTAR_V3_PHASE_5_COMPLETE.md
+  - scripts/fix_remaining_syntax_errors.py
+3 update_real_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+3 v3_data_hub.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+3 validation_observer.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+  - scripts/fix_dashboard_mock_data_and_errors.py
+3 weekly_fabric_reader.py
+  - docs/completion_reports/SYNTAX_ERRORS_FIXED_COMPLETE.md
+  - docs/completion_reports/WEEKLY_CAUSAL_FABRIC_COMPLETE.md
+  - scripts/fix_remaining_syntax_errors.py
+3 weight_daily.sh
+  - scripts/runners/refresh_v3_artifacts.py
+  - src/portfolio/pnl_paper.py
+  - src/portfolio/tuning.py
+3 windows.sh
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+  - src/intelligence/market_brain/m1_safe_regime_memory.py
+  - src/intelligence/market_brain/regime_memory.py
+2 B.sh
+  - scripts/run_macro_transmission_analysis.py
+  - src/macro_transmission_engine/macro_optimizer.py
+2 _test.py
+  - scripts/consolidate_state_management.py
+  - scripts/eliminate_circular_dependencies.py
+2 adjusted_metrics.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+  - src/valuation/README.md
+2 anticipatory_capital_allocator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+2 app.py
+  - docs/archive/root_status_reports/DATA_CONSISTENCY_FIXED.md
+  - scripts/test_enhanced_dashboard.py
+2 bayesian_model.py
+  - MACRO_TRANSMISSION_ENGINE_COMPLETE.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 best_engine.sh
+  - scripts/demo_task4_backtest_orchestrator.py
+  - src/operation/backtest_orchestrator.py
+2 brain_orchestrator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+2 build_anticipatory_intelligence.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 build_beta_drift_fabric.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 build_dashboard_snapshot.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+  - docs/terminals/NORTHSTAR_TERMINAL_README.md
+2 build_weekly_causal_fabric.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 capacity_integration.py
+  - docs/completion_reports/SYSTEM_FULLY_OPERATIONAL.md
+  - scripts/fix_remaining_syntax_errors.py
+2 capital_allocator_score.py
+  - VALUATION_ENGINE_V2_SUMMARY.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+2 clean_northstar_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 collect_historical_option_chains.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_INTEGRATION_COMPLETE.md
+  - docs/options/DAILY_EOD_COLLECTION_GUIDE.md
+2 compatibility.py
+  - scripts/disable_living_system_migration.py
+  - scripts/validate_living_system_final.py
+2 comprehensive_robustness_fix.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 comprehensive_system_repair.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 confidence_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+2 constitutional_cockpit.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+  - scripts/demo_constitutional_cockpit.py
+2 crisis_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+2 debug_crisis_activation.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 demo_enhanced_stress_tests.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 deployment/scripts/restore_backup.py
+  - deployment/docs/deployment_guide.md
+  - scripts/implement_task16_production_deployment.py
+2 disable_living_system_migration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 dispersion_module.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 durability_score.py
+  - VALUATION_ENGINE_V2_SUMMARY.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+2 economic_causality_validator.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+2 edge_tracker.sh
+  - github_repo/examples/production_grade_demo.py
+  - src/integration/production_data_writer.py
+2 eliminate_circular_dependencies.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 engine.sh
+  - docs/API_REFERENCE.md
+  - src/volatility/intelligence_engine.py
+2 enhanced_report.sh
+  - scripts/demo_enhanced_institutional_reports.py
+  - tests/validation/test_institutional_reporting_enhancement_completeness_properties.py
+2 enhanced_results_analysis.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+2 enhanced_v3_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 events.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - reports/completion/ENHANCED_EVENT_SYSTEM_COMPLETE.md
+2 execution_interface.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 fabric_capital_integration.py
+  - docs/completion_reports/WEEKLY_CAUSAL_FABRIC_COMPLETE.md
+  - scripts/fix_remaining_syntax_errors.py
+2 fabric_narrative_integration.py
+  - docs/completion_reports/WEEKLY_CAUSAL_FABRIC_COMPLETE.md
+  - scripts/fix_remaining_syntax_errors.py
+2 file_analyzer.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+2 final_institutional_validation.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 finish_cleanup.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+2 fix_dashboard_enhancements.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 fix_dashboard_imports.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 fix_task14_4_circular_dependencies.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 gamma_scalper.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 global_transmission.py
+  - MACRO_TRANSMISSION_ENGINE_COMPLETE.md
+  - src/macro_transmission_engine/__init__.py
+2 greeks_aggregator.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 health_check.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+  - docs/archive/root_cleanup_20260214/OPTIONS_INTEGRATION_COMPLETE.md
+2 heartbeat.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - scripts/validate_living_system_final.py
+2 high_vol_perf.sh
+  - examples/performance_monitoring_demo.py
+  - tests/test_performance_monitor.py
+2 import_updater.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+2 institutional_12month_real_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 institutional_12month_walk_forward.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 institutional_alpha_engine.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+2 iv_surface.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 jax_kalman.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - PRODUCTION_MACRO_TRANSMISSION_COMPLETE.md
+2 kill_switch.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - github_repo/SETUP_INSTRUCTIONS.md
+2 known.sh
+  - src/research/model_adapters.py
+  - src/research/transformer_model.py
+2 launch_all_dashboards.py
+  - docs/DASHBOARD_INTEGRATION_COMPLETE.md
+  - organize_root_folder.py
+2 launch_clean_terminal.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - scripts/README.md
+2 launch_comprehensive_shadow_trading.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 launch_enhanced_v3_dashboard_fixed.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 live.sh
+  - scripts/launch_shadow_trading.py
+  - scripts/test_shadow_trading_system.py
+2 low_vol_perf.sh
+  - examples/performance_monitoring_demo.py
+  - tests/test_performance_monitor.py
+2 macro.sh
+  - src/macro_transmission_engine/jax_kalman.py
+  - src/macro_transmission_engine/stochastic_volatility_kalman.py
+2 macro_optimizer.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - PRODUCTION_MACRO_TRANSMISSION_COMPLETE.md
+2 manipulation_flags.py
+  - VALUATION_ENGINE_V2_SUMMARY.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+2 master_orchestrator.py
+  - docs/phases/NORTHSTAR_V3_PHASE_4_COMPLETE.md
+  - docs/phases/NORTHSTAR_V3_PHASE_5_COMPLETE.md
+2 monte_carlo_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 n../../miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages/pandas/core/frame.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 n../../miniforge3/envs/northstar_v7_env_m1/lib/python3.10/site-packages/pandas/core/internals/construction.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 n../../miniforge3/envs/northstar_v7_env_m1/lib/python3.10/unittest/mock.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 narrative_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+2 nifty_clean.sh
+  - archive/obsolete_cleanup_20260211/source_backups/src/intelligence/market_brain/real_data_integrator_backup.py
+  - src/intelligence/market_brain/real_data_integrator.py
+2 nifty_df.sh
+  - archive/obsolete_cleanup_20260211/source_backups/src/intelligence/market_brain/real_data_integrator_backup.py
+  - src/intelligence/market_brain/real_data_integrator.py
+2 no_edge_detector.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+2 northstar.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+2 northstar_clean_terminal.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+  - scripts/launchers/launch_clean_terminal.py
+2 northstar_scheduler.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 northstar_terminal.py
+  - docs/terminals/NORTHSTAR_TERMINAL_README.md
+  - scripts/launchers/launch_northstar_terminal.py
+2 northstar_unified_terminal.py
+  - docs/terminals/UNIFIED_TERMINAL_README.md
+  - scripts/launchers/launch_unified_terminal.py
+2 northstar_v3_comprehensive_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 northstar_v3_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/DASHBOARD_INTEGRATION_COMPLETE.md
+2 northstar_v3_production_dashboard.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+2 np.random.sh
+  - scripts/implement_task15_1_walk_forward_reality_test.py
+  - tests/validation/test_task4_data_quality_properties.py
+2 ntests/intelligence_observer/test_authority_firewall.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 ntests/intelligence_observer/test_comprehensive_system.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 ntests/intelligence_observer/test_northstar_integration.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 ntests/intelligence_observer/test_observer_core.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 ntests/intelligence_observer/test_output_artifacts.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 ntests/intelligence_observer/test_question_engines.py
+  - tests/intelligence_observer/test_results_20260120_003139.json
+  - tests/intelligence_observer/test_results_20260120_003522.json
+2 observed.sh
+  - src/research/transformer_model.py
+  - src/validation/regime_drift_monitor.py
+2 options_surface.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+2 performance_monitor.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 performance_tracker.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - github_repo/SETUP_INSTRUCTIONS.md
+2 pipeline.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+2 portfolio_kill_switches.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+2 portfolio_risk_controller.py
+  - archive/deprecated/risk/IMPORT_UPDATE_NEEDED.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+2 position_governor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 price_processor.py
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+2 properties.py
+  - docs/completion_reports/SYSTEM_INTEGRITY_REPAIR_SUMMARY.md
+  - scripts/implement_task17_final_validation.py
+2 random.sh
+  - src/intelligence/temporal_guard.py
+  - tests/validation/test_task2_state_management_properties.py
+2 rbi_cleaner.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 rbi_daily_updater.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 rbi_scraper.py
+  - docs/SYSTEM_READY.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+2 real_time_health_monitor.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+2 regime_fingerprints.sh
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+  - src/intelligence/market_brain/regime_memory.py
+2 regime_momentum.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 regimes.sh
+  - src/validation/regime_based_attribution_engine.py
+  - src/validation/simulation_fidelity_monitor.py
+2 report.performance_metrics.sh
+  - scripts/test_phase4_5_advanced_performance_attribution.py
+  - src/validation/institutional_report_generator.py
+2 report.sh
+  - src/validation/enhanced_institutional_report_generator.py
+  - tests/validation/test_institutional_reporting_enhancement_completeness_properties.py
+2 returns.sh
+  - src/research/alpha_factory/alpha_combiner.py
+  - src/validation/phase3_component_attribution.py
+2 risk_authority.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 risk_engine.py
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+2 risk_manager.sh
+  - github_repo/docs/production_grade_enhancements.md
+  - github_repo/tests/test_production_grade_integration.py
+2 run_alpha_attribution.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 run_cleanup.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+  - reports/completion/V3_CLEANUP_PHASE1_COMPLETE.md
+2 run_enhanced_northstar_with_narratives.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 run_honest_walk_forward_clean.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 scripts/add_protective_hedges.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - docs/EMERGENCY_PROCEDURES.md
+2 scripts/analyze_backtest_results.py
+  - docs/archive/root_status_reports/COMPLETE_HISTORICAL_DATA_SOLUTION.md
+  - docs/options/HISTORICAL_DATA_COLLECTION_GUIDE.md
+2 scripts/create_backup.py
+  - deployment/development/procedures/backup_procedure.md
+  - scripts/deploy_northstar_operations.py
+2 scripts/launch_clean_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+2 scripts/launch_constitutional_cockpit.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+  - scripts/test_constitutional_cockpit.py
+2 scripts/launch_dashboard_with_real_data.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/archive/root_status_reports/REAL_DATA_DASHBOARD_READY.md
+2 scripts/launch_enhanced_v3_dashboard_fixed.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/archive/root_status_reports/TASK_5_COMPLETION_SUMMARY.md
+2 scripts/launch_fixed_dashboard.py
+  - docs/archive/root_status_reports/DATA_CONSISTENCY_FIXED.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+2 scripts/launch_northstar_v3_ultimate_integrated_dashboard.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+2 scripts/launch_ultimate_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+2 scripts/load_state.py
+  - docs/MIGRATION_GUIDE.md
+  - docs/OPERATOR_GUIDE.md
+2 scripts/restart_data_feed.py
+  - docs/EMERGENCY_PROCEDURES.md
+  - docs/OPERATOR_GUIDE.md
+2 scripts/restore_backup.py
+  - deployment/development/procedures/backup_procedure.md
+  - scripts/deploy_northstar_operations.py
+2 scripts/stop_new_operations.py
+  - deployment/development/procedures/shutdown_procedure.md
+  - scripts/deploy_northstar_operations.py
+2 scripts/stop_system_integration.py
+  - deployment/development/procedures/shutdown_procedure.md
+  - scripts/deploy_northstar_operations.py
+2 scripts/switch_venue.py
+  - docs/EMERGENCY_PROCEDURES.md
+  - docs/OPERATOR_GUIDE.md
+2 scripts/validate_state.py
+  - docs/MIGRATION_GUIDE.md
+  - docs/OPERATOR_GUIDE.md
+2 scripts/wait_for_operations.py
+  - deployment/development/procedures/shutdown_procedure.md
+  - scripts/deploy_northstar_operations.py
+2 sector_mapper.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+  - src/valuation/README.md
+2 self.config.sh
+  - src/integration/alpha_os_adapter.py
+  - src/risk/survival_core_mode.py
+2 self.observer_organ.sh
+  - src/intelligence_observer/integration/northstar_integration.py
+  - tests/intelligence_observer/test_northstar_integration.py
+2 self.py
+  - run_complete_v3_system.py
+  - scripts/setup_daily_automation.py
+2 service.sh
+  - src/cohesion/dependency_bootstrap.py
+  - tests/validation/test_task7_dependency_injection_properties.py
+2 simple_institutional_validation.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 simple_shadow_trader.py
+  - reports/system/live_folder_optimization.json
+  - scripts/fix_dashboard_mock_data_and_errors.py
+2 simple_system_update.py
+  - docs/SYSTEM_READY.md
+  - organize_root_folder.py
+2 simple_walk_forward_validation.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 simulation.pnl_paths.sh
+  - tests/test_monte_carlo_integration.py
+  - tests/test_phase5_checkpoint.py
+2 simulation.price_paths.sh
+  - tests/test_monte_carlo_integration.py
+  - tests/test_phase5_checkpoint.py
+2 simulation.vol_paths.sh
+  - tests/test_monte_carlo_integration.py
+  - tests/test_phase5_checkpoint.py
+2 snake_case.py
+  - docs/CONTRIBUTING.md
+  - docs/MAINTENANCE.md
+2 snapshot.sh
+  - src/validation/real_time_monitoring_integration.py
+  - src/validation/shadow_portfolio_dashboard.py
+2 snapshot_scheduler.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 src.live.sh
+  - scripts/execute_shadow_trading_validation.py
+  - scripts/launch_comprehensive_shadow_trading.py
+2 src/cohesion/risk_authority.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - archive/deprecated/risk/MIGRATION_GUIDE.md
+2 src/processing/exposure_engine.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 src/processing/portfolio_allocator_enhanced.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 src/processing/raw_weights_engine.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 src/processing/risk_budgets_engine.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 src/processing/stock_role_classifier.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 src/processing/timing_engine.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 src/processing/timing_weights_engine.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 src/processing/volatility_weight_engine.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+2 state.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - github_repo/SETUP_INSTRUCTIONS.md
+2 state_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 state_file_manager.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - tests/validation/test_task13_canonical_state_properties.py
+2 static.sh
+  - src/research/model_adapters.py
+  - src/research/transformer_model.py
+2 stochastic_volatility_kalman.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+  - PRODUCTION_MACRO_TRANSMISSION_COMPLETE.md
+2 strategy_generator.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+2 stress_test_brutal_periods.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 stress_test_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - reports/tasks/TASKS_4_4_4_6_COMPLETION_REPORT.md
+2 stress_testing_system.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+2 temporal_signal_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+2 terminal_value.py
+  - VALUATION_ENGINE_V2_SUMMARY.md
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+2 test_capital_grade_system_laws.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/system/CAPITAL_GRADE_SYSTEM_LAWS_IMPLEMENTATION.md
+2 test_dashboard_components.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+2 test_dashboard_fixes.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_FINAL_COMPLETE.md
+2 test_dashboard_issues.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - scripts/README.md
+2 test_enhanced_narrative_system.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 test_enhanced_v3_dashboard_fixes.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+  - docs/archive/root_status_reports/TASK_5_COMPLETION_SUMMARY.md
+2 test_final_living_system_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 test_institutional_variance_reduction.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 test_integration_properties.py
+  - .kiro/specs/institutional-validation-layers/design.md
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+2 test_intelligence_system.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+2 test_terminal.py
+  - docs/completion_reports/NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - scripts/README.md
+2 test_v3_enhancements.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+2 ultimate_northstar_dashboard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+2 unified_dashboard_adapter.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+  - docs/archive/root_status_reports/ULTIMATE_INTEGRATED_DASHBOARD_COMPLETE_DOCUMENTATION.md
+2 unified_state_manager.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - reports/system/CAPITAL_GRADE_SYSTEM_LAWS_IMPLEMENTATION.md
+2 upstox_adapter.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+  - docs/options/TOKEN_REFRESH_GUIDE.md
+2 v3_sentiment_loader.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+  - reports/AUDIT_V3_DATA_INTEGRITY_AND_SYNTHETIC_USAGE_REPORT.md
+2 validate_ns_uso_v3_integration.py
+  - docs/NS_USO_V3_INTEGRATION_COMPLETE.md
+  - organize_root_folder.py
+2 validate_signal_strength.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+2 validation_record.sh
+  - src/validation/oos_validator.py
+  - tests/validation/test_oos_validator_properties.py
+2 validation_summary.sh
+  - scripts/run_institutional_walk_forward_validation.py
+  - src/validation/institutional_walk_forward_validator.py
+2 verify_data_consistency.py
+  - docs/archive/root_status_reports/DATA_CONSISTENCY_FIXED.md
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+2 volatility_dashboard.py
+  - docs/MIGRATION_GUIDE.md
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+2 weekly_fabric_builder.py
+  - docs/completion_reports/WEEKLY_CAUSAL_FABRIC_COMPLETE.md
+  - scripts/fix_remaining_syntax_errors.py
+2 weekly_rebalance.py
+  - reports/system/live_folder_optimization.json
+  - scripts/fix_dashboard_mock_data_and_errors.py
+2 window_result.sh
+  - scripts/institutional_12month_real_data.py
+  - scripts/institutional_12month_simple.py
+2 yield_data.sh
+  - src/intelligence/market_brain/comprehensive_rbi_extractor.py
+  - src/intelligence/market_brain/real_data_integrator.py
+2 yields_df.sh
+  - archive/obsolete_cleanup_20260211/source_backups/src/intelligence/market_brain/real_data_integrator_backup.py
+  - src/intelligence/market_brain/real_data_integrator.py
+1 -self.sh
+  - src/operation/alpha_validator.py
+1 ./scripts/run_daily_eod_collection.sh
+  - docs/options/DAILY_EOD_COLLECTION_GUIDE.md
+1 ./start_northstar.sh
+  - scripts/deploy_northstar_operations.py
+1 /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/run_daily_eod_collection.sh
+  - docs/options/DAILY_EOD_COLLECTION_GUIDE.md
+1 /miniconda3/etc/profile.d/conda.sh
+  - docs/options/DAILY_EOD_COLLECTION_GUIDE.md
+1 H_t.sh
+  - src/macro_transmission_engine/jax_kalman.py
+1 PROJECT_ROOT/run_daily_v3.py
+  - scripts/manage_cron.sh
+1 PROJECT_ROOT/scripts/backup_northstar_data.py
+  - scripts/manage_cron.sh
+1 PROJECT_ROOT/scripts/run_trading_day_orchestrator.py
+  - scripts/manage_cron.sh
+1 R.sh
+  - src/macro_transmission_engine/bayesian_model.py
+1 X_clean.sh
+  - src/macro_impact_engine/lagged_regression.py
+1 X_df.sh
+  - src/research/dataset_manager.py
+1 X_unrestricted.sh
+  - src/intelligence/market_brain/weekly_relationship_model.py
+1 X_window.sh
+  - src/intelligence/market_brain/weekly_fabric_builder.py
+1 Xt.sh
+  - src/research/model_adapters.py
+1 XtX.sh
+  - src/macro_impact_engine/lagged_regression.py
+1 Z.sh
+  - src/research/model_adapters.py
+1 accounting_integrity.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 activate_full_northstar_v3_system.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 activate_system.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 alpha_os.diagnostics.sh
+  - docs/ALPHA_OS_60_90_DAY_RUNBOOK.md
+1 alpha_os.sh
+  - src/options/config_loader.py
+1 alpha_ts.sh
+  - src/dashboard/northstar_v3_ultimate_integrated_dashboard.py
+1 alpha_validator.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 analytics_dashboard.py
+  - reports/tasks/TASKS_14_15_COMPLETION_REPORT.md
+1 analyze_historical_volatility.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 api_server.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+1 archive/.../unified_intelligence_engine_backup.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 archive_specs.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+1 args.py
+  - scripts/run_trading_day_orchestrator.py
+1 arr.sh
+  - src/research/model_adapters.py
+1 authority_hierarchy_example.py
+  - scripts/consolidate_state_management.py
+1 automation_dashboard.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 backtest_prices.sh
+  - src/backtesting/backtest_engine.py
+1 backups/.../northstar_c/src/tier1/regime_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 backups/root_cleanup_archive_20260123_000918/northstar_v3_archive/src/dashboard/comprehensive_northstar_dashboard.py
+  - archive/deprecated/intelligence/IMPORT_UPDATE_SUMMARY.md
+1 backups/root_cleanup_archive_20260123_000918/northstar_v3_archive/src/live/daily_shadow_trader.py
+  - archive/deprecated/intelligence/IMPORT_UPDATE_SUMMARY.md
+1 backups/root_cleanup_archive_20260123_000918/northstar_v3_archive/src/orchestrator/master_orchestrator.py
+  - archive/deprecated/intelligence/IMPORT_UPDATE_SUMMARY.md
+1 basic_state_management.py
+  - scripts/fix_task14_5_state_management.py
+1 batch_syntax_fix.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 behavioral_stability_tester.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 best_sharpe.sh
+  - src/operation/backtest_orchestrator.py
+1 beta.sh
+  - src/macro_transmission_engine/stochastic_volatility_kalman.py
+1 beta_drift_fabric.py
+  - scripts/fix_remaining_syntax_errors.py
+1 beta_drift_fabric_full.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 beta_wide.sh
+  - scripts/run_macro_transmission_analysis.py
+1 brain_dashboard.py
+  - scripts/fix_remaining_syntax_errors.py
+1 broker_execution.py
+  - docs/archive/root_cleanup_20260214/REAL_DATA_INTEGRATION_COMPLETE.md
+1 buffett_score.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+1 build_full_beta_drift_fabric.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 build_simple_anticipatory_intelligence.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 c.sh
+  - src/research/report_generator.py
+1 cache_manager.py
+  - reports/AUDIT_V3_DATA_INTEGRITY_AND_SYNTHETIC_USAGE_REPORT.md
+1 capital_policy.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 capital_scaling.py
+  - src/options/README.md
+1 capital_scaling_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 causality_index.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 centers.sh
+  - src/research/model_adapters.py
+1 check_v3_system_status.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 check_venue_status.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 clean.sh
+  - src/macro_transmission_engine/macro_forecast.py
+1 clock.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 clock_guard.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 coherence_audit.py
+  - src/scheduler/daily_update.py
+1 combined_macro.sh
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+1 combined_prices.sh
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+1 combined_yields.sh
+  - archive/obsolete_cleanup_20260211/source_backups/src/intelligence/market_brain/real_data_integrator_backup.py
+1 comparison.benchmark_metrics.sh
+  - tests/validation/test_performance_benchmarking_properties.py
+1 comparison.portfolio_metrics.sh
+  - tests/validation/test_performance_benchmarking_properties.py
+1 compatibility_wrapper.py
+  - archive/deprecated/state_managers/MIGRATION_GUIDE.md
+1 complete_task14_fixes.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 complete_task15_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 complete_task17_with_current_status.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 component_integration.py
+  - scripts/fix_task14_5_state_management.py
+1 component_state_example.py
+  - scripts/consolidate_state_management.py
+1 comprehensive_data.sh
+  - src/intelligence/market_brain/comprehensive_rbi_extractor.py
+1 comprehensive_rbi.sh
+  - src/intelligence/market_brain/comprehensive_rbi_extractor.py
+1 comprehensive_reports_organization.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 comprehensive_system_integrity_repair.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 config.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 config_loader.py
+  - scripts/quick_discover_stock_options.py
+1 configuration_manager.py
+  - reports/system/CAPITAL_GRADE_SYSTEM_LAWS_IMPLEMENTATION.md
+1 consolidate_directories.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+1 contrib.sh
+  - src/validation/performance_attribution_display.py
+1 corporate_factors.sh
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+1 corporate_tensor.sh
+  - src/intelligence/market_brain/market_tensor.py
+1 corr_data.correlation_matrix.sh
+  - tests/test_dispersion_edge_cases.py
+1 corr_df.sh
+  - src/research/alpha_factory/alpha_combiner.py
+1 corr_matrix.sh
+  - src/volatility/dispersion_module.py
+1 correlation_matrix.sh
+  - src/volatility/monte_carlo_engine.py
+1 count_northstar_v3_lines.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 cov.sh
+  - src/intelligence/capital_allocator.py
+1 cov_reg.sh
+  - src/models/regime_probability_engine.py
+1 create_comprehensive_sample_data.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 create_sample_dashboard_data.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 credit_tensor.sh
+  - src/intelligence/market_brain/market_tensor.py
+1 crisis.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 crisis_conviction_contract.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+1 critical_system_recovery.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 current_corr.sh
+  - src/validation/correlation_breakdown_tester.py
+1 current_snapshot.performance_metrics.sh
+  - src/validation/shadow_portfolio_dashboard.py
+1 current_snapshot.sh
+  - src/validation/shadow_portfolio_dashboard.py
+1 curve.sh
+  - src/validation/alpha_leverage_separator.py
+1 custom_result.sh
+  - scripts/demo_task2_crisis_validator.py
+1 cyclicals_model.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+1 daily_eod_option_chain_collector.py
+  - docs/options/DAILY_EOD_COLLECTION_GUIDE.md
+1 daily_token_update.sh
+  - docs/options/TOKEN_REFRESH_GUIDE.md
+1 dashboard_snapshot.performance_metrics.sh
+  - src/validation/alert_and_diagnostic_system.py
+1 dashboard_snapshot.sh
+  - src/validation/alert_and_diagnostic_system.py
+1 data/options/live/options_runtime_state.json.sh
+  - scripts/backup_northstar_data.py
+1 data_merge_and_organize.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 defensives_model.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+1 deltas.sh
+  - src/intelligence/market_brain/weekly_fabric_builder.py
+1 demo_command_bridge.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 demo_enhanced_narratives.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 demo_task14_analytics_dashboard.py
+  - reports/tasks/TASKS_14_15_COMPLETION_REPORT.md
+1 dependency_container.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 dependency_container_example.py
+  - scripts/fix_task14_4_circular_dependencies.py
+1 deploy_northstar_operations.py
+  - reports/tasks/TASKS_14_15_COMPLETION_REPORT.md
+1 deploy_production.py
+  - scripts/implement_task16_production_deployment.py
+1 descriptive_name.py
+  - docs/MAINTENANCE.md
+1 dry_run_options_system.py
+  - docs/options/TOKEN_REFRESH_GUIDE.md
+1 eligibility_validator.py
+  - src/options/README.md
+1 emergency_halt.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 emergency_hedge.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 emergency_liquidate.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 enable_living_system_migration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 enforce_real_data_only.py
+  - src/dashboard/northstar_v3_ultimate_integrated_dashboard.py
+1 engine_behavior.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 engine_panel.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 enhance_dashboard_time_series_and_regime.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 enhanced_backtesting_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 enhanced_brain_orchestrator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 enhanced_consistent_data_manager.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 enhanced_file_organization.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 enhanced_kill_switch.sh
+  - github_repo/examples/production_grade_demo.py
+1 enhanced_narrative_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 enhanced_report.performance_metrics.sh
+  - scripts/demo_enhanced_institutional_reports.py
+1 enhanced_transaction_cost_model.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+1 eod_rebalance.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 examples/valuation_examples.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+1 execution.sh
+  - src/validation/enhanced_portfolio_simulator.py
+1 exit_signal.sh
+  - tests/options/test_position_lifecycle.py
+1 extended_tensor.sh
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+1 extract_all_strategy_backtests.py
+  - analysis_results/cleanup_summary.json
+1 extract_live_trading_comprehensive.py
+  - analysis_results/cleanup_summary.json
+1 extract_real_data_results.py
+  - analysis_results/cleanup_summary.json
+1 factors.sh
+  - src/research/research_controller.py
+1 features/macro_factors.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 features/sector_breadth.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 features/volatility_block.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 final_robustness_fix.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 final_system_validation_certification.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 final_value_index.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+1 financials_model.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+1 fingerprints.sh
+  - src/intelligence/market_brain/regime_memory.py
+1 fix_all_src_imports.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_anticipatory_capital_allocation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_corruption_tests.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_critical_system_failures.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_critical_system_failures_v2.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_dashboard_issues.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_final_robustness_issues.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_import_paths.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_narrative_intelligence_complete.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_rbi_data_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_remaining_robustness_issues.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_remaining_syntax_errors.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_system_health_references.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_system_integrity_issues.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 fix_task14_5_state_management.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 flow_acceleration.py
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+1 flow_tensor.sh
+  - src/intelligence/market_brain/market_tensor.py
+1 forward_validator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 frame.sh
+  - src/portfolio/strategy_correlation_engine.py
+1 fundamental_processor.py
+  - docs/analysis/PROCESSING_FILES_ANALYSIS.md
+1 fundamentals.sh
+  - scripts/macro_conditioned_mandatory_tests.py
+1 generate_3year_backtest.py
+  - analysis_results/cleanup_summary.json
+1 generate_6month_live_trades.py
+  - analysis_results/cleanup_summary.json
+1 generate_eod_reports.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 generate_institutional_report_complete.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 generate_institutional_walkforward_report.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 generate_portfolio.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 generate_system_integrity_diagnostic_report.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 get_upstox_token.sh
+  - docs/options/TOKEN_REFRESH_GUIDE.md
+1 governance_system.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 governor.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 greeks_panel.py
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+1 grouped.sh
+  - src/research/diagnostics/ic_diagnostics.py
+1 health_check.sh
+  - docs/options/OPERATOR_RUNBOOK.md
+1 health_monitor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 heatmap_data.sh
+  - examples/macro_impact_engine_demo.py
+1 horizon_returns.sh
+  - src/intelligence/market_brain/weekly_fabric_builder.py
+1 implement_task11_liquidity_stress_enhancement.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 influence_df.sh
+  - src/intelligence/market_brain/causal_graph.py
+1 initialize_state.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 inspect_exposure.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 institutional_12month_final.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 institutional_12month_simple.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 institutional_12month_working.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 institutional_dual_engine_validator.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 institutional_reporting_system.py
+  - reports/northstar/NORTHSTAR_V3_FINAL_ACCOMPLISHMENTS.md
+1 institutional_safeguards_suite.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 institutional_walk_forward_complete.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 integrate_alpha_generation_v3.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 integrate_health_calculator.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 integration/export_to_njord.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 intelligence.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 intelligence_engine_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 intelligence_panel.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 investigate_system_integrity.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 kalman_filter.py
+  - MACRO_TRANSMISSION_ENGINE_COMPLETE.md
+1 kill_switch.sh
+  - github_repo/docs/production_grade_enhancements.md
+1 kill_switch_auditor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 kill_switch_system.py
+  - reports/tasks/TASKS_4_1_4_3_COMPLETION_REPORT.md
+1 known_train.sh
+  - src/research/model_adapters.py
+1 known_valid.sh
+  - src/research/model_adapters.py
+1 latest_validation.sh
+  - src/validation/oos_validator.py
+1 launch_comprehensive_dashboard.sh
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 launch_dashboard.sh
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 launch_dashboard_with_real_data.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 launch_enhanced_results_dashboard.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 launch_fixed_dashboard.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 launch_northstar_v3_true.py
+  - scripts/utilities/eod_options_pipeline.py
+1 launch_northstar_v3_ultimate_integrated_dashboard.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_ULTIMATE_DASHBOARD_COMPLETE.md
+1 launch_ultimate_dashboard.sh
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 launch_working_dashboard.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 legacy_wrappers.py
+  - scripts/disable_living_system_migration.py
+1 liquidity_kill_switch.py
+  - archive/deprecated/risk/IMPORT_UPDATE_NEEDED.md
+1 m.sh
+  - src/validation/capacity_analysis_engine.py
+1 macro_alpha_adjuster.py
+  - MACRO_TRANSMISSION_ENGINE_COMPLETE.md
+1 macro_blocks.py
+  - src/models/macro_regime.py
+1 macro_forecast.py
+  - MACRO_TRANSMISSION_ENGINE_COMPLETE.md
+1 macro_subset.sh
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+1 manage_cron.sh
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 market_brain_orchestrator.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+1 market_brain_state.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+1 market_data_feed.py
+  - docs/archive/root_cleanup_20260214/REAL_DATA_INTEGRATION_COMPLETE.md
+1 market_factors_df.sh
+  - scripts/build_simple_anticipatory_intelligence.py
+1 market_hours.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+1 market_internals.py
+  - src/scheduler/daily_update.py
+1 market_regime_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 market_structure.sh
+  - src/intelligence/market_brain/enhanced_regime_memory.py
+1 market_tensor.sh
+  - src/intelligence/market_brain/market_tensor.py
+1 matrix.py
+  - github_repo/SETUP_INSTRUCTIONS.md
+1 matrix.sh
+  - src/validation/correlation_breakdown_tester.py
+1 means.sh
+  - src/validation/regime_drift_monitor.py
+1 memory.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 memory_engine.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 messy_market_data.sh
+  - scripts/demo_data_format_standardization.py
+1 messy_rbi_data.sh
+  - scripts/demo_data_format_standardization.py
+1 meta_integrity_intelligence.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 metrics.sh
+  - tests/validation/test_performance_benchmarking_properties.py
+1 migrate_hardcoded_references.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 mock_run.py
+  - github_repo/SETUP_INSTRUCTIONS.md
+1 mode_controller.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 model.emission_means.sh
+  - src/models/regime_probability_engine.py
+1 modern_data.sh
+  - scripts/build_beta_drift_fabric.py
+1 monetary_tensor.sh
+  - src/intelligence/market_brain/market_tensor.py
+1 monitor.sh
+  - docs/migration/MIGRATION_DOCUMENTATION_COMPLETE.md
+1 mu_history.sh
+  - src/macro_transmission_engine/macro_optimizer.py
+1 narrative_intelligence_engine.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+1 northstar_terminal_v2.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 northstar_v3_production_dashboard_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 nse_fetcher.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+1 nse_session.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+1 num.sh
+  - scripts/runners/verify_v3_integrity.py
+1 numeric.sh
+  - src/dashboard/northstar_v3_dashboard_methods.py
+1 obs_block.sh
+  - src/research/research_controller.py
+1 obs_t.sh
+  - src/research/model_adapters.py
+1 obs_train.sh
+  - src/research/model_adapters.py
+1 observer_scheduler.py
+  - tests/intelligence_observer/TEST_COMPLETION_REPORT.md
+1 old_system/scripts/export_state.py
+  - docs/MIGRATION_GUIDE.md
+1 old_system/scripts/shutdown.py
+  - docs/MIGRATION_GUIDE.md
+1 oos_validator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 optional_dependency_example.py
+  - scripts/eliminate_circular_dependencies.py
+1 options/regime_detector.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 options_backtester.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+1 options_horizon.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+1 options_observer.py
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+1 options_panel.py
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+1 options_regime.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+1 options_timing.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+1 options_volatility_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 orchestrator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 organ_wrappers.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 organs.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 pair.sh
+  - scripts/run_macro_impact_analysis.py
+1 per_expiry.sh
+  - src/options/vol_surface_intelligence.py
+1 perf_metrics.sh
+  - src/validation/alert_and_diagnostic_system.py
+1 perf_summary.risk_metrics.sh
+  - github_repo/examples/mock_run.py
+1 performance.sh
+  - src/validation/regime_based_attribution_engine.py
+1 performance_metrics.sh
+  - src/validation/institutional_report_generator.py
+1 performance_monitoring_demo.py
+  - docs/API_REFERENCE.md
+1 period.sh
+  - src/operation/master_operation_controller.py
+1 periodic_cleanup.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+1 pipelines/run_feature_engineering.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 pipelines/run_ingestion.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 pipelines/run_preprocessing.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 pivot.sh
+  - src/dashboard/northstar_v3_ultimate_integrated_dashboard.py
+1 platform.py
+  - src/validation/institutional_hardening.py
+1 pnl_tracker.py
+  - src/options/README.md
+1 portfolio_allocator_enhanced.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 portfolio_metrics.sh
+  - src/validation/performance_benchmarking_system.py
+1 portfolio_returns.sh
+  - src/validation/enhanced_institutional_report_generator.py
+1 portfolio_structure_intelligence.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 portfolio_summary.sh
+  - src/validation/performance_benchmarking_system.py
+1 position_manager.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 preprocessing/align_time.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 preprocessing/clean_equities.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 preprocessing/normalize_features.py
+  - docs/analysis/OBSOLETE_FILES_ANALYSIS.md
+1 prev.sh
+  - src/validation/capacity_analysis_engine.py
+1 problematic_data.sh
+  - scripts/demo_data_format_standardization.py
+1 probs.sh
+  - src/dashboard/northstar_v3_ultimate_integrated_dashboard.py
+1 process_all_beta_drift_years.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 production_grade_dashboard.py
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+1 production_grade_dashboard_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 production_health_monitor.py
+  - scripts/implement_task16_production_deployment.py
+1 qdf.sh
+  - scripts/runners/verify_v3_integrity.py
+1 quick_activate_v3_essentials.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 rbi_data_handler.py
+  - docs/market-brain/MARKET_BRAIN_COMPREHENSIVE_INTEGRATION_SUMMARY.md
+1 rbi_final_working.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 rbi_integrated_manager.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 real_data_integrator.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 recent.sh
+  - scripts/runners/refresh_v3_artifacts.py
+1 recent_regimes.sh
+  - src/intelligence_observer/observer_core/snapshot_builder.py
+1 redundancy_monitor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 refresh_upstox_token.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_INTEGRATION_COMPLETE.md
+1 regime_classification.sh
+  - src/validation/enhanced_institutional_report_generator.py
+1 regime_detector_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 regime_intelligence.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 regime_lab.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 regime_locked_capital_allocator.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+1 regime_memory.sh
+  - src/intelligence/regime_memory_system.py
+1 regime_memory_system.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 regime_panel.py
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+1 registry.sh
+  - tests/validation/test_task7_dependency_injection_properties.py
+1 rel_strike.sh
+  - src/options/vol_surface_intelligence.py
+1 report.portfolio_summary.sh
+  - tests/validation/test_performance_benchmarking_properties.py
+1 report.shadow_reality_analysis.sh
+  - src/validation/enhanced_institutional_report_generator.py
+1 research_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 restart_component.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 restored_state.correlation_matrix.sh
+  - tests/test_state_persistence_validation.py
+1 result.standardized_data.sh
+  - scripts/demo_data_format_standardization.py
+1 result_2000.sh
+  - scripts/demo_task2_crisis_validator.py
+1 result_2008.sh
+  - scripts/demo_task2_crisis_validator.py
+1 result_2020.sh
+  - scripts/demo_task2_crisis_validator.py
+1 resume_trading.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 ret_mat.sh
+  - src/intelligence/capital_allocator.py
+1 rets.sh
+  - src/dashboard/northstar_v3_ultimate_integrated_dashboard.py
+1 returns_matrix.sh
+  - scripts/build_simple_anticipatory_intelligence.py
+1 risk_budget_enforcer.py
+  - reports/tasks/TASKS_4_4_4_6_COMPLETION_REPORT.md
+1 risk_controllers.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+1 risk_coordinator.py
+  - github_repo/SETUP_INSTRUCTIONS.md
+1 risk_engine_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 risk_management_demo.py
+  - docs/API_REFERENCE.md
+1 risk_panel.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 rows.sh
+  - src/integration/market_macro_bridge.py
+1 run_alpha_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 run_complete_northstar_system.py
+  - src/automation/daily_executor.py
+1 run_comprehensive_system_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 run_daily.py
+  - src/ingestion/integrated_data_pipeline.py
+1 run_final_comprehensive_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 run_full_intelligence.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 run_governor.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 run_institutional_12month_enhanced.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 run_institutional_12month_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 run_institutional_walk_forward_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 run_macro_pipeline.py
+  - src/ingestion/rbi_integrated_manager.py
+1 run_system_with_current_data.py
+  - organize_root_folder.py
+1 run_task15_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 run_v3_sentiment_cycle.py
+  - scripts/run_ns_uso_sentiment_loop.py
+1 runner.py
+  - run_complete_v3_system.py
+1 runners/run_market_brain.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 runners/run_market_brain_production.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 sample_cov.sh
+  - src/research/alpha_factory/alpha_combiner.py
+1 save_state.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 scalper.sh
+  - tests/test_gamma_scalping_edge_cases.py
+1 scripts/activate_backup_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/activate_crisis_mode.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/activate_enhanced_monitoring.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/activate_offline_mode.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/analyze_drawdown.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/analyze_resource_trends.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/analyze_strategy_performance.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/archive_incident.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/archive_logs.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/archive_old_data.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/archive_old_trades.py
+  - docs/options/OPERATOR_RUNBOOK.md
+1 scripts/backup_system.py
+  - docs/MIGRATION_GUIDE.md
+1 scripts/backup_system_state.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/black_swan_analysis.py
+  - docs/operations/BLACK_SWAN_DAY_RUNBOOK.md
+1 scripts/black_swan_monitoring.py
+  - docs/operations/BLACK_SWAN_DAY_RUNBOOK.md
+1 scripts/blacklist_illiquid_underlyings.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/calculate_margin_reduction.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/capacity_planning_analysis.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/check_data_feed.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/check_process_status.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/cleanup/restore_backup.py
+  - docs/MAINTENANCE.md
+1 scripts/cleanup_old_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/cleanup_temp_files.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/collect_eod_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/compact_trade_ledger.py
+  - docs/OPTIONS_V3_INTEGRATION_GUIDE.md
+1 scripts/compare_systems.py
+  - docs/MIGRATION_GUIDE.md
+1 scripts/component_health_check.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/comprehensive_dashboard_enhancement.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 scripts/convert_state_format.py
+  - docs/MIGRATION_GUIDE.md
+1 scripts/disconnect_network.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/emergency_hedge_calculator.py
+  - docs/operations/BLACK_SWAN_DAY_RUNBOOK.md
+1 scripts/emergency_position_review.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/enhance_dashboard_time_series_and_regime.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 scripts/enhance_dashboard_time_series_comprehensive.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 scripts/eod_reconciliation.py
+  - docs/operations/NORTHSTAR_OPERATIONAL_PLAYBOOK.md
+1 scripts/export_logs.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/export_old_state.py
+  - docs/MIGRATION_GUIDE.md
+1 scripts/forecast_resource_needs.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/generate_daily_options_report.py
+  - docs/options/OPERATOR_RUNBOOK.md
+1 scripts/generate_daily_report.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/generate_eod_report.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/generate_incident_report.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/generate_ledger_audit_report.py
+  - docs/options/OPERATOR_RUNBOOK.md
+1 scripts/generate_regulatory_report.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/infrastructure_recommendations.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/initialize_system.py
+  - reports/tasks/TASK_1_COMPLETION_REPORT.md
+1 scripts/launch_ultimate_v3_dashboard.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 scripts/liquidate_positions.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/load_config.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/log_emergency_action.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/log_margin_call.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/migrate_imports.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 scripts/mode_controller.py
+  - docs/operations/BLACK_SWAN_DAY_RUNBOOK.md
+1 scripts/monitor_positions.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/monthly_performance_report.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/optimize_databases.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/performance_analysis.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/performance_review.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/preserve_audit_trail.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/prioritize_liquid_positions.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/rebalance_crisis_portfolio.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/rebuild_from_ledger.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/recalculate_positions.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/reconcile_positions.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/recover_from_backup.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/recover_from_wal.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/reduce_position.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/refresh_api_credentials.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/replace_silent_failures.py
+  - reports/system/TASK14_COMPLETE_SYSTEM_COHESION_FIXES.md
+1 scripts/restart_all_services.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/restart_full_system.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/restart_process.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/restore_state.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/restore_system_backup.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/resume_operations.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/retry_orders.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/review_positions.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/review_risk_metrics.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/review_risk_parameters.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/rotate_logs.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/run_alpha_autopsy.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 scripts/run_daily_eod_collection.sh
+  - docs/options/DAILY_EOD_COLLECTION_GUIDE.md
+1 scripts/run_eod_pipeline.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/run_intelligence.py
+  - scripts/activate_system.py
+1 scripts/run_stress_tests.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/select_liquidation_candidates.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/setup_crisis_alerts.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/show_audit_trail.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/show_losers.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/show_margin.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/show_regime.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/show_regime_adjustments.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/show_risk_limits.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/show_risk_metrics.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/show_worst_scenarios.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/start_system.py
+  - docs/MIGRATION_GUIDE.md
+1 scripts/switch_to_backup_feed.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/ultimate_dashboard_overhaul.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 scripts/update_crisis_risk_params.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/update_documentation.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/update_market_calendars.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/update_performance_metrics.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/update_readme_files.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/use_cached_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/validate_all_data.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/validate_data_feed.py
+  - docs/EMERGENCY_PROCEDURES.md
+1 scripts/validate_data_integrity.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/validate_ledger_recovery.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/validate_recovered_state.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/verify_config.py
+  - docs/DEPLOYMENT_CHECKLIST.md
+1 scripts/verify_system_integrity.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/weekly_health_check.py
+  - docs/OPERATOR_GUIDE.md
+1 scripts/weekly_health_report.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 scripts/weekly_performance_analysis.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 sector_tensor.sh
+  - src/intelligence/market_brain/market_tensor.py
+1 self.A_posterior.sh
+  - src/macro_transmission_engine/macro_forecast.py
+1 self._config.alpha_os.sh
+  - src/options/config_loader.py
+1 self.confidence.sh
+  - tests/validation/test_confidence_system_properties.py
+1 self.correlation_matrix.sh
+  - src/volatility/monte_carlo_engine.py
+1 self.edge_tracker.sh
+  - github_repo/src/intelligence/edge_half_life.py
+1 self.emergency_brake.sh
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+1 self.error_handler.sh
+  - tests/validation/test_task10_error_handling_properties.py
+1 self.executor.sh
+  - src/operation/master_operation_controller.py
+1 self.frozen_rules.sh
+  - scripts/institutional_walk_forward_complete.py
+1 self.kill_switch.sh
+  - github_repo/tests/test_liquidity_kill_switch.py
+1 self.kill_switches.sh
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+1 self.liquidity_kill_switch.sh
+  - github_repo/src/integration/production_grade_enhancements.py
+1 self.manager.sh
+  - tests/intelligence_observer/test_northstar_integration.py
+1 self.no_edge_detector.sh
+  - src/validation/phase3_component_validator.py
+1 self.performance_impact.sh
+  - src/validation/advanced_stress_test_result.py
+1 self.performance_metrics.sh
+  - src/validation/shadow_portfolio_dashboard.py
+1 self.portfolio_stats.sh
+  - src/intelligence_observer/observer_core/observer_context.py
+1 self.risk_manager.liquidity_kill_switch.sh
+  - github_repo/tests/test_production_grade_integration.py
+1 self.risk_manager.sh
+  - github_repo/tests/test_production_grade_integration.py
+1 self.state_manager.sh
+  - github_repo/tests/test_edge_half_life.py
+1 self.system_hygiene.sh
+  - src/options/backtest_simulation_engine.py
+1 self.tracker.sh
+  - github_repo/tests/test_edge_half_life.py
+1 self.unified_state.sh
+  - src/validation/shadow_portfolio_v3_integration.py
+1 seq_map.sh
+  - src/research/model_adapters.py
+1 server.py
+  - docs/terminals/NORTHSTAR_TERMINAL_README.md
+1 service_interface_example.py
+  - scripts/fix_task14_4_circular_dependencies.py
+1 service_registration_example.py
+  - scripts/eliminate_circular_dependencies.py
+1 shadow_analysis.sh
+  - scripts/demo_enhanced_institutional_reports.py
+1 shadow_fund_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+1 shadow_reality_analysis.sh
+  - src/validation/enhanced_institutional_report_generator.py
+1 shock_detector.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 show_greeks.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 show_positions.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 show_risk.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 shrunk.sh
+  - src/intelligence/capital_allocator.py
+1 shutdown_engine.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 signal_decay_monitor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 signal_health.sh
+  - src/intelligence/regime_locked_capital_allocator.py
+1 signal_quality_gate.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+1 src/core/configuration_manager.py
+  - reports/tasks/TASK_1_COMPLETION_REPORT.md
+1 src/core/data_models.py
+  - reports/tasks/TASK_1_COMPLETION_REPORT.md
+1 src/dashboard/constitutional_cockpit.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 src/dashboard/fixed_unified_terminal.py
+  - reports/system/workspace_analysis.md
+1 src/dashboard/integrated_live_cockpit.py
+  - scripts/launch_integrated_live_system.py
+1 src/dashboard/integrated_shadow_dashboard.py
+  - reports/tasks/TASK_4_INTEGRATED_DASHBOARD_COMPLETE.md
+1 src/dashboard/northstar_v3_comprehensive_dashboard_fixed.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 src/dashboard/northstar_v3_dashboard_fixed.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 src/dashboard/northstar_v3_ultimate_dashboard.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 src/dashboard/northstar_v3_ultimate_integrated_dashboard_clean.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 src/dashboard/options_dashboard.py
+  - docs/MIGRATION_GUIDE.md
+1 src/dashboard/unified_terminal.py
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+1 src/dashboard/utils/interactive_time_series_manager.py
+  - scripts/create_interactive_dashboard_complete.py
+1 src/dashboard/working_dashboard_components.py
+  - docs/archive/root_status_reports/NORTHSTAR_V3_DATA_INTEGRITY_CLEANUP_COMPLETE.md
+1 src/dashboard/working_northstar_dashboard.py
+  - docs/dashboards/WORKING_DASHBOARD_COMPLETE.md
+1 src/forensics/alpha_autopsy_system.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/cost_attribution_engine.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/data_structures.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/forensic_reporter.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/historical_pattern_analyzer.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/real_time_forensic_monitor.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/regime_loss_analyzer.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/sealed_results_loader.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/specialist_pnl_analyzer.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/stability_analyzer.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/forensics/timing_analyzer.py
+  - .kiro/specs/archive/alpha-autopsy-system/tasks.md
+1 src/ingestion/rbi_scraper_seamless.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 src/intelligence/intelligence_stack_original.py
+  - scripts/fix_all_src_imports.py
+1 src/intelligence/memory.py
+  - .kiro/specs/options-trading-system/design.md
+1 src/intelligence/shock_detector.py
+  - .kiro/specs/options-trading-system/design.md
+1 src/live/production_grade_live_trader.py
+  - scripts/integrate_production_grade_with_live_system.py
+1 src/live/production_grade_scheduler.py
+  - scripts/integrate_production_grade_with_live_system.py
+1 src/main.py
+  - tests/validation/test_cleanup_import_integrity.py
+1 src/portfolio/bayesian_capital_tribunal.py
+  - .kiro/specs/options-trading-system/design.md
+1 src/portfolio/capital_allocator.py
+  - .kiro/specs/options-trading-system/design.md
+1 src/portfolio/governor.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 src/portfolio/portfolio_construction_pipeline.py
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+1 src/portfolio/position_governor.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION_PART2.md
+1 src/processing/narrative_engine.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 src/processing/sector_rotation_ts.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 src/risk/kill_switch.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 src/risk/risk_coordinator.py
+  - .kiro/specs/options-trading-system/design.md
+1 src/risk/unified_risk_framework.py
+  - docs/architecture/NORTHSTAR_V3_UNIFICATION_ROADMAP.md
+1 src/state/belief_state.py
+  - .kiro/specs/options-trading-system/design.md
+1 src/state/pulse_state.py
+  - .kiro/specs/options-trading-system/design.md
+1 src/validation/no_edge_detector.py
+  - .kiro/specs/options-trading-system/design.md
+1 src/validation/reality_check_engine_backup.py
+  - reports/system/HARDCODED_REFERENCES_MIGRATION_REPORT.md
+1 src/validation/walk_forward_analysis_engine.py
+  - scripts/complete_v3_system_and_dashboard_enhancement.py
+1 src/valuation/buffett_module/capital_allocator_score.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/buffett_module/durability_score.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/composite/buffett_score.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/composite/final_value_index.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/composite/valuation_score.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/forensic/manipulation_flags.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/intrinsic_value/terminal_value.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/sector_models/cyclicals_model.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/sector_models/defensives_model.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/sector_models/financials_model.py
+  - docs/VALUATION_QUICK_START.md
+1 src/valuation/sector_models/tech_model.py
+  - docs/VALUATION_QUICK_START.md
+1 standardized_df.sh
+  - src/cohesion/data_format_standardizer.py
+1 start_engine.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 start_northstar.sh
+  - scripts/deploy_northstar_operations.py
+1 state_io.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 state_recovery.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 static_train.sh
+  - src/research/model_adapters.py
+1 static_valid.sh
+  - src/research/model_adapters.py
+1 strategy_ast.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 strategy_backtest.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 strategy_beliefs.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+1 strategy_engine.py
+  - docs/archive/root_cleanup_20260214/OPTIONS_TRADING_ANALYSIS.md
+1 strategy_generation_demo.py
+  - docs/API_REFERENCE.md
+1 strategy_intelligence.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+1 strategy_intelligence_panel.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 strategy_lab.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 strategy_system.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+1 stress_intelligence.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 stress_replay.py
+  - MACRO_TRANSMISSION_ENGINE_COMPLETE.md
+1 stress_test_brutal_period.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 structure_tensor.sh
+  - src/intelligence/market_brain/market_tensor.py
+1 styles.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 sub.sh
+  - src/macro_impact_engine/data_loader.py
+1 summary.sh
+  - src/validation/institutional_walk_forward_validator.py
+1 survival_rules.py
+  - src/options/README.md
+1 survival_rules_engine.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 system_integration_wiring.py
+  - reports/tasks/TASKS_14_15_COMPLETION_REPORT.md
+1 system_orchestrator.py
+  - docs/architecture/NORTHSTAR_V3_COMPONENT_INTERACTION_MAP.md
+1 system_state_panel.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 system_status_report.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 tailwinds.sh
+  - src/intelligence/simple_tailwind_engine.py
+1 task14_fixes_example.py
+  - scripts/complete_task14_fixes.py
+1 task5_checkpoint_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 task7_checkpoint_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 tax_aware_pnl_tracker.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 tech_model.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+1 tensor_data.sh
+  - src/intelligence/market_brain/m1_safe_regime_memory.py
+1 tensor_df.sh
+  - src/intelligence/market_brain/brain_monitor.py
+1 tensor_normalized.sh
+  - src/intelligence/market_brain/causal_graph.py
+1 test.py
+  - docs/MAINTENANCE.md
+1 test_anticipatory_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_backtesting_system.py
+  - src/options/BACKTESTING_IMPLEMENTATION_COMPLETE.md
+1 test_brain_state_preservation.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_brain_window_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_calibration_monitor.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_capital_allocator_integration.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_complete_living_system_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_core_system_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_crisis_stress.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_data_feed.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 test_decay_monitor.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_dual_engine_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_end_to_end.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_enhanced_event_system.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_enhanced_portfolio_simulator_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_enhanced_transaction_costs_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_error_handling.py
+  - .kiro/specs/institutional-validation-layers/design.md
+1 test_feature_engine.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_forecast_properties.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_har_model.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_health_monitoring_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_import.py
+  - reports/system/file_organization_summary.md
+1 test_infrastructure_properties.py
+  - .kiro/specs/institutional-validation-layers/design.md
+1 test_institutional_safeguards_simple.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_integration_layer.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_integration_validation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_intelligence_stack_only.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_layer1_proof_properties.py
+  - .kiro/specs/institutional-validation-layers/design.md
+1 test_layer2_risk_properties.py
+  - .kiro/specs/institutional-validation-layers/design.md
+1 test_layer3_intelligence_properties.py
+  - .kiro/specs/institutional-validation-layers/design.md
+1 test_layer4_reality_properties.py
+  - .kiro/specs/institutional-validation-layers/design.md
+1 test_live_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_living_system_heartbeat.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_logistic_models.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_market_brain_integration.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_migration_compatibility.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_model_properties.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_module.py
+  - tests/validation/test_cleanup_import_integrity.py
+1 test_monitoring_properties.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_no_lookahead.py
+  - github_repo/SETUP_INSTRUCTIONS.md
+1 test_performance_bounds.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_reality_check_integration.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_reality_check_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_ridge_model.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_risk_authority_integration.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_risk_coordinator.py
+  - github_repo/SETUP_INSTRUCTIONS.md
+1 test_run_determinism.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_seed_variance.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_shadow_trading_system.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_signal_layer.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_signal_properties.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 test_simulation_reality_consistency.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_system_integrity_integration.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_task10_noise_robustness_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task10_regime_adaptation_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task11_liquidity_stress_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task11_stress_testing_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task13_automated_failure_detection_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task14_analytics_dashboard_properties.py
+  - reports/tasks/TASKS_14_15_COMPLETION_REPORT.md
+1 test_task14_data_integrity_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task14_error_handling_properties.py
+  - reports/tasks/TASK_14_COMPLETION_REPORT.md
+1 test_task15_integration_tests.py
+  - reports/tasks/TASKS_15_16_COMPLETION_REPORT.md
+1 test_task15_system_integration_properties.py
+  - reports/tasks/TASKS_14_15_COMPLETION_REPORT.md
+1 test_task16_crisis_validation_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task17_final_system_validation_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task18_final_checkpoint_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_task1_configuration_properties.py
+  - reports/system/CAPITAL_GRADE_SYSTEM_LAWS_IMPLEMENTATION.md
+1 test_task2_state_management_properties.py
+  - reports/system/CAPITAL_GRADE_SYSTEM_LAWS_IMPLEMENTATION.md
+1 test_task3_temporal_protection_properties.py
+  - reports/system/CAPITAL_GRADE_SYSTEM_LAWS_IMPLEMENTATION.md
+1 test_tasks_1_2_integration.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_temporal_guard_edge_cases.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_temporal_guard_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_tensorflow_fix.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_universe_manager_properties.py
+  - reports/cleanup/V3_CLEANUP_TASK14_IMPORT_VALIDATION.md
+1 test_v3_robustness.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_v3_sentiment_integration.py
+  - organize_root_folder.py
+1 test_visual_dashboard.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 test_walk_forward_validation.py
+  - .kiro/specs/probabilistic-forecasting-spine/design.md
+1 tests/options/test_config_loader.py
+  - src/options/README.md
+1 tests/options/test_dashboard_hygiene_properties_old.py
+  - tests/options/COMPLETION_SUMMARY.md
+1 tests/test_critical_components.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 tests/test_disaster_recovery.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 tests/test_e2e_system.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 tests/test_integration.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 tests/test_performance.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 tests/test_properties.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 tests/test_risk_authority.py
+  - docs/MIGRATION_GUIDE.md
+1 tests/test_risk_engine.py
+  - docs/MIGRATION_GUIDE.md
+1 tests/test_security.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 tests/test_state_engine.py
+  - docs/MIGRATION_GUIDE.md
+1 tests/test_state_manager.py
+  - docs/MIGRATION_GUIDE.md
+1 tests/test_stress_scenarios.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_EVOLUTION.md
+1 tests/validation/test_task14_integration_fixes.py
+  - reports/system/TASK14_COMPLETE_SYSTEM_COHESION_FIXES.md
+1 trade_ledger.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 trading_desk.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 trained.sh
+  - src/validation/regime_drift_monitor.py
+1 ultimate_comprehensive_cockpit.py
+  - docs/DASHBOARD_INTEGRATION_COMPLETE.md
+1 unified_belief_system.py
+  - archive/deprecated/intelligence/CONSOLIDATION_NOTES.md
+1 unified_engine_demo.py
+  - docs/API_REFERENCE.md
+1 unified_risk_coordinator_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 unified_state_manager_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 v3_risk_integration.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 validate_config.py
+  - docs/archive/root_cleanup_20260214/OPERATIONAL_SETUP_COMPLETE.md
+1 validate_living_system_final.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 validate_temporal_protection_complete.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 validated_df.sh
+  - src/cohesion/data_ingestion_validator.py
+1 validation_panel.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 validation_result.sh
+  - src/utils/rbi_data_handler.py
+1 valuation_score.py
+  - docs/VALUATION_ENGINE_V2_GUIDE.md
+1 verify_complete_system_operation.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 verify_system.py
+  - reports/completion/V3_CLEANUP_FINAL_COMPLETE.md
+1 verify_system_core_functionality.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 verify_system_operations.py
+  - NORTHSTAR_V3_SCRIPTS_COMPLETE_ANALYSIS.md
+1 visualization.py
+  - MACRO_IMPACT_ENGINE_QUICKSTART.md
+1 vol_paths.sh
+  - tests/test_monte_carlo_integration.py
+1 volatility_engine_v1.py
+  - .kiro/specs/unified-volatility-engine/ARCHITECTURE_ANALYSIS.md
+1 volatility_observer.py
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+1 volatility_panel.py
+  - archive/deprecated/dashboard/CONSOLIDATION_NOTES.md
+1 walk_forward.py
+  - docs/CONSTITUTIONAL_COCKPIT.md
+1 walk_forward_engine.py
+  - NORTHSTAR_V3_COMPLETE_SYSTEM_DOCUMENTATION.md
+1 weekly_monthly_options.py
+  - docs/architecture/NORTHSTAR_V3_COMPLETE_DOCUMENTATION.md
+1 weekly_relationship_model.py
+  - docs/completion_reports/WEEKLY_CAUSAL_FABRIC_COMPLETE.md
+1 weekly_relationship_store.py
+  - docs/completion_reports/WEEKLY_CAUSAL_FABRIC_COMPLETE.md
+1 weighted.sh
+  - src/dashboard/northstar_v3_ultimate_integrated_dashboard.py
+1 window.sh
+  - src/validation/institutional_walk_forward_validator.py
+1 window_results.sh
+  - scripts/institutional_12month_walk_forward.py
+1 x_filtered.sh
+  - src/macro_transmission_engine/jax_kalman.py
+1 xb.sh
+  - src/research/model_adapters.py
+1 xf.sh
+  - scripts/run_macro_transmission_analysis.py
+1 xls.sh
+  - src/validation/universe_manager.py
+1 xls_file.sh
+  - src/ingestion/rbi_processor.py
+1 y_lags.sh
+  - src/intelligence/market_brain/weekly_relationship_model.py

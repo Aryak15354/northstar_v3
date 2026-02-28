@@ -1,0 +1,23 @@
+{
+  "report_date": "2026-01-05",
+  "analysis_summary": {
+    "total_windows": 0,
+    "strategies_analyzed": 0,
+    "analysis_period_start": null,
+    "analysis_period_end": null,
+    "total_analysis_duration": 0
+  },
+  "window_results": [],
+  "degradation_analysis": {
+    "total_degradations": 0,
+    "critical_degradations": 0,
+    "strategies_with_degradation": 0
+  },
+  "evolution_analysis": {
+    "total_evolution_analyses": 0,
+    "strategies_with_evolution": 0
+  },
+  "recommendations": [
+    "No analysis results available for recommendations"
+  ]
+}

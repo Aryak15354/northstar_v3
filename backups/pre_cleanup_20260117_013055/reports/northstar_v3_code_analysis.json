@@ -1,0 +1,859 @@
+{
+  "summary": {
+    "total_files": 2574,
+    "total_lines": 2927687,
+    "code_lines": 2892157,
+    "comment_lines": 11762,
+    "blank_lines": 23768
+  },
+  "by_language": {
+    ".md": {
+      "files": 64,
+      "total": 16872,
+      "code": 9988,
+      "comments": 3318,
+      "blank": 3566
+    },
+    ".py": {
+      "files": 234,
+      "total": 104209,
+      "code": 75903,
+      "comments": 8328,
+      "blank": 19978
+    },
+    ".txt": {
+      "files": 4,
+      "total": 18,
+      "code": 18,
+      "comments": 0,
+      "blank": 0
+    },
+    ".json": {
+      "files": 144,
+      "total": 226766,
+      "code": 226758,
+      "comments": 4,
+      "blank": 4
+    },
+    ".yaml": {
+      "files": 2,
+      "total": 366,
+      "code": 351,
+      "comments": 0,
+      "blank": 15
+    },
+    ".toml": {
+      "files": 1,
+      "total": 7,
+      "code": 7,
+      "comments": 0,
+      "blank": 0
+    },
+    ".js": {
+      "files": 4,
+      "total": 202,
+      "code": 159,
+      "comments": 29,
+      "blank": 14
+    },
+    ".ts": {
+      "files": 1,
+      "total": 7,
+      "code": 5,
+      "comments": 1,
+      "blank": 1
+    },
+    ".tsx": {
+      "files": 2,
+      "total": 45,
+      "code": 41,
+      "comments": 0,
+      "blank": 4
+    },
+    ".jsx": {
+      "files": 9,
+      "total": 2179,
+      "code": 1911,
+      "comments": 82,
+      "blank": 186
+    },
+    ".csv": {
+      "files": 2109,
+      "total": 2577016,
+      "code": 2577016,
+      "comments": 0,
+      "blank": 0
+    }
+  },
+  "by_directory": {
+    "root": {
+      "files": 18,
+      "total": 5241,
+      "code": 2999,
+      "comments": 1135,
+      "blank": 1107
+    },
+    "config": {
+      "files": 3,
+      "total": 373,
+      "code": 358,
+      "comments": 0,
+      "blank": 15
+    },
+    ".streamlit": {
+      "files": 1,
+      "total": 7,
+      "code": 7,
+      "comments": 0,
+      "blank": 0
+    },
+    "docs": {
+      "files": 13,
+      "total": 3877,
+      "code": 2333,
+      "comments": 734,
+      "blank": 810
+    },
+    "docs/analysis": {
+      "files": 2,
+      "total": 451,
+      "code": 280,
+      "comments": 87,
+      "blank": 84
+    },
+    "docs/terminals": {
+      "files": 2,
+      "total": 527,
+      "code": 312,
+      "comments": 98,
+      "blank": 117
+    },
+    "docs/market-brain": {
+      "files": 5,
+      "total": 1502,
+      "code": 854,
+      "comments": 314,
+      "blank": 334
+    },
+    "docs/architecture": {
+      "files": 4,
+      "total": 2738,
+      "code": 1827,
+      "comments": 357,
+      "blank": 554
+    },
+    "docs/phases": {
+      "files": 7,
+      "total": 1897,
+      "code": 1106,
+      "comments": 376,
+      "blank": 415
+    },
+    "data_dictionary": {
+      "files": 3,
+      "total": 31,
+      "code": 22,
+      "comments": 3,
+      "blank": 6
+    },
+    "dashboard": {
+      "files": 1,
+      "total": 361,
+      "code": 263,
+      "comments": 55,
+      "blank": 43
+    },
+    "northstar-terminal": {
+      "files": 3,
+      "total": 18180,
+      "code": 18179,
+      "comments": 1,
+      "blank": 0
+    },
+    "northstar-terminal/northstar-terminal": {
+      "files": 8,
+      "total": 3945,
+      "code": 3907,
+      "comments": 19,
+      "blank": 19
+    },
+    "northstar-terminal/northstar-terminal/src": {
+      "files": 2,
+      "total": 45,
+      "code": 41,
+      "comments": 0,
+      "blank": 4
+    },
+    "northstar-terminal/src": {
+      "files": 3,
+      "total": 364,
+      "code": 287,
+      "comments": 42,
+      "blank": 35
+    },
+    "northstar-terminal/src/components": {
+      "files": 5,
+      "total": 838,
+      "code": 701,
+      "comments": 46,
+      "blank": 91
+    },
+    "northstar-terminal/src/pages": {
+      "files": 3,
+      "total": 1116,
+      "code": 1021,
+      "comments": 22,
+      "blank": 73
+    },
+    "examples": {
+      "files": 2,
+      "total": 11,
+      "code": 11,
+      "comments": 0,
+      "blank": 0
+    },
+    "scripts": {
+      "files": 60,
+      "total": 31455,
+      "code": 23316,
+      "comments": 2393,
+      "blank": 5746
+    },
+    "scripts/tests": {
+      "files": 3,
+      "total": 493,
+      "code": 354,
+      "comments": 26,
+      "blank": 113
+    },
+    "scripts/utilities": {
+      "files": 3,
+      "total": 1212,
+      "code": 908,
+      "comments": 66,
+      "blank": 238
+    },
+    "scripts/launchers": {
+      "files": 5,
+      "total": 731,
+      "code": 552,
+      "comments": 40,
+      "blank": 139
+    },
+    "scripts/runners": {
+      "files": 4,
+      "total": 684,
+      "code": 492,
+      "comments": 34,
+      "blank": 158
+    },
+    "universe": {
+      "files": 1,
+      "total": 502,
+      "code": 502,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2013": {
+      "files": 1,
+      "total": 44,
+      "code": 44,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2014": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2022": {
+      "files": 1,
+      "total": 40,
+      "code": 40,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2025": {
+      "files": 1,
+      "total": 42,
+      "code": 42,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2024": {
+      "files": 1,
+      "total": 38,
+      "code": 38,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2023": {
+      "files": 1,
+      "total": 42,
+      "code": 42,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2015": {
+      "files": 1,
+      "total": 43,
+      "code": 43,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2012": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2008": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2001": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2006": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2007": {
+      "files": 1,
+      "total": 45,
+      "code": 45,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2000": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2009": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2017": {
+      "files": 1,
+      "total": 44,
+      "code": 44,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2010": {
+      "files": 1,
+      "total": 45,
+      "code": 45,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2019": {
+      "files": 1,
+      "total": 42,
+      "code": 42,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2021": {
+      "files": 1,
+      "total": 42,
+      "code": 42,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2020": {
+      "files": 1,
+      "total": 43,
+      "code": 43,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2018": {
+      "files": 1,
+      "total": 44,
+      "code": 44,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2011": {
+      "files": 1,
+      "total": 44,
+      "code": 44,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2016": {
+      "files": 1,
+      "total": 45,
+      "code": 45,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2005": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2002": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2003": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/beta_drift_insights/2004": {
+      "files": 1,
+      "total": 46,
+      "code": 46,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/options/cache": {
+      "files": 1,
+      "total": 59,
+      "code": 59,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/options/eod": {
+      "files": 1,
+      "total": 102,
+      "code": 102,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/options/live": {
+      "files": 1,
+      "total": 11,
+      "code": 11,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/intelligence": {
+      "files": 7,
+      "total": 1345,
+      "code": 1345,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/backtests": {
+      "files": 2,
+      "total": 256,
+      "code": 256,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/integration": {
+      "files": 2,
+      "total": 47,
+      "code": 47,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/state": {
+      "files": 8,
+      "total": 960,
+      "code": 960,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/dashboard": {
+      "files": 3,
+      "total": 137,
+      "code": 137,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/macro": {
+      "files": 3,
+      "total": 5336,
+      "code": 5336,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/macro/cache": {
+      "files": 1,
+      "total": 1,
+      "code": 1,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/macro/cleaned": {
+      "files": 1,
+      "total": 9,
+      "code": 9,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/macro/factors": {
+      "files": 8,
+      "total": 905,
+      "code": 905,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/macro/backup": {
+      "files": 10,
+      "total": 10573,
+      "code": 10573,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/macro/metadata": {
+      "files": 5,
+      "total": 489,
+      "code": 489,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/macro/raw": {
+      "files": 40,
+      "total": 26022,
+      "code": 26022,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/execution": {
+      "files": 1,
+      "total": 32,
+      "code": 32,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/portfolio": {
+      "files": 6,
+      "total": 918,
+      "code": 918,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/portfolio/tuning": {
+      "files": 1,
+      "total": 24,
+      "code": 24,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/portfolio/weekly": {
+      "files": 1,
+      "total": 1,
+      "code": 1,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/intents": {
+      "files": 1,
+      "total": 14,
+      "code": 14,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/processed": {
+      "files": 33,
+      "total": 194052,
+      "code": 194052,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/processed/cache": {
+      "files": 2,
+      "total": 1563,
+      "code": 1563,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/processed/strategy_performance": {
+      "files": 1,
+      "total": 194,
+      "code": 194,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/risk": {
+      "files": 6,
+      "total": 121,
+      "code": 121,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/migration": {
+      "files": 2,
+      "total": 28,
+      "code": 28,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/raw/financials_quarterly": {
+      "files": 1037,
+      "total": 5770,
+      "code": 5770,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/raw/prices_daily": {
+      "files": 500,
+      "total": 556251,
+      "code": 556251,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/raw/prices_daily_extended": {
+      "files": 500,
+      "total": 1970449,
+      "code": 1970449,
+      "comments": 0,
+      "blank": 0
+    },
+    "data/validation": {
+      "files": 10,
+      "total": 1621,
+      "code": 1571,
+      "comments": 33,
+      "blank": 17
+    },
+    "data/reports": {
+      "files": 12,
+      "total": 444,
+      "code": 444,
+      "comments": 0,
+      "blank": 0
+    },
+    "northstar": {
+      "files": 1,
+      "total": 118,
+      "code": 66,
+      "comments": 24,
+      "blank": 28
+    },
+    "reports": {
+      "files": 25,
+      "total": 3443,
+      "code": 3052,
+      "comments": 183,
+      "blank": 208
+    },
+    "src": {
+      "files": 1,
+      "total": 1,
+      "code": 0,
+      "comments": 1,
+      "blank": 0
+    },
+    "src/options": {
+      "files": 7,
+      "total": 1031,
+      "code": 771,
+      "comments": 72,
+      "blank": 188
+    },
+    "src/reporting": {
+      "files": 1,
+      "total": 15,
+      "code": 10,
+      "comments": 1,
+      "blank": 4
+    },
+    "src/ingestion": {
+      "files": 9,
+      "total": 2765,
+      "code": 2023,
+      "comments": 184,
+      "blank": 558
+    },
+    "src/backtesting": {
+      "files": 1,
+      "total": 383,
+      "code": 269,
+      "comments": 38,
+      "blank": 76
+    },
+    "src/core": {
+      "files": 12,
+      "total": 9758,
+      "code": 7169,
+      "comments": 758,
+      "blank": 1831
+    },
+    "src/intelligence": {
+      "files": 31,
+      "total": 20786,
+      "code": 15030,
+      "comments": 1676,
+      "blank": 4080
+    },
+    "src/intelligence/market_brain": {
+      "files": 22,
+      "total": 13554,
+      "code": 9542,
+      "comments": 1140,
+      "blank": 2872
+    },
+    "src/processing": {
+      "files": 17,
+      "total": 1164,
+      "code": 828,
+      "comments": 94,
+      "blank": 242
+    },
+    "src/integration": {
+      "files": 2,
+      "total": 470,
+      "code": 376,
+      "comments": 48,
+      "blank": 46
+    },
+    "src/scheduler": {
+      "files": 1,
+      "total": 128,
+      "code": 116,
+      "comments": 6,
+      "blank": 6
+    },
+    "src/utils": {
+      "files": 4,
+      "total": 844,
+      "code": 560,
+      "comments": 107,
+      "blank": 177
+    },
+    "src/models": {
+      "files": 2,
+      "total": 435,
+      "code": 331,
+      "comments": 40,
+      "blank": 64
+    },
+    "src/state": {
+      "files": 3,
+      "total": 2320,
+      "code": 1665,
+      "comments": 212,
+      "blank": 443
+    },
+    "src/backtest": {
+      "files": 1,
+      "total": 198,
+      "code": 126,
+      "comments": 25,
+      "blank": 47
+    },
+    "src/dashboard": {
+      "files": 9,
+      "total": 4303,
+      "code": 3205,
+      "comments": 345,
+      "blank": 753
+    },
+    "src/execution": {
+      "files": 1,
+      "total": 379,
+      "code": 264,
+      "comments": 30,
+      "blank": 85
+    },
+    "src/live": {
+      "files": 1,
+      "total": 292,
+      "code": 205,
+      "comments": 31,
+      "blank": 56
+    },
+    "src/diagnostics": {
+      "files": 1,
+      "total": 203,
+      "code": 161,
+      "comments": 11,
+      "blank": 31
+    },
+    "src/scoring": {
+      "files": 1,
+      "total": 614,
+      "code": 388,
+      "comments": 93,
+      "blank": 133
+    },
+    "src/portfolio": {
+      "files": 10,
+      "total": 2764,
+      "code": 2032,
+      "comments": 257,
+      "blank": 475
+    },
+    "src/api": {
+      "files": 1,
+      "total": 572,
+      "code": 469,
+      "comments": 36,
+      "blank": 67
+    },
+    "src/preprocessing": {
+      "files": 3,
+      "total": 629,
+      "code": 447,
+      "comments": 68,
+      "blank": 114
+    },
+    "src/automation": {
+      "files": 2,
+      "total": 413,
+      "code": 295,
+      "comments": 33,
+      "blank": 85
+    },
+    "src/risk": {
+      "files": 5,
+      "total": 1721,
+      "code": 1204,
+      "comments": 147,
+      "blank": 370
+    },
+    "src/orchestrator": {
+      "files": 2,
+      "total": 1150,
+      "code": 866,
+      "comments": 68,
+      "blank": 216
+    },
+    "src/validation": {
+      "files": 5,
+      "total": 1770,
+      "code": 1222,
+      "comments": 153,
+      "blank": 395
+    }
+  },
+  "alpha_engine": {
+    "files": 58,
+    "code_lines": 27182,
+    "total_lines": 37658
+  },
+  "timestamp": "2026-01-04"
+}

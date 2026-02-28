@@ -1,0 +1,255 @@
+{
+  "execution_summary": {
+    "start_time": "2026-02-28T14:57:11.374216",
+    "end_time": "2026-02-28T14:57:23.153773",
+    "total_duration_seconds": 11.779459,
+    "total_duration_minutes": 0.2
+  },
+  "phase_results": {
+    "real_data_policy": {
+      "duration": 0.1180419921875,
+      "status": "success",
+      "details": [
+        "Real-data-only policy enforcement completed"
+      ]
+    },
+    "data_ingestion": {
+      "duration": 0.39385104179382324,
+      "status": "success",
+      "details": [
+        "Strict data ingestion validation completed"
+      ]
+    },
+    "system_update": {
+      "duration": 0.37126779556274414,
+      "status": "success",
+      "details": [
+        "Strict system update validation completed",
+        "Strict options runtime validation completed"
+      ]
+    },
+    "backtesting": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Backtesting disabled by --quick mode"
+      ]
+    },
+    "shadow_trading": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Shadow trading disabled by --quick mode"
+      ]
+    },
+    "performance_analysis": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Performance analysis disabled by --quick mode"
+      ]
+    },
+    "alpha_generation": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Alpha snapshot saved (30 positions, 25 candidates)"
+      ]
+    },
+    "integration_alignment": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Unified portfolio construction + analytics completed",
+        "Regime wave/momentum update completed",
+        "Portfolio risk measurement refresh completed",
+        "Weekly rebalance integration check completed",
+        "Options \u2194 V3 risk bridge health check completed",
+        "Stock options integration validation completed",
+        "Capacity-constrained walk-forward integration completed",
+        "Heavy cluster/narrative refresh disabled by --quick mode",
+        "Verified: data/processed/unified_portfolio.parquet",
+        "Verified: data/processed/regime_momentum.parquet",
+        "Verified: data/processed/latest_narrative_change.json",
+        "Verified: data/sentiment/v3/v3_sentiment_summary.json",
+        "Verified: reports/capacity/capacity_walk_forward_report.json"
+      ]
+    },
+    "dashboard_launch": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Dashboard launch disabled by --no-dashboard"
+      ]
+    }
+  },
+  "execution_log": [
+    {
+      "timestamp": "2026-02-28T14:57:12.258600",
+      "phase": "real_data_policy",
+      "status": "success",
+      "message": "Real-data-only policy enforcement completed",
+      "duration_seconds": 0.1180419921875
+    },
+    {
+      "timestamp": "2026-02-28T14:57:12.652696",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Strict data ingestion validation completed",
+      "duration_seconds": 0.39385104179382324
+    },
+    {
+      "timestamp": "2026-02-28T14:57:13.045889",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Strict system update validation completed",
+      "duration_seconds": 0.39290595054626465
+    },
+    {
+      "timestamp": "2026-02-28T14:57:13.417437",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Strict options runtime validation completed",
+      "duration_seconds": 0.37126779556274414
+    },
+    {
+      "timestamp": "2026-02-28T14:57:14.157107",
+      "phase": "alpha_generation",
+      "status": "success",
+      "message": "Alpha snapshot saved (30 positions, 25 candidates)",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:14.157237",
+      "phase": "backtesting",
+      "status": "success",
+      "message": "Backtesting disabled by --quick mode",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:14.157325",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Shadow trading disabled by --quick mode",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:14.157410",
+      "phase": "performance_analysis",
+      "status": "success",
+      "message": "Performance analysis disabled by --quick mode",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:15.851685",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Unified portfolio construction + analytics completed",
+      "duration_seconds": 1.6941759586334229
+    },
+    {
+      "timestamp": "2026-02-28T14:57:16.230166",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Regime wave/momentum update completed",
+      "duration_seconds": 0.3780968189239502
+    },
+    {
+      "timestamp": "2026-02-28T14:57:19.418712",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Portfolio risk measurement refresh completed",
+      "duration_seconds": 3.188162088394165
+    },
+    {
+      "timestamp": "2026-02-28T14:57:19.820433",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Weekly rebalance integration check completed",
+      "duration_seconds": 0.40125226974487305
+    },
+    {
+      "timestamp": "2026-02-28T14:57:20.723959",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Options \u2194 V3 risk bridge health check completed",
+      "duration_seconds": 0.9032149314880371
+    },
+    {
+      "timestamp": "2026-02-28T14:57:20.805400",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Stock options integration validation completed",
+      "duration_seconds": 0.08110213279724121
+    },
+    {
+      "timestamp": "2026-02-28T14:57:23.152701",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Capacity-constrained walk-forward integration completed",
+      "duration_seconds": 2.3469600677490234
+    },
+    {
+      "timestamp": "2026-02-28T14:57:23.153002",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Heavy cluster/narrative refresh disabled by --quick mode",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:23.153120",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Verified: data/processed/unified_portfolio.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:23.153210",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Verified: data/processed/regime_momentum.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:23.153299",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Verified: data/processed/latest_narrative_change.json",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:23.153386",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Verified: data/sentiment/v3/v3_sentiment_summary.json",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:23.153472",
+      "phase": "integration_alignment",
+      "status": "success",
+      "message": "Verified: reports/capacity/capacity_walk_forward_report.json",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-02-28T14:57:23.153579",
+      "phase": "dashboard_launch",
+      "status": "success",
+      "message": "Dashboard launch disabled by --no-dashboard",
+      "duration_seconds": 0
+    }
+  ],
+  "system_status": {
+    "data_fresh": true,
+    "system_updated": true,
+    "backtests_complete": true,
+    "shadow_trading_active": true,
+    "performance_analyzed": true,
+    "integration_aligned": true,
+    "dashboard_running": true,
+    "freeze_active": false,
+    "freeze_triggers": [
+      "negative_sharpe"
+    ]
+  }
+}

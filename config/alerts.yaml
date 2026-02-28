@@ -1,0 +1,102 @@
+# Alert Configuration
+
+# Alert Thresholds
+thresholds:
+  # Greeks Alerts
+  greeks_warning: 0.8  # 80% of limit
+  greeks_critical: 0.95  # 95% of limit
+  
+  # Risk Alerts
+  var_warning: 0.8
+  var_critical: 0.95
+  drawdown_warning: 0.10  # 10%
+  drawdown_critical: 0.15  # 15%
+  
+  # Performance Alerts
+  sharpe_degradation: 0.3  # 30% decline
+  consecutive_losses: 5
+  
+  # Execution Alerts
+  fill_rate_warning: 0.8  # 80% fill rate
+  slippage_warning: 0.02  # 2% slippage
+
+# Notification Channels
+channels:
+  # Email notifications
+  - type: "email"
+    enabled: true
+    recipients:
+      - "trader@firm.com"
+      - "risk@firm.com"
+    severity: ["WARNING", "CRITICAL"]
+    
+  # Slack notifications
+  - type: "slack"
+    enabled: false  # Set to true and configure webhook
+    webhook: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+    channel: "#trading-alerts"
+    severity: ["CRITICAL"]
+    
+  # SMS notifications
+  - type: "sms"
+    enabled: false  # Set to true and configure
+    numbers:
+      - "+1234567890"
+    severity: ["CRITICAL"]
+    
+  # Log file (always enabled)
+  - type: "log"
+    enabled: true
+    file: "logs/alerts.log"
+    severity: ["INFO", "WARNING", "CRITICAL"]
+
+# Alert Rules
+rules:
+  # Greeks violations
+  - name: "Delta Limit Approaching"
+    condition: "delta > greeks_warning_threshold"
+    severity: "WARNING"
+    message: "Portfolio delta approaching limit"
+    
+  - name: "Delta Limit Breach"
+    condition: "delta > greeks_critical_threshold"
+    severity: "CRITICAL"
+    message: "Portfolio delta exceeded limit"
+    action: "emergency_hedge"
+    
+  # Risk violations
+  - name: "VaR Warning"
+    condition: "var_95 > var_warning_threshold"
+    severity: "WARNING"
+    message: "VaR approaching threshold"
+    
+  - name: "VaR Breach"
+    condition: "var_95 > var_critical_threshold"
+    severity: "CRITICAL"
+    message: "VaR exceeded threshold"
+    action: "reduce_positions"
+    
+  # Performance degradation
+  - name: "Performance Degradation"
+    condition: "sharpe_decline > sharpe_degradation_threshold"
+    severity: "WARNING"
+    message: "Performance degrading"
+    
+  # Execution issues
+  - name: "Low Fill Rate"
+    condition: "fill_rate < fill_rate_warning"
+    severity: "WARNING"
+    message: "Order fill rate below threshold"
+
+# Alert Frequency Limits (prevent spam)
+frequency_limits:
+  same_alert_cooldown: 300  # seconds (5 minutes)
+  max_alerts_per_hour: 20
+  
+# Escalation
+escalation:
+  enabled: true
+  escalate_after: 3  # Escalate after 3 repeated alerts
+  escalation_contacts:
+    - "senior-trader@firm.com"
+    - "cto@firm.com"

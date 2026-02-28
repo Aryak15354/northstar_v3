@@ -1,0 +1,188 @@
+# V3 SENTIMENT SOURCE CONFIGURATION
+# India-specific sources for Northstar V3 batch processing
+
+sources:
+  v3_batch:
+    region: India
+    trust_floor: 0.75
+    narrative_required: true
+    decay: static
+    trigger_events: false
+    
+    # Tier 1: India Institutional Sources (Highest Trust)
+    tier_1:
+      - name: "RBI"
+        url_patterns:
+          - "rbi.org.in"
+        trust_score: 0.95
+        policy_weight: 0.9
+        
+      - name: "Ministry of Finance India"
+        url_patterns:
+          - "finmin.nic.in"
+        trust_score: 0.90
+        policy_weight: 0.8
+        
+      - name: "SEBI"
+        url_patterns:
+          - "sebi.gov.in"
+        trust_score: 0.90
+        policy_weight: 0.7
+        
+      - name: "NSE"
+        url_patterns:
+          - "nseindia.com"
+        trust_score: 0.85
+        policy_weight: 0.5
+        
+      - name: "BSE"
+        url_patterns:
+          - "bseindia.com"
+        trust_score: 0.85
+        policy_weight: 0.5
+        
+      - name: "Government of India"
+        url_patterns:
+          - "pib.gov.in"
+          - "india.gov.in"
+        trust_score: 0.80
+        policy_weight: 0.6
+    
+    # Tier 2: India Financial Media (High Trust)
+    tier_2:
+      - name: "Economic Times"
+        url_patterns:
+          - "economictimes.indiatimes.com"
+        trust_score: 0.80
+        policy_weight: 0.3
+        
+      - name: "Business Standard"
+        url_patterns:
+          - "business-standard.com"
+        trust_score: 0.80
+        policy_weight: 0.3
+        
+      - name: "Mint"
+        url_patterns:
+          - "livemint.com"
+        trust_score: 0.75
+        policy_weight: 0.3
+        
+      - name: "Moneycontrol"
+        url_patterns:
+          - "moneycontrol.com"
+        trust_score: 0.75
+        policy_weight: 0.2
+        content_filter: "news"  # News only, not opinions
+        
+      - name: "Reuters India"
+        url_patterns:
+          - "reuters.com/world/india"
+        trust_score: 0.85
+        policy_weight: 0.4
+        
+      - name: "Bloomberg India"
+        url_patterns:
+          - "bloomberg.com/news/india"
+        trust_score: 0.85
+        policy_weight: 0.4
+    
+    # Tier 3: Contextual Sources (Moderate Trust)
+    tier_3:
+      - name: "IMF India"
+        url_patterns:
+          - "imf.org"
+        content_filter: "india"
+        trust_score: 0.70
+        policy_weight: 0.5
+        
+      - name: "World Bank India"
+        url_patterns:
+          - "worldbank.org"
+        content_filter: "india"
+        trust_score: 0.70
+        policy_weight: 0.5
+
+# Explicitly Excluded Sources
+excluded_sources:
+  - "twitter.com"
+  - "telegram.org"
+  - "reddit.com"
+  - "facebook.com"
+  - "instagram.com"
+  - "youtube.com"
+  - "tiktok.com"
+  - "whatsapp.com"
+  
+# Content Filters
+content_filters:
+  exclude_keywords:
+    - "opinion"
+    - "editorial"
+    - "blog"
+    - "crypto"
+    - "bitcoin"
+    - "meme"
+    - "viral"
+    - "trending"
+    
+  include_keywords:
+    - "RBI"
+    - "monetary policy"
+    - "inflation"
+    - "GDP"
+    - "NIFTY"
+    - "BSE"
+    - "NSE"
+    - "rupee"
+    - "fiscal"
+    - "budget"
+    - "SEBI"
+    - "regulation"
+    - "banking"
+    - "finance"
+    - "economy"
+    - "market"
+    - "investment"
+    - "corporate"
+    - "earnings"
+
+# Processing Parameters
+processing:
+  batch_size: 50
+  max_articles_per_source: 10
+  lookback_days: 1
+  min_article_length: 100
+  max_article_length: 5000
+  
+  # Sentiment Analysis
+  sentiment:
+    model: "finbert"
+    confidence_threshold: 0.6
+    narrative_required: true
+    
+  # Decay Profile for V3 Batch
+  decay:
+    type: "static"
+    half_life_hours: 24
+    min_weight: 0.1
+    
+# Quality Assurance
+quality:
+  min_trust_score: 0.75
+  max_uncertainty: 0.3
+  require_narrative_cohesion: true
+  duplicate_threshold: 0.8
+  
+# Output Configuration
+output:
+  format: "v3_native"
+  artifacts:
+    - "market_sentiment_india"
+    - "sector_narratives"
+    - "policy_context"
+  
+  validation:
+    check_bounds: true
+    conservative_scaling: true
+    institutional_safe: true

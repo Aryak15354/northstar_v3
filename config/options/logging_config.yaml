@@ -1,0 +1,106 @@
+# Options Trading System Logging Configuration
+
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  detailed:
+    format: '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  json:
+    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    format: '%(asctime)s %(name)s %(levelname)s %(message)s'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: standard
+    stream: ext://sys.stdout
+  
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: detailed
+    filename: logs/options_trading.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf8
+  
+  error_file:
+    class: logging.handlers.RotatingFileHandler
+    level: ERROR
+    formatter: detailed
+    filename: logs/options_errors.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf8
+  
+  decision_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: json
+    filename: logs/options_decisions.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 10
+    encoding: utf8
+
+loggers:
+  options:
+    level: INFO
+    handlers: [console, file, error_file]
+    propagate: false
+  
+  options.decisions:
+    level: DEBUG
+    handlers: [decision_file]
+    propagate: false
+  
+  options.upstox:
+    level: INFO
+    handlers: [console, file]
+    propagate: false
+  
+  options.regime:
+    level: INFO
+    handlers: [console, file, decision_file]
+    propagate: false
+  
+  options.strategy:
+    level: INFO
+    handlers: [console, file, decision_file]
+    propagate: false
+  
+  options.eligibility:
+    level: INFO
+    handlers: [console, file, decision_file]
+    propagate: false
+  
+  options.capital_scaling:
+    level: INFO
+    handlers: [console, file, decision_file]
+    propagate: false
+  
+  options.survival:
+    level: INFO
+    handlers: [console, file, decision_file]
+    propagate: false
+  
+  options.position:
+    level: INFO
+    handlers: [console, file, decision_file]
+    propagate: false
+  
+  options.pnl:
+    level: INFO
+    handlers: [console, file, decision_file]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [console, file]

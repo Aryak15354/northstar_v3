@@ -1,0 +1,173 @@
+{
+  "data_availability": {
+    "Market State": {
+      "exists": true,
+      "path": "data/processed/market_state.parquet",
+      "critical": true,
+      "status": "available"
+    },
+    "Strategy Beliefs": {
+      "exists": true,
+      "path": "data/processed/strategy_beliefs.parquet",
+      "critical": true,
+      "status": "available"
+    },
+    "Portfolio Weights": {
+      "exists": true,
+      "path": "data/processed/portfolio_weights.parquet",
+      "critical": true,
+      "status": "available"
+    },
+    "Price Data": {
+      "exists": true,
+      "path": "data/raw/prices_daily/",
+      "critical": true,
+      "status": "available"
+    },
+    "RBI Macro Data": {
+      "exists": true,
+      "path": "data/macro/raw/",
+      "critical": true,
+      "status": "available"
+    },
+    "Universe Definition": {
+      "exists": true,
+      "path": "universe/nifty500.csv",
+      "critical": true,
+      "status": "available"
+    },
+    "PnL Data": {
+      "exists": true,
+      "path": "data/portfolio/pnl_on_paper.parquet",
+      "critical": false,
+      "status": "available"
+    },
+    "Backtest Results": {
+      "exists": true,
+      "path": "data/backtests/",
+      "critical": false,
+      "status": "available"
+    },
+    "Shadow Trading": {
+      "exists": true,
+      "path": "data/live/shadow_trading/",
+      "critical": false,
+      "status": "available"
+    },
+    "Performance Reports": {
+      "exists": true,
+      "path": "reports/performance/",
+      "critical": false,
+      "status": "available"
+    },
+    "Validation Results": {
+      "exists": true,
+      "path": "data/validation/",
+      "critical": false,
+      "status": "available"
+    }
+  },
+  "system_health": {
+    "Python Dependencies": {
+      "status": "healthy",
+      "message": "All key packages available"
+    },
+    "Disk Space": {
+      "status": "unhealthy",
+      "message": "Low space: 4.1 GB"
+    },
+    "Directory Structure": {
+      "status": "healthy",
+      "message": "All directories present"
+    },
+    "Configuration": {
+      "status": "healthy",
+      "message": "All config files present"
+    }
+  },
+  "component_status": {
+    "Data Pipeline": {
+      "exists": true,
+      "path": "src/ingestion/integrated_data_pipeline.py"
+    },
+    "Backtest Engine": {
+      "exists": true,
+      "path": "src/backtesting/backtest_engine.py"
+    },
+    "Brain Window": {
+      "exists": false,
+      "path": "src/dashboard/brain_window.py"
+    },
+    "Master Orchestrator": {
+      "exists": true,
+      "path": "src/orchestrator/master_orchestrator.py"
+    },
+    "Risk Coordinator": {
+      "exists": true,
+      "path": "src/risk/unified_risk_coordinator.py"
+    },
+    "Portfolio Coordinator": {
+      "exists": true,
+      "path": "src/portfolio/unified_portfolio_coordinator.py"
+    },
+    "Intelligence Engine": {
+      "exists": true,
+      "path": "src/intelligence/unified_intelligence_engine.py"
+    },
+    "Market Brain": {
+      "exists": true,
+      "path": "src/intelligence/market_brain/"
+    },
+    "Validation Suite": {
+      "exists": true,
+      "path": "src/validation/"
+    },
+    "Main Entry Point": {
+      "exists": true,
+      "path": "run.py"
+    }
+  },
+  "data_freshness": {
+    "Market State": {
+      "age_hours": 0.09582117,
+      "freshness": "fresh",
+      "last_updated": "2026-01-31T16:45:00.419405"
+    },
+    "Price Data": {
+      "age_hours": 1.9778729952777778,
+      "freshness": "fresh",
+      "last_updated": "2026-01-31T14:52:05.035398"
+    },
+    "RBI Data": {
+      "age_hours": 0.3212735411111111,
+      "freshness": "fresh",
+      "last_updated": "2026-01-31T16:31:28.796451"
+    },
+    "Portfolio Weights": {
+      "age_hours": 0.09581890583333333,
+      "freshness": "fresh",
+      "last_updated": "2026-01-31T16:45:00.433175"
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "high",
+      "category": "health",
+      "issue": "Unhealthy components: Disk Space",
+      "action": "Check system requirements and dependencies"
+    },
+    {
+      "priority": "high",
+      "category": "components",
+      "issue": "Missing components: Brain Window",
+      "action": "Verify system installation and file integrity"
+    }
+  ],
+  "summary": {
+    "timestamp": "2026-01-31T16:50:45.804864",
+    "critical_data_missing": 0,
+    "components_missing": 1,
+    "health_issues": 1,
+    "recommendations_count": 2
+  }
+}

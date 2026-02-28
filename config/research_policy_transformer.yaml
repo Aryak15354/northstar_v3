@@ -1,0 +1,100 @@
+freeze_active: false
+freeze_start_ist: "2026-02-17"
+freeze_days: 60
+
+modules_enabled:
+  strategy_lab: true
+  regime_lab: true
+  covariance_lab: false
+  monte_carlo_lab: false
+  parameter_optimizer: false
+
+output_restrictions:
+  mark_non_actionable_during_freeze: true
+  require_manual_promotion: true
+  block_auto_parameter_deployment: true
+  require_operator_approval: true
+
+historical_research:
+  enabled: true
+  random_state: 42
+  enable_deep_models: true
+  enable_hyperopt: false
+  candidate_acceptance_threshold: 0.55
+  min_ensemble_models: 2
+
+  dataset:
+    prices_path: "data/processed/prices.parquet"
+    fundamentals_path: "data/processed/fundamentals.parquet"
+    valuation_posterior_path: "data/processed/valuation_posterior.parquet"
+    live_returns_cutover_date: "2026-01-18"
+    target_col: "forward_return_5d"
+    target_horizon_days: 5
+    lookback_days: 1200
+    max_tickers: 80
+    max_rows: 40000
+
+  training:
+    train_periods: 252
+    valid_periods: 42
+    test_periods: 42
+    step_periods: 42
+    max_windows: 2
+
+  enabled_models:
+    - transformer
+    - lightgbm
+
+  model_params:
+    transformer:
+      lookback: 30
+      epochs: 12
+      d_model: 64
+      nhead: 4
+      num_layers: 2
+      dim_feedforward: 128
+      dropout: 0.1
+      batch_size: 128
+      patience: 4
+      lr: 0.001
+      risk_quantile: 0.2
+
+  n_macro_factors: 3
+  mc_paths: 1200
+  mc_horizon: 12
+  mc_fit_rows: 20000
+  mc_stress_multiplier: 1.0
+  weekend_mc_paths: 2000
+  weekend_mc_horizon: 18
+  weekend_scenario_multipliers: [0.9, 1.0, 1.2, 1.4]
+  mutation_rate: 0.25
+  options_opportunity_max_rows: 40
+  live_returns_cutover_date: "2026-01-18"
+
+  weekend_only_tasks:
+    extended_scenario_sweep: true
+
+  experiment_path: "data/research/experiments.ndjson"
+  memory_path: "data/research/research_memory.json"
+
+  autonomous_budget:
+    max_models_weekday: 2
+    max_models_weekend: 3
+    model_priority: [transformer, lightgbm, xgboost, catboost, random_forest, lstm, tcn]
+    mc_paths_weekday: 1200
+    mc_horizon_weekday: 12
+    mc_paths_weekend: 3000
+    mc_horizon_weekend: 20
+
+  relationship_discovery:
+    top_k: 20
+    max_features: 40
+    lags: [1, 3, 5, 10]
+    structural_shift_abs_corr: 0.08
+
+  autonomous_exploration:
+    enabled: true
+    variants_weekday: 1
+    variants_weekend: 2
+    mutation_rate: 0.2
+    evaluation_max_windows: 1

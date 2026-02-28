@@ -1,0 +1,157 @@
+{
+  "timestamp": "2026-02-19T09:30:10.945489+05:30",
+  "cycle": 1771473618,
+  "regime": "rising_vol_buy",
+  "market_data": {
+    "option_contracts": 2964,
+    "NIFTY_price": 25725.25,
+    "BANKNIFTY_price": 61170.7
+  },
+  "portfolio_greeks": {
+    "delta": 7.530899999999997,
+    "gamma": 0.7873000000000001,
+    "theta": -3028.0155999999997,
+    "vega": 4114.3513
+  },
+  "total_pnl": 0.0,
+  "realized_pnl": 0,
+  "unrealized_pnl": 0.0,
+  "today_pnl": 0.0,
+  "positions": [
+    {
+      "symbol": "POS_20260217_233334_001259_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": 0.0,
+      "delta": 4.304999999999998,
+      "gamma": 0.049,
+      "vega": 1342.9955,
+      "theta": -583.569,
+      "notional": 15501.500000000002
+    },
+    {
+      "symbol": "POS_20260217_233335_660329_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": 0.0,
+      "delta": -1.1639999999999997,
+      "gamma": 0.016,
+      "vega": 1348.086,
+      "theta": -1122.542,
+      "notional": 15831.0
+    },
+    {
+      "symbol": "POS_20260217_233337_600501_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": 0.0,
+      "delta": 1.033999999999999,
+      "gamma": 0.0748,
+      "vega": 1379.6024,
+      "theta": -1227.0588,
+      "notional": 17296.4
+    },
+    {
+      "symbol": "POS_20260217_233338_760239_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": 0.0,
+      "delta": 2.6303,
+      "gamma": 0.5075000000000001,
+      "vega": 34.2258,
+      "theta": -74.3386,
+      "notional": 1059.9499999999998
+    },
+    {
+      "symbol": "POS_20260218_101736_552709_long_straddle",
+      "option_type": "long_straddle",
+      "quantity": 1,
+      "pnl": 0.0,
+      "delta": 0.7256,
+      "gamma": 0.14,
+      "vega": 9.441600000000001,
+      "theta": -20.5072,
+      "notional": 292.4
+    }
+  ],
+  "performance_metrics": {
+    "total_trades": 0,
+    "win_rate": 0.0,
+    "sharpe_ratio": 0.0,
+    "sortino_ratio": 0.0
+  },
+  "risk_metrics": {
+    "var_95": 49981.25,
+    "cvar_95": 62476.5625,
+    "max_drawdown": 0.0,
+    "current_drawdown": 0.0
+  },
+  "strategy_allocations": {
+    "Short Vol": 0.0,
+    "Long Vol": 1.0
+  },
+  "centralized_pnl": {
+    "timestamp": "2026-02-19T09:30:10.945489+05:30",
+    "components": {
+      "options_live": {
+        "unrealized_pnl": 0.0,
+        "realized_pnl_closed_positions": 0.0,
+        "ytd_net_pnl_after_costs_and_tax": 0.0,
+        "ytd_tax_liability": 0.0,
+        "ytd_total_costs": 0.0,
+        "active_positions": 5,
+        "closed_positions": 0
+      },
+      "v3_weekly_portfolio": {
+        "equity": 19821796.167560536,
+        "daily_return": 0.0035412923268015595,
+        "total_pnl_from_series_start": 14791254.169717716,
+        "as_of": "2026-02-18 00:00:00"
+      },
+      "shadow_portfolio": {
+        "portfolio_value": 10098118.792835005,
+        "daily_pnl": 98118.79283500463,
+        "daily_return": 0.009811879283500415,
+        "total_pnl_from_series_start": -96199.81549682468,
+        "as_of": "2026-02-18 15:33:01.765815+00:00"
+      }
+    },
+    "aggregates": {
+      "combined_net_pnl_estimate": 14695054.354220891,
+      "options_share_pct": 0.0,
+      "weekly_portfolio_share_pct": 1.0065464075993154,
+      "shadow_share_pct": -0.006546407599315412,
+      "tax_aware_net_gate": true
+    }
+  },
+  "execution_metrics": {
+    "fill_rate": 1.0,
+    "avg_slippage": 0.0,
+    "total_orders": 4,
+    "rejected_orders": 0
+  },
+  "alpha_os": {
+    "timestamp": "2026-02-19T04:00:18.216041+00:00",
+    "mode": "blocked_contract_violation",
+    "strategy_weights": {},
+    "gross_target": 0.0,
+    "net_target": 0.0,
+    "used_fallback": true,
+    "fallback_level": "contract_block",
+    "reason_codes": [
+      "adapter_contract_blocked",
+      "stale_canonical_artifact:capital_allocations.json:44847s>2700s"
+    ],
+    "diagnostics": {
+      "contract": {
+        "ok": false,
+        "reason": "stale_canonical_artifact:capital_allocations.json:44847s>2700s"
+      }
+    },
+    "regime_snapshot": null,
+    "strategy_posteriors": [],
+    "risk_budget": null,
+    "meta_feedback": null,
+    "legacy_allocation": {}
+  }
+}

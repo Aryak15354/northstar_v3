@@ -1,0 +1,1578 @@
+[
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 425,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "cfig",
+    "function": "render_upstox_chain_monitor"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 452,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_oi",
+    "function": "render_upstox_chain_monitor"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 511,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_opportunity_surface"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 521,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_t",
+    "function": "render_opportunity_surface"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 573,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_backtester"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 583,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_s",
+    "function": "render_backtester"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 591,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_u",
+    "function": "render_backtester"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1045,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_portfolio_greeks"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1093,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_c",
+    "function": "render_portfolio_greeks"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1265,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_tax_and_profitability"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1288,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "usage_fig",
+    "function": "render_tax_and_profitability"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1352,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_status",
+    "function": "render_advanced_analytics"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1366,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_obj",
+    "function": "render_advanced_analytics"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1381,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "heat_fig",
+    "function": "render_advanced_analytics"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1411,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_rej",
+    "function": "render_advanced_analytics"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1445,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "pnl_fig",
+    "function": "render_advanced_analytics"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1491,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_status",
+    "function": "render_underlying_coverage"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1592,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "payoff_fig",
+    "function": "render_strategy_pipeline"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1614,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "greek_fig",
+    "function": "render_strategy_pipeline"
+  },
+  {
+    "file": "src/dashboard/components/options_panel.py",
+    "line": 1659,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_sc",
+    "function": "render_strategy_pipeline"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 346,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "_render_strategy_edge_chart"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 397,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "_render_position_liquidity_chart"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 599,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "_render_capital_allocation_impact"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 633,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "_render_liquidity_risk_heatmap"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 678,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "_render_exit_cost_analysis"
+  },
+  {
+    "file": "src/dashboard/components/production_grade_panel.py",
+    "line": 696,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "_render_integration_timeline"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 449,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_sentiment_trend"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 463,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_sentiment_trend"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 491,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_sector_narratives"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 501,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_sector_narratives"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 630,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_company_news_trends"
+  },
+  {
+    "file": "src/dashboard/components/v3_sentiment_panel.py",
+    "line": 707,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_event_company_impact"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_dashboard_methods.py",
+    "line": 52,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_dynamic_clustering"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_dashboard_methods.py",
+    "line": 89,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_wave_analysis"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1847,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_mission_control"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1885,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_live_mode_compact"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1897,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_g",
+    "function": "render_live_mode_compact"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1932,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_rows",
+    "function": "render_research_mode_compact"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1936,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_pnl",
+    "function": "render_research_mode_compact"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1954,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_sw",
+    "function": "render_research_mode_compact"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 1982,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_experimentation_lab"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2080,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_m",
+    "function": "render_macro_valuation_compact"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2117,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_p",
+    "function": "render_macro_valuation_compact"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2213,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_command_center"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2264,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_system_health"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2577,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2585,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2609,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2630,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2655,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2660,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2683,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig3",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2779,
+    "call": "plotly_chart",
+    "key": "v3_analytics_benchmark_nav",
+    "arg0": "fig",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2789,
+    "call": "plotly_chart",
+    "key": "v3_analytics_benchmark_te_ir",
+    "arg0": "fig2",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2797,
+    "call": "plotly_chart",
+    "key": "v3_analytics_benchmark_beta",
+    "arg0": "fig3",
+    "function": "render_v3_analytics"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2846,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2268",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2880,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2281",
+    "arg0": "fig2",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2957,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2358",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 2978,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2379",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3017,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2418",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3054,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2455",
+    "arg0": "fig_hm",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3120,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2521",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3164,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2565",
+    "arg0": "fig_fan",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3175,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2576",
+    "arg0": "figp",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3198,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2599",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3263,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2664",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3274,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2669",
+    "arg0": "fig_hm",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3315,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2710",
+    "arg0": "fig_z",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3336,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2731",
+    "arg0": "fig_corr",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3348,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2743",
+    "arg0": "fig_roll",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3389,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2784",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3501,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2896",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3509,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2904",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3545,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2940",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3557,
+    "call": "plotly_chart",
+    "key": "adv_intel_l2952",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3634,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3029",
+    "arg0": "fig_lag",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3689,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3084",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3732,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3127",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3810,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3205",
+    "arg0": "fig_drv",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3828,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3223",
+    "arg0": "fig_mix",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3917,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3312",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3948,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3343",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3969,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3359",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 3997,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3378",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4051,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3430",
+    "arg0": "fig_mh",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4151,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3522",
+    "arg0": "fig_cov",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4163,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3534",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4202,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3573",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4219,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3590",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4231,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3602",
+    "arg0": "fig_fw",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4290,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3661",
+    "arg0": "fig_b",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4300,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3671",
+    "arg0": "fig_bh",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4327,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3698",
+    "arg0": "fig_mw",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4410,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3781",
+    "arg0": "fig_heat",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4425,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3796",
+    "arg0": "fig_box",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4452,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3823",
+    "arg0": "fig_pg",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4465,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3836",
+    "arg0": "fig_pc",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4561,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3932",
+    "arg0": "fig_eig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4595,
+    "call": "plotly_chart",
+    "key": "adv_intel_l3966",
+    "arg0": "fig_mix",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4633,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4004",
+    "arg0": "fig_vd",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4651,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4022",
+    "arg0": "fig_vr",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4678,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4049",
+    "arg0": "fig_ts",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4737,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4106",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4767,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4136",
+    "arg0": "fig2",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4788,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4157",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4793,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4162",
+    "arg0": "fig2",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4824,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4193",
+    "arg0": "fig3",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4841,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4210",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4902,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4271",
+    "arg0": "fig_part",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4922,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4291",
+    "arg0": "fig_sw",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 4942,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4316",
+    "arg0": "fig_drv",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5010,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4356",
+    "arg0": "fig_bh",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5163,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4505",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5181,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4523",
+    "arg0": "fig_ev",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5189,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4531",
+    "arg0": "fig_mag",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5349,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4691",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5383,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4725",
+    "arg0": "fig_proxy",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5412,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4754",
+    "arg0": "fig_tr",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5484,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4826",
+    "arg0": "fig",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5495,
+    "call": "plotly_chart",
+    "key": "adv_intel_l4837",
+    "arg0": "fig2",
+    "function": "render_advanced_intelligence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5588,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_wave_analysis"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5621,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_wave_analysis"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5643,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_wave_analysis"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5674,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_wave_analysis"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5684,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_wave_analysis"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5776,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5780,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5786,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5821,
+    "call": "plotly_chart",
+    "key": "portfolio_tab_vs_benchmark",
+    "arg0": "fig",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5840,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5861,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5871,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5894,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "figc",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5914,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5932,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_portfolio"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5974,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_edge_health"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 5986,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_edge_health"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6000,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_exit_risk"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6020,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig2",
+    "function": "render_exit_risk"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6370,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_regime",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6398,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_entropy",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6426,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_gc",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6488,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_wf",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6527,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_post",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6552,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_meta",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6576,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_hm",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6593,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_tier",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6622,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_surv",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6637,
+    "call": "plotly_chart",
+    "key": "alphaos_risk_budget_usage",
+    "arg0": "fig_rb",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6652,
+    "call": "plotly_chart",
+    "key": "alphaos_drawdown_surface_empirical",
+    "arg0": "fig_dd",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6680,
+    "call": "plotly_chart",
+    "key": "alphaos_drawdown_surface_fallback",
+    "arg0": "fig_dd",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6707,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_sdi",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6718,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_sdi",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6742,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_drift",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6768,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_eff",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6800,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_cov",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6855,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig_wf",
+    "function": "render_alpha_os_control_tower"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 6908,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_real_time_monitor"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7194,
+    "call": "plotly_chart",
+    "key": "f'{key_prefix}_macro_news_pressure'",
+    "arg0": "fig",
+    "function": "render_macro_news_pressure_index"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7341,
+    "call": "plotly_chart",
+    "key": "f'{key_prefix}_sector_sentiment_vs_flows'",
+    "arg0": "fig",
+    "function": "render_sector_sentiment_vs_flows"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7441,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_belief_vs_news_divergence"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7489,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_event_shock_surface"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7577,
+    "call": "plotly_chart",
+    "key": "market_state_regime_pressure",
+    "arg0": "fig",
+    "function": "render_market_state_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7603,
+    "call": "plotly_chart",
+    "key": "market_state_macro_heatmap",
+    "arg0": "fig_hm",
+    "function": "render_market_state_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7665,
+    "call": "plotly_chart",
+    "key": "intelligence_belief_skill_evolution",
+    "arg0": "fig",
+    "function": "render_intelligence_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7687,
+    "call": "plotly_chart",
+    "key": "intelligence_regret_score",
+    "arg0": "fig",
+    "function": "render_intelligence_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7711,
+    "call": "plotly_chart",
+    "key": "intelligence_posterior_gap_hist",
+    "arg0": "fig",
+    "function": "render_intelligence_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7741,
+    "call": "plotly_chart",
+    "key": "intelligence_opportunity_surface",
+    "arg0": "fig",
+    "function": "render_intelligence_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7799,
+    "call": "plotly_chart",
+    "key": "portfolio_expression_vs_benchmark",
+    "arg0": "fig",
+    "function": "render_portfolio_expression_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7843,
+    "call": "plotly_chart",
+    "key": "portfolio_expression_allocation_heatmap",
+    "arg0": "fig_hm",
+    "function": "render_portfolio_expression_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7886,
+    "call": "plotly_chart",
+    "key": "risk_survival_drawdown_surface",
+    "arg0": "fig_dd",
+    "function": "render_risk_survival_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 7918,
+    "call": "plotly_chart",
+    "key": "risk_survival_drawdown_surface_fallback",
+    "arg0": "fig_dd",
+    "function": "render_risk_survival_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8000,
+    "call": "plotly_chart",
+    "key": "risk_survival_crisis_probability",
+    "arg0": "fig",
+    "function": "render_risk_survival_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8023,
+    "call": "plotly_chart",
+    "key": "risk_survival_fallback_ladder",
+    "arg0": "fig",
+    "function": "render_risk_survival_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8054,
+    "call": "plotly_chart",
+    "key": "risk_survival_systemic_stress",
+    "arg0": "fig",
+    "function": "render_risk_survival_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8118,
+    "call": "plotly_chart",
+    "key": "news_layer_narrative_shock_intensity",
+    "arg0": "fig",
+    "function": "render_news_narrative_layer"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8252,
+    "call": "plotly_chart",
+    "key": "f'{key_prefix}_causal_flow_panel'",
+    "arg0": "fig",
+    "function": "render_causal_flow_panel"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8313,
+    "call": "plotly_chart",
+    "key": "cross_layer_regime_allocation_elasticity",
+    "arg0": "fig",
+    "function": "render_regime_belief_allocation_elasticity_surface"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8332,
+    "call": "plotly_chart",
+    "key": "cross_layer_belief_allocation_elasticity",
+    "arg0": "fig2",
+    "function": "render_regime_belief_allocation_elasticity_surface"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8410,
+    "call": "plotly_chart",
+    "key": "cross_layer_narrative_transition_map",
+    "arg0": "fig",
+    "function": "render_narrative_regime_transition_map"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8536,
+    "call": "plotly_chart",
+    "key": "cross_layer_macro_transmission_network",
+    "arg0": "fig",
+    "function": "render_macro_portfolio_transmission_network"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8632,
+    "call": "plotly_chart",
+    "key": "cross_layer_crisis_replay_overlay",
+    "arg0": "fig",
+    "function": "render_crisis_replay_with_narrative_overlay"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8713,
+    "call": "plotly_chart",
+    "key": "cross_layer_belief_decay_curve",
+    "arg0": "fig",
+    "function": "render_belief_performance_decay_curve"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8766,
+    "call": "plotly_chart",
+    "key": "cross_layer_capital_convexity_map",
+    "arg0": "fig",
+    "function": "render_capital_convexity_map"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8787,
+    "call": "plotly_chart",
+    "key": "cross_layer_capital_convexity_latest",
+    "arg0": "fig",
+    "function": "render_capital_convexity_map"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8844,
+    "call": "plotly_chart",
+    "key": "cross_layer_fragility_entropy",
+    "arg0": "fig",
+    "function": "render_macro_fragility_index"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8864,
+    "call": "plotly_chart",
+    "key": "cross_layer_fragility_vs_drawdown",
+    "arg0": "fig2",
+    "function": "render_macro_fragility_index"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8906,
+    "call": "plotly_chart",
+    "key": "cross_layer_sentiment_lead_lag",
+    "arg0": "fig",
+    "function": "render_sentiment_lead_lag_surface"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8950,
+    "call": "plotly_chart",
+    "key": "cross_layer_allocation_drift_vs_shock",
+    "arg0": "fig",
+    "function": "render_allocation_drift_vs_information_shock"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 8968,
+    "call": "plotly_chart",
+    "key": "cross_layer_allocation_reaction_surface",
+    "arg0": "fig2",
+    "function": "render_allocation_drift_vs_information_shock"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 9037,
+    "call": "plotly_chart",
+    "key": "cross_layer_regime_vs_posterior_stability",
+    "arg0": "fig",
+    "function": "render_regime_vs_posterior_stability"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 9136,
+    "call": "plotly_chart",
+    "key": "cross_layer_rbi_policy_impact",
+    "arg0": "fig",
+    "function": "render_rbi_policy_shock_impact_grid"
+  },
+  {
+    "file": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+    "line": 9231,
+    "call": "plotly_chart",
+    "key": "cross_layer_strategy_survival",
+    "arg0": "fig",
+    "function": "render_strategy_survival_probability_curve"
+  },
+  {
+    "file": "src/dashboard/strategy_intelligence_panel.py",
+    "line": 103,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_belief_heatmap"
+  },
+  {
+    "file": "src/dashboard/strategy_intelligence_panel.py",
+    "line": 165,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_regret_leaderboard"
+  },
+  {
+    "file": "src/dashboard/strategy_intelligence_panel.py",
+    "line": 204,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_capital_weights"
+  },
+  {
+    "file": "src/dashboard/strategy_intelligence_panel.py",
+    "line": 276,
+    "call": "plotly_chart",
+    "key": null,
+    "arg0": "fig",
+    "function": "render_strategy_lifecycle"
+  }
+]

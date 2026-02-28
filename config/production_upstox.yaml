@@ -1,0 +1,241 @@
+# Production Configuration for Unified Volatility Engine with Upstox
+# Optimized for Indian markets (NSE/BSE)
+
+# Upstox API Configuration
+upstox:
+  api_key: ${UPSTOX_API_KEY}  # Set in environment
+  api_secret: ${UPSTOX_API_SECRET}  # Set in environment
+  access_token: ${UPSTOX_ACCESS_TOKEN}  # Daily token - update daily
+  rate_limit_per_second: 1
+  max_instruments_per_request: 50
+  endpoints:
+    option_chain: "https://api.upstox.com/v2/option/chain"
+    option_greeks: "https://api.upstox.com/v3/market-quote/option-greek"
+    market_quote: "https://api.upstox.com/v2/market-quote/quotes"
+    place_order: "https://api.upstox.com/v2/order/place"
+    order_book: "https://api.upstox.com/v2/order/retrieve-all"
+    positions: "https://api.upstox.com/v2/portfolio/short-term-positions"
+
+# Capital Allocation (in INR)
+capital:
+  total_capital: 1000000  # ₹10 lakh
+  max_deployed: 0.80  # 80% max deployment
+  reserve_buffer: 0.20  # 20% cash reserve
+  per_trade_max: 50000  # ₹50k max per trade
+
+# Position Limits (scaled for Indian markets)
+position_limits:
+  per_underlying: 50  # Max contracts per underlying (NIFTY/BANKNIFTY)
+  total: 200  # Max total contracts
+  max_concentration: 0.25  # 25% max per underlying
+  max_single_position_value: 200000  # ₹2 lakh max per position
+  max_portfolio_value: 800000  # ₹8 lakh max portfolio value
+  
+  # Index-specific limits
+  nifty_max_lots: 20  # NIFTY lot size = 50
+  banknifty_max_lots: 10  # BANKNIFTY lot size = 15
+  finnifty_max_lots: 15  # FINNIFTY lot size = 40
+
+# Greeks Limits (scaled for INR)
+greeks_limits:
+  delta: 500  # Max net delta exposure
+  gamma: 250  # Max gamma exposure
+  vega: 5000  # Max vega exposure (₹ per 1% IV change)
+  theta: -300  # Max theta decay per day (₹)
+  rho: 2000  # Max rho exposure
+
+# Risk Thresholds (in INR)
+risk_thresholds:
+  var_95: 30000  # ₹30k max VaR at 95%
+  var_99: 60000  # ₹60k max VaR at 99%
+  cvar_95: 45000  # ₹45k max CVaR at 95%
+  max_drawdown: 0.12  # 12% max drawdown
+  max_daily_loss: 15000  # ₹15k max daily loss
+  max_position_loss: 5000  # ₹5k max loss per position
+  stop_loss_pct: 0.50  # 50% stop loss on position
+  portfolio_stop_loss: 0.10  # 10% portfolio stop loss
+
+# Regime-Conditional Adjustments (for Indian markets)
+regime_adjustments:
+  crisis:  # VIX > 30
+    position_limits_multiplier: 0.4
+    short_vol_allowed: false
+    max_leverage: 1.0
+    max_delta: 200
+    max_vega: 2000
+  high_vol:  # VIX 20-30
+    position_limits_multiplier: 0.7
+    short_vol_allowed: true
+    max_leverage: 1.3
+    max_delta: 350
+    max_vega: 3500
+  low_vol:  # VIX < 15
+    position_limits_multiplier: 1.0
+    short_vol_allowed: true
+    max_leverage: 1.5
+    max_delta: 500
+    max_vega: 5000
+  transition:  # VIX 15-20
+    position_limits_multiplier: 0.8
+    short_vol_allowed: true
+    max_leverage: 1.2
+    max_delta: 400
+    max_vega: 4000
+
+# Execution Parameters (NSE-specific)
+execution:
+  default_order_type: "LIMIT"
+  limit_price_offset_pct: 0.002  # 0.2% better than mid
+  time_in_force: "DAY"
+  product_type: "CARRYFORWARD"  # NRML for F&O
+  min_liquidity_oi: 1000  # Min OI for trading
+  min_liquidity_volume: 100  # Min volume for trading
+  max_bid_ask_spread_pct: 0.05  # 5% max spread
+  
+  # Venue preferences (NSE only for Indian markets)
+  preferred_exchange: "NSE"
+  
+  # Order timing
+  market_open_buffer_minutes: 15  # Wait 15 min after open
+  market_close_buffer_minutes: 30  # Stop 30 min before close
+  
+  # Slippage controls
+  max_acceptable_slippage_pct: 0.01  # 1% max slippage
+  retry_on_rejection: true
+  max_retries: 3
+
+# Performance Monitoring
+monitoring:
+  pnl_update_frequency: 30  # seconds
+  greeks_update_frequency: 15  # seconds
+  risk_check_frequency: 60  # seconds
+  position_check_frequency: 30  # seconds
+  performance_degradation_threshold: 0.25  # 25% Sharpe decline
+  
+  # Market data refresh
+  option_chain_refresh_seconds: 60
+  underlying_price_refresh_seconds: 5
+  iv_surface_refresh_seconds: 300
+
+# State Persistence
+persistence:
+  snapshot_frequency: 180  # seconds (3 minutes)
+  snapshot_directory: "snapshots/"
+  max_snapshots: 200
+  backup_directory: "backups/"
+  backup_frequency_hours: 24
+
+# Monte Carlo Risk Engine
+monte_carlo:
+  num_simulations: 10000
+  num_workers: 4
+  confidence_levels: [0.95, 0.99, 0.999]
+  time_horizon_days: 5
+  use_fat_tails: true
+  tail_df: 5  # Student-t degrees of freedom
+
+# Strategy Allocation
+strategy_allocation:
+  dispersion:
+    min_allocation: 0.15
+    max_allocation: 0.35
+    target_allocation: 0.25
+  gamma_scalping:
+    min_allocation: 0.15
+    max_allocation: 0.30
+    target_allocation: 0.20
+  short_vol:
+    min_allocation: 0.10
+    max_allocation: 0.25
+    target_allocation: 0.15
+  long_vol:
+    min_allocation: 0.10
+    max_allocation: 0.25
+    target_allocation: 0.15
+  relative_value:
+    min_allocation: 0.05
+    max_allocation: 0.20
+    target_allocation: 0.10
+
+# Margin Requirements (NSE F&O)
+margin:
+  margin_buffer: 1.5  # 50% extra margin buffer
+  span_margin_multiplier: 1.2
+  exposure_margin_multiplier: 1.1
+  min_margin_available: 100000  # ₹1 lakh min margin
+
+# Concentration Limits
+concentration_limits:
+  max_pct_per_underlying: 0.25
+  max_pct_per_strategy: 0.35
+  max_pct_per_expiry: 0.30
+  max_pct_per_strike: 0.15
+
+# Trading Hours (IST)
+trading_hours:
+  market_open: "09:15"
+  market_close: "15:30"
+  trading_start: "09:30"  # Start trading 15 min after open
+  trading_end: "15:00"  # Stop trading 30 min before close
+  
+  # Special sessions
+  pre_market_start: "09:00"
+  post_market_end: "16:00"
+
+# Holidays and Events
+calendar:
+  check_nse_holidays: true
+  avoid_expiry_day_new_positions: true
+  avoid_result_day_trading: true
+  avoid_rbi_policy_day: true
+  
+  # Weekly expiry days
+  nifty_expiry_day: "Tuesday"
+  banknifty_expiry_day: "Wednesday"
+  finnifty_expiry_day: "Tuesday"
+
+# Logging
+logging:
+  level: "INFO"
+  file: "logs/volatility_engine.log"
+  max_size_mb: 100
+  backup_count: 10
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Alerts (see alerts.yaml for detailed configuration)
+alerts:
+  enabled: true
+  config_file: "config/alerts.yaml"
+
+# Paper Trading Mode
+paper_trading:
+  enabled: false  # Set to true for paper trading
+  initial_capital: 1000000
+  simulate_slippage: true
+  slippage_bps: 5  # 5 basis points
+  simulate_latency_ms: 100
+
+# Emergency Procedures
+emergency:
+  auto_halt_on_drawdown: true
+  auto_halt_threshold: 0.10  # 10% drawdown
+  auto_reduce_on_greeks_breach: true
+  auto_hedge_on_delta_breach: true
+  emergency_contact_email: "risk@firm.com"
+  emergency_contact_phone: "+91-XXXXXXXXXX"
+
+# Compliance
+compliance:
+  max_trades_per_day: 100
+  max_order_value: 500000  # ₹5 lakh
+  require_approval_above: 200000  # ₹2 lakh
+  audit_trail_enabled: true
+  audit_trail_directory: "audit/"
+
+# Performance Targets
+targets:
+  annual_return: 0.25  # 25% target return
+  sharpe_ratio: 1.5  # Target Sharpe
+  max_drawdown: 0.12  # 12% max drawdown
+  win_rate: 0.60  # 60% win rate
+  profit_factor: 2.0  # 2:1 profit factor

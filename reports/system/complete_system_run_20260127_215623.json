@@ -1,0 +1,208 @@
+{
+  "execution_summary": {
+    "start_time": "2026-01-27T21:55:53.242276",
+    "end_time": "2026-01-27T21:56:23.831919",
+    "total_duration_seconds": 30.58962,
+    "total_duration_minutes": 0.51
+  },
+  "phase_results": {
+    "data_ingestion": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Integrated data pipeline (RBI + Market) completed",
+        "Verified: data/macro/raw/",
+        "Verified: data/raw/prices_daily/",
+        "Verified: data/processed/market_state.parquet"
+      ]
+    },
+    "system_update": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Simple system update (Data + Portfolio) completed",
+        "Generated: data/processed/strategy_beliefs.parquet",
+        "Generated: data/processed/portfolio_weights.parquet",
+        "Generated: data/processed/market_state.parquet",
+        "Generated: data/processed/system_status.json"
+      ]
+    },
+    "backtesting": {
+      "duration": 0.7962419986724854,
+      "status": "failed",
+      "details": [
+        "12-month institutional validation completed",
+        "Enhanced stress tests (2008, COVID, 2022) completed",
+        "Walk-forward out-of-sample validation failed: Traceback (most recent call last):\n  File \"/Users/aryakghoshal/Downloads/northstar/northstar_v3/src/"
+      ]
+    },
+    "shadow_trading": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "Shadow trading validation (1 day) completed",
+        "Generated: data/live/shadow_trading/positions/",
+        "Generated: data/live/shadow_trading/pnl/",
+        "Generated: data/live/shadow_trading/decisions/"
+      ]
+    },
+    "performance_analysis": {
+      "duration": 16.63697600364685,
+      "status": "failed",
+      "details": [
+        "12-month performance report generation completed",
+        "Final institutional validation failed: "
+      ]
+    },
+    "dashboard_launch": {
+      "duration": 0,
+      "status": "success",
+      "details": [
+        "V3 dashboard launched (PID: 15015)"
+      ]
+    }
+  },
+  "execution_log": [
+    {
+      "timestamp": "2026-01-27T21:55:56.435336",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Integrated data pipeline (RBI + Market) completed",
+      "duration_seconds": 1.4778120517730713
+    },
+    {
+      "timestamp": "2026-01-27T21:55:56.435449",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/macro/raw/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:55:56.435465",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/raw/prices_daily/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:55:56.435477",
+      "phase": "data_ingestion",
+      "status": "success",
+      "message": "Verified: data/processed/market_state.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:55:58.800476",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Simple system update (Data + Portfolio) completed",
+      "duration_seconds": 2.3649330139160156
+    },
+    {
+      "timestamp": "2026-01-27T21:55:58.800587",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/strategy_beliefs.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:55:58.800601",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/portfolio_weights.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:55:58.800613",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/market_state.parquet",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:55:58.800622",
+      "phase": "system_update",
+      "status": "success",
+      "message": "Generated: data/processed/system_status.json",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:56:00.851479",
+      "phase": "backtesting",
+      "status": "success",
+      "message": "12-month institutional validation completed",
+      "duration_seconds": 2.0508008003234863
+    },
+    {
+      "timestamp": "2026-01-27T21:56:01.901919",
+      "phase": "backtesting",
+      "status": "success",
+      "message": "Enhanced stress tests (2008, COVID, 2022) completed",
+      "duration_seconds": 1.050325870513916
+    },
+    {
+      "timestamp": "2026-01-27T21:56:02.698277",
+      "phase": "backtesting",
+      "status": "failed",
+      "message": "Walk-forward out-of-sample validation failed: Traceback (most recent call last):\n  File \"/Users/aryakghoshal/Downloads/northstar/northstar_v3/src/",
+      "duration_seconds": 0.7962419986724854
+    },
+    {
+      "timestamp": "2026-01-27T21:56:03.549826",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Shadow trading validation (1 day) completed",
+      "duration_seconds": 0.851355791091919
+    },
+    {
+      "timestamp": "2026-01-27T21:56:03.549933",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Generated: data/live/shadow_trading/positions/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:56:03.549946",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Generated: data/live/shadow_trading/pnl/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:56:03.549956",
+      "phase": "shadow_trading",
+      "status": "success",
+      "message": "Generated: data/live/shadow_trading/decisions/",
+      "duration_seconds": 0
+    },
+    {
+      "timestamp": "2026-01-27T21:56:07.192948",
+      "phase": "performance_analysis",
+      "status": "success",
+      "message": "12-month performance report generation completed",
+      "duration_seconds": 3.642910957336426
+    },
+    {
+      "timestamp": "2026-01-27T21:56:23.830184",
+      "phase": "performance_analysis",
+      "status": "failed",
+      "message": "Final institutional validation failed: ",
+      "duration_seconds": 16.63697600364685
+    },
+    {
+      "timestamp": "2026-01-27T21:56:23.831819",
+      "phase": "dashboard_launch",
+      "status": "success",
+      "message": "V3 dashboard launched (PID: 15015)",
+      "duration_seconds": 0
+    }
+  ],
+  "system_status": {
+    "data_fresh": true,
+    "system_updated": true,
+    "backtests_complete": false,
+    "shadow_trading_active": true,
+    "performance_analyzed": false,
+    "dashboard_running": true
+  }
+}

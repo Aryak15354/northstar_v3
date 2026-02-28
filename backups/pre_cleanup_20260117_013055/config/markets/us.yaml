@@ -1,0 +1,29 @@
+benchmark_indices:
+  broad_market: VTI
+  primary: SPY
+  risk_free: SHY
+country: US
+currency:
+  base_currency: USD
+  currency_symbol: $
+  decimal_places: 2
+  display_currency: USD
+  supported_currencies:
+  - USD
+data_sources:
+  backup_providers:
+  - alpha_vantage
+  - iex
+  fundamental_data_url: https://financialmodelingprep.com
+  price_feed_url: https://finance.yahoo.com
+  primary_provider: yahoo
+  symbol_suffix: ''
+market_code: US
+market_name: United States
+market_type: equity
+trading_hours:
+  market_close: '16:00'
+  market_open: 09:30
+  post_market_close: '20:00'
+  pre_market_open: 04:00
+  timezone: America/New_York

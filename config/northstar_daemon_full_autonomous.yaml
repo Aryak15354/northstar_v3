@@ -1,0 +1,139 @@
+# Northstar Daemon (Full Autonomous Research Profile)
+# Use this profile when you want live + governance + autonomous research.
+
+system_profile: full
+recovery_mode: false
+
+recovery_controls:
+  auto_exit_clean_cycles: 3
+
+live_engine:
+  interval_seconds: 300
+  underlyings: [NIFTY, BANKNIFTY, FINNIFTY]
+  market_hours_only: true
+  aggressive_mode: false
+  portfolio_overlay: true
+  portfolio_overlay_max_stocks: 5
+
+governance_interval_minutes: 5
+progress_log_interval_seconds: 120
+portfolio_risk_cap_pct: 0.10
+
+resource_limits:
+  memory_threshold: 85.0
+  cpu_threshold: 70.0
+  cpu_threshold_market_hours: 70.0
+  cpu_threshold_off_hours: 45.0
+  research_throttle_release_margin: 8.0
+  research_pause_seconds_on_cpu_throttle: 900.0
+  daemon_loop_sleep_seconds: 20.0
+  low_power_mode: true
+  heartbeat_timeout_multiplier: 2.0
+
+time_config:
+  target_timezone: "Asia/Kolkata"
+  drift_threshold_seconds: 5.0
+  reference_sources:
+    - "http://worldtimeapi.org/api/timezone/Asia/Kolkata"
+    - "https://timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata"
+
+research_engine:
+  enabled: true
+  interval_seconds: 7200
+  policy_config: "config/research_policy.yaml"
+  log_level: "INFO"
+  throttle_during_market_hours: true
+  memory_limit_mb: 3072
+  cpu_priority: "low"
+  max_cpu_cores: 1
+  max_blas_threads: 1
+  nice_increment: 15
+  modules:
+    strategy_lab: true
+    regime_lab: true
+    covariance_lab: false
+    monte_carlo_lab: false
+    parameter_optimizer: false
+
+freeze_policy:
+  freeze_active: true
+  freeze_start_ist: "2026-02-17"
+  freeze_days: 60
+  allow_emergency_override: true
+
+auto_descaling:
+  enabled: true
+  triggers:
+    drawdown_threshold: 0.15
+    survival_mode_frequency: 5
+    drift_severity_sustained: 300
+
+governance_logging:
+  enabled: true
+  log_file: "data/options/live/governance_events.parquet"
+  email_alerts:
+    enabled: false
+    smtp_server: ""
+    recipients: []
+    cooldown_minutes: 60
+
+alerts:
+  survival_core_activation: true
+  drift_alert: true
+  fallback_tier_2_plus: true
+  sdi_threshold: 0.4
+  drawdown_threshold: 0.10
+  accounting_integrity_mismatch: true
+  heartbeat_stale_restart: true
+  recovery_mode_entry_exit: true
+
+operational_limits:
+  base_capital: 500000
+  max_weekly_trades: 20
+  max_daily_new_positions: 5
+  max_position_size_pct: 0.05
+  max_underlying_concentration: 0.30
+
+crisis_management:
+  black_swan_triggers:
+    vix_spike_threshold: 40
+    market_gap_threshold: 0.05
+    correlation_breakdown_threshold: 0.2
+  crisis_actions:
+    auto_reduce_positions: true
+    block_new_risk: true
+    increase_monitoring_frequency: true
+    alert_operator: true
+
+logging:
+  level: INFO
+  file: "logs/northstar_daemon.log"
+  max_size_mb: 100
+  backup_count: 5
+  components:
+    state_io: INFO
+    recovery: INFO
+    integrity: INFO
+    clock_guard: INFO
+    resource_monitor: INFO
+
+paths:
+  data_dir: "data/options/live"
+  logs_dir: "logs"
+  config_dir: "config"
+  scripts_dir: "scripts"
+  runtime_state: "data/options/live/options_runtime_state.json"
+  dashboard_state: "data/options/live/options_dashboard_state.json"
+  trade_ledger: "data/options/trade_ledger.parquet"
+  process_lock: "data/options/live/options_engine.lock"
+  write_journal: "data/options/live/write_journal.log"
+  heartbeat: "data/options/live/live_engine_heartbeat.json"
+  daemon_status: "data/options/live/northstar_daemon_status.json"
+  recovery_report: "data/options/live/state_recovery_report.json"
+  eod_snapshots: "data/options/live/eod_snapshots"
+
+development:
+  mock_market_data: false
+  skip_time_checks: false
+  fast_governance_interval: false
+  enable_debug_logging: false

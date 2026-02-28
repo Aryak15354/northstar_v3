@@ -1,0 +1,71 @@
+# Conservative Configuration
+# Tight limits, low leverage - for risk-averse operators
+
+# Position Limits
+position_limits:
+  per_underlying: 50
+  total: 250
+  max_concentration: 0.15  # 15% max per underlying
+
+# Greeks Limits
+greeks_limits:
+  delta: 500
+  gamma: 250
+  vega: 5000
+  theta: -250
+  rho: 2500
+
+# Risk Thresholds
+risk_thresholds:
+  var_95: 25000  # $25k max VaR at 95%
+  var_99: 50000  # $50k max VaR at 99%
+  cvar_95: 37500  # $37.5k max CVaR at 95%
+  max_drawdown: 0.10  # 10% max drawdown
+
+# Regime-Conditional Adjustments
+regime_adjustments:
+  crisis:
+    position_limits_multiplier: 0.3  # Very tight in crisis
+    short_vol_allowed: false
+    max_leverage: 1.0
+  high_vol:
+    position_limits_multiplier: 0.5
+    short_vol_allowed: false  # No short vol even in high vol
+    max_leverage: 1.0
+  low_vol:
+    position_limits_multiplier: 0.75
+    short_vol_allowed: true
+    max_leverage: 1.2
+
+# Execution Parameters
+execution:
+  default_order_type: "LIMIT"
+  limit_price_offset: 0.10  # 10 cents better than mid (patient)
+  time_in_force: "DAY"
+  preferred_venues: ["CBOE", "ISE"]
+  min_liquidity: 2000  # contracts (high liquidity requirement)
+
+# Performance Monitoring
+monitoring:
+  pnl_update_frequency: 30  # seconds (more frequent)
+  greeks_update_frequency: 15  # seconds (more frequent)
+  risk_check_frequency: 180  # seconds (more frequent)
+  performance_degradation_threshold: 0.2  # 20% Sharpe decline
+
+# State Persistence
+persistence:
+  snapshot_frequency: 180  # seconds (3 minutes - more frequent)
+  snapshot_directory: "snapshots/"
+  max_snapshots: 200  # Keep more snapshots
+
+# Monte Carlo
+monte_carlo_workers: 4
+
+# Margin
+margin_buffer: 2.0  # 2x margin buffer (very safe)
+
+# Concentration Limits
+concentration_limits:
+  max_pct_per_underlying: 0.15
+  max_pct_per_strategy: 0.20
+  max_pct_per_expiry: 0.15

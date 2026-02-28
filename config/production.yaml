@@ -1,0 +1,71 @@
+# Production Configuration
+# Default production settings - customize for your needs
+
+# Position Limits
+position_limits:
+  per_underlying: 100
+  total: 500
+  max_concentration: 0.20  # 20% max per underlying
+
+# Greeks Limits
+greeks_limits:
+  delta: 1000
+  gamma: 500
+  vega: 10000
+  theta: -500
+  rho: 5000
+
+# Risk Thresholds
+risk_thresholds:
+  var_95: 50000  # $50k max VaR at 95%
+  var_99: 100000  # $100k max VaR at 99%
+  cvar_95: 75000  # $75k max CVaR at 95%
+  max_drawdown: 0.15  # 15% max drawdown
+
+# Regime-Conditional Adjustments
+regime_adjustments:
+  crisis:
+    position_limits_multiplier: 0.5
+    short_vol_allowed: false
+    max_leverage: 1.0
+  high_vol:
+    position_limits_multiplier: 0.75
+    short_vol_allowed: true
+    max_leverage: 1.5
+  low_vol:
+    position_limits_multiplier: 1.0
+    short_vol_allowed: true
+    max_leverage: 2.0
+
+# Execution Parameters
+execution:
+  default_order_type: "LIMIT"
+  limit_price_offset: 0.05  # 5 cents better than mid
+  time_in_force: "DAY"
+  preferred_venues: ["CBOE", "ISE", "PHLX"]
+  min_liquidity: 1000  # contracts
+
+# Performance Monitoring
+monitoring:
+  pnl_update_frequency: 60  # seconds
+  greeks_update_frequency: 30  # seconds
+  risk_check_frequency: 300  # seconds
+  performance_degradation_threshold: 0.3  # 30% Sharpe decline
+
+# State Persistence
+persistence:
+  snapshot_frequency: 300  # seconds (5 minutes)
+  snapshot_directory: "snapshots/"
+  max_snapshots: 100
+
+# Monte Carlo
+monte_carlo_workers: 4
+
+# Margin
+margin_buffer: 1.5
+
+# Concentration Limits
+concentration_limits:
+  max_pct_per_underlying: 0.20
+  max_pct_per_strategy: 0.30
+  max_pct_per_expiry: 0.25
