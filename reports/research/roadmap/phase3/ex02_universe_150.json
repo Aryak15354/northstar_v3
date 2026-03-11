@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T22:40:04.453328+00:00",
+  "generated_at": "2026-03-11T00:53:01.483432+00:00",
   "model": "xgboost",
   "model_params": {
     "n_estimators": 300,
@@ -17,7 +17,7 @@
     "windows": 8.0,
     "avg_n_obs": 9450.0,
     "total_n_obs": 75600.0,
-    "avg_sharpe": 0.19875986104932714,
+    "avg_sharpe": 0.1987598610493272,
     "avg_sortino": 0.5398231204586248,
     "avg_max_drawdown": 0.011805853501591967,
     "avg_calmar": 9.261606572964556,
@@ -41,13 +41,13 @@
       "ic": 0.03391633133599793,
       "n_obs": 75600,
       "windows": 8,
-      "avg_sharpe": 0.19875986104932714,
+      "avg_sharpe": 0.1987598610493272,
       "avg_max_drawdown": 0.011805853501591967
     }
   ],
   "ic_diagnostics": {
     "status": "ok",
-    "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/research/ic_diagnostics/ic_report_20260311_040829.json",
+    "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/research/ic_diagnostics/ic_report_20260311_062127.json",
     "prune_requested": false,
     "prune_applied": false,
     "n_features_input": 253,
@@ -92,7 +92,7 @@
         "peak_horizon": 5.0,
         "peak_ic": -0.018541334327231963,
         "half_life_horizon": 10.0,
-        "signed_area": -0.06823138696341724,
+        "signed_area": -0.06823138696341727,
         "abs_area": 0.10313659919418341,
         "monotonicity_score": 1.0,
         "sign_flip_count": 1.0

@@ -370,7 +370,7 @@ historical_research:
     shadow_relaxed_audit_enabled: true
     shadow_relaxed_threshold_factor: 1.2
     belief_min_history_days_for_strict_eval: 20
-use_sentiment_features: true
+use_sentiment_features: false
 use_sentiment_regime: true
 max_weekly_turnover: 0.30
 sentiment_path: data/processed/news/legacy_news_clean.parquet

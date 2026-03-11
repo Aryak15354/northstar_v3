@@ -1,43 +1,97 @@
 {
-  "generated_at": "2026-03-11T00:24:02.951250+00:00",
+  "generated_at": "2026-03-11T01:16:36.636544+00:00",
   "phase": "phase3",
   "status": "PASS",
-  "reason": "preflight_pass",
   "checks": [
     {
-      "name": "base_config_exists",
+      "name": "preflight_pass",
+      "pass": true
+    },
+    {
+      "name": "universe_files_present",
+      "pass": true
+    },
+    {
+      "name": "universe_non_identical",
       "pass": true,
-      "detail": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/config/research_policy.yaml"
+      "obs": [
+        50400.0,
+        75600.0
+      ],
+      "dataset_tickers": [
+        100,
+        150
+      ]
     },
     {
-      "name": "config_shape_valid",
+      "name": "universe_monotonic_n_obs",
       "pass": true,
-      "detail": "historical_research"
+      "obs": [
+        50400.0,
+        75600.0
+      ]
     },
     {
-      "name": "prices_exists",
-      "pass": true
-    },
-    {
-      "name": "fundamentals_exists",
-      "pass": true
-    },
-    {
-      "name": "runner_exists",
-      "pass": true
-    },
-    {
-      "name": "low_resource_profile_not_forced",
+      "name": "universe_monotonic_tickers",
       "pass": true,
-      "detail": []
+      "dataset_tickers": [
+        100,
+        150
+      ]
     },
     {
-      "name": "dataset_max_tickers_positive",
+      "name": "pit_enabled",
       "pass": true
     },
     {
-      "name": "dataset_max_rows_positive",
+      "name": "pit_no_future_leak",
       "pass": true
+    },
+    {
+      "name": "hard_oos_result_exists",
+      "pass": true,
+      "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/research/roadmap/phase3/ex08_hard_oos_2020_2024.json"
+    },
+    {
+      "name": "oos_windows_valid",
+      "pass": true,
+      "oos_windows": 1.0
+    },
+    {
+      "name": "oos_ic_non_degenerate",
+      "pass": true,
+      "oos_ic_mean": 0.030015168186140428
     }
-  ]
+  ],
+  "universe_metrics": [
+    {
+      "size": 100,
+      "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/research/roadmap/phase3/ex02_universe_100.json",
+      "windows": 8.0,
+      "ic_mean": 0.014611071053492346,
+      "total_n_obs": 50400.0,
+      "dataset_tickers": 100,
+      "pit_enabled": true,
+      "pit_no_future_leak": true
+    },
+    {
+      "size": 150,
+      "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/research/roadmap/phase3/ex02_universe_150.json",
+      "windows": 8.0,
+      "ic_mean": 0.03391633133599793,
+      "total_n_obs": 75600.0,
+      "dataset_tickers": 150,
+      "pit_enabled": true,
+      "pit_no_future_leak": true
+    }
+  ],
+  "oos_metrics": {
+    "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/research/roadmap/phase3/ex08_hard_oos_2020_2024.json",
+    "windows": 1.0,
+    "ic_mean": 0.030015168186140428,
+    "total_n_obs": 185700.0,
+    "dataset_tickers": 150,
+    "pit_enabled": true,
+    "pit_no_future_leak": true
+  }
 }

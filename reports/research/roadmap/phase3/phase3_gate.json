@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-10T23:03:36.114781+00:00",
+  "generated_at": "2026-03-11T01:16:36.636544+00:00",
   "phase": "phase3",
   "status": "PASS",
   "checks": [
@@ -60,7 +60,7 @@
     {
       "name": "oos_ic_non_degenerate",
       "pass": true,
-      "oos_ic_mean": 0.03232879235736819
+      "oos_ic_mean": 0.030015168186140428
     }
   ],
   "universe_metrics": [
@@ -88,7 +88,7 @@
   "oos_metrics": {
     "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/reports/research/roadmap/phase3/ex08_hard_oos_2020_2024.json",
     "windows": 1.0,
-    "ic_mean": 0.03232879235736819,
+    "ic_mean": 0.030015168186140428,
     "total_n_obs": 185700.0,
     "dataset_tickers": 150,
     "pit_enabled": true,

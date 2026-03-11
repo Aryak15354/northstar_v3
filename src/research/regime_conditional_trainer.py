@@ -57,65 +57,22 @@ class RegimeConditionalTrainer:
 
     def _build_model(self, n_obs: int = 10000):
         """
-        Build XGBoost model with adaptive regularization based on sample size.
-        
-        For thin regimes (<10k obs), use stronger regularization to prevent overfitting.
-        For well-sampled regimes (>50k obs), use standard regularization.
+        Build XGBoost model with fixed regularization params.
+        Original params that gave average train IC of ~0.58.
         """
         try:
             from xgboost import XGBRegressor
 
-            # Adaptive regularization based on sample size
-            if n_obs < 5000:
-                # Very thin regime: aggressive regularization
-                max_depth = 2
-                min_child_weight = 50.0
-                subsample = 0.6
-                colsample_bytree = 0.6
-                reg_alpha = 0.5
-                reg_lambda = 5.0
-                n_estimators = 100
-                learning_rate = 0.03
-            elif n_obs < 10000:
-                # Thin regime: strong regularization
-                max_depth = 3
-                min_child_weight = 40.0
-                subsample = 0.7
-                colsample_bytree = 0.7
-                reg_alpha = 0.3
-                reg_lambda = 3.0
-                n_estimators = 150
-                learning_rate = 0.04
-            elif n_obs < 30000:
-                # Medium regime: moderate regularization
-                max_depth = 3
-                min_child_weight = 30.0
-                subsample = 0.75
-                colsample_bytree = 0.75
-                reg_alpha = 0.2
-                reg_lambda = 2.0
-                n_estimators = 180
-                learning_rate = 0.05
-            else:
-                # Well-sampled regime: standard regularization
-                max_depth = 4
-                min_child_weight = 20.0
-                subsample = 0.8
-                colsample_bytree = 0.8
-                reg_alpha = 0.1
-                reg_lambda = 1.0
-                n_estimators = 200
-                learning_rate = 0.05
-
+            # Fixed params - original set that gave avg train IC ~0.58
             model = XGBRegressor(
-                n_estimators=n_estimators,
-                learning_rate=learning_rate,
-                max_depth=max_depth,
-                min_child_weight=min_child_weight,
-                subsample=subsample,
-                colsample_bytree=colsample_bytree,
-                reg_alpha=reg_alpha,
-                reg_lambda=reg_lambda,
+                n_estimators=200,
+                learning_rate=0.05,
+                max_depth=4,
+                min_child_weight=20.0,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                reg_alpha=0.1,
+                reg_lambda=1.0,
                 n_jobs=int(self.config.get("n_jobs", 1) or 1),
                 random_state=self.random_state,
             )
