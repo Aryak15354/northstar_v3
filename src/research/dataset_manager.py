@@ -1156,6 +1156,45 @@ class DatasetManager:
         
         logger.info(f"Loaded sentiment features: {len(result)} rows, {len(sentiment_features)} features")
         return result
+
+    def load_sentiment_market(self) -> pd.DataFrame:
+        rel = str(
+            self.config.get(
+                "sentiment_market_path",
+                "data/sentiment/v3/market_sentiment_india.parquet",
+            )
+        )
+        path = self.project_root / rel
+        must_require = bool(self.strict_real_data_only and ("sentiment_market" in self.required_artifacts))
+        if not path.exists():
+            if must_require:
+                raise FileNotFoundError(f"required_sentiment_market_artifact_missing:{path}")
+            return pd.DataFrame()
+
+        if self.query.available:
+            cols = self._select_existing_columns(
+                path,
+                [
+                    "date",
+                    "Date",
+                    "timestamp",
+                    "polarity",
+                    "conviction",
+                    "uncertainty",
+                    "narrative_cohesion",
+                    "policy_weight",
+                    "narrative_conflict",
+                    "delta_polarity",
+                    "delta_uncertainty",
+                    "delta_conviction",
+                    "change_velocity",
+                    "micro_shift_score",
+                ],
+            )
+            all_cols = self.query.columns(path)
+            date_col = self._pick_first_existing(all_cols, ["date", "Date", "timestamp"])
+            lookback_days = int(self.config.get("lookback_days", 3650) or 3650)
+            start_date = None
             if date_col and lookback_days > 0:
                 max_date = self.query.scalar(path, f"max({_safe_sql_identifier(date_col)})")
                 if max_date is not None:
