@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence_observer/observer_core/temporal_isolation.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 6.0, 24.0, 3600, '1.0.0', 'active', 'analyze', 'barriers', 'can_observe', 'can_output', 'execution_blackout', 'generate', 'isolation_level', 'isolation_violations', 'last_observation', 'last_output', 'min_delay_hours', 'min_output_delay', 'minimal', 'observation', 'observe', 'output', 'standard', 'strict', 'time_until_clear']

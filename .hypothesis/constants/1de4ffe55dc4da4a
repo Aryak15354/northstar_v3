@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/cleanup/consolidate_directories.py
+# hypothesis_version: 6.150.2
+
+['%(message)s', '=', '__main__', '__pycache__', 'backup', 'backups', 'cache', 'temp']

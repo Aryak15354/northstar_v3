@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/state_transition_logger.py
+# hypothesis_version: 6.150.2
+
+[0.01, 0.45, 0.5, 0.6, 0.62, 0.85, 0.9, 0.95, 1.0, 3.87, 100, '\nDiagnostic Report:', '__main__', 'actual_exposure', 'allowed_exposure', 'bound_type', 'bounded_value', 'calculation_type', 'change_magnitude', 'change_percent', 'component', 'conflicting_values', 'contributing_factors', 'critical', 'data_freshness', 'description', 'early-expansion', 'error', 'excessive', 'exposure_mismatch', 'field', 'generated_at', 'inconsistency_type', 'late-expansion', 'market_consistency', 'market_state', 'metric', 'new_value', 'overall_health', 'period_hours', 'portfolio_stability', 'previous_value', 'reason', 'regime', 'severity', 'summary', 'timestamp', 'total_health_changes', 'total_transitions', 'total_violations', 'type', 'unbounded_value', 'violations_by_type', 'warning', '↑', '↓']

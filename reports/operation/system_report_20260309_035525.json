@@ -1,0 +1,95 @@
+{
+  "report_id": "3f41e07d-9d02-4da9-a1ec-cd59f8cf2a62",
+  "generated_at": "2026-03-09T03:55:25.672134",
+  "report_type": "system_comprehensive_validation",
+  "system_health": {
+    "timestamp": "2026-03-09T03:55:25.649586",
+    "overall_health": "warning",
+    "component_status": {
+      "system_validation": "warning",
+      "integration_testing": "critical"
+    },
+    "performance_score": 0.875,
+    "data_quality_score": 0.0,
+    "latency_metrics": {},
+    "error_counts": {},
+    "alert_level": "warning",
+    "recommended_actions": []
+  },
+  "recent_operations": [
+    {
+      "operation_id": "exec_1773008723_test_5998",
+      "operation_type": "comprehensive_backtest",
+      "start_time": "2026-03-09T03:55:23.474650",
+      "end_time": "2026-03-09T03:55:23.549742",
+      "status": "failure",
+      "duration_seconds": 0.075092,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    },
+    {
+      "operation_id": "live_operation_1773008723",
+      "operation_type": "live_operation_launch",
+      "start_time": "2026-03-09T03:55:23.662487",
+      "end_time": "2026-03-09T03:55:24.158611",
+      "status": "success",
+      "duration_seconds": 0.496124,
+      "performance_metrics": {
+        "live_operation_status": "success",
+        "monitoring_active": true,
+        "startup_time_seconds": 0.49612
+      },
+      "validation_results": {
+        "live_operation_launched": true
+      },
+      "alerts_count": 0,
+      "report_path": null
+    },
+    {
+      "operation_id": "live_operation_1773008723",
+      "operation_type": "live_operation_launch",
+      "start_time": "2026-03-09T03:55:23.737653",
+      "end_time": "2026-03-09T03:55:24.158702",
+      "status": "success",
+      "duration_seconds": 0.421049,
+      "performance_metrics": {
+        "live_operation_status": "success",
+        "monitoring_active": true,
+        "startup_time_seconds": 0.421048
+      },
+      "validation_results": {
+        "live_operation_launched": true
+      },
+      "alerts_count": 0,
+      "report_path": null
+    },
+    {
+      "operation_id": "exec_1773008723_test_9999",
+      "operation_type": "stress_testing",
+      "start_time": "2026-03-09T03:55:23.843039",
+      "end_time": "2026-03-09T03:55:24.740265",
+      "status": "failure",
+      "duration_seconds": 0.897226,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    }
+  ],
+  "active_operations": [],
+  "system_metrics": {
+    "total_operations": 4,
+    "success_rate": 0.5,
+    "avg_duration": 0.47237275,
+    "operation_types": [
+      "comprehensive_backtest",
+      "live_operation_launch",
+      "stress_testing"
+    ]
+  },
+  "operational_insights": [
+    "Operation success rate is 50.0% - investigate failures"
+  ]
+}

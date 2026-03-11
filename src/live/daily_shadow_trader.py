@@ -8,6 +8,7 @@ No synthetic positions or random returns are generated.
 import sys
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
@@ -18,6 +19,9 @@ import pandas as pd
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
+
+from runtime import DecisionMode, PortfolioRuntimeService, ProposalOrigin, TradeProposal, build_certification_snapshot
+from runtime.hash_utils import canonical_hash, file_sha256
 
 
 class DailyShadowTrader:
@@ -42,6 +46,163 @@ class DailyShadowTrader:
 
         self.current_positions: Dict[str, Dict[str, float]] = {}
         self.performance_history: List[Dict[str, Any]] = []
+        self.prs = None
+        self.prs_context: Dict[str, str] = {}
+        self.prs_cert_snapshot_hash = ""
+        self._init_prs_runtime()
+
+    def _init_prs_runtime(self) -> None:
+        db_path = Path(
+            str(
+                os.getenv(
+                    "NORTHSTAR_PRS_DAILY_SHADOW_DB",
+                    "data/runtime/daily_shadow_runtime.db",
+                )
+                or "data/runtime/daily_shadow_runtime.db"
+            )
+        )
+        mat_path = Path(
+            str(
+                os.getenv(
+                    "NORTHSTAR_PRS_DAILY_SHADOW_MATERIALIZED",
+                    "data/processed/runtime/daily_shadow",
+                )
+                or "data/processed/runtime/daily_shadow"
+            )
+        )
+        self.prs = PortfolioRuntimeService(
+            db_path=str(db_path),
+            materialized_output_dir=str(mat_path),
+            starting_cash=float(self.initial_capital),
+        )
+        self.prs_context = self._build_prs_context()
+        self.prs_cert_snapshot_hash = self._refresh_prs_certification_snapshot()
+
+    def _build_prs_context(self) -> Dict[str, str]:
+        try:
+            config_hash = file_sha256(__file__)
+        except Exception:
+            config_hash = ""
+        return {
+            "model_hash": canonical_hash({"engine": "daily_shadow_trader", "version": "v1"}),
+            "param_hash": canonical_hash({"initial_capital": float(self.initial_capital)}),
+            "feature_hash": canonical_hash(["portfolio_weights", "prices"]),
+            "data_revision_hash": canonical_hash(
+                {
+                    "weights_mtime_ns": self.weights_path.stat().st_mtime_ns if self.weights_path.exists() else 0,
+                    "prices_mtime_ns": self.prices_path.stat().st_mtime_ns if self.prices_path.exists() else 0,
+                }
+            ),
+            "config_hash": config_hash,
+            "drift_guard_version": "v1",
+        }
+
+    def _refresh_prs_certification_snapshot(self) -> str:
+        if self.prs is None:
+            return ""
+        ctx = dict(self.prs_context)
+        snap = build_certification_snapshot(
+            model_hash=str(ctx.get("model_hash", "")),
+            param_hash=str(ctx.get("param_hash", "")),
+            feature_hash=str(ctx.get("feature_hash", "")),
+            data_revision_hash=str(ctx.get("data_revision_hash", "")),
+            config_hash=str(ctx.get("config_hash", "")),
+            created_at=datetime.utcnow(),
+            ttl_days=30,
+            drift_guard_version=str(ctx.get("drift_guard_version", "v1")),
+        )
+        self.prs.register_certification_snapshot(snap)
+        return str(snap.snapshot_hash)
+
+    def _sync_positions_from_prs(self, prices_current: pd.Series) -> Dict[str, Dict[str, float]]:
+        if self.prs is None:
+            return {}
+        snap = self.prs.get_portfolio_state().to_dict()
+        holdings = dict(snap.get("holdings", {}) or {})
+        positions: Dict[str, Dict[str, float]] = {}
+        gross = 0.0
+        for ticker, payload in holdings.items():
+            qty = float(payload.get("quantity", 0.0) or 0.0)
+            if abs(qty) < 1e-12:
+                continue
+            price = float(prices_current.get(ticker, payload.get("last_price", 0.0)) or 0.0)
+            market_value = qty * price
+            gross += abs(market_value)
+            positions[str(ticker)] = {
+                "quantity": qty,
+                "price": price,
+                "weight": 0.0,
+            }
+        if gross > 0.0:
+            for ticker, payload in positions.items():
+                payload["weight"] = float(abs(payload["quantity"] * payload["price"]) / gross)
+        self.current_positions = positions
+        return positions
+
+    def _route_positions_via_prs(self, target_positions: Dict[str, Dict[str, float]], prices_current: pd.Series) -> int:
+        if self.prs is None:
+            return 0
+        snap = self.prs.get_portfolio_state().to_dict()
+        holdings = dict(snap.get("holdings", {}) or {})
+        current_qty = {str(k): float(v.get("quantity", 0.0) or 0.0) for k, v in holdings.items()}
+        symbols = set(current_qty.keys()) | set(target_positions.keys())
+        proposal_count = 0
+        for ticker in sorted(symbols):
+            target_qty = float((target_positions.get(ticker, {}) or {}).get("quantity", 0.0) or 0.0)
+            cur_qty = float(current_qty.get(ticker, 0.0) or 0.0)
+            delta_qty = target_qty - cur_qty
+            if abs(delta_qty) < 1e-9:
+                continue
+            price = float(prices_current.get(ticker, 0.0) or 0.0)
+            if price <= 0.0:
+                continue
+            side = "buy" if delta_qty > 0.0 else "sell"
+            qty = float(abs(delta_qty))
+            notional = float(qty * price)
+            lifecycle_action = "close" if target_qty == 0.0 else "open"
+            now_str = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+            proposal = TradeProposal(
+                proposal_id=f"prop_daily_shadow_{ticker}_{now_str}",
+                origin=ProposalOrigin.SHADOW,
+                strategy_id="daily_shadow_trader",
+                signal_id=f"sig_daily_shadow_{ticker}_{now_str}",
+                alpha_type="directional",
+                expected_edge=0.0,
+                risk_score=float(notional / max(1.0, float(self.current_capital))),
+                regime_context={"engine": "daily_shadow_trader"},
+                instrument_plan={
+                    "symbol": str(ticker).upper(),
+                    "side": side,
+                    "price": price,
+                    "quantity": qty,
+                    "direction": 1.0 if side == "buy" else -1.0,
+                    "instrument_type": "equity",
+                    "lifecycle_action": lifecycle_action,
+                    "position_key": f"daily_shadow:{str(ticker).upper()}",
+                },
+                requested_notional=notional,
+                certification_snapshot_hash=str(self.prs_cert_snapshot_hash or ""),
+                decision_mode=DecisionMode.AUTO,
+                trigger_reason_code="rebalance.shadow.daily",
+                risk_override_flag=False,
+            )
+            result = self.prs.process_proposal(
+                proposal,
+                budget_snapshot={"reserve_usage": {}},
+                risk_snapshot={"risk_budget_ratio": 0.0, "signal_entropy": 1.0},
+                market_snapshot={},
+                market_liquidity_snapshot={
+                    "adv_notional": float(notional * 20.0),
+                    "spread_bps": 5.0,
+                    "depth_qty": float(qty * 5.0),
+                    "estimated_slippage_bps": 2.0,
+                },
+                certification_context=dict(self.prs_context),
+                auto_fill=True,
+            )
+            if result.approved:
+                proposal_count += 1
+        return proposal_count
 
     @staticmethod
     def _to_naive_utc_ts(value: Any) -> pd.Timestamp:
@@ -65,14 +226,20 @@ class DailyShadowTrader:
 
             daily_return = float((aligned_weights * returns_1d).sum())
             prior_capital = float(self.current_capital)
-            daily_pnl = float(prior_capital * daily_return)
-            self.current_capital = float(prior_capital + daily_pnl)
-
-            positions = self._build_positions(aligned_weights, prices_current)
-            self.current_positions = positions
-
+            self.prs_context = self._build_prs_context()
+            self.prs_cert_snapshot_hash = self._refresh_prs_certification_snapshot()
+            prior_snap = self.prs.get_portfolio_state().to_dict()
+            prior_capital = float(prior_snap.get("net_liquidation_value", self.current_capital) or self.current_capital)
+            positions_target = self._build_positions(aligned_weights, prices_current, capital=prior_capital)
+            proposals_executed = self._route_positions_via_prs(positions_target, prices_current)
+            positions = self._sync_positions_from_prs(prices_current)
+            snap = self.prs.get_portfolio_state().to_dict()
+            cash_value = float(snap.get("cash", 0.0) or 0.0)
             total_position_value = float(sum(p["quantity"] * p["price"] for p in positions.values()))
-            cash_value = float(self.current_capital - total_position_value)
+            portfolio_value = float(cash_value + total_position_value)
+            daily_pnl = float(portfolio_value - prior_capital)
+            daily_return = float(daily_pnl / prior_capital) if prior_capital > 0 else 0.0
+            self.current_capital = portfolio_value
 
             pnl_data = {
                 "daily_return": daily_return,
@@ -84,6 +251,7 @@ class DailyShadowTrader:
                 "weights_date": weights_date.strftime("%Y-%m-%d"),
                 "price_date": price_date.strftime("%Y-%m-%d"),
                 "prev_price_date": prev_price_date.strftime("%Y-%m-%d"),
+                "prs_mode": True,
             }
 
             decisions = [
@@ -95,6 +263,7 @@ class DailyShadowTrader:
                         f"to market returns on {price_date.strftime('%Y-%m-%d')}"
                     ),
                     "symbols_rebalanced": int(len(aligned_weights[aligned_weights > 0])),
+                    "prs_proposals_executed": int(proposals_executed),
                 }
             ]
 
@@ -223,7 +392,13 @@ class DailyShadowTrader:
         ret_1d = ret_1d.replace([pd.NA, float("inf"), float("-inf")], 0.0).fillna(0.0)
         return cur, ret_1d, price_date, prev_price_date
 
-    def _build_positions(self, weights: pd.Series, prices: pd.Series) -> Dict[str, Dict[str, float]]:
+    def _build_positions(
+        self,
+        weights: pd.Series,
+        prices: pd.Series,
+        *,
+        capital: float,
+    ) -> Dict[str, Dict[str, float]]:
         positions: Dict[str, Dict[str, float]] = {}
         common = weights.index.intersection(prices.index)
         for ticker in common:
@@ -231,7 +406,7 @@ class DailyShadowTrader:
             p = float(prices.loc[ticker])
             if p <= 0 or w <= 0:
                 continue
-            position_value = float(self.current_capital * w)
+            position_value = float(capital * w)
             quantity = float(position_value / p)
             positions[str(ticker)] = {"quantity": quantity, "price": p, "weight": w}
         return positions

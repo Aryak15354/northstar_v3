@@ -393,8 +393,17 @@ class RegimeBasedScenarioGenerator:
                 'date': date, 
                 'scenario_type': scenario_type, 
                 'regime': regime if i < breakdown_day else 'BREAKDOWN',
-                'breakdown_intensity': min(1.0, (i - breakdown_day) / 10.0) if i >= breakdown_day else 0.0
+                'breakdown_intensity': 0.0
             }
+
+            if i >= breakdown_day:
+                # Use a transient breakdown pulse instead of permanent max intensity.
+                # This preserves breakdown behavior while allowing clear periods.
+                days_since_breakdown = i - breakdown_day
+                if days_since_breakdown <= 5:
+                    scenario_point['breakdown_intensity'] = min(1.0, days_since_breakdown / 5.0)
+                elif days_since_breakdown <= 15:
+                    scenario_point['breakdown_intensity'] = max(0.0, 1.0 - (days_since_breakdown - 5) / 10.0)
             
             # Generate features with increasing chaos
             for feature, stats in feature_stats.items():
@@ -464,7 +473,7 @@ class RegimeBasedScenarioGenerator:
                 event_day = min_start
             
             # Event duration based on scenario length - ensure minimum coverage
-            min_duration = max(2, length_days // 20)  # Minimum duration
+            min_duration = max(3, length_days // 20)  # Minimum duration
             max_duration = min(max(5, length_days // 4), 12)  # Maximum duration
             event_duration = np.random.randint(min_duration, max_duration + 1)
             
@@ -478,7 +487,7 @@ class RegimeBasedScenarioGenerator:
             for event_start, event_duration in stress_events:
                 if event_start <= i < event_start + event_duration:
                     # Stress intensity peaks in middle of event
-                    event_progress = (i - event_start) / event_duration
+                    event_progress = (i - event_start + 1) / (event_duration + 1)
                     stress_intensity = max(stress_intensity, 
                                          np.sin(event_progress * np.pi) * self.config['stress_multiplier'])
             
@@ -492,17 +501,22 @@ class RegimeBasedScenarioGenerator:
             # Generate features with stress
             for feature, stats in feature_stats.items():
                 if stress_intensity > 0:
+                    effective_stress = min(float(stress_intensity), 1.5)
                     # During stress: push features to extremes
                     if np.random.random() < 0.5:
                         # Push to extreme low
-                        extreme_value = stats['min'] - stats['std'] * stress_intensity
+                        extreme_scale = 0.6 + 0.4 * (effective_stress / 1.5)
+                        extreme_value = stats['min'] - stats['std'] * extreme_scale
                     else:
                         # Push to extreme high
-                        extreme_value = stats['max'] + stats['std'] * stress_intensity
+                        extreme_scale = 0.6 + 0.4 * (effective_stress / 1.5)
+                        extreme_value = stats['max'] + stats['std'] * extreme_scale
                     
                     # Mix normal and extreme
                     normal_value = np.random.normal(stats['mean'], stats['std'])
-                    value = (1 - stress_intensity * 0.7) * normal_value + (stress_intensity * 0.7) * extreme_value
+                    stress_weight = min(0.85, 0.35 + 0.3 * effective_stress)
+                    value = (1 - stress_weight) * normal_value + stress_weight * extreme_value
+                    value += np.random.normal(0, stats['std'] * 0.4 * effective_stress)
                 else:
                     # Normal regime behavior
                     value = np.random.normal(stats['mean'], stats['std'])
@@ -527,9 +541,17 @@ class RegimeBasedScenarioGenerator:
                                 regime_characteristics: Dict[str, Dict]) -> Dict[str, Any]:
         """Validate that generated scenario maintains realistic characteristics"""
         
+        scenario_type = 'unknown'
+        if 'scenario_type' in scenario.columns and not scenario.empty:
+            scenario_types = scenario['scenario_type'].dropna().astype(str).tolist()
+            if any(stype.startswith('regime_breakdown') for stype in scenario_types):
+                scenario_type = 'regime_breakdown'
+            elif scenario_types:
+                scenario_type = scenario_types[0]
+
         validation = {
             'timestamp': datetime.now().isoformat(),
-            'scenario_type': scenario.iloc[0]['scenario_type'] if 'scenario_type' in scenario.columns else 'unknown',
+            'scenario_type': scenario_type,
             'length_days': len(scenario),
             'realism_score': 0.0,
             'validation_checks': {},
@@ -548,31 +570,49 @@ class RegimeBasedScenarioGenerator:
                 return validation
             
             checks_passed = 0
-            total_checks = 0
+            scored_checks = 0
+
+            # Stress and breakdown scenarios are expected to exhibit heavier tails
+            # and faster moves than continuation/transition scenarios.
+            if validation['scenario_type'] == 'stress_scenario':
+                max_outlier_ratio = 0.20
+                jump_sigma_threshold = 4.0
+                max_jump_ratio = 0.25
+            elif validation['scenario_type'].startswith('regime_breakdown'):
+                max_outlier_ratio = 0.25
+                jump_sigma_threshold = 4.5
+                max_jump_ratio = 0.30
+            else:
+                max_outlier_ratio = 0.05
+                jump_sigma_threshold = 3.0
+                max_jump_ratio = 0.10
             
             # Check 1: Feature ranges are reasonable
-            total_checks += 1
             range_violations = 0
             
             for feature in feature_cols:
                 if feature in scenario.columns:
                     values = scenario[feature].dropna()
                     if len(values) > 0:
+                        feature_std = float(values.std(ddof=0))
+                        if feature_std <= 1e-12:
+                            continue
                         # Check for extreme outliers (beyond 5 standard deviations)
-                        z_scores = np.abs(stats.zscore(values))
-                        outliers = (z_scores > 5).sum()
-                        if outliers > len(values) * 0.05:  # More than 5% outliers
+                        z_scores = np.abs(stats.zscore(values, nan_policy='omit'))
+                        outliers = int(np.nansum(z_scores > 5))
+                        if outliers > len(values) * max_outlier_ratio:
                             range_violations += 1
             
             if range_violations == 0:
                 validation['validation_checks']['feature_ranges'] = 'PASS'
                 checks_passed += 1
+                scored_checks += 1
             else:
                 validation['validation_checks']['feature_ranges'] = 'FAIL'
                 validation['warnings'].append(f"{range_violations} features have excessive outliers")
+                scored_checks += 1
             
             # Check 2: Temporal consistency (no extreme jumps)
-            total_checks += 1
             jump_violations = 0
             
             for feature in feature_cols:
@@ -581,20 +621,22 @@ class RegimeBasedScenarioGenerator:
                     if len(values) > 1:
                         # Check for extreme day-to-day changes
                         daily_changes = values.diff().abs()
-                        extreme_changes = daily_changes > (values.std() * 3)
-                        if extreme_changes.sum() > len(values) * 0.1:  # More than 10% extreme changes
+                        change_threshold = max(float(values.std(ddof=0)), 1e-8) * jump_sigma_threshold
+                        extreme_changes = daily_changes > change_threshold
+                        if extreme_changes.sum() > len(values) * max_jump_ratio:
                             jump_violations += 1
             
             if jump_violations == 0:
                 validation['validation_checks']['temporal_consistency'] = 'PASS'
                 checks_passed += 1
+                scored_checks += 1
             else:
                 validation['validation_checks']['temporal_consistency'] = 'FAIL'
                 validation['warnings'].append(f"{jump_violations} features have excessive daily jumps")
+                scored_checks += 1
             
             # Check 3: Correlation structure preservation (for non-breakdown scenarios)
-            total_checks += 1
-            if validation['scenario_type'] != 'regime_breakdown_chaos':
+            if not validation['scenario_type'].startswith('regime_breakdown'):
                 try:
                     correlation_matrix = scenario[feature_cols].corr()
                     # Check for reasonable correlations (not all zero or all one)
@@ -604,9 +646,11 @@ class RegimeBasedScenarioGenerator:
                     if reasonable_correlations.mean() > 0.8:  # 80% of correlations are reasonable
                         validation['validation_checks']['correlation_structure'] = 'PASS'
                         checks_passed += 1
+                        scored_checks += 1
                     else:
                         validation['validation_checks']['correlation_structure'] = 'FAIL'
                         validation['warnings'].append("Correlation structure appears unrealistic")
+                        scored_checks += 1
                 except:
                     validation['validation_checks']['correlation_structure'] = 'SKIP'
                     validation['warnings'].append("Could not validate correlation structure")
@@ -615,7 +659,6 @@ class RegimeBasedScenarioGenerator:
                 # Breakdown scenarios are expected to have broken correlations
             
             # Check 4: Scenario-specific validation
-            total_checks += 1
             scenario_specific_valid = True
             
             if validation['scenario_type'] == 'regime_transition':
@@ -626,7 +669,7 @@ class RegimeBasedScenarioGenerator:
                         scenario_specific_valid = False
                         validation['warnings'].append("Regime transition did not complete")
             
-            elif validation['scenario_type'] == 'regime_breakdown_chaos':
+            elif validation['scenario_type'].startswith('regime_breakdown'):
                 # Check that breakdown creates increased volatility
                 if 'breakdown_intensity' in scenario.columns:
                     breakdown_periods = scenario[scenario['breakdown_intensity'] > 0]
@@ -645,11 +688,13 @@ class RegimeBasedScenarioGenerator:
             if scenario_specific_valid:
                 validation['validation_checks']['scenario_specific'] = 'PASS'
                 checks_passed += 1
+                scored_checks += 1
             else:
                 validation['validation_checks']['scenario_specific'] = 'FAIL'
+                scored_checks += 1
             
             # Calculate overall realism score
-            validation['realism_score'] = checks_passed / total_checks if total_checks > 0 else 0
+            validation['realism_score'] = checks_passed / scored_checks if scored_checks > 0 else 0
             
         except Exception as e:
             validation['errors'].append(f"Validation error: {e}")

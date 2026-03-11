@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/noise_robustness_tester.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-09, 0.001, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 100, 252, '-', '1.0', '=', 'MockAlphaEngine', 'TEST', '__main__', 'adaptation_speeds', 'avg_adaptation_speed', 'avg_robustness_score', 'baseline_performance', 'confidence', 'correct_adaptations', 'crisis', 'detailed_results', 'drift', 'expansion', 'failed_tests', 'false_regime_signals', 'fundamentals', 'gaussian', 'ignore', 'inf', 'macro', 'min_adaptation_speed', 'min_robustness_score', 'momentum', 'noisy_performance', 'overall_passed', 'pass_rate', 'passed_tests', 'pe_ratio', 'price', 'prices', 'quality', 'recession', 'recovery', 'signal_corruption', 'snr_db', 'spike', 'strength', 'symbol', 'test_summary', 'total_regime_signals', 'total_signals_tested', 'total_tests', 'uniform', 'value', '✅ PASS', '❌ FAIL']

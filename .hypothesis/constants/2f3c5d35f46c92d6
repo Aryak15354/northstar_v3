@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/system_hygiene.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.1, 0.9, '1', 'NEUTRAL', 'UNKNOWN', 'all_checks_passed', 'concentration_ok', 'consecutive_losses', 'consecutive_wins', 'insufficient_history', 'iv_extreme_high', 'iv_extreme_low', 'net_pnl', 'no_cooling_needed', 'outcome', 'profit', 'profitable', 'profitable_trades', 'regime', 'strategy_type', 'success_cooling', 'timestamp', 'total_trades', 'trade_id', 'true', 'was_profitable', 'win', 'win_rate']

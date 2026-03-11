@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/research_memory.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.03, 0.05, 0.1, 0.25, 0.5, 0.6, 0.9, 0.95, 1.0, 1.1, '.tmp', 'acceptance_rate', 'accepted_candidates', 'avg_score', 'avg_sharpe', 'cycle_stats', 'feature_stats', 'last_candidate_score', 'last_updated', 'model_stats', 'rejection_streak', 'runs', 'stability_score', 'timestamp', 'total_cycles']

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/volatility/capital_allocator.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-06, 0.001, 0.01, 0.05, 0.1, 0.25, 0.4, 0.5, 0.95, 1.0, 1.2, 1.5, 2.0, 3.0, 100, 252, 'capital', 'crisis', 'directional_vol', 'dispersion', 'fraction', 'gamma_scalp', 'high_vol', 'long_vol', 'low_vol', 'market_neutral', 'max', 'max_bound', 'min', 'min_bound', 'relative_value', 'short_vol', 'strategy', 'tail_hedge', 'transition']

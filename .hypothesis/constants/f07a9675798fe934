@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/market_brain/v3_sentiment_loader.py
+# hypothesis_version: 6.150.2
+
+[-0.3, -0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 1.0, 1.2, 1.3, 3600, 'Market-driven', '__main__', 'accommodative', 'cohesion', 'contradiction_alerts', 'conviction', 'data/sentiment/v3', 'divergence_indicator', 'dominant_theme', 'hawkish', 'ignore', 'narrative_cohesion', 'narrative_health', 'neutral', 'neutral_hawkish', 'polarity', 'policy_context.json', 'policy_weight', 'price_confidence', 'r', 'rbi_stance', 'records', 'regime_confidence', 'sector', 'sentiment_adjusted', 'sentiment_score', 'uncertainty', 'uncertainty_gauge']

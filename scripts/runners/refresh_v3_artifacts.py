@@ -15,9 +15,10 @@ What it refreshes (in order):
   6) intelligent market state (data/processed/intelligent_market_state.parquet)
   7) portfolio snapshot (data/portfolio/weekly/YYYY-MM-DD.parquet) from current weights
   8) PnL-on-paper incremental update (data/portfolio/pnl_on_paper.parquet)
-  9) daily narrative parquet (data/processed/daily_narrative.parquet)
- 10) regime transitions + intelligence feed (data/processed/regime_transitions.parquet, regime_intelligence_feed.json)
- 11) system execution log (data/processed/system_execution_log.json)
+ 9) daily narrative parquet (data/processed/daily_narrative.parquet)
+10) regime transitions + intelligence feed (data/processed/regime_transitions.parquet, regime_intelligence_feed.json)
+11) system execution log (data/processed/system_execution_log.json)
+ 12) research formula lineage + unit integrity report (reports/research/formula_lineage_and_unit_integrity_latest.json)
 
 No mock/synthetic data is generated; everything is derived from existing real
 artifacts or real market data already ingested (yfinance → csv/parquet).
@@ -1959,6 +1960,32 @@ def main() -> int:
 
     run_step("institutional_hardening", _step_institutional_hardening)
 
+    def _step_formula_lineage_unit_integrity():
+        script = PROJECT_ROOT / "scripts/runners/build_formula_lineage_unit_integrity.py"
+        out_path = PROJECT_ROOT / "reports/research/formula_lineage_and_unit_integrity_latest.json"
+        deps = [
+            PROJECT_ROOT / "data/processed/market_state.parquet",
+            PROJECT_ROOT / "data/processed/intelligent_market_state.parquet",
+            PROJECT_ROOT / "data/processed/strategy_beliefs.parquet",
+            PROJECT_ROOT / "data/processed/macro_transmission/run_metadata.json",
+            PROJECT_ROOT / "data/processed/macro_transmission/macro_expected_change.parquet",
+        ]
+        existing_deps = [p for p in deps if p.exists()]
+        if (
+            args.quick
+            and out_path.exists()
+            and existing_deps
+            and out_path.stat().st_mtime >= max(p.stat().st_mtime for p in existing_deps)
+        ):
+            return True, "Quick mode: formula lineage + unit integrity already fresh"
+        if not script.exists():
+            return False, "scripts/runners/build_formula_lineage_unit_integrity.py missing"
+        cmd = [sys.executable, "-u", "scripts/runners/build_formula_lineage_unit_integrity.py", "--timestamped"]
+        ok, msg = _run_cmd(cmd, timeout=900)
+        return ok, msg or "formula lineage + unit integrity report refreshed"
+
+    run_step("formula_lineage_unit_integrity", _step_formula_lineage_unit_integrity)
+
     def _step_integrity_audit():
         if args.skip_integrity_audit:
             return True, "Skipped by flag"
@@ -2026,6 +2053,7 @@ def main() -> int:
             "price_processor",
             "market_regime",
             "institutional_hardening",
+            "formula_lineage_unit_integrity",
             "v3_integrity_audit",
         }
         for s in steps

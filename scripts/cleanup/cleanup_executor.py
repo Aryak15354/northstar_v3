@@ -51,25 +51,21 @@ class CleanupExecutor:
         self.logger.info(f"Creating backup at: {backup_path}")
         backup_path.mkdir(parents=True, exist_ok=True)
         
-        # Backup critical files and directories
-        critical_items = [
-            "src", "scripts", "tests", "config", "docs",
-            ".kiro", "reports", "README.md", "requirements.txt"
-        ]
-        
-        for item in critical_items:
-            source = self.workspace_root / item
-            if source.exists():
-                dest = backup_path / item
-                try:
-                    if source.is_dir():
-                        shutil.copytree(source, dest, dirs_exist_ok=True)
-                    else:
-                        dest.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(source, dest)
-                    self.logger.info(f"Backed up: {item}")
-                except Exception as e:
-                    self.logger.error(f"Failed to backup {item}: {e}")
+        # Backup entire workspace (excluding the backup container itself).
+        for source in self.workspace_root.iterdir():
+            if source.name == "backups":
+                continue
+
+            dest = backup_path / source.name
+            try:
+                if source.is_dir():
+                    shutil.copytree(source, dest, dirs_exist_ok=True)
+                else:
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, dest)
+                self.logger.info(f"Backed up: {source.name}")
+            except Exception as e:
+                self.logger.error(f"Failed to backup {source.name}: {e}")
         
         self.backup_dir = backup_path
         self.logger.info(f"Backup complete: {backup_path}")

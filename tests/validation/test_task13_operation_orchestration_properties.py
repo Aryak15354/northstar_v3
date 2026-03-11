@@ -287,7 +287,10 @@ class TestOperationConfigManagerProperties:
         original_config.operation_timeout_hours = 12
         
         # Save configuration
-        config_path = Path(self.temp_dir) / f"{config_name}.yaml"
+        safe_name = "".join(c for c in config_name if c.isalnum() or c in "._-").strip("._-")
+        if not safe_name:
+            safe_name = "config"
+        config_path = Path(self.temp_dir) / f"{safe_name}.yaml"
         self.config_manager.save_config(original_config, str(config_path))
         
         # Verify file was created

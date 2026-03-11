@@ -1,0 +1,133 @@
+{
+  "generated_at": "2026-03-04T14:02:24.402320+00:00",
+  "model": "xgboost",
+  "model_params": {
+    "n_estimators": 300,
+    "learning_rate": 0.03,
+    "max_depth": 6,
+    "n_jobs": 1
+  },
+  "regime_col_used": "regime_audit",
+  "regime_policy": {
+    "active_regimes": [
+      "high_vol|downtrend",
+      "high_vol|uptrend"
+    ],
+    "invert_regimes": [
+      "high_vol|downtrend",
+      "high_vol|uptrend"
+    ]
+  },
+  "aggregate_metrics": {
+    "windows": 2.0,
+    "avg_n_obs": 11760.0,
+    "total_n_obs": 23520.0,
+    "avg_sharpe": -0.061531674065877055,
+    "avg_sortino": -0.10993326018587789,
+    "avg_max_drawdown": 0.01755856659620675,
+    "avg_calmar": -0.7414146106327724,
+    "avg_hit_rate": 0.13073979591836735,
+    "ic_mean": 0.016650001301415966,
+    "ic_std": 0.02354665765399214,
+    "top_bottom_spread_mean": 0.010852516704735492,
+    "monotonic_pass_rate": 1.0,
+    "stability_score": 0.9199471823906211,
+    "avg_turnover": 0.2578509852216748,
+    "avg_overlap": 0.3826754385964912,
+    "median_holding_days": 7.5,
+    "avg_assets_per_day": 140.0,
+    "avg_selected_assets": 28.5,
+    "avg_txn_cost_per_rebalance": 0.0005730021893814996,
+    "avg_rebalance_count": 4.5
+  },
+  "regime_rows": [
+    {
+      "regime": "high_vol|downtrend",
+      "ic": 0.1149792001557508,
+      "n_obs": 420,
+      "windows": 1,
+      "avg_sharpe": 2.8074942983651936,
+      "avg_max_drawdown": 0.0
+    },
+    {
+      "regime": "high_vol|uptrend",
+      "ic": 0.022319076145606263,
+      "n_obs": 5460,
+      "windows": 1,
+      "avg_sharpe": 0.03150471155700826,
+      "avg_max_drawdown": 0.018610640269973167
+    },
+    {
+      "regime": "low_vol|uptrend",
+      "ic": 0.0,
+      "n_obs": 13020,
+      "windows": 2,
+      "avg_sharpe": 0.0,
+      "avg_max_drawdown": 0.0
+    },
+    {
+      "regime": "low_vol|downtrend",
+      "ic": 0.0,
+      "n_obs": 4620,
+      "windows": 2,
+      "avg_sharpe": 0.0,
+      "avg_max_drawdown": 0.0
+    }
+  ],
+  "ic_diagnostics": {
+    "status": "ok",
+    "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/research/ic_diagnostics/ic_report_20260304_192654.json",
+    "prune_requested": true,
+    "prune_applied": true,
+    "n_features_input": 203,
+    "n_features_selected": 40,
+    "n_features_after_prune": 40,
+    "scope_mode_requested": "train_only",
+    "scope_mode_applied": "train_only",
+    "scope_rows_used": 58775,
+    "top_features": [
+      "shares_outstanding",
+      "vol_60d_cs_z",
+      "vol_60d",
+      "vol_60d_sector_rel",
+      "vol_60d_cs_rank",
+      "vol_20d_cs_z",
+      "vol_20d",
+      "vol_20d_sector_rel",
+      "vol_20d_cs_rank",
+      "equity",
+      "total_debt",
+      "ret_1d",
+      "ret_1d_sector_rel",
+      "ret_1d_sector_resid",
+      "ret_1d_cs_rank",
+      "ret_1d_sector_resid_cs_rank",
+      "ret_1d_cs_z",
+      "ret_1d_sector_resid_cs_z",
+      "ni_margin",
+      "res_mom20_x_liquidity_cs_z"
+    ],
+    "decay_summary_selected_features": {
+      "peak_horizon": 5.0,
+      "peak_ic": -0.011853421896054317,
+      "half_life_horizon": 20.0,
+      "signed_area": -0.08064931239942108,
+      "abs_area": 0.08904429340457493,
+      "monotonicity_score": 1.0,
+      "sign_flip_count": 1.0
+    },
+    "regime_decay_summary_selected_features": {
+      "unknown": {
+        "peak_horizon": 5.0,
+        "peak_ic": -0.011853421896054315,
+        "half_life_horizon": 20.0,
+        "signed_area": -0.08064931239942108,
+        "abs_area": 0.08904429340457491,
+        "monotonicity_score": 1.0,
+        "sign_flip_count": 1.0
+      }
+    }
+  },
+  "dataset_rows": 90000,
+  "dataset_features": 40
+}

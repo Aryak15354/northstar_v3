@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/diagnostics/structural_qualification_engine.py
+# hypothesis_version: 6.150.2
+
+[-1.0, -0.05, 0.0, 1e-12, 1e-09, 1e-08, 0.0001, 0.0004, 0.1, 0.25, 0.35, 0.4, 0.5, 0.6, 0.7, 1.0, 1.5, 2.0, 3.0, 252, 'capacity_curve', 'capacity_ok', 'correlation_spike', 'cost_ok', 'cost_sensitivity', 'crisis_replay', 'decay_ok', 'deployable', 'drift_shift', 'gross_sharpe', 'liquidity_freeze', 'marginal_ok', 'marginal_sharpe', 'max_dd', 'net_sharpe', 'reject', 'rolling_decay_slope', 'scenario', 'sharpe', 'status', 'stress_matrix', 'stress_max_dd', 'stress_ok', 'viable', 'vol_shock']

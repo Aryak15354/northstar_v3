@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/service_interfaces.py
+# hypothesis_version: 6.150.2
+
+['critical', 'degraded', 'high', 'initializing', 'low', 'medium', 'running', 'terminated']

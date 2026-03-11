@@ -16,6 +16,7 @@ import math
 import os
 import sys
 import time
+from dataclasses import asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -52,6 +53,14 @@ from src.options.upstox_adapter import UpstoxAdapter
 from src.options.v3_event_integration import create_event_publisher
 from src.integration.alpha_os_adapter import AlphaOSAdapter
 from src.sentiment.context_loader import load_sentiment_context as load_canonical_sentiment_context
+from src.runtime import (
+    DecisionMode as PRSDecisionMode,
+    PortfolioRuntimeService,
+    ProposalOrigin,
+    TradeProposal,
+    build_certification_snapshot,
+)
+from src.runtime.hash_utils import canonical_hash, file_sha256
 from src.volatility.regime_detector import VolatilityRegime
 from src.volatility.alpha_os_types import AlphaOSContext
 
@@ -274,6 +283,17 @@ class IntegratedOptionsPaperEngine:
         self.pnl_tracker = TaxAwarePnLTracker(self.config.costs, self.config.tax)
         self.trade_ledger = TradeLedger(self.config.data_paths.trade_ledger)
         self.event_publisher = create_event_publisher()
+        self.prs_enabled = str(os.getenv("NORTHSTAR_PRS_ENABLED", "1")).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        self.prs: Optional[PortfolioRuntimeService] = None
+        self.prs_cert_snapshot_hash: str = ""
+        self.prs_context: Dict[str, Any] = {}
+        if self.prs_enabled:
+            self._init_prs_runtime()
 
         self.snapshot_dir = PROJECT_ROOT / "snapshots"
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
@@ -376,6 +396,118 @@ class IntegratedOptionsPaperEngine:
         return path if path.is_absolute() else (PROJECT_ROOT / path)
 
     @staticmethod
+    def _prs_db_path() -> Path:
+        rel = str(os.getenv("NORTHSTAR_RUNTIME_DB", "data/runtime/portfolio_runtime.db") or "data/runtime/portfolio_runtime.db")
+        p = Path(rel)
+        return p if p.is_absolute() else (PROJECT_ROOT / p)
+
+    @staticmethod
+    def _prs_materialized_dir() -> Path:
+        rel = str(
+            os.getenv("NORTHSTAR_RUNTIME_MATERIALIZED_DIR", "data/processed/runtime")
+            or "data/processed/runtime"
+        )
+        p = Path(rel)
+        return p if p.is_absolute() else (PROJECT_ROOT / p)
+
+    def _build_prs_context(self) -> Dict[str, str]:
+        config_path = PROJECT_ROOT / "config/options_trading.yaml"
+        prices_path = PROJECT_ROOT / "data/processed/prices.parquet"
+        market_state_path = PROJECT_ROOT / "data/processed/market_state.parquet"
+
+        config_hash = ""
+        if config_path.exists():
+            try:
+                config_hash = file_sha256(str(config_path))
+            except Exception:
+                config_hash = ""
+
+        data_revision_hash = canonical_hash(
+            {
+                "prices_mtime_ns": prices_path.stat().st_mtime_ns if prices_path.exists() else 0,
+                "market_state_mtime_ns": market_state_path.stat().st_mtime_ns if market_state_path.exists() else 0,
+            }
+        )
+
+        model_hash = canonical_hash(
+            {
+                "strategy_generator": "EnhancedStrategyGeneratorV3",
+                "allowed_strategies": list(getattr(self.config.strategies, "allowed", []) or []),
+            }
+        )
+        param_hash = canonical_hash(
+            {
+                "exit_rules": asdict(self.config.exit_rules),
+                "greek_bands": asdict(self.config.greek_safety_bands),
+                "survival_rules": asdict(self.config.survival_rules),
+                "costs": asdict(self.config.costs),
+                "tax": asdict(self.config.tax),
+            }
+        )
+        feature_hash = canonical_hash(
+            {
+                "features": [
+                    "regime_state",
+                    "iv_rank",
+                    "skew",
+                    "term_structure_slope",
+                    "realized_vol",
+                    "sentiment_score",
+                    "portfolio_exposure",
+                ]
+            }
+        )
+        return {
+            "model_hash": model_hash,
+            "param_hash": param_hash,
+            "feature_hash": feature_hash,
+            "data_revision_hash": data_revision_hash,
+            "config_hash": config_hash,
+            "drift_guard_version": str(os.getenv("NORTHSTAR_PRS_DRIFT_GUARD_VERSION", "v1") or "v1"),
+        }
+
+    def _refresh_prs_certification_snapshot(self) -> str:
+        if self.prs is None:
+            return ""
+        self.prs_context = self._build_prs_context()
+        snapshot = build_certification_snapshot(
+            model_hash=self.prs_context["model_hash"],
+            param_hash=self.prs_context["param_hash"],
+            feature_hash=self.prs_context["feature_hash"],
+            data_revision_hash=self.prs_context["data_revision_hash"],
+            config_hash=self.prs_context["config_hash"],
+            ttl_days=int(os.getenv("NORTHSTAR_PRS_CERT_TTL_DAYS", "30") or 30),
+            drift_guard_version=self.prs_context["drift_guard_version"],
+        )
+        return str(self.prs.register_certification_snapshot(snapshot))
+
+    def _init_prs_runtime(self) -> None:
+        try:
+            if self.prs is not None:
+                try:
+                    self.prs.close()
+                except Exception:
+                    pass
+            self.prs = PortfolioRuntimeService(
+                db_path=str(self._prs_db_path()),
+                materialized_output_dir=str(self._prs_materialized_dir()),
+                starting_cash=float(self.config.capital.base_capital),
+                cert_ttl_days=int(os.getenv("NORTHSTAR_PRS_CERT_TTL_DAYS", "30") or 30),
+            )
+            self.prs_cert_snapshot_hash = self._refresh_prs_certification_snapshot()
+            logger.info(
+                "PRS runtime enabled db=%s cert_snapshot_hash=%s",
+                self._prs_db_path(),
+                self.prs_cert_snapshot_hash[:12] if self.prs_cert_snapshot_hash else "",
+            )
+        except Exception as e:
+            logger.error("Failed to initialize PRS runtime; falling back to legacy path: %s", e)
+            self.prs_enabled = False
+            self.prs = None
+            self.prs_cert_snapshot_hash = ""
+            self.prs_context = {}
+
+    @staticmethod
     def _to_ist_date(value: Any) -> Optional[date]:
         ts = pd.to_datetime(value, errors="coerce")
         if ts is None or pd.isna(ts):
@@ -421,6 +553,18 @@ class IntegratedOptionsPaperEngine:
                     reasons.append("ledger_contains_pre_today_entries")
         except Exception as e:
             logger.warning(f"Could not inspect trade ledger for today-start check: {e}")
+        if self.prs_enabled and self.prs is not None:
+            try:
+                events = self.prs.latest_events()
+                if events:
+                    ts = pd.to_datetime(
+                        [str(e.get("timestamp_utc", "")) for e in events], errors="coerce", utc=True
+                    )
+                    ts = pd.Series(ts).dropna()
+                    if not ts.empty and (ts.dt.tz_convert(IST).dt.date < today_ist).any():
+                        reasons.append("prs_event_log_contains_pre_today_entries")
+            except Exception as e:
+                logger.warning("Could not inspect PRS event log for today-start check: %s", e)
 
         if reasons:
             logger.info(
@@ -466,6 +610,8 @@ class IntegratedOptionsPaperEngine:
         position_snapshots_path = self._resolve_project_path(Path(self.config.data_paths.position_snapshots))
         regime_history_path = self._resolve_project_path(Path(self.config.data_paths.regime_history))
         iv_history_path = self._resolve_project_path(Path(self.config.data_paths.iv_history))
+        prs_db_path = self._prs_db_path()
+        prs_materialized_dir = self._prs_materialized_dir()
 
         for path in (
             self.runtime_state_path,
@@ -474,8 +620,12 @@ class IntegratedOptionsPaperEngine:
             position_snapshots_path,
             regime_history_path,
             iv_history_path,
+            prs_db_path,
         ):
             self._archive_for_reset(path, archive_dir=archive_dir)
+        if prs_materialized_dir.exists():
+            for child in prs_materialized_dir.glob("*"):
+                self._archive_for_reset(child, archive_dir=archive_dir)
 
         # Clear in-memory trade/runtime state.
         self.position_manager.open_positions.clear()
@@ -512,6 +662,8 @@ class IntegratedOptionsPaperEngine:
             self.trade_ledger._initialize_empty_ledger()
         else:
             self.trade_ledger = TradeLedger(str(ledger_path))
+        if self.prs_enabled:
+            self._init_prs_runtime()
 
         self._save_runtime_state()
         dashboard_state = self._build_dashboard_state(now, chain_cache={})
@@ -3091,6 +3243,12 @@ class IntegratedOptionsPaperEngine:
         )
 
     def _weekly_open_count(self) -> int:
+        if self.prs_enabled and self.prs is not None:
+            now_ist = _now_ist()
+            week_start_ist = (now_ist - timedelta(days=now_ist.weekday())).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            return int(self.prs.weekly_open_fill_count(week_start_ist.astimezone(pytz.UTC).isoformat()))
         try:
             df = self.trade_ledger.read_all()
         except Exception as e:
@@ -3137,10 +3295,156 @@ class IntegratedOptionsPaperEngine:
             "legs": legs,
         }
 
+    def _prs_origin_from_objective(self, objective: str) -> ProposalOrigin:
+        obj = str(objective or "").strip().lower()
+        if obj in HEDGE_OBJECTIVES:
+            return ProposalOrigin.OPTIONS_HEDGE
+        return ProposalOrigin.OPTIONS_ALPHA
+
+    def _prs_alpha_type_from_objective(self, objective: str) -> str:
+        obj = str(objective or "").strip().lower()
+        if obj in {"event_shock_hedge", "hedge_convexity", "defensive_convexity"}:
+            return "convexity"
+        if obj in {"volatility_relative_value", "vol_surface_distortion"}:
+            return "relative_value"
+        if obj in {"vol_carry", "vol_mean_reversion"}:
+            return "vol"
+        return "directional"
+
+    def _build_prs_open_proposal(
+        self,
+        *,
+        strategy: OptionStrategy,
+        objective: str,
+        underlying: str,
+        decision: Dict[str, Any],
+        now: datetime,
+    ) -> TradeProposal:
+        strategy_type = self._strategy_type_value(strategy)
+        total_qty = float(sum(abs(int(getattr(leg, "quantity", 0) or 0)) for leg in strategy.legs) or 1.0)
+        avg_price = abs(float(strategy.net_credit_debit or 0.0)) / max(1.0, total_qty)
+        side = "sell" if float(strategy.net_credit_debit or 0.0) > 0.0 else "buy"
+        notional = float(abs(strategy.max_loss or 0.0))
+        portfolio_greeks = strategy.portfolio_greeks
+        delta_per_unit = float(getattr(portfolio_greeks, "delta", 0.0) or 0.0) / max(1.0, total_qty)
+        gamma_per_unit = float(getattr(portfolio_greeks, "gamma", 0.0) or 0.0) / max(1.0, total_qty)
+        vega_per_unit = float(getattr(portfolio_greeks, "vega", 0.0) or 0.0) / max(1.0, total_qty)
+        theta_per_unit = float(getattr(portfolio_greeks, "theta", 0.0) or 0.0) / max(1.0, total_qty)
+        rho_per_unit = float(getattr(portfolio_greeks, "rho", 0.0) or 0.0) / max(1.0, total_qty)
+        sector_hint = ""
+        if isinstance(self.portfolio_overlay, dict):
+            sector_hint = str(self.portfolio_overlay.get("dominant_sector", "") or "").strip().lower()
+        signal_ts = now.strftime("%Y%m%d%H%M%S")
+        signal_id = f"sig_{str(underlying).upper()}_{signal_ts}"
+        proposal_id = f"prop_{signal_id}_{strategy_type}"
+        return TradeProposal(
+            proposal_id=proposal_id,
+            origin=self._prs_origin_from_objective(objective),
+            strategy_id=str(strategy_type),
+            signal_id=signal_id,
+            alpha_type=self._prs_alpha_type_from_objective(objective),
+            expected_edge=float((decision.get("score_breakdown") or {}).get("base_score", 0.0) or 0.0),
+            risk_score=float(notional / max(1.0, self._current_net_equity())),
+            regime_context={
+                "routed_regime": str(decision.get("routed_regime", "") or ""),
+                "objective": str(objective or ""),
+            },
+            instrument_plan={
+                "symbol": str(underlying).upper(),
+                "side": side,
+                "price": float(max(0.0, avg_price)),
+                "quantity": float(total_qty),
+                "direction": float(strategy.portfolio_greeks.delta),
+                "instrument_type": "option",
+                "greek_delta_per_unit": delta_per_unit,
+                "greek_gamma_per_unit": gamma_per_unit,
+                "greek_vega_per_unit": vega_per_unit,
+                "greek_theta_per_unit": theta_per_unit,
+                "greek_rho_per_unit": rho_per_unit,
+                "sector": sector_hint,
+                "lifecycle_action": "open",
+                "position_key": proposal_id,
+            },
+            requested_notional=float(max(0.0, notional)),
+            certification_snapshot_hash=str(self.prs_cert_snapshot_hash or ""),
+            decision_mode=PRSDecisionMode.AUTO,
+            trigger_reason_code=str(decision.get("reason", "") or "proposal.runtime.default"),
+            risk_override_flag=False,
+        )
+
+    def _build_prs_close_proposal(self, position: Position, now: datetime) -> TradeProposal:
+        signal_id = f"close_{str(position.position_id)}_{now.strftime('%Y%m%d%H%M%S')}"
+        notional = float(abs(position.current_value or position.entry_credit_debit or 0.0))
+        side = "buy" if float(position.entry_credit_debit or 0.0) > 0.0 else "sell"
+        total_qty = float(sum(abs(leg.quantity) for leg in position.legs) or 1.0)
+        pos_greeks = position.greeks or position.entry_greeks
+        delta_per_unit = float(getattr(pos_greeks, "delta", 0.0) or 0.0) / max(1.0, total_qty)
+        gamma_per_unit = float(getattr(pos_greeks, "gamma", 0.0) or 0.0) / max(1.0, total_qty)
+        vega_per_unit = float(getattr(pos_greeks, "vega", 0.0) or 0.0) / max(1.0, total_qty)
+        theta_per_unit = float(getattr(pos_greeks, "theta", 0.0) or 0.0) / max(1.0, total_qty)
+        rho_per_unit = float(getattr(pos_greeks, "rho", 0.0) or 0.0) / max(1.0, total_qty)
+        return TradeProposal(
+            proposal_id=f"prop_{signal_id}",
+            origin=ProposalOrigin.OPTIONS_ALPHA,
+            strategy_id=str(position.strategy_type or "unknown"),
+            signal_id=signal_id,
+            alpha_type="closeout",
+            expected_edge=0.0,
+            risk_score=0.0,
+            regime_context={"entry_regime": str(position.regime_at_entry)},
+            instrument_plan={
+                "symbol": str(getattr(position, "underlying", "") or ""),
+                "side": side,
+                "price": float(max(0.0, abs(position.current_value or 0.0)) / max(1.0, total_qty)),
+                "quantity": float(total_qty),
+                "instrument_type": "option",
+                "greek_delta_per_unit": delta_per_unit,
+                "greek_gamma_per_unit": gamma_per_unit,
+                "greek_vega_per_unit": vega_per_unit,
+                "greek_theta_per_unit": theta_per_unit,
+                "greek_rho_per_unit": rho_per_unit,
+                "close_only": True,
+                "lifecycle_action": "close",
+                "position_key": str(position.position_id),
+                "realized_pnl": float(position.realized_pnl or 0.0),
+            },
+            requested_notional=notional,
+            certification_snapshot_hash=str(self.prs_cert_snapshot_hash or ""),
+            decision_mode=PRSDecisionMode.AUTO,
+            trigger_reason_code=f"close.{str(position.exit_reason or 'rule')}",
+            risk_override_flag=False,
+        )
+
+    def _prs_liquidity_snapshot(self, chain: pd.DataFrame, strategy: OptionStrategy) -> Dict[str, Any]:
+        if chain.empty:
+            return {"adv_notional": 0.0, "spread_bps": 0.0, "depth_qty": 0.0, "estimated_slippage_bps": 0.0}
+        c = chain.copy()
+        c["bid"] = pd.to_numeric(c.get("bid", 0.0), errors="coerce")
+        c["ask"] = pd.to_numeric(c.get("ask", 0.0), errors="coerce")
+        c["ltp"] = pd.to_numeric(c.get("ltp", c.get("premium", 0.0)), errors="coerce")
+        spread_bps = 0.0
+        try:
+            mid = (c["bid"] + c["ask"]) / 2.0
+            spread = (c["ask"] - c["bid"]).clip(lower=0.0)
+            spread_bps = float((spread / mid.replace(0.0, np.nan)).dropna().median() * 10000.0) if not mid.empty else 0.0
+        except Exception:
+            spread_bps = 0.0
+        return {
+            "adv_notional": float(pd.to_numeric(c.get("volume", 0.0), errors="coerce").fillna(0.0).sum()),
+            "spread_bps": float(max(0.0, spread_bps)),
+            "depth_qty": float(pd.to_numeric(c.get("oi", 0.0), errors="coerce").fillna(0.0).sum()),
+            "estimated_slippage_bps": float(min(500.0, max(0.0, spread_bps * 0.6))),
+        }
+
     def run_cycle(self) -> Dict[str, Any]:
         now = _now_ist()
         logger.info(f"Running integrated options cycle at {now.isoformat(timespec='seconds')}")
         self._write_live_engine_heartbeat(now)
+        if self.prs_enabled and self.prs is not None:
+            latest_ctx = self._build_prs_context()
+            if latest_ctx != self.prs_context:
+                self.prs_context = latest_ctx
+                self.prs_cert_snapshot_hash = self._refresh_prs_certification_snapshot()
 
         if self.market_hours_only and not self._is_market_hours():
             logger.info("Skipping cycle (outside market hours)")
@@ -3552,12 +3856,53 @@ class IntegratedOptionsPaperEngine:
                 continue
 
             open_time = _now_ist()
+            prs_result = None
+            if self.prs_enabled and self.prs is not None:
+                open_proposal = self._build_prs_open_proposal(
+                    strategy=strategy,
+                    objective=str(objective_ctx.get("objective") or "balanced_overlay"),
+                    underlying=underlying,
+                    decision=decision,
+                    now=open_time,
+                )
+                liq_snapshot = self._prs_liquidity_snapshot(chain, strategy)
+                prs_result = self.prs.process_proposal(
+                    open_proposal,
+                    budget_snapshot={"reserve_usage": {}},
+                    risk_snapshot={
+                        "risk_budget_ratio": float(
+                            self._current_open_risk() / max(1e-9, self._portfolio_risk_cap_value())
+                        ),
+                        "strategy_exposure": {},
+                        "origin_exposure": {},
+                        "signal_entropy": float(self._alpha_os_entropy((self.alpha_os_last_intent or {}).get("probabilities", {}) or {})) if self.alpha_os_last_intent else 1.0,
+                    },
+                    market_snapshot={
+                        "regime_transition_probability": float((self.alpha_os_last_intent or {}).get("transition_probability", 0.0) or 0.0),
+                        "vol_percentile_jump": float((decision.get("market_context") or {}).get("vol_jump", 0.0) or 0.0),
+                        "correlation_spike": float((decision.get("market_context") or {}).get("corr_spike", 0.0) or 0.0),
+                    },
+                    market_liquidity_snapshot=liq_snapshot,
+                    certification_context=dict(self.prs_context),
+                    auto_fill=True,
+                )
+                if not bool(prs_result.approved):
+                    decision.update(
+                        {
+                            "status": "rejected_prs",
+                            "reason": str(prs_result.denial_reason or "prs_rejection"),
+                            "prs": prs_result.to_dict(),
+                        }
+                    )
+                    cycle_diag["underlyings"].append(decision)
+                    continue
             position = self.position_manager.open_position(strategy, open_time)
             position.underlying = self._normalize_underlying_symbol(
                 getattr(position, "underlying", ""),
                 fallback=underlying,
             )
-            self.trade_ledger.write_position_open(position)
+            if not self.prs_enabled:
+                self.trade_ledger.write_position_open(position)
             self.event_publisher.publish_position_opened(
                 position_id=position.position_id,
                 strategy_type=position.strategy_type,
@@ -3573,6 +3918,7 @@ class IntegratedOptionsPaperEngine:
                 "position_underlying": position.underlying,
                 "opened_max_loss": float(position.max_loss),
                 "opened_credit_debit": float(position.entry_credit_debit),
+                "prs": prs_result.to_dict() if prs_result is not None else {},
             })
             cycle_diag["underlyings"].append(decision)
 
@@ -3599,12 +3945,25 @@ class IntegratedOptionsPaperEngine:
                 exit_time=now,
                 exit_reason=exit_signal.reason.value,
             )
+            prs_close = None
+            if self.prs_enabled and self.prs is not None:
+                close_proposal = self._build_prs_close_proposal(closed_pos, now)
+                prs_close = self.prs.process_proposal(
+                    close_proposal,
+                    budget_snapshot={"reserve_usage": {}},
+                    risk_snapshot={"risk_budget_ratio": 0.0},
+                    market_snapshot={},
+                    market_liquidity_snapshot={"adv_notional": 0.0, "spread_bps": 0.0, "depth_qty": 0.0, "estimated_slippage_bps": 0.0},
+                    certification_context=dict(self.prs_context),
+                    auto_fill=True,
+                )
             trade_pnl = self.pnl_tracker.calculate_trade_pnl(closed_pos)
             self.pnl_tracker.update_ytd_tracking(trade_pnl)
             self.cumulative_net_pnl += trade_pnl.net_pnl
             if trade_pnl.net_pnl > 0:
                 profitable_closes += 1
-            self.trade_ledger.write_position_close(closed_pos, trade_pnl)
+            if not self.prs_enabled:
+                self.trade_ledger.write_position_close(closed_pos, trade_pnl)
             self.event_publisher.publish_position_closed(
                 position_id=closed_pos.position_id,
                 strategy_type=closed_pos.strategy_type,
@@ -3613,6 +3972,12 @@ class IntegratedOptionsPaperEngine:
                 exit_reason=str(closed_pos.exit_reason or "unknown"),
                 hold_duration_days=float(closed_pos.days_held),
             )
+            if prs_close is not None and (not prs_close.approved):
+                logger.warning(
+                    "PRS close proposal rejected for %s: %s",
+                    closed_pos.position_id,
+                    prs_close.denial_reason,
+                )
             closed += 1
 
         summary = self.position_manager.get_summary()

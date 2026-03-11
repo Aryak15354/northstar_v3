@@ -1,29 +1,29 @@
 {
-  "timestamp": "2026-02-27T06:00:14.044790",
+  "timestamp": "2026-03-10T06:01:00.790670",
   "data_status": {
     "market_state": {
       "exists": true,
-      "records": 64,
-      "size_mb": 0.03422069549560547
+      "records": 79,
+      "size_mb": 0.03517723083496094
     },
     "portfolio_weights": {
       "exists": true,
       "records": 30,
-      "size_mb": 0.008596420288085938
+      "size_mb": 0.008586883544921875
     },
     "strategy_beliefs": {
       "exists": true,
-      "records": 19,
-      "size_mb": 0.010245323181152344
+      "records": 67,
+      "size_mb": 0.011591911315917969
     }
   },
   "performance_metrics": {
-    "total_return": -0.020846515874073712,
-    "sharpe_ratio": -0.9528340291229596,
-    "max_drawdown": -0.02896983806074982,
-    "volatility": 0.021858534799742445,
-    "win_rate": 0.07936507936507936,
-    "as_of": "2026-02-26",
+    "total_return": -0.02418004313423283,
+    "sharpe_ratio": -1.0923732138092415,
+    "max_drawdown": -0.03228215639675558,
+    "volatility": 0.022181494210123248,
+    "win_rate": 0.08333333333333333,
+    "as_of": "2026-03-05",
     "window_days": 252
   },
   "risk_status": {

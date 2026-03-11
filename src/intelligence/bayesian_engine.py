@@ -41,9 +41,9 @@ warnings.filterwarnings('ignore')
 
 # Temporal protection
 try:
-    from intelligence.temporal_guard import TemporalGuard
+    from src.intelligence.temporal_guard import TemporalGuard
 except ImportError:
-    from TemporalGuard import TemporalGuard
+    from src.cohesion.temporal_guard import TemporalGuard
 
 # =========================== BAYESIAN SIGNAL FUSION ENGINE ===========================
 

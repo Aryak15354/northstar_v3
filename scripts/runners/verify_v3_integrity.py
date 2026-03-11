@@ -481,6 +481,71 @@ def _cross_checks() -> List[Dict[str, Any]]:
     except Exception as e:
         add("sentiment_checks", "warn", f"check_failed:{e}")
 
+    # 6) Certification lineage + macro-unit integrity coherence.
+    try:
+        p = PROJECT_ROOT / "reports/research/formula_lineage_and_unit_integrity_latest.json"
+        if not p.exists():
+            add("formula_lineage_unit_integrity", "critical", "missing_formula_lineage_report")
+        else:
+            obj = json.loads(p.read_text())
+            required_blocks = [
+                "formula_lineage",
+                "macro_unit_integrity",
+                "belief_layer_diagnostics",
+                "gate_overfitting_audit",
+            ]
+            missing = [k for k in required_blocks if not isinstance(obj.get(k), dict)]
+            if missing:
+                add(
+                    "formula_lineage_unit_integrity",
+                    "critical",
+                    "missing_required_blocks",
+                    {"missing_blocks": missing},
+                )
+            else:
+                fl = obj.get("formula_lineage", {}) if isinstance(obj.get("formula_lineage"), dict) else {}
+                mu = obj.get("macro_unit_integrity", {}) if isinstance(obj.get("macro_unit_integrity"), dict) else {}
+                belief = obj.get("belief_layer_diagnostics", {}) if isinstance(obj.get("belief_layer_diagnostics"), dict) else {}
+                anomaly = fl.get("anomaly_normalization", {}) if isinstance(fl.get("anomaly_normalization"), dict) else {}
+                flat = int(_safe_float(anomaly.get("flatline_series_count"), 0.0))
+                lim = int(_safe_float(anomaly.get("max_unexplained_flatlines"), 12.0))
+                suspicious = mu.get("suspicious_unit_usage", [])
+                suspicious_n = int(len(suspicious)) if isinstance(suspicious, list) else 0
+                report_passed = bool(obj.get("passed", True))
+                history_days = int(_safe_float(belief.get("history_days"), 0.0))
+                updates_observed = int(_safe_float(belief.get("updates_observed"), 0.0))
+
+                status = "ok"
+                msg = "formula_lineage_unit_integrity_ok"
+                if suspicious_n > 0:
+                    status = "critical"
+                    msg = "macro_unit_suspicious_usage_detected"
+                elif flat > lim:
+                    status = "critical"
+                    msg = "unexplained_flatlines_exceed_limit"
+                elif not report_passed:
+                    status = "warn"
+                    msg = "formula_lineage_report_not_passed"
+                elif history_days == 0 and updates_observed == 0:
+                    status = "warn"
+                    msg = "belief_history_not_available"
+
+                add(
+                    "formula_lineage_unit_integrity",
+                    status,
+                    msg,
+                    {
+                        "flatline_series_count": flat,
+                        "flatline_limit": lim,
+                        "macro_suspicious_count": suspicious_n,
+                        "belief_history_days": history_days,
+                        "belief_updates_observed": updates_observed,
+                        "report_passed": report_passed,
+                    },
+                )
+    except Exception as e:
+        add("formula_lineage_unit_integrity", "warn", f"check_failed:{e}")
+
     return out
 
 
@@ -516,6 +581,9 @@ def _build_specs() -> List[ArtifactSpec]:
         ArtifactSpec("data/processed/valuation_validation_regime.parquet", "parquet", required=False, key_columns=["market_regime", "horizon_days"], max_stale_days=120.0, read_columns=["market_regime", "horizon_days", "ic_mean", "spread_mean", "monotonic_rate"]),
         ArtifactSpec("data/processed/shadow_trading_snapshot.json", "json", required=False),
         ArtifactSpec("data/processed/shadow_pnl_series.parquet", "parquet", required=False, key_columns=["date", "portfolio_value"], max_stale_days=35.0, read_columns=["date", "portfolio_value", "daily_return"]),
+        ArtifactSpec("reports/research/formula_lineage_and_unit_integrity_latest.json", "json", required=True),
+        ArtifactSpec("data/processed/macro_transmission/macro_unit_profile.json", "json", required=False),
+        ArtifactSpec("data/processed/macro_transmission/macro_unit_conversion_log.json", "json", required=False),
     ]
 
 
@@ -541,7 +609,7 @@ def main() -> int:
 
     report = {
         "timestamp": _now().isoformat(),
-        "version": "v3_integrity_1.0",
+        "version": "v3_integrity_1.1",
         "summary": {
             "artifacts_checked": len(checks),
             "artifact_status": by_status,

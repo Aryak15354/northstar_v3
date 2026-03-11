@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/state_file_manager.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.05, 0.5, 1.0, 2.0, '%Y%m%d_%H%M%S', '.json', '.parquet', '.tmp', 'T', 'actual_exposure', 'allowed_exposure', 'correlation', 'date', 'datetime64[ns]', 'exposure', 'float64', 'object', 'pyarrow', 'r', 'regime', 'risk_on', 'risk_scaled_exposure', 'stress_score', 'symbol', 'var', 'volatility', 'w', 'weight']

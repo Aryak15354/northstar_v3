@@ -23,7 +23,7 @@ import sys
 import os
 
 # Add project root to path
-)))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.validation.enhanced_portfolio_simulator import EnhancedPortfolioSimulator
 

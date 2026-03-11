@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/health_calculator.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.05, 0.3, 0.4, 0.5, 1.0, 60.0, 'Empty portfolio', 'Insufficient history', 'actual_exposure', 'allowed_exposure', 'avg_daily_turnover', 'consistency', 'date', 'divergence', 'error', 'exposure', 'freshness', 'inf', 'lookback_days', 'max_age_minutes', 'note', 'risk_age_minutes', 'stability', 'symbol', 'threshold', 'threshold_minutes', 'tolerance', 'turnover', 'weight', 'weights']

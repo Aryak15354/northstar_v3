@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/external_data_interfaces.py
+# hypothesis_version: 6.150.2
+
+['.csv', '.parquet', '.txt', 'analyst_estimates', 'announced_at', 'announcement_date', 'announcement_dates', 'asof_date', 'consensus_eps', 'datasets', 'date', 'effective_date', 'eps_estimate', 'error', 'estimate_date', 'estimate_value', 'exists', 'external_data', 'index', 'index_membership', 'index_name', 'key', 'missing_any_groups', 'missing_columns', 'ok', 'path', 'row_count', 'schema_invalid', 'start_date', 'status', 'ticker', 'unknown']

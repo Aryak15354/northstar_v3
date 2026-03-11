@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence_observer/reports/weekly_intelligence_report.py
+# hypothesis_version: 6.150.2
+
+[0.0, '1.0.0', 'active', 'alert_count', 'alert_type', 'alert_types', 'alerts', 'average_confidence', 'confidence', 'executive_summary', 'generation_time', 'guardrail_status', 'high', 'historical_context', 'ignore', 'include_disclaimers', 'intelligence_alerts', 'intelligence_scores', 'key_differences', 'key_insights', 'key_similarities', 'low', 'max_alerts_displayed', 'max_scores_displayed', 'max_summary_items', 'medium', 'narrative_count', 'narrative_insights', 'narrative_type', 'narrative_types', 'observer_version', 'period_end', 'period_start', 'reflection_prompts', 'regime', 'report_id', 'report_metadata', 'report_type', 'score_count', 'score_distribution', 'score_name', 'severity', 'stress', 'timestamp', 'top_scores', 'unknown', 'value', 'w', 'weekly_intelligence']

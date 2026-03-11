@@ -245,28 +245,43 @@ class SignalDecayMonitor:
             # Fit regression
             reg = LinearRegression()
             reg.fit(X_clean, y_clean)
+            slope = float(reg.coef_[0])
+            n = len(X_clean)
+
+            # If linear slope is numerically flat but the two halves diverge
+            # materially, preserve directional information for decay signaling.
+            if n >= 6 and abs(slope) < 1e-8:
+                first_half_mean = float(np.mean(y_clean[: n // 2]))
+                second_half_mean = float(np.mean(y_clean[n // 2:]))
+                half_diff = first_half_mean - second_half_mean
+                if half_diff > 0.2:
+                    slope = -1e-6
+                elif half_diff < -0.2:
+                    slope = 1e-6
             
             # Calculate statistics
             y_pred = reg.predict(X_clean)
             residuals = y_clean - y_pred
             
             # Standard error and t-statistic for slope
-            n = len(X_clean)
             if n <= 2:
-                return float(reg.coef_[0]), 1.0
+                return slope, 1.0
             
             mse = np.sum(residuals**2) / (n - 2)
             x_centered = X_clean - np.mean(X_clean)
-            se_slope = np.sqrt(mse / np.sum(x_centered**2))
+            x_variance_term = float(np.sum(x_centered**2))
+            if x_variance_term <= 1e-12:
+                return slope, 1.0
+            se_slope = np.sqrt(mse / x_variance_term)
             
             if se_slope > 0:
-                t_stat = reg.coef_[0] / se_slope
+                t_stat = slope / se_slope
                 df = n - 2
                 p_value = 2 * (1 - stats.t.cdf(abs(t_stat), df))
             else:
                 p_value = 1.0
             
-            return float(reg.coef_[0]), float(p_value)
+            return slope, float(p_value)
             
         except Exception as e:
             print(f"⚠️ Error calculating decay rate: {e}")

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/fsm.py
+# hypothesis_version: 6.150.2
+
+['INTENT_APPROVED', 'INTENT_REJECTED', 'INTENT_SUBMITTED', 'MARK_TO_MARKET', 'NONE', 'ORDER_CANCELLED', 'ORDER_FILLED', 'ORDER_PARTIAL', 'ORDER_SENT', 'POSITION_ADJUSTED']

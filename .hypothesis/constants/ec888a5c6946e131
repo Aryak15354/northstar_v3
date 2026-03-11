@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/feature_builder.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-12, 0.5, 6.0, 'announcements', 'average', 'bulk_buy_count_5d', 'bulk_deals', 'bulk_net_volume_5d', 'coerce', 'date', 'days_since_earnings', 'earnings', 'earnings_gap_days', 'insider_buy_flag_30d', 'mean', 'order_win_count_90d', 'order_win_flag_30d', 'pledge', 'pledge_change_1q', 'pledge_high_flag', 'pledge_pct', 'rating_change_1y', 'rating_numeric', 'ratings', 'std', 'watch_negative_flag']

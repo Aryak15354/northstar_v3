@@ -1,112 +1,81 @@
-# Research Policy Configuration for Northstar V2
-# Controls research governance, freeze periods, and output restrictions
-
-# Freeze Policy
 freeze_active: true
-freeze_start_ist: "2026-02-17"
+freeze_start_ist: '2026-02-17'
 freeze_days: 60
 allow_emergency_override: true
-
-# Research Modules Configuration (legacy labs)
 modules_enabled:
   strategy_lab: true
   regime_lab: true
   covariance_lab: false
   monte_carlo_lab: false
   parameter_optimizer: false
-
-# Output Restrictions and Governance
 output_restrictions:
   mark_non_actionable_during_freeze: true
   require_manual_promotion: true
   block_auto_parameter_deployment: true
   require_operator_approval: true
-
-# Research Execution Limits
 execution_limits:
   max_concurrent_analyses: 2
   max_analysis_duration_minutes: 30
   memory_limit_mb: 1024
-  cpu_priority: "low"
-
-# Research Output Management
+  cpu_priority: low
 output_management:
-  output_directory: "data/research"
+  output_directory: data/research
   max_output_files: 100
   compress_old_outputs: true
   retention_days: 90
-
-# Model Registry Configuration
 model_registry:
-  registry_path: "data/model_registry"
+  registry_path: data/model_registry
   candidate_promotion_requires_approval: true
   production_deployment_requires_approval: true
   archive_old_models: true
-
   states:
-    candidate: "Under evaluation"
-    production: "Active in trading"
-    archived: "Retired from use"
-
+    candidate: Under evaluation
+    production: Active in trading
+    archived: Retired from use
   promotion_criteria:
     min_backtest_period_days: 90
     min_sharpe_ratio: 1.2
     max_drawdown_threshold: 0.08
     stability_period_days: 14
     manual_review_required: true
-
-# Research Scheduling
 scheduling:
   run_during_market_hours: false
   preferred_run_times:
-    - "16:30"
-    - "08:30"
+  - '16:30'
+  - 08:30
   max_daily_runs: 4
   skip_on_high_cpu: true
   skip_on_high_memory: true
-
-# Research Quality Controls
+runtime_policy:
+  enable_legacy_labs: false
+  pause_scheduled_until_burn_in: true
 quality_controls:
   validate_outputs: true
   require_confidence_scores: true
   min_confidence_threshold: 0.6
   cross_validate_results: true
-
-# Alert and Notification Settings
 alerts:
   notify_on_freeze_violations: true
   notify_on_failed_analyses: true
   notify_on_low_confidence: true
-
   thresholds:
     analysis_failure_rate: 0.2
     low_confidence_rate: 0.5
-
-# Integration with Live System
 live_integration:
   feed_results_to_live_system: true
   respect_live_system_mode: true
   throttle_during_market_stress: true
-
-# Development and Testing
 development:
   enable_debug_logging: false
   save_intermediate_results: false
   mock_heavy_computations: false
   fast_mode: false
-
-# Compliance and Audit
 compliance:
   log_all_research_activities: true
   track_output_usage: true
   maintain_research_lineage: true
-
-  audit_log_path: "data/research/audit_log.parquet"
-  research_lineage_path: "data/research/research_lineage.json"
-
-# -------------------------------------------------------------------
-# Historical Research Kernel (new primary path)
-# -------------------------------------------------------------------
+  audit_log_path: data/research/audit_log.parquet
+  research_lineage_path: data/research/research_lineage.json
 historical_research:
   enabled: true
   random_state: 42
@@ -118,15 +87,18 @@ historical_research:
   hyperopt_calls: 12
   candidate_acceptance_threshold: 0.65
   simulation_initial_capital: 1000000
-
   dataset:
-    prices_path: "data/processed/prices.parquet"
-    fundamentals_path: "data/processed/fundamentals.parquet"
-    valuation_posterior_path: "data/processed/valuation_posterior.parquet"
-    sentiment_company_path: "data/sentiment/v3/company_sentiment_trends.parquet"
-    sentiment_market_path: "data/sentiment/v3/market_sentiment_india.parquet"
+    prices_path: data/processed/prices.parquet
+    fundamentals_path: data/processed/fundamentals.parquet
+    valuation_posterior_path: data/processed/valuation_posterior.parquet
+    sentiment_company_path: data/sentiment/v3/company_sentiment_trends.parquet
+    sentiment_market_path: data/sentiment/v3/market_sentiment_india.parquet
     strict_real_data_only: true
-    strict_required_artifacts: ["prices", "fundamentals", "macro", "valuation_posterior"]
+    strict_required_artifacts:
+    - prices
+    - fundamentals
+    - macro
+    - valuation_posterior
     artifact_min_rows:
       prices: 2000
       fundamentals: 400
@@ -134,25 +106,49 @@ historical_research:
       valuation_posterior: 400
       sentiment_company: 100
       sentiment_market: 5
-    reject_source_keywords: ["mock", "synthetic", "sample_data", "demo_data", "toy_data"]
-    live_returns_cutover_date: "2026-01-18"
-    target_col: "forward_return_5d"
+    reject_source_keywords:
+    - mock
+    - synthetic
+    - sample_data
+    - demo_data
+    - toy_data
+    live_returns_cutover_date: '2026-01-18'
+    target_col: forward_return_5d
     target_horizon_days: 5
-    target_mode: "rank"
+    target_mode: rank
     target_sector_residualize: true
     target_market_residualize: false
     target_residual_window_days: 252
     target_residual_min_obs: 80
-    target_binary_quantile: 0.80
-    target_vol_col: "vol_20d"
+    target_binary_quantile: 0.8
+    target_vol_col: vol_20d
     target_cross_sectional_zscore: false
     target_zscore_clip_abs: 6.0
     feature_cross_sectional_zscore: true
     feature_zscore_clip_abs: 8.0
+    use_et500_features: false
+    use_et500_universe_filter: false
+    et500_membership_path: data/reference/et500_pit_membership.csv
+    use_screener_features: true
+    screener_fundamentals_path: data/processed/screener_fundamentals_annual.csv
+    screener_shareholding_path: data/processed/screener_shareholding.csv
+    use_alternative_features: true
+    alternative_data_path: data/processed/alternative/
+    alternative_features_available:
+      bulk_deals: true
+      promoter_pledge: true
+      earnings_dates: true
+      credit_ratings: true
+      order_announcements: false
+    use_sentiment_features: false
+    use_sentiment_regime: false
+    sentiment_path: data/processed/sentiment/ticker_sentiment_daily.parquet
+    market_sentiment_path: data/processed/sentiment/market_sentiment_daily.parquet
+    sentiment_duckdb_path: data/sentiment.duckdb
+    use_macro_features: false
     lookback_days: 3650
     max_tickers: 250
     max_rows: 200000
-
   training:
     train_periods: 756
     valid_periods: 126
@@ -164,12 +160,14 @@ historical_research:
     holdout_test_end_date: null
     holdout_valid_periods: null
     holdout_min_train_periods: 252
-
   ic_diagnostics:
     enabled: false
     prune_features: false
-    output_dir: "data/research/ic_diagnostics"
-    horizons: [5, 10, 20]
+    output_dir: data/research/ic_diagnostics
+    horizons:
+    - 5
+    - 10
+    - 20
     min_obs_per_day: 25
     max_regimes_to_report: 4
     min_regime_days: 30
@@ -179,31 +177,28 @@ historical_research:
     min_keep_features: 15
     max_keep_features: 40
     max_features_to_analyze: 0
-
   portfolio_construction:
-    long_short_quantile: 0.20
+    long_short_quantile: 0.2
     min_assets_per_day: 8
-    max_weight_per_asset: 0.10
+    max_weight_per_asset: 0.1
     use_vol_scaling: true
     rebalance_frequency_days: 1
     sector_neutralize: false
     max_sector_weight: 1.0
-    transaction_cost_bps_per_side: 0.0
-
+    transaction_cost_bps_per_side: 5.0
   structural_promotion_gate:
     enabled: false
     min_peak_horizon: 80
     min_half_life_horizon: 80
-    min_monotonicity_score: 0.80
+    min_monotonicity_score: 0.8
     min_peak_ic: 0.05
-
   alpha_factory:
     enabled: true
-    output_dir: "data/research/alpha_factory"
+    output_dir: data/research/alpha_factory
     max_rows: 120000
-    date_col: "date"
-    ticker_col: "ticker"
-    regime_col: "regime"
+    date_col: date
+    ticker_col: ticker
+    regime_col: regime
     window_isolated_oos: true
     oos_train_periods: 756
     oos_valid_periods: 126
@@ -219,16 +214,16 @@ historical_research:
     corr_prune_threshold: 0.85
     min_features_per_family: 1
     max_features_per_family: 20
-    long_short_quantile: 0.20
+    long_short_quantile: 0.2
     min_assets_per_day: 12
     blend_lookback_periods: 756
     covariance_shrinkage: 0.65
-    covariance_eigen_floor: 1.0e-4
-    covariance_ridge: 1.0e-6
+    covariance_eigen_floor: 0.0001
+    covariance_ridge: 1.0e-06
     transaction_cost_penalty: 0.0
-    allocation_turnover_cap: 0.20
+    allocation_turnover_cap: 0.2
     long_only: false
-    max_abs_weight: 0.60
+    max_abs_weight: 0.6
     target_gross: 1.0
     target_annual_vol: 0.15
     periods_per_year: 252
@@ -236,18 +231,19 @@ historical_research:
     corr_lookback_periods: 60
     theoretical_base_ic: 0.02
     theoretical_n_signals: 200
-    theoretical_corr_grid: [0.05, 0.10, 0.20]
+    theoretical_corr_grid:
+    - 0.05
+    - 0.1
+    - 0.2
     manual_family_map: {}
-
   enabled_models:
-    - lightgbm
-    - xgboost
-    - catboost
-    - random_forest
-    - lstm
-    - tcn
-    - transformer
-
+  - lightgbm
+  - xgboost
+  - catboost
+  - random_forest
+  - lstm
+  - tcn
+  - transformer
   model_params:
     transformer:
       lookback: 30
@@ -261,7 +257,6 @@ historical_research:
       patience: 4
       lr: 0.001
       risk_quantile: 0.2
-
   n_macro_factors: 3
   hmm:
     n_states: 3
@@ -270,48 +265,110 @@ historical_research:
     n_init: 10
     min_samples_per_state: 40
     allow_kmeans_fallback: false
-
   mc_paths: 3000
   mc_horizon: 20
   mc_fit_rows: 50000
   mc_stress_multiplier: 1.0
   weekend_mc_paths: 6000
   weekend_mc_horizon: 30
-  weekend_scenario_multipliers: [0.8, 1.0, 1.2, 1.5, 1.8]
+  weekend_scenario_multipliers:
+  - 0.8
+  - 1.0
+  - 1.2
+  - 1.5
+  - 1.8
   model_cooldown_seconds: 25
-
-  # Self-awareness and autonomous exploration controls
   mutation_rate: 0.25
   options_opportunity_max_rows: 60
-  live_returns_cutover_date: "2026-01-18"
-
+  live_returns_cutover_date: '2026-01-18'
   weekend_only_tasks:
     extended_scenario_sweep: true
-
-  experiment_path: "data/research/experiments.ndjson"
-  memory_path: "data/research/research_memory.json"
-
-  # Continuous autonomous workload budgeting (M1-safe defaults).
+  experiment_path: data/research/experiments.ndjson
+  memory_path: data/research/research_memory.json
   autonomous_budget:
     max_models_weekday: 7
     max_models_weekend: 7
-    model_priority: [transformer, lightgbm, xgboost, catboost, random_forest, lstm, tcn]
+    model_priority:
+    - transformer
+    - lightgbm
+    - xgboost
+    - catboost
+    - random_forest
+    - lstm
+    - tcn
     mc_paths_weekday: 2500
     mc_horizon_weekday: 18
     mc_paths_weekend: 7000
     mc_horizon_weekend: 35
-
-  # Relationship discovery for macro/company structural signal mining.
   relationship_discovery:
     top_k: 30
     max_features: 60
-    lags: [1, 3, 5, 10, 20]
+    lags:
+    - 1
+    - 3
+    - 5
+    - 10
+    - 20
     structural_shift_abs_corr: 0.08
-
-  # Autonomous mutation/evaluation loop (proposal-only; governance still gates live use).
   autonomous_exploration:
     enabled: true
     variants_weekday: 1
     variants_weekend: 3
     mutation_rate: 0.25
     evaluation_max_windows: 1
+  certification:
+    enabled: true
+    mode: enforce
+    state_path: data/research/certification_state.json
+    approved_dependency_change_window: false
+    transaction_cost_floor_bps: 5.0
+    burn_in_cycles_required: 20
+    burn_in_regimes_required: 2
+    allow_single_regime_provisional: true
+    delisted_assets_min: 0.99
+    max_pairwise_corr: 0.99
+    max_holdings_overlap: 0.95
+    overlap_persistence_threshold: 0.7
+    turnover_zero_streak_limit: 3
+    turnover_min_rebalances: 10
+    min_exposure_variance: 0.0001
+    max_family_weight_hard: 0.45
+    max_family_weight_soft: 0.35
+    corr_drift_hard: 0.1
+    min_family_entropy: 0.55
+    allocation_l1_step_max: 0.35
+    allocation_l1_streak_limit: 3
+    regime_effectiveness_min_delta_sharpe: 0.15
+    regime_effectiveness_min_delta_return_ann: 0.015
+    regime_effectiveness_min_delta_dd: 0.01
+    min_trials_weekday: 12
+    min_trials_weekend: 20
+    min_objective_variance: 1.0e-06
+    max_rolling_param_stability: 0.35
+    bootstrap_sharpe_p05_min: 0.0
+    block_bootstrap_dd_p95_max: 0.35
+    ruin_x1_max: 0.02
+    ruin_x2_max: 0.07
+    ruin_x3_max: 0.15
+    sample_coverage_min: 1.0
+    regime_coverage_min: 0.67
+    bootstrap_conf_width_max: 1.5
+    advisory_persistence_limit: 5
+    advisory_ic_half_life_min: 20.0
+    advisory_regime_entropy_min: 0.2
+    max_certification_runtime_sec: 180
+    max_certification_runtime_share: 0.6
+    max_cycle_runtime_sec: 2400
+    max_peak_rss_mb: 4096
+    max_threads: 1
+    lineage_min_cv: 1.0e-05
+    lineage_min_obs: 5
+    lineage_max_unexplained_flatlines: 12
+    require_macro_unit_metadata: false
+    macro_percent_abs_expected_change_max: 1.0
+    macro_fx_abs_expected_change_max: 0.25
+    shadow_relaxed_audit_enabled: true
+    shadow_relaxed_threshold_factor: 1.2
+    belief_min_history_days_for_strict_eval: 20
+use_sentiment_features: true
+use_sentiment_regime: true

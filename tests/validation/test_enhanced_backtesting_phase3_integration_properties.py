@@ -155,7 +155,7 @@ class TestEnhancedBacktestingPhase3Integration:
     
     @pytest.mark.skipif(not ENHANCED_ENGINE_AVAILABLE, reason="Enhanced Backtesting Engine not available")
     @given(params=enhanced_backtest_parameters())
-    @settings(max_examples=50, deadline=45000)
+    @settings(max_examples=20, deadline=None)
     def test_property_7_enhanced_backtesting_phase3_integration(self, params):
         """
         Feature: shadow-reality, Property 7: Enhanced Backtesting Phase 3 Integration

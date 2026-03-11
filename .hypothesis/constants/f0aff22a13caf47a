@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/shock_engine.py
+# hypothesis_version: 6.150.2
+
+[-0.2, -0.05, 0.0, 0.2, 0.5, 1.0, 1.35, 2.0, 'CORRELATION_SPIKE', 'POST_EVENT_VOL_CRUSH', 'VOL_SPIKE_2SIGMA', 'correlation', 'gross_exposure', 'net_delta', 'net_gamma', 'net_theta', 'net_vega', 'underlying_gap_pct', 'vol_crush_pct', 'vol_shock', 'vol_sigma']

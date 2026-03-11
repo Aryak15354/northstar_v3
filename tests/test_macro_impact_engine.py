@@ -81,6 +81,20 @@ def test_preprocessor_initialization():
     assert preprocessor.winsorize_pct == 0.01
 
 
+def test_macro_percent_normalization_skips_fx_levels():
+    df = pd.DataFrame(
+        {
+            "Policy Repo Rate (%)": [6.5, 6.5, 6.5],
+            "Exchange Rate INR per USD": [83.2, 83.5, 83.1],
+        }
+    )
+    norm, log = MacroDataLoader._normalize_percent_like_columns(df)
+    assert "Policy Repo Rate (%)" in log
+    assert np.isclose(float(norm["Policy Repo Rate (%)"].iloc[0]), 0.065)
+    assert "Exchange Rate INR per USD" not in log
+    assert np.isclose(float(norm["Exchange Rate INR per USD"].iloc[0]), 83.2)
+
+
 def test_stationarity_check(sample_macro_data):
     """Test stationarity checking"""
     preprocessor = MacroPreprocessor()

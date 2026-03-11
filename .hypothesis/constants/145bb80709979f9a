@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/alpha_lab/alpha_lab_controller.py
+# hypothesis_version: 6.150.2
+
+[-0.5, 0.0, 0.4, 0.6, 0.7, 5.0, 200, 'aggregate_metrics', 'avg_sharpe', 'candidate', 'evaluated', 'evaluated_count', 'fold_id', 'fold_rows', 'fold_sharpe_crash', 'hypothesis_name', 'max_dd', 'max_drawdown', 'metrics', 'no_fold_rows', 'parameter_hash', 'params', 'phase2_disabled', 'phase2_reason', 'phase2_reject', 'phase2_status', 'promote', 'promoted', 'promotion_count', 'promotion_id', 'promotions', 'reason', 'regime', 'reject_reason', 'result', 'robustness', 'robustness_score', 'sharpe', 'stability_score', 'status', 'stress_drag', 'surface_metrics', 'survivor_count', 'survivors', 'test_end', 'test_sharpe', 'test_start', 'train_end', 'train_sharpe', 'train_start', 'turnover', 'unknown', 'utf-8', 'windows']

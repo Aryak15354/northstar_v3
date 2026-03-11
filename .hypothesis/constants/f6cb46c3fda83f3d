@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/backtest_simulation_engine.py
+# hypothesis_version: 6.150.2
+
+[-0.02, 0.0, 0.015, 0.02, 500000.0, 100, 252, 2024, '=', 'BANKNIFTY', 'Backtest Results', 'NIFTY', 'Test complete', '__main__', 'ask', 'bid', 'date', 'equity', 'expiry', 'expiry_approaching', 'iv_rank', 'net_pnl', 'option_type', 'profit_target', 'stop_loss', 'strike']

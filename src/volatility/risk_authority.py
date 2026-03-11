@@ -22,7 +22,7 @@ Key Principles:
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from enum import Enum
 import threading
 import json
@@ -90,6 +90,43 @@ class RiskLimits:
     emergency_stop_loss: float = 0.25      # 25% emergency stop loss
     emergency_max_exposure: float = 0.50   # 50% max exposure in emergency
 
+@dataclass
+class RiskValidationResult:
+    """Compatibility validation result used by legacy risk tests."""
+    is_valid: bool
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class RiskConfiguration:
+    """Compatibility risk configuration object with consistency checks."""
+    max_position_size: float = 0.08
+    max_sector_exposure: float = 0.30
+    max_drawdown_threshold: float = 0.40
+    crisis_drawdown_threshold: float = 0.15
+    emergency_max_exposure: float = 0.50
+
+    def validate_consistency(self) -> RiskValidationResult:
+        errors: List[str] = []
+
+        # Keep position sizing feasible inside sector cap.
+        if self.max_position_size * 4 > self.max_sector_exposure:
+            errors.append(
+                "max_position_size exceeds sector limit feasibility "
+                "(max_position_size * 4 > max_sector_exposure)"
+            )
+
+        if self.crisis_drawdown_threshold >= self.max_drawdown_threshold:
+            errors.append("crisis_drawdown_threshold must be below max_drawdown_threshold")
+
+        return RiskValidationResult(
+            is_valid=not errors,
+            errors=errors,
+            warnings=[],
+            metadata={}
+        )
+
 
 @dataclass
 class RiskViolation:
@@ -131,8 +168,37 @@ class UnifiedRiskAuthority:
     - R4: Position Size Limits
     """
     
-    def __init__(self, config_file: str = "config/risk.yaml"):
-        self.config_file = config_file
+    def __init__(self,
+                 config_file: str = "config/risk.yaml",
+                 state_manager=None,
+                 risk_authority=None,
+                 audit_logger=None):
+        """
+        Initialize unified risk authority.
+
+        Backward compatibility:
+        legacy callers sometimes pass configuration/state/logger objects in the
+        first positional slots (old RiskAuthority/RiskEngine signatures). Those
+        objects are accepted and stored without changing core behavior.
+        """
+        if isinstance(config_file, str):
+            resolved_config_file = config_file
+            resolved_state_manager = state_manager
+            resolved_audit_logger = audit_logger
+            resolved_parent_authority = risk_authority
+        else:
+            # Legacy signature compatibility:
+            #   UnifiedRiskAuthority(config_manager, audit_logger)
+            #   UnifiedRiskAuthority(config_manager, state_manager, risk_authority)
+            resolved_config_file = "config/risk.yaml"
+            resolved_state_manager = state_manager
+            resolved_audit_logger = state_manager if risk_authority is None else audit_logger
+            resolved_parent_authority = risk_authority
+
+        self.config_file = resolved_config_file
+        self.state_manager = resolved_state_manager
+        self.audit_logger = resolved_audit_logger
+        self.parent_risk_authority = resolved_parent_authority
         self.limits = RiskLimits()
         self._lock = threading.RLock()
         
@@ -161,6 +227,16 @@ class UnifiedRiskAuthority:
             'low-vol': {'max_exposure': 1.00, 'max_position': 0.08, 'vol_target': 0.20},
             'transition': {'max_exposure': 0.70, 'max_position': 0.06, 'vol_target': 0.15}
         }
+
+        # Parameter authority tracking for update arbitration.
+        self._parameter_authority: Dict[str, AuthorityLevel] = {}
+
+        # Legacy crisis windows used by validation/property tests.
+        self.historical_crises: List[Dict[str, datetime]] = [
+            {'name': 'GFC_2008', 'start': datetime(2008, 9, 1), 'end': datetime(2009, 3, 31)},
+            {'name': 'COVID_2020', 'start': datetime(2020, 2, 1), 'end': datetime(2020, 5, 31)},
+            {'name': 'INFLATION_2022', 'start': datetime(2022, 1, 1), 'end': datetime(2022, 12, 31)},
+        ]
         
         logger.info("Unified Risk Authority initialized")
     
@@ -973,13 +1049,158 @@ class UnifiedRiskAuthority:
     # ========================================================================
     # RISK INVARIANTS VALIDATION
     # ========================================================================
+
+    def _normalize_authority(self, authority_level: Any) -> AuthorityLevel:
+        """Normalize external authority enums/strings to local AuthorityLevel."""
+        if isinstance(authority_level, AuthorityLevel):
+            return authority_level
+        if hasattr(authority_level, 'name'):
+            name = str(authority_level.name)
+            if name in AuthorityLevel.__members__:
+                return AuthorityLevel[name]
+        if isinstance(authority_level, str) and authority_level in AuthorityLevel.__members__:
+            return AuthorityLevel[authority_level]
+        return AuthorityLevel.SYSTEM
+
+    def get_risk_parameters(self) -> Dict[str, float]:
+        """Return current risk parameters as a plain dictionary."""
+        return asdict(self.limits)
+
+    def update_risk_parameters(self,
+                               updates: Dict[str, Any],
+                               authority_level: Any = AuthorityLevel.SYSTEM,
+                               set_by: str = "system",
+                               reason: str = "") -> RiskValidationResult:
+        """
+        Update risk parameters with authority arbitration and consistency checks.
+        """
+        authority = self._normalize_authority(authority_level)
+        errors: List[str] = []
+
+        if not isinstance(updates, dict) or not updates:
+            return RiskValidationResult(
+                is_valid=False,
+                errors=["No parameter updates provided"],
+                warnings=[],
+                metadata={}
+            )
+
+        pending = self.get_risk_parameters()
+
+        for key, value in updates.items():
+            if key not in pending:
+                errors.append(f"Unknown risk parameter: {key}")
+                continue
+
+            current_authority = self._parameter_authority.get(key, AuthorityLevel.SYSTEM)
+            if authority.value > current_authority.value:
+                errors.append(
+                    f"Insufficient authority to update {key}: "
+                    f"{authority.name} cannot override {current_authority.name}"
+                )
+                continue
+
+            pending[key] = value
+
+        # Validate cross-parameter consistency before committing.
+        config_check = RiskConfiguration(
+            max_position_size=float(pending.get('max_position_size', self.limits.max_position_size)),
+            max_sector_exposure=float(pending.get('max_sector_exposure', self.limits.max_sector_exposure)),
+            max_drawdown_threshold=float(pending.get('max_drawdown_threshold', self.limits.max_drawdown_threshold)),
+            crisis_drawdown_threshold=float(pending.get('crisis_drawdown_threshold', self.limits.crisis_drawdown_threshold)),
+            emergency_max_exposure=float(pending.get('emergency_max_exposure', self.limits.emergency_max_exposure)),
+        ).validate_consistency()
+
+        if not config_check.is_valid:
+            errors.extend(config_check.errors)
+
+        if errors:
+            return RiskValidationResult(
+                is_valid=False,
+                errors=errors,
+                warnings=[],
+                metadata={'set_by': set_by, 'reason': reason}
+            )
+
+        for key, value in updates.items():
+            if key in self.get_risk_parameters():
+                setattr(self.limits, key, value)
+                self._parameter_authority[key] = authority
+
+        self._audit_log('risk_parameter_update', {
+            'updates': updates,
+            'authority_level': authority.name,
+            'set_by': set_by,
+            'reason': reason
+        })
+
+        return RiskValidationResult(
+            is_valid=True,
+            errors=[],
+            warnings=[],
+            metadata={'set_by': set_by, 'reason': reason}
+        )
+
+    def calculate_portfolio_risk(self, portfolio: Dict[str, Any]) -> Dict[str, Any]:
+        """Compute basic portfolio risk metrics used by validation tests."""
+        positions = portfolio.get('positions', {}) or {}
+        nav_history = portfolio.get('nav_history', []) or []
+
+        gross_exposure = sum(abs(pos.get('weight', 0.0)) for pos in positions.values())
+        max_position = max((abs(pos.get('weight', 0.0)) for pos in positions.values()), default=0.0)
+
+        sector_exposures: Dict[str, float] = {}
+        for pos in positions.values():
+            sector = pos.get('sector', 'Unknown')
+            sector_exposures[sector] = sector_exposures.get(sector, 0.0) + abs(pos.get('weight', 0.0))
+
+        peak = nav_history[0] if nav_history else portfolio.get('nav', 1.0)
+        max_drawdown = 0.0
+        for nav in nav_history:
+            if nav > peak:
+                peak = nav
+            drawdown = (peak - nav) / peak if peak > 0 else 0.0
+            max_drawdown = max(max_drawdown, drawdown)
+
+        return {
+            'gross_exposure': gross_exposure,
+            'max_position_size': max_position,
+            'sector_exposures': sector_exposures,
+            'max_drawdown': max_drawdown
+        }
+
+    def check_risk_limits(self, portfolio: Dict[str, Any]) -> RiskValidationResult:
+        """Validate portfolio against position and sector exposure constraints."""
+        errors: List[str] = []
+        metrics = self.calculate_portfolio_risk(portfolio)
+        positions = portfolio.get('positions', {}) or {}
+
+        for symbol, pos in positions.items():
+            size = abs(pos.get('weight', 0.0))
+            if size > self.limits.max_position_size:
+                errors.append(
+                    f"Position limit breach for {symbol}: {size:.2%} > {self.limits.max_position_size:.2%}"
+                )
+
+        for sector, exposure in metrics['sector_exposures'].items():
+            if exposure > self.limits.max_sector_exposure:
+                errors.append(
+                    f"Sector limit breach for {sector}: {exposure:.2%} > {self.limits.max_sector_exposure:.2%}"
+                )
+
+        return RiskValidationResult(
+            is_valid=not errors,
+            errors=errors,
+            warnings=[],
+            metadata={'metrics': metrics}
+        )
     
     def validate_capital_conservation(self,
                                     previous_nav: float,
                                     current_nav: float,
                                     pnl: float,
                                     costs: float,
-                                    tolerance: float = 0.0001) -> Tuple[bool, str]:
+                                    tolerance: float = 0.0001) -> RiskValidationResult:
         """
         Validate R1: Capital Conservation invariant.
         
@@ -993,7 +1214,7 @@ class UnifiedRiskAuthority:
             tolerance: Tolerance for rounding errors (default 0.01%)
             
         Returns:
-            (is_valid, error_message)
+            RiskValidationResult
         """
         expected_nav = previous_nav + pnl - costs
         nav_difference = abs(current_nav - expected_nav)
@@ -1019,34 +1240,92 @@ class UnifiedRiskAuthority:
                 'relative_difference': relative_difference
             })
             
-            return False, error_msg
+            return RiskValidationResult(
+                is_valid=False,
+                errors=[error_msg],
+                warnings=[],
+                metadata={
+                    'previous_nav': previous_nav,
+                    'current_nav': current_nav,
+                    'expected_nav': expected_nav,
+                    'pnl': pnl,
+                    'costs': costs
+                }
+            )
         
-        return True, ""
+        return RiskValidationResult(
+            is_valid=True,
+            errors=[],
+            warnings=[],
+            metadata={
+                'previous_nav': previous_nav,
+                'current_nav': current_nav,
+                'expected_nav': expected_nav,
+                'pnl': pnl,
+                'costs': costs
+            }
+        )
     
-    def validate_crisis_derisking(self,
-                                crisis_start: datetime,
-                                pre_crisis_exposure: float,
-                                current_exposure: float) -> Tuple[bool, str]:
+    def validate_crisis_derisking(self, *args, **kwargs) -> RiskValidationResult:
         """
         Validate R2: Crisis De-Risking invariant.
-        
-        For any crisis condition, exposure must be reduced within timeframes.
-        
-        Args:
-            crisis_start: When crisis started
-            pre_crisis_exposure: Exposure before crisis
-            current_exposure: Current exposure
-            
-        Returns:
-            (is_valid, error_message)
+
+        Supports both legacy signatures:
+        1) validate_crisis_derisking(crisis_start, pre_crisis_exposure, current_exposure)
+        2) validate_crisis_derisking(crisis_period=..., portfolio_history=...)
         """
+        if 'crisis_period' in kwargs and 'portfolio_history' in kwargs:
+            crisis_period = kwargs['crisis_period']
+            portfolio_history = kwargs['portfolio_history'] or []
+            if len(portfolio_history) < 2:
+                return RiskValidationResult(is_valid=True, errors=[], warnings=["Insufficient history"], metadata={})
+
+            crisis_start = crisis_period.get('start', datetime.now())
+            pre_crisis_exposure = self.calculate_portfolio_risk(portfolio_history[0])['gross_exposure']
+            required_reduction = self.limits.crisis_derisking_target
+            timeframe_days = self.limits.crisis_derisking_timeframe
+
+            for portfolio in portfolio_history[1:]:
+                ts = portfolio.get('timestamp', datetime.now())
+                days_since_crisis = (ts - crisis_start).days
+                if days_since_crisis > timeframe_days:
+                    continue
+                current_exposure = self.calculate_portfolio_risk(portfolio)['gross_exposure']
+                if pre_crisis_exposure > 0:
+                    actual_reduction = (pre_crisis_exposure - current_exposure) / pre_crisis_exposure
+                    if actual_reduction < required_reduction:
+                        msg = (
+                            f"Crisis de-risking insufficient: required {required_reduction:.1%}, "
+                            f"achieved {actual_reduction:.1%}"
+                        )
+                        return RiskValidationResult(
+                            is_valid=False,
+                            errors=[msg],
+                            warnings=[],
+                            metadata={'required_reduction': required_reduction, 'actual_reduction': actual_reduction}
+                        )
+
+            return RiskValidationResult(is_valid=True, errors=[], warnings=[], metadata={})
+
+        if len(args) >= 3:
+            crisis_start = args[0]
+            pre_crisis_exposure = args[1]
+            current_exposure = args[2]
+        else:
+            crisis_start = kwargs.get('crisis_start', datetime.now())
+            pre_crisis_exposure = kwargs.get('pre_crisis_exposure', 0.0)
+            current_exposure = kwargs.get('current_exposure', 0.0)
+
         days_since_crisis = (datetime.now() - crisis_start).days
-        
+
         if days_since_crisis > self.limits.crisis_derisking_timeframe:
-            return True, ""  # Past timeframe, no longer enforced
+            return RiskValidationResult(is_valid=True, errors=[], warnings=[], metadata={})
         
         required_reduction = self.limits.crisis_derisking_target
-        actual_reduction = (pre_crisis_exposure - current_exposure) / pre_crisis_exposure
+        actual_reduction = (
+            (pre_crisis_exposure - current_exposure) / pre_crisis_exposure
+            if pre_crisis_exposure > 0 else 0.0
+        )
         
         is_valid = actual_reduction >= required_reduction
         
@@ -1066,11 +1345,51 @@ class UnifiedRiskAuthority:
                 'current_exposure': current_exposure
             })
             
-            return False, error_msg
+            return RiskValidationResult(
+                is_valid=False,
+                errors=[error_msg],
+                warnings=[],
+                metadata={
+                    'days_since_crisis': days_since_crisis,
+                    'required_reduction': required_reduction,
+                    'actual_reduction': actual_reduction
+                }
+            )
         
-        return True, ""
+        return RiskValidationResult(
+            is_valid=True,
+            errors=[],
+            warnings=[],
+            metadata={
+                'days_since_crisis': days_since_crisis,
+                'required_reduction': required_reduction,
+                'actual_reduction': actual_reduction
+            }
+        )
+
+    def validate_risk_of_ruin_protection(self, portfolio_history: List[Dict[str, Any]]) -> RiskValidationResult:
+        """Compatibility wrapper for historical crisis drawdown validation."""
+        max_crisis_drawdown = 0.0
+        for crisis in self.historical_crises:
+            crisis_portfolios = [
+                p for p in portfolio_history
+                if crisis['start'] <= p.get('timestamp', datetime.min) <= crisis['end']
+            ]
+            if len(crisis_portfolios) < 2:
+                continue
+            nav_values = [p.get('nav', 1.0) for p in crisis_portfolios]
+            peak = nav_values[0]
+            crisis_drawdown = 0.0
+            for nav in nav_values:
+                if nav > peak:
+                    peak = nav
+                drawdown = (peak - nav) / peak if peak > 0 else 0.0
+                crisis_drawdown = max(crisis_drawdown, drawdown)
+            max_crisis_drawdown = max(max_crisis_drawdown, crisis_drawdown)
+
+        return self.validate_risk_of_ruin(max_crisis_drawdown)
     
-    def validate_risk_of_ruin(self, max_drawdown: float) -> Tuple[bool, str]:
+    def validate_risk_of_ruin(self, max_drawdown: float) -> RiskValidationResult:
         """
         Validate R3: Risk-of-Ruin Protection invariant.
         
@@ -1080,7 +1399,7 @@ class UnifiedRiskAuthority:
             max_drawdown: Maximum drawdown observed
             
         Returns:
-            (is_valid, error_message)
+            RiskValidationResult
         """
         is_valid = max_drawdown <= self.limits.max_drawdown_threshold
         
@@ -1096,9 +1415,19 @@ class UnifiedRiskAuthority:
                 'threshold': self.limits.max_drawdown_threshold
             })
             
-            return False, error_msg
+            return RiskValidationResult(
+                is_valid=False,
+                errors=[error_msg],
+                warnings=[],
+                metadata={'max_drawdown': max_drawdown}
+            )
         
-        return True, ""
+        return RiskValidationResult(
+            is_valid=True,
+            errors=[],
+            warnings=[],
+            metadata={'max_drawdown': max_drawdown}
+        )
     
     # ========================================================================
     # HELPER METHODS

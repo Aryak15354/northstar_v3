@@ -1,0 +1,7 @@
+# Never sync these paths/artifacts to S3.
+data/raw/screener/*
+data/raw/prices/*
+venv/*
+__pycache__/*
+.git/*
+*.pyc

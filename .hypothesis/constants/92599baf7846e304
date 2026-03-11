@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence_observer/question_engines/portfolio_structure_intelligence.py
+# hypothesis_version: 6.150.2
+
+[0.2, 0.25, 0.3, 0.7, 0.75, 1.0, 20.0, 25.0, 40.0, 45.0, 60.0, 65.0, 75.0, 80.0, 85.0, 90.0, 100, 400, 1000, '1.0.0', 'correlation_impact', 'current', 'ignore', 'market_stress_level', 'max_sector_exposure', 'stress scenarios', 'turnover_capacity', 'volatility_impact']

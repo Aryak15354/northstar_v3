@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence_observer/guardrails/violation_handler.py
+# hypothesis_version: 6.150.2
+
+['1.0.0', 'Violation Handler', 'details', 'observer_suspended', 'recent_violations', 'timestamp', 'total_violations', 'type', 'violation_id', 'violation_threshold']

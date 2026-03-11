@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/earnings_dates.py
+# hypothesis_version: 6.150.2
+
+[180, '.', '.NS', '_announcement', '_fye', '_ticker', 'announcement_date', 'availability_date', 'backward', 'coerce', 'date', 'days_since_earnings', 'earnings_gap_days', 'fiscal_year_end', 'mergesort', 'nse_ticker', 'ticker']

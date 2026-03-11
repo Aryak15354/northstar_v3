@@ -48,6 +48,16 @@ class BeliefConfidence:
         errors = []
         if not (0.0 <= self.confidence_score <= 1.0):
             errors.append(f"Confidence score {self.confidence_score} outside bounds [0.0, 1.0]")
+        if not isinstance(self.confidence_sources, dict):
+            errors.append("Confidence sources must be a dictionary")
+        else:
+            for source, value in self.confidence_sources.items():
+                if not (0.0 <= float(value) <= 1.0):
+                    errors.append(f"Source confidence {source}={value} outside bounds [0.0, 1.0]")
+        if not isinstance(self.uncertainty_factors, list):
+            errors.append("Uncertainty factors must be a list")
+        if self.data_freshness_hours < 0:
+            errors.append("Data freshness hours cannot be negative")
         return errors
 
 @dataclass
@@ -57,6 +67,24 @@ class ConfidenceThresholds:
     narrative_uncertainty_threshold: float = 0.6
     data_freshness_max_hours: float = 24.0
 
+    def validate(self) -> List[str]:
+        errors = []
+        if not (0.0 <= self.exposure_reduction_threshold <= 1.0):
+            errors.append(
+                f"exposure_reduction_threshold {self.exposure_reduction_threshold} outside bounds [0.0, 1.0]"
+            )
+        if not (0.0 <= self.no_edge_threshold <= 1.0):
+            errors.append(
+                f"no_edge_threshold {self.no_edge_threshold} outside bounds [0.0, 1.0]"
+            )
+        if not (0.0 <= self.narrative_uncertainty_threshold <= 1.0):
+            errors.append(
+                f"narrative_uncertainty_threshold {self.narrative_uncertainty_threshold} outside bounds [0.0, 1.0]"
+            )
+        if self.data_freshness_max_hours <= 0:
+            errors.append("Data freshness max hours must be positive")
+        return errors
+
 class ConfidenceSystem:
     def __init__(self, base_dir: str = "data/intelligence", thresholds=None):
         self.base_dir = base_dir
@@ -64,6 +92,7 @@ class ConfidenceSystem:
         self.thresholds = thresholds or ConfidenceThresholds()
         self.current_confidences = {}
         self.confidence_history = []
+        self.risk_coordinator = None
         print("🎯 Confidence System initialized")
     
     def compute_regime_confidence(self, regime_similarity: float, similarity_dispersion: float, regime_stability_days: int = 30) -> float:
@@ -116,7 +145,11 @@ class ConfidenceSystem:
         
         confidence_type = ConfidenceType(output_type)
         confidence_level = self._classify_confidence_level(confidence_score)
-        uncertainty_factors = [f"Low {k} ({v:.2f})" for k, v in confidence_sources.items() if v < 0.5]
+        uncertainty_factors = [
+            f"Low {k.replace('_', ' ')} ({v:.2f})"
+            for k, v in confidence_sources.items()
+            if v < 0.5
+        ]
         
         belief_confidence = BeliefConfidence(
             timestamp=datetime.now(),
@@ -131,6 +164,46 @@ class ConfidenceSystem:
         
         self.current_confidences[output_type] = belief_confidence
         self.confidence_history.append(belief_confidence)
+
+        # Persist confidence history for schema/audit checks.
+        try:
+            parquet_file = os.path.join(self.base_dir, "belief_confidence.parquet")
+            new_row = pd.DataFrame([belief_confidence.to_dict()])
+            new_row['timestamp'] = pd.to_datetime(new_row['timestamp'])
+
+            if os.path.exists(parquet_file):
+                existing = pd.read_parquet(parquet_file)
+                combined = pd.concat([existing, new_row], ignore_index=True)
+            else:
+                combined = new_row
+
+            combined.to_parquet(parquet_file, index=False)
+        except Exception:
+            # Keep runtime robust in restricted environments.
+            pass
+
+        # Trigger risk-side confidence controls when available.
+        if self.risk_coordinator is not None:
+            reason = f"Low confidence in {output_type} ({confidence_score:.3f})"
+            confidence_factors = confidence_sources
+
+            if confidence_score < self.thresholds.no_edge_threshold:
+                if hasattr(self.risk_coordinator, "enter_no_edge_state"):
+                    self.risk_coordinator.enter_no_edge_state(
+                        reason=reason,
+                        confidence_factors=confidence_factors
+                    )
+            elif confidence_score < self.thresholds.exposure_reduction_threshold:
+                # Scale exposure down linearly and cap at 60% as institutional guardrail.
+                reduction_ratio = confidence_score / max(self.thresholds.exposure_reduction_threshold, 1e-9)
+                new_exposure = max(0.0, min(0.6, 0.6 * reduction_ratio))
+
+                if hasattr(self.risk_coordinator, "suggest_exposure_reduction"):
+                    self.risk_coordinator.suggest_exposure_reduction(
+                        new_exposure=new_exposure,
+                        reason=reason,
+                        confidence_factors=confidence_factors
+                    )
         
         return belief_confidence
     

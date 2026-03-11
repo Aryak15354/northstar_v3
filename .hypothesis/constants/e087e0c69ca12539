@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/unified_state_manager.py
+# hypothesis_version: 6.150.2
+
+[0.6, 0.65, 0.75, -100, 10000, '=', '__main__', 'active', 'allowed_exposure', 'authority_level', 'capital_allocator', 'component_count', 'component_versions', 'data/state', 'data_pipeline', 'degraded', 'emergency_active', 'emergency_brake', 'expansion', 'failed', 'health', 'health_monitor', 'health_state', 'history_size', 'ignore', 'inactive', 'integrity_valid', 'intelligence', 'intelligence_engine', 'intelligence_state', 'last_update', 'market', 'market_state', 'order_manager', 'pending_conflicts', 'portfolio', 'portfolio_governor', 'portfolio_state', 'position_sizer', 'r', 'regime', 'regime_detector', 'risk', 'risk_monitor', 'risk_on_probability', 'risk_state', 'signal_generator', 'state_version', 'subscriber_count', 'timestamp', 'total_exposure', 'unified_state.json', 'version', 'w']

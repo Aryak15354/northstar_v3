@@ -249,7 +249,9 @@ class UnifiedStateManager:
                 if existing_authority and existing_authority.value < authority.value:
                     # Higher authority exists, this update should be rejected
                     print(f"🔐 AUTHORITY REJECTED: {authority.name} cannot override {existing_authority.name} for {component}.{field}")
-                    continue
+                    # INVARIANT S1: atomicity requires all-or-none semantics.
+                    # If any field is unauthorized, reject the whole update batch.
+                    return False
                 
                 # Create update
                 update = StateUpdate(

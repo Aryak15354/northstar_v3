@@ -304,23 +304,23 @@ class CrisisValidator:
             sector_col = f'{sector.lower().replace(" ", "_")}_weight'
             if sector_col in portfolio_data.columns:
                 avg_weight = portfolio_data[sector_col].mean()
-                defensive_score += avg_weight * 0.3  # 30% weight for sectors
+                defensive_score += avg_weight  # Direct contribution from defensive sectors
         
         # Check for cash and bonds
         if 'cash_weight' in portfolio_data.columns:
             avg_cash = portfolio_data['cash_weight'].mean()
-            defensive_score += avg_cash * 0.4  # 40% weight for cash
+            defensive_score += avg_cash * 0.8  # Cash is highly defensive
         
         if 'bond_weight' in portfolio_data.columns:
             avg_bonds = portfolio_data['bond_weight'].mean()
-            defensive_score += avg_bonds * 0.3  # 30% weight for bonds
+            defensive_score += avg_bonds * 0.6  # Bonds add defense
         
         # Penalize high-risk positions
         if 'high_beta_weight' in portfolio_data.columns:
             avg_high_beta = portfolio_data['high_beta_weight'].mean()
-            defensive_score -= avg_high_beta * 0.2  # Penalty for high beta
+            defensive_score -= avg_high_beta * 0.6  # Strong penalty for high beta
         
-        return np.clip(defensive_score, 0.0, 1.0)
+        return float(np.clip(defensive_score, 0.0, 1.0))
     
     def analyze_crisis_performance(self, portfolio_data: pd.DataFrame, 
                                  crisis_period: Tuple[datetime, datetime],
@@ -415,23 +415,23 @@ class CrisisValidator:
         return CrisisMetrics(
             crisis_name=crisis_name,
             period=crisis_period,
-            max_drawdown=max_drawdown,
-            recovery_time_days=recovery_time_days,
-            crisis_sharpe=sharpe,
-            total_return=total_return,
-            exposure_30d_before=pre_crisis_metrics['exposure_30d_before'],
-            risk_reduction_rate=pre_crisis_metrics['risk_reduction_rate'],
-            defensive_positioning_score=pre_crisis_metrics['defensive_positioning_score'],
-            anticipatory_de_risking=pre_crisis_metrics['anticipatory_de_risking'],
-            emergency_triggers_activated=emergency_triggers,
-            position_size_reductions=position_reductions,
+            max_drawdown=float(max_drawdown),
+            recovery_time_days=int(recovery_time_days),
+            crisis_sharpe=float(sharpe),
+            total_return=float(total_return),
+            exposure_30d_before=float(pre_crisis_metrics['exposure_30d_before']),
+            risk_reduction_rate=float(pre_crisis_metrics['risk_reduction_rate']),
+            defensive_positioning_score=float(pre_crisis_metrics['defensive_positioning_score']),
+            anticipatory_de_risking=bool(pre_crisis_metrics['anticipatory_de_risking']),
+            emergency_triggers_activated=int(emergency_triggers),
+            position_size_reductions=int(position_reductions),
             regime_adaptation_speed_days=7.0,  # Mock: 7 days to adapt
-            survived_without_intervention=survived,
-            maximum_leverage_during_crisis=max_leverage,
-            cash_reserves_maintained=final_cash,
-            volatility_during_crisis=volatility,
-            correlation_with_market=correlation_with_market,
-            downside_capture_ratio=downside_capture
+            survived_without_intervention=bool(survived),
+            maximum_leverage_during_crisis=float(max_leverage),
+            cash_reserves_maintained=float(final_cash),
+            volatility_during_crisis=float(volatility),
+            correlation_with_market=float(correlation_with_market),
+            downside_capture_ratio=float(downside_capture)
         )
     
     def _count_emergency_triggers(self, crisis_data: pd.DataFrame) -> int:
@@ -442,7 +442,7 @@ class CrisisValidator:
         # Check for drawdown triggers
         if 'drawdown' in crisis_data.columns:
             max_dd = crisis_data['drawdown'].min()
-            if max_dd < -0.15:  # 15% drawdown trigger
+            if max_dd <= self.crisis_thresholds['market_decline_threshold']:  # 10%+ decline trigger
                 triggers += 1
         
         # Check for volatility triggers

@@ -150,21 +150,33 @@ def _ensure_forward_horizon_targets(
 def _date_regime_map(frame: pd.DataFrame, *, date_col: str, regime_col: str) -> pd.Series:
     if date_col not in frame.columns or regime_col not in frame.columns:
         return pd.Series(dtype=object)
-
-    def _mode_or_unknown(x: pd.Series) -> str:
-        s = x.astype("string")
-        s = s[s.notna()].str.strip()
-        s = s[(s != "") & (s.str.lower() != "nan")]
-        if len(s) == 0:
-            return "unknown"
-        vc = s.value_counts()
-        return str(vc.index[0]) if not vc.empty else "unknown"
-
+    # Vectorized/date-level mode extraction to avoid slow Python per-group string ops.
     out = frame[[date_col, regime_col]].dropna(subset=[date_col]).copy()
     if out.empty:
         return pd.Series(dtype=object)
-    m = out.groupby(date_col, sort=False)[regime_col].agg(_mode_or_unknown)
-    return m.astype(str)
+
+    reg = pd.Series(out[regime_col], copy=False).astype(object)
+    reg = reg.where(pd.notna(reg), "")
+    reg = reg.map(lambda v: str(v).strip())
+    reg = reg.mask(reg.str.lower().eq("nan"), "")
+    out["_regime_norm"] = reg
+
+    # Keep only usable labels for mode computation.
+    valid = out[out["_regime_norm"] != ""]
+    if valid.empty:
+        # Preserve date index with unknown label if nothing usable.
+        idx = pd.Index(out[date_col].dropna().unique(), name=date_col)
+        return pd.Series("unknown", index=idx, dtype=object)
+
+    counts = valid.groupby([date_col, "_regime_norm"], sort=False).size()
+    # idxmax over second level gives (date, regime_mode)
+    top_idx = counts.groupby(level=0, sort=False).idxmax()
+    mode_map = pd.Series([str(t[1]) for t in top_idx.tolist()], index=top_idx.index)
+
+    # Ensure every date has a label.
+    all_dates = pd.Index(out[date_col].dropna().unique(), name=date_col)
+    mode_map = mode_map.reindex(all_dates, fill_value="unknown")
+    return mode_map.astype(str)
 
 
 def _aggregate_decay_curves(

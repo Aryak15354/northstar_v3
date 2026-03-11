@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/alpha_factory/family_aggregator.py
+# hypothesis_version: 6.150.2
+
+[-1.0, 0.0, 1e-12, 0.01, 0.2, 0.49, 0.55, 0.85, 1.0, 6.0, 'avg_signal_turnover', 'coerce', 'date', 'drop_reasons', 'empty_frame', 'family', 'family_ic_daily', 'family_ic_summary', 'family_returns', 'family_scores', 'family_stats', 'family_turnover', 'feature', 'feature_family_map', 'feature_stats', 'forward_return_5d', 'generated_at', 'ic_t_stat', 'ir', 'keep_base', 'low_abs_ic', 'low_t_stat', 'mean', 'mean_feature_ic', 'mean_ic', 'n_days', 'n_features_input', 'n_features_selected', 'no_family_scores', 'no_family_weights', 'no_features', 'ok', 'other', 'selected_features', 'sign_consistency', 'spearman', 'stability_score', 'status', 'std', 'std_ic', 'ticker', 'turn', 'unstable_sign']

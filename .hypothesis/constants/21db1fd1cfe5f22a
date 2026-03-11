@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/sentiment_bridge.py
+# hypothesis_version: 6.150.2
+
+[-1.0, 0.0, 0.5, 1.0, '.', '.NS', '0 rows', 'SHOW TABLES', 'aggregated_signals', 'availability_date', 'coerce', 'combined', 'content_items', 'conviction', 'date', 'event_shock_factor', 'headline_count', 'last', 'left', 'market', 'mean', 'mergesort', 'name', 'news_volume', 'news_volume_total', 'polarity', 'sentiment_conviction', 'sentiment_polarity', 'sentiment_records', 'sentiment_score', 'sentiment_surprise', 'source', 'source_mode', 'sum', 'ticker', 'timestamp', 'trend_score', 'uncertainty']

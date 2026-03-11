@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/contracts.py
+# hypothesis_version: 6.150.2
+
+['ACTIVE', 'FROZEN', 'INTENT_APPROVED', 'INTENT_REJECTED', 'INTENT_SUBMITTED', 'MARK_TO_MARKET', 'ORDER_CANCELLED', 'ORDER_FILLED', 'ORDER_PARTIAL', 'ORDER_SENT', 'POSITION_ADJUSTED', 'alpha_os', 'approved', 'auto', 'backtest', 'budget_decision_id', 'capital_decision_id', 'created_at', 'decision_mode', 'denial_reason', 'discretionary', 'event_ids', 'event_type', 'live', 'manual', 'options_alpha', 'options_hedge', 'origin', 'proposal_id', 'rebalance_triggers', 'research', 'shadow', 'status', 'stress_matrix', 'timestamp_utc', 'v1', 'valid_until', 'walk_forward']

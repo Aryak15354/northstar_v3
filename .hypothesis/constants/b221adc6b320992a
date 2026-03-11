@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence_observer/output_artifacts/intelligence_alert.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.5, 0.75, 0.8, 0.85, 0.9, 1.0, 24.0, 48.0, 72.0, 168.0, 336.0, 3600, 'IntelligenceAlert', 'Unknown severity', '_', 'active_cooldowns', 'alert_id', 'alert_type', 'alerts_by_type', 'analytical', 'behavioral_drift', 'buy', 'confidence', 'data_quality', 'do', 'enter', 'exit', 'exit_positions', 'false_alarm_rate', 'false_calm_warning', 'force_rebalance', 'high', 'informational', 'last_alert', 'low', 'medium', 'message', 'modify_risk_limits', 'monitoring', 'must', 'override_system', 'precedent_summary', 'rebalance', 'recommended_response', 'reduce_exposure', 'regime_transition', 'sell', 'severity', 'severity_description', 'should', 'stress_clustering', 'structural', 'supporting_scores', 'switch_engines', 'timestamp', 'total_alerts_7d', 'trade', 'will']

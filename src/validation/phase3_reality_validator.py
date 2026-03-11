@@ -249,9 +249,18 @@ class Phase3RealityValidator:
         
         # Chi-square test for frequency distribution
         try:
-            chi2_stat, p_value = stats.chisquare(sim_freq_aligned * len(sim_regimes), 
-                                               hist_freq_aligned * len(hist_regimes))
-            freq_match = 1.0 - min(p_value, 1.0) if p_value > self.significance_level else 0.5
+            # Primary score is normalized absolute-frequency distance.
+            # Identical distributions score 1.0, maximally different score 0.0.
+            freq_distance = float(np.abs(sim_freq_aligned - hist_freq_aligned).sum() / 2.0)
+            freq_match = max(0.0, 1.0 - freq_distance)
+
+            # If statistical evidence indicates a meaningful mismatch, cap the score.
+            _, p_value = stats.chisquare(
+                sim_freq_aligned * len(sim_regimes),
+                hist_freq_aligned * len(hist_regimes)
+            )
+            if p_value <= self.significance_level:
+                freq_match = min(freq_match, 0.5)
         except:
             freq_match = 0.0
             inconsistencies.append("Regime frequency distribution test failed")
@@ -386,7 +395,12 @@ class Phase3RealityValidator:
         hist_frequency = hist_no_edge.mean()
         
         freq_diff = abs(sim_frequency - hist_frequency)
-        freq_match = max(0.0, 1.0 - freq_diff / max(hist_frequency, 0.01))
+        # Penalize large frequency divergence more aggressively to avoid
+        # overstating consistency when simulation saturates to always-on/off.
+        # The tighter denominator ensures large absolute drifts (e.g. always-on
+        # simulation vs moderate historical trigger rate) are scored as clearly
+        # inconsistent.
+        freq_match = max(0.0, 1.0 - freq_diff / max(hist_frequency * 0.8, 0.01))
         
         if freq_match < self.consistency_thresholds['no_edge_frequency']:
             inconsistencies.append(f"NO_EDGE frequency mismatch: sim={sim_frequency:.3f}, hist={hist_frequency:.3f}")
@@ -527,6 +541,8 @@ class Phase3RealityValidator:
     
     def _compare_duration_distributions(self, sim_durations: List[int], hist_durations: List[int]) -> float:
         """Compare duration distributions using statistical tests"""
+        if not sim_durations and not hist_durations:
+            return 1.0
         if not sim_durations or not hist_durations:
             return 0.0
         
@@ -607,9 +623,17 @@ class Phase3RealityValidator:
         if sim_tailwinds.empty or hist_tailwinds.empty:
             return 0.0
         
-        common_cols = list(set(sim_tailwinds.columns) & set(hist_tailwinds.columns))
-        if len(common_cols) < 2:
+        common_cols = sorted(set(sim_tailwinds.columns) & set(hist_tailwinds.columns))
+        if not common_cols:
             return 0.0
+        if len(common_cols) == 1:
+            aligned = pd.concat([
+                sim_tailwinds[common_cols[0]].rename("sim"),
+                hist_tailwinds[common_cols[0]].rename("hist"),
+            ], axis=1).dropna()
+            if aligned.empty:
+                return 0.0
+            return 1.0 if np.allclose(aligned["sim"].values, aligned["hist"].values, atol=1e-12) else 0.5
         
         try:
             sim_corr = sim_tailwinds[common_cols].corr()
@@ -621,9 +645,22 @@ class Phase3RealityValidator:
             
             if len(sim_corr_flat) == 0:
                 return 1.0
-            
+
+            sim_corr_flat = np.nan_to_num(sim_corr_flat, nan=0.0, posinf=0.0, neginf=0.0)
+            hist_corr_flat = np.nan_to_num(hist_corr_flat, nan=0.0, posinf=0.0, neginf=0.0)
+
+            if np.allclose(sim_corr_flat, hist_corr_flat, atol=1e-12):
+                return 1.0
+
+            if np.std(sim_corr_flat) <= 1e-12 or np.std(hist_corr_flat) <= 1e-12:
+                mean_abs_diff = float(np.mean(np.abs(sim_corr_flat - hist_corr_flat)))
+                return max(0.0, 1.0 - mean_abs_diff / 2.0)
+
             correlation = np.corrcoef(sim_corr_flat, hist_corr_flat)[0, 1]
-            return max(0.0, correlation) if not np.isnan(correlation) else 0.0
+            if np.isnan(correlation) or np.isinf(correlation):
+                mean_abs_diff = float(np.mean(np.abs(sim_corr_flat - hist_corr_flat)))
+                return max(0.0, 1.0 - mean_abs_diff / 2.0)
+            return float(max(0.0, correlation))
         except:
             return 0.0
     
@@ -653,7 +690,9 @@ class Phase3RealityValidator:
         
         matches = []
         for key in common_keys:
-            diff = abs(sim_persistence[key] - hist_persistence[key])
+            sim_val = float(np.nan_to_num(sim_persistence[key], nan=0.0, posinf=0.0, neginf=0.0))
+            hist_val = float(np.nan_to_num(hist_persistence[key], nan=0.0, posinf=0.0, neginf=0.0))
+            diff = abs(sim_val - hist_val)
             match = max(0.0, 1.0 - diff)
             matches.append(match)
         
@@ -751,6 +790,8 @@ class Phase3RealityValidator:
         sim_recovery = self._calculate_recovery_times(sim_no_edge)
         hist_recovery = self._calculate_recovery_times(hist_no_edge)
         
+        if not sim_recovery and not hist_recovery:
+            return 1.0
         if not sim_recovery or not hist_recovery:
             return 0.0
         
@@ -808,23 +849,41 @@ class Phase3RealityValidator:
         
         if sim_signals.empty or hist_signals.empty:
             return 0.0
+
+        common_cols = sorted(set(sim_signals.columns) & set(hist_signals.columns))
+        if not common_cols:
+            return 0.0
+
+        # If common signal series are effectively identical, lead-lag consistency is perfect.
+        sim_common = sim_signals[common_cols].copy()
+        hist_common = hist_signals[common_cols].copy()
+        aligned = pd.concat(
+            [sim_common.add_prefix("sim_"), hist_common.add_prefix("hist_")],
+            axis=1
+        ).dropna()
+        if not aligned.empty:
+            sim_vals = aligned[[f"sim_{c}" for c in common_cols]].values
+            hist_vals = aligned[[f"hist_{c}" for c in common_cols]].values
+            if np.allclose(sim_vals, hist_vals, atol=1e-12):
+                return 1.0
         
         # Compare signal persistence patterns as proxy for lead-lag relationships
         sim_persistence = {}
         hist_persistence = {}
         
-        for col in sim_signals.columns:
-            if col in hist_signals.columns:
-                sim_series = sim_signals[col].dropna()
-                hist_series = hist_signals[col].dropna()
-                
-                if len(sim_series) > 1 and len(hist_series) > 1:
-                    try:
-                        sim_persistence[col] = sim_series.autocorr(lag=1)
-                        hist_persistence[col] = hist_series.autocorr(lag=1)
-                    except:
-                        sim_persistence[col] = 0.0
-                        hist_persistence[col] = 0.0
+        for col in common_cols:
+            sim_series = sim_signals[col].dropna()
+            hist_series = hist_signals[col].dropna()
+
+            if len(sim_series) > 1 and len(hist_series) > 1:
+                try:
+                    sim_autocorr = sim_series.autocorr(lag=1)
+                    hist_autocorr = hist_series.autocorr(lag=1)
+                    sim_persistence[col] = float(np.nan_to_num(sim_autocorr, nan=0.0, posinf=0.0, neginf=0.0))
+                    hist_persistence[col] = float(np.nan_to_num(hist_autocorr, nan=0.0, posinf=0.0, neginf=0.0))
+                except:
+                    sim_persistence[col] = 0.0
+                    hist_persistence[col] = 0.0
         
         return self._compare_persistence_patterns(sim_persistence, hist_persistence)
     
@@ -870,11 +929,22 @@ class Phase3RealityValidator:
         for col in common_cols:
             sim_vol = sim_signals[col].std()
             hist_vol = hist_signals[col].std()
-            
-            if not (np.isnan(sim_vol) or np.isnan(hist_vol)) and hist_vol > 0:
+
+            if np.isnan(sim_vol) or np.isnan(hist_vol):
+                continue
+
+            # If both are effectively constant, treat as a strong match.
+            if sim_vol <= 1e-12 and hist_vol <= 1e-12:
+                matches.append(1.0)
+                continue
+
+            if hist_vol > 1e-12:
                 vol_diff = abs(sim_vol - hist_vol)
                 match = max(0.0, 1.0 - vol_diff / hist_vol)
                 matches.append(match)
+            else:
+                # Historical constant but simulated varying: weak match.
+                matches.append(0.5 if sim_vol <= 1e-12 else 0.0)
         
         return np.mean(matches) if matches else 0.0
     

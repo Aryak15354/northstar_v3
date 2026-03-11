@@ -1,0 +1,123 @@
+{
+  "generated_at": "2026-03-04T09:49:46.776989+00:00",
+  "model": "xgboost",
+  "model_params": {
+    "n_estimators": 300,
+    "learning_rate": 0.03,
+    "max_depth": 6,
+    "n_jobs": 1
+  },
+  "regime_col_used": "regime_audit",
+  "aggregate_metrics": {
+    "windows": 2.0,
+    "avg_n_obs": 7435.0,
+    "total_n_obs": 14870.0,
+    "avg_sharpe": -0.41074051974152137,
+    "avg_sortino": -0.5303287134092013,
+    "avg_max_drawdown": 0.050210991570993735,
+    "avg_calmar": -2.967642708654096,
+    "avg_hit_rate": 0.42355780733234816,
+    "ic_mean": -0.027757208436352758,
+    "ic_std": 0.15485693282864502,
+    "top_bottom_spread_mean": -0.010401913366520125,
+    "monotonic_pass_rate": 0.5,
+    "stability_score": 0.5249043082922942,
+    "avg_turnover": 0.8651666666666666,
+    "avg_overlap": 0.6027210884353742,
+    "median_holding_days": 14.25,
+    "avg_assets_per_day": 88.51190476190476,
+    "avg_selected_assets": 49.0,
+    "avg_txn_cost_per_rebalance": 0.001829513888888889,
+    "avg_rebalance_count": 6.5
+  },
+  "regime_rows": [
+    {
+      "regime": "low_vol|downtrend",
+      "ic": 0.20371774266173803,
+      "n_obs": 325,
+      "windows": 2,
+      "avg_sharpe": -12.225501738341144,
+      "avg_max_drawdown": 0.0010646269159209631
+    },
+    {
+      "regime": "high_vol|downtrend",
+      "ic": 0.0020879121204553236,
+      "n_obs": 6480,
+      "windows": 2,
+      "avg_sharpe": -0.22125281158194585,
+      "avg_max_drawdown": 0.01759889396194897
+    },
+    {
+      "regime": "high_vol|uptrend",
+      "ic": -0.03377572509264354,
+      "n_obs": 6240,
+      "windows": 2,
+      "avg_sharpe": -0.7408555361367525,
+      "avg_max_drawdown": 0.037199411057805
+    },
+    {
+      "regime": "low_vol|uptrend",
+      "ic": -0.12608458248099935,
+      "n_obs": 1825,
+      "windows": 2,
+      "avg_sharpe": -1.5978183258600502,
+      "avg_max_drawdown": 0.010883437666434403
+    }
+  ],
+  "ic_diagnostics": {
+    "status": "ok",
+    "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/research/ic_diagnostics/ic_report_20260304_151531.json",
+    "prune_requested": true,
+    "prune_applied": true,
+    "n_features_input": 203,
+    "n_features_selected": 40,
+    "n_features_after_prune": 40,
+    "scope_mode_requested": "train_only",
+    "scope_mode_applied": "train_only",
+    "scope_rows_used": 47225,
+    "top_features": [
+      "equity",
+      "total_debt",
+      "shares_outstanding",
+      "vol_20d",
+      "vol_20d_sector_rel",
+      "vol_20d_cs_z",
+      "vol_20d_cs_rank",
+      "vol_60d",
+      "vol_60d_sector_rel",
+      "vol_60d_cs_z",
+      "vol_60d_cs_rank",
+      "debt_to_equity",
+      "res_mom_20d_ir",
+      "res_mom_20d_ir_cs_rank",
+      "res_mom_20d_ir_cs_z",
+      "mom_60d",
+      "mom_60d_sector_rel",
+      "mom_60d_cs_z",
+      "mom_60d_cs_rank",
+      "mom_60d_sector_rel_cs_z"
+    ],
+    "decay_summary_selected_features": {
+      "peak_horizon": 20.0,
+      "peak_ic": 0.035667945028278,
+      "half_life_horizon": 20.0,
+      "signed_area": 0.37808622277163884,
+      "abs_area": 0.37808622277163884,
+      "monotonicity_score": 1.0,
+      "sign_flip_count": 0.0
+    },
+    "regime_decay_summary_selected_features": {
+      "unknown": {
+        "peak_horizon": 20.0,
+        "peak_ic": 0.035667945028278,
+        "half_life_horizon": 20.0,
+        "signed_area": 0.37808622277163884,
+        "abs_area": 0.37808622277163884,
+        "monotonicity_score": 1.0,
+        "sign_flip_count": 0.0
+      }
+    }
+  },
+  "dataset_rows": 90000,
+  "dataset_features": 40
+}

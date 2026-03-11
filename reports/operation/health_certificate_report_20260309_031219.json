@@ -1,0 +1,29 @@
+{
+  "certificate_id": "HealthCert_1773006139",
+  "system_name": "Northstar V3 Trading System",
+  "validation_id": "SysVal_1773006139",
+  "certificate_timestamp": "2026-03-09T03:12:19.387633",
+  "validation_timestamp": "2026-03-09T03:12:19.386023",
+  "overall_status": "critical",
+  "system_health_score": 0.7500000000000001,
+  "certification_status": "FAILED - Critical issues present",
+  "components_validated": 5,
+  "components_passed": 4,
+  "components_failed": 1,
+  "total_checks": 15,
+  "checks_passed": 14,
+  "checks_failed": 1,
+  "critical_issues_count": 1,
+  "certificate_valid_until": "2026-03-10T03:12:19.386689",
+  "recommendations_count": 4,
+  "certificate_details": {
+    "validation_execution_time": 0.000664,
+    "component_health_scores": {
+      "data_pipeline": 1.0,
+      "intelligence_engine": 1.0,
+      "risk_management": 0.0,
+      "portfolio_management": 1.0,
+      "system_integration": 1.0
+    }
+  }
+}

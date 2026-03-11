@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/historical_data_loader.py
+# hypothesis_version: 6.150.2
+
+[50.0, 100, 252, 2024, '=', 'Cache cleared', 'NIFTY', 'Test complete', '__main__', 'ask', 'ask_qty', 'atm_iv', 'bid', 'bid_qty', 'change_oi', 'date', 'days_to_expiry', 'delta', 'event', 'expiry', 'gamma', 'historical', 'impact', 'iv', 'iv_percentile', 'iv_rank', 'ltp', 'macro_events', 'medium', 'name', 'oi', 'option_type', 'r', 'strike', 'strike_diff', 'symbol', 'theta', 'underlying_price', 'vega', 'volume']

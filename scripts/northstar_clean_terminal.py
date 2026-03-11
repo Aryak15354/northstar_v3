@@ -22,11 +22,13 @@ import sys
 import json
 
 # Add src to path
-
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 # Import data loader
-# Dependency injection - import load_unified_snapshot, check_data_health from dashboard.data_loader
-# print(f"Data loader not available: {e}")
+try:
+    from src.dashboard.data_loader import load_unified_snapshot, check_data_health
+    DATA_LOADER_AVAILABLE = True
+except Exception:
     DATA_LOADER_AVAILABLE = False
 
 # =========================== PAGE CONFIG ===========================

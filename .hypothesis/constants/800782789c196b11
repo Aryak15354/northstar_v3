@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/sentiment_overlay.py
+# hypothesis_version: 6.150.2
+
+[-1.5, -0.5, -0.4, -0.2, 0.0, 0.3, 0.6, 0.7, 0.8, 1.0, 1.1, 1.15, 1.3, 1.5, '.', '.NS', 'MARKET', '_macro', 'adjusted_score', 'availability_date', 'coerce', 'contraction', 'date', 'expansion', 'left', 'macro_regime_label', 'macro_regime_path', 'mergesort', 'model_score', 'news_volume', 'override_reason', 'sector', 'sentiment_conviction', 'sentiment_multiplier', 'sentiment_override', 'sentiment_path', 'sentiment_polarity', 'sentiment_surprise', 'ticker']

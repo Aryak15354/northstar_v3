@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/alpha_lab/parameter_surface_explorer.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-12, 1e-09, 1e-06, 0.1, 0.5, 0.7, 0.75, 0.8, 0.9, 1.0, 2.0, 50.0, 'aggregate_metrics', 'avg_sharpe', 'candidate', 'conditional', 'core', 'curvature', 'drift', 'fold_rows', 'gradient_norm', 'neighbor_collapse', 'neighbor_stability', 'parameter_hash', 'params', 'perturbation_drop', 'plateau_width', 'regime', 'regime_probabilities', 'regime_sharpes', 'regime_tag', 'regime_variance', 'reject', 'reject_reason', 'shrunk_train_sharpe', 'status', 'test_sharpe', 'train_sharpe', 'unknown']

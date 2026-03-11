@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/tax_aware_pnl_tracker.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.005, 0.3, 1.0, 10000000, 'CRITICAL', 'OK', 'buy', 'cash_buffer', 'options.pnl_tracker', 'tax_buffer_gap', 'tax_buffer_status', 'tax_buffer_tolerance', 'ytd_gross_losses', 'ytd_gross_profits', 'ytd_net_pnl', 'ytd_tax_liability', 'ytd_total_costs']

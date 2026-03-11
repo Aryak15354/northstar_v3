@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/macro_impact_engine/preprocessing.py
+# hypothesis_version: 6.150.2
+
+[1e-12, 0.01, 0.05, 0.3, 0.35, 0.5, 2.5, '%', '=', 'AIC', '\\s+', 'all', 'auto', 'balance', 'billion', 'coerce', 'constant', 'cpi', 'credit', 'critical_values', 'crore', 'crr', 'debt', 'deposit', 'difference', 'difference_forced', 'dollar', 'exchange rate', 'exports', 'flow_or_stock', 'ignore', 'imports', 'index', 'index_or_level', 'inflation', 'inr', 'insufficient_data', 'is_stationary', 'lakh', 'log_difference', 'm3', 'mean', 'million', 'money', 'none', 'p_value', 'percent', 'price index', 'rate', 'rate_or_ratio', 'reason', 'repo', 'reserves', 'rupee', 'skipped', 'slr', 'standardization', 'std', 'test_statistic', 'trade', 'transformation', 'transformations', 'unit_family', 'unknown', 'us $', 'usd', 'wpi', 'yield']

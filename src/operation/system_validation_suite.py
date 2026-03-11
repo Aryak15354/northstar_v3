@@ -19,7 +19,7 @@ import json
 import numpy as np
 
 from .base_types import (
-    Alert, AlertLevel, ValidationResult, SystemHealthStatus,
+    Alert, AlertLevel, ValidationResult, SystemHealthStatus as SystemHealthSnapshot,
     ComponentStatus, ValidationReport, ReportConfig, SystemHealthLevel
 )
 from .logging_config import setup_operation_logging
@@ -32,6 +32,11 @@ class ValidationSeverity(Enum):
     WARNING = "warning"
     ERROR = "error"
     CRITICAL = "critical"
+
+
+# Backward-compatible alias expected by validation tests.
+# In this module, status values are represented with SystemHealthLevel.
+SystemHealthStatus = SystemHealthLevel
 
 
 @dataclass
@@ -139,6 +144,7 @@ class SystemValidationSuite:
             "component_timeout": 60,    # 1 minute per component
             "check_timeout": 30,        # 30 seconds per check
             "retry_attempts": 3,
+            "continue_on_critical_failure": True,
             "health_score_threshold": 0.8,
             "certification_threshold": 0.9,
             "validation_frequency_hours": 24,

@@ -30,6 +30,26 @@ historical_research:
     live_returns_cutover_date: "2026-01-18"
     target_col: "forward_return_5d"
     target_horizon_days: 5
+    use_et500_features: false
+    use_et500_universe_filter: false
+    et500_membership_path: "data/reference/et500_pit_membership.csv"
+    use_screener_features: false
+    screener_fundamentals_path: "data/processed/screener_fundamentals_annual.csv"
+    screener_shareholding_path: "data/processed/screener_shareholding.csv"
+    use_alternative_features: false
+    alternative_data_path: "data/processed/alternative/"
+    alternative_features_available:
+      bulk_deals: true
+      promoter_pledge: true
+      earnings_dates: true
+      credit_ratings: true
+      order_announcements: false
+    use_sentiment_features: false
+    use_sentiment_regime: false
+    sentiment_path: "data/processed/sentiment/ticker_sentiment_daily.parquet"
+    market_sentiment_path: "data/processed/sentiment/market_sentiment_daily.parquet"
+    sentiment_duckdb_path: "data/sentiment.duckdb"
+    use_macro_features: false
     lookback_days: 900
     max_tickers: 30
     max_rows: 15000

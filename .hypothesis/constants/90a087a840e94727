@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/dashboard/v3_data_hub.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.01, 0.12, 0.35, 1.0, 768, '*.parquet', '.NS', '3y', 'Date', 'Unknown', '_', 'adj_close', 'allocation', 'breadth', 'breadth_pct', 'close', 'coerce', 'correlation', 'date', 'final_weight', 'float64', 'high', 'in', 'index', 'last', 'low', 'macro_regime', 'market_regime', 'nan', 'nifty_50', 'open', 'participation', 'participation_score', 'path', 'proxy_constituents', 'r', 'regime', 'regime_name', 'risk_on', 'risk_on_probability', 'risk_on_score', 'snapshot', 'stress_score', 'stress_test', 'symbol', 'ticker', 'timestamp', 'volatility', 'w', 'walk_forward', 'weight']

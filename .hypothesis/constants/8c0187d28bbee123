@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/data/query_engine.py
+# hypothesis_version: 6.150.2
+
+[1024, ' ORDER BY ', '"', '""', '*', ', ', ':memory:', '?', 'coerce', 'columns', 'duckdb_unavailable', 'filters', 'in', 'pyarrow', 'ticker', 'value']

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/cleanup/file_analyzer.py
+# hypothesis_version: 6.150.2
+
+[4096, '.', '.DS_Store', '.cfg', '.git', '.hypothesis', '.ini', '.json', '.kiro/specs', '.log', '.py', '.toml', '.txt', '.vscode', '.yaml', '.yml', '__main__', '__pycache__', '_complete.md', 'architecture', 'architecture_doc', 'build', 'cache', 'check', 'completion', 'completion_report', 'configuration', 'debug', 'demo', 'fix', 'guide', 'implement', 'inspect', 'launch', 'log', 'log_file', 'node_modules', 'rb', 'script_demo', 'script_maintenance', 'script_validation', 'scripts', 'source_code', 'spec_file', 'src', 'system_documentation', 'temp', 'temporary_file', 'test', 'test_', 'test_artifact', 'test_config', 'test_env', 'test_file', 'test_schemas', 'test_simple_config', 'test_simple_schemas', 'unknown', 'user_guide', 'validate', 'venv', 'verify']

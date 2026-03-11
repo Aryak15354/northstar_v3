@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/config_loader.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.02, 0.1, 0.12, 0.15, 0.25, 1.0, 260, 2700, '#', '${', '.env.options', '=', 'BANKNIFTY', 'NIFTY', '__main__', 'alpha_os', 'capital', 'capital_scaling', 'costs', 'dashboard', 'data_paths', 'eligibility', 'enabled', 'enforce_mode', 'event_calendar', 'exit_rules', 'greek_safety_bands', 'hmm_min_samples', 'hmm_model_path', 'logging', 'lot_sizes', 'low_vol_sell_iv_rank', 'options.config', 'r', 'regime_detection', 'shadow_mode', 'strategies', 'survival_rules', 'tax', 'upstox', 'valuation_beta', '}']

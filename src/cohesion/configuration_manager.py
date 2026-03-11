@@ -525,7 +525,12 @@ class ConfigurationManager:
     def get_config(self, config_name: str) -> Dict[str, Any]:
         """Get loaded configuration (read-only access)"""
         if config_name not in self.configs:
-            raise KeyError(f"Configuration '{config_name}' not loaded. Call load_config() first.")
+            # Lazy-load defaults for integration paths that request config before explicit load.
+            try:
+                self.load_config(config_name)
+            except SystemExit:
+                self.create_default_configs()
+                self.load_config(config_name)
         return self.configs[config_name].copy()  # Return copy to prevent modification
     
     def reload_config(self, config_name: str) -> Dict[str, Any]:

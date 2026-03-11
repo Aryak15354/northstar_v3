@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/conditional_parameter_engine.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-12, 1e-06, 0.1, 0.8, 0.99, 'base_parameters', 'confidence', 'crisis_lock', 'current_parameters', 'lock_reason', 'locked', 'n_states', 'no_structural_break', 'parameter_surfaces', 'persistence_days', 'state_probabilities', 'structural_break', 'updated', 'version']

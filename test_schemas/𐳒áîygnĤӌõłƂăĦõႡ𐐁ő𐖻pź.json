@@ -1,0 +1,45 @@
+{
+  "name": "\ud803\udcd2\u00e1\u00eeygn\u0124\u04cc\u00f5\u0142\u0182\u0103\u0126\u00f5\u10a1\ud801\udc01\u0151\ud801\uddbbp\u017a",
+  "version": "1.0.0",
+  "description": "Test schema with 5 columns",
+  "columns": {
+    "col_0": {
+      "name": "col_0",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_1": {
+      "name": "col_1",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_2": {
+      "name": "col_2",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_3": {
+      "name": "col_3",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_4": {
+      "name": "col_4",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    }
+  },
+  "constraints": [],
+  "temporal_columns": [],
+  "primary_key": null
+}

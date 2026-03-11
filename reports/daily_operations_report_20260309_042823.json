@@ -1,0 +1,57 @@
+{
+  "report_date": "2026-03-09",
+  "operation_summary": {
+    "start_time": "2026-03-09T04:28:22.010859",
+    "uptime_hours": 0.0002868666666666667,
+    "operation_status": "running",
+    "total_errors": 0,
+    "recovery_attempts": 0
+  },
+  "performance_metrics": {
+    "market_data_processed": 1,
+    "signals_executed": 0,
+    "successful_executions": 0,
+    "avg_processing_latency_ms": 0.0,
+    "max_processing_latency_ms": 0.0
+  },
+  "system_health": {
+    "timestamp": "2026-03-09 04:28:23.043599",
+    "overall_health": "HealthStatus.HEALTHY",
+    "component_status": {
+      "data_pipeline": true,
+      "intelligence_engines": true,
+      "risk_management": true,
+      "portfolio_management": true,
+      "market_data_feeds": true,
+      "execution_system": true
+    },
+    "performance_score": 1.0,
+    "data_quality_score": 1.0,
+    "latency_metrics": {
+      "avg_latency_ms": 0.0,
+      "max_latency_ms": 0.0
+    },
+    "error_counts": {
+      "total_errors": 0,
+      "recent_errors": 0
+    },
+    "alert_level": "AlertLevel.INFO",
+    "recommended_actions": []
+  },
+  "alerts_summary": {
+    "total_alerts": 0,
+    "critical_alerts": 0,
+    "warning_alerts": 0
+  },
+  "component_status": {
+    "data_pipeline": true,
+    "intelligence_engines": true,
+    "risk_management": true,
+    "portfolio_management": true,
+    "market_data_feeds": true,
+    "execution_system": true
+  },
+  "recommendations": [
+    "System operating normally - no immediate actions required"
+  ]
+}

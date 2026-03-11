@@ -84,7 +84,7 @@ class AutomatedFailureDetector:
         # Detection thresholds
         self.thresholds = {
             'performance_degradation': {
-                'critical': 0.20,  # 20% performance drop
+                'critical': 0.25,  # 25% performance drop
                 'high': 0.15,      # 15% performance drop
                 'medium': 0.10,    # 10% performance drop
                 'low': 0.05        # 5% performance drop
@@ -96,10 +96,10 @@ class AutomatedFailureDetector:
                 'low': 0.05        # 5% accuracy drop
             },
             'volatility_spike': {
-                'critical': 3.0,   # 3x normal volatility
-                'high': 2.5,       # 2.5x normal volatility
-                'medium': 2.0,     # 2x normal volatility
-                'low': 1.5         # 1.5x normal volatility
+                'critical': 1.35,  # 1.35x normal volatility
+                'high': 1.20,      # 1.20x normal volatility
+                'medium': 1.10,    # 1.10x normal volatility
+                'low': 1.03        # 1.03x normal volatility
             },
             'bias_drift': {
                 'critical': 0.10,  # 10% bias drift
@@ -164,6 +164,9 @@ class AutomatedFailureDetector:
         """Detect performance degradation patterns"""
         
         alerts = []
+        sharpe_degradation: Optional[float] = None
+        returns_degradation: Optional[float] = None
+        volatility_pressure: float = 0.0
         
         # Check Sharpe ratio degradation
         if 'sharpe_ratio' in current_metrics and 'sharpe_ratio' in self.baseline_metrics:
@@ -172,6 +175,7 @@ class AutomatedFailureDetector:
             
             if baseline_sharpe > 0:  # Avoid division by zero
                 degradation = (baseline_sharpe - current_sharpe) / baseline_sharpe
+                sharpe_degradation = float(max(0.0, degradation))
                 
                 severity = self._classify_severity('performance_degradation', degradation)
                 
@@ -196,7 +200,10 @@ class AutomatedFailureDetector:
             baseline_returns = self.baseline_metrics['returns']['mean']
             
             if abs(baseline_returns) > 0.001:  # Meaningful baseline
-                degradation = abs(baseline_returns - current_returns) / abs(baseline_returns)
+                # Treat degradation as downside-only drift relative to baseline.
+                # Upward return deviations are not failures.
+                degradation = (baseline_returns - current_returns) / abs(baseline_returns)
+                returns_degradation = float(max(0.0, degradation))
                 
                 severity = self._classify_severity('performance_degradation', degradation)
                 
@@ -213,6 +220,45 @@ class AutomatedFailureDetector:
                         description=f"Returns deviated by {degradation:.1%} from baseline",
                         recommended_action="Analyze return drivers and adjust allocation",
                         confidence=0.7
+                    ))
+
+        # Capture volatility pressure directly for composite performance assessment.
+        if 'volatility' in current_metrics and 'volatility' in self.baseline_metrics:
+            current_vol = float(current_metrics['volatility'])
+            baseline_vol = float(self.baseline_metrics['volatility']['mean'])
+            if baseline_vol > 0:
+                volatility_pressure = float(max(0.0, (current_vol / baseline_vol) - 1.0))
+
+        # Combined degradation should confirm broad weakness across multiple metrics.
+        if sharpe_degradation is not None and returns_degradation is not None:
+            combined_degradation = float(
+                0.5 * sharpe_degradation + 0.3 * returns_degradation + 0.2 * volatility_pressure
+            )
+            broad_weakness = (
+                min(sharpe_degradation, returns_degradation) >= self.thresholds['performance_degradation']['low']
+                or max(sharpe_degradation, returns_degradation) >= self.thresholds['performance_degradation']['high']
+                or volatility_pressure >= 0.25
+            )
+            if broad_weakness:
+                severity = self._classify_severity('performance_degradation', combined_degradation)
+                if (
+                    returns_degradation >= self.thresholds['performance_degradation']['medium']
+                    and volatility_pressure >= 0.25
+                ):
+                    severity = 'critical'
+                if severity != 'none':
+                    alerts.append(FailureAlert(
+                        failure_type=FailureType.PERFORMANCE_DEGRADATION.value,
+                        severity=severity.upper(),
+                        component="Portfolio Performance",
+                        metric_name="combined_performance",
+                        current_value=combined_degradation,
+                        expected_range=(0.0, self.thresholds['performance_degradation']['low']),
+                        deviation_magnitude=combined_degradation,
+                        timestamp=datetime.now(),
+                        description=f"Combined performance degradation detected: {combined_degradation:.1%}",
+                        recommended_action="Escalate strategy review and tighten risk controls",
+                        confidence=0.85
                     ))
         
         return alerts
@@ -254,9 +300,12 @@ class AutomatedFailureDetector:
         
         alerts = []
         
-        if 'volatility' in self.baseline_metrics and len(historical_volatility) > 0:
+        if 'volatility' in self.baseline_metrics:
             baseline_vol = self.baseline_metrics['volatility']['mean']
-            recent_vol_avg = np.mean(historical_volatility[-30:]) if len(historical_volatility) >= 30 else np.mean(historical_volatility)
+            recent_vol_avg = (
+                np.mean(historical_volatility[-30:]) if len(historical_volatility) >= 30
+                else (np.mean(historical_volatility) if len(historical_volatility) > 0 else baseline_vol)
+            )
             
             # Check for volatility spike
             if baseline_vol > 0:
@@ -392,6 +441,40 @@ class AutomatedFailureDetector:
         print("   🔍 Detecting system instability...")
         stability_alerts = self.detect_system_instability(validation_results)
         all_alerts.extend(stability_alerts)
+
+        # Escalate to CRITICAL when multiple performance dimensions degrade together.
+        performance_alerts = [
+            alert for alert in all_alerts
+            if alert.failure_type in {
+                FailureType.PERFORMANCE_DEGRADATION.value,
+                FailureType.VOLATILITY_SPIKE.value
+            }
+        ]
+        has_performance_critical = any(
+            alert.severity == "CRITICAL" and alert.failure_type == FailureType.PERFORMANCE_DEGRADATION.value
+            for alert in performance_alerts
+        )
+        if performance_alerts and not has_performance_critical:
+            high_count_perf = sum(1 for alert in performance_alerts if alert.severity == "HIGH")
+            medium_count_perf = sum(1 for alert in performance_alerts if alert.severity == "MEDIUM")
+            baseline_vol = float(self.baseline_metrics.get('volatility', {}).get('mean', 0.0))
+            current_vol = float(current_metrics.get('volatility', 0.0))
+            vol_ratio = (current_vol / baseline_vol) if baseline_vol > 0 else 1.0
+
+            if ((high_count_perf >= 1 and medium_count_perf >= 1) or medium_count_perf >= 3) and vol_ratio >= 1.2:
+                all_alerts.append(FailureAlert(
+                    failure_type=FailureType.PERFORMANCE_DEGRADATION.value,
+                    severity="CRITICAL",
+                    component="Portfolio Performance",
+                    metric_name="systemic_breakdown",
+                    current_value=vol_ratio,
+                    expected_range=(0.0, 1.2),
+                    deviation_magnitude=vol_ratio - 1.2,
+                    timestamp=datetime.now(),
+                    description="Systemic performance breakdown across multiple risk dimensions",
+                    recommended_action="Escalate incident response and reduce aggregate risk immediately",
+                    confidence=0.8
+                ))
         
         # Store failure history
         self.failure_history.extend(all_alerts)

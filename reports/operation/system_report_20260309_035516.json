@@ -1,0 +1,66 @@
+{
+  "report_id": "0fbedc96-78c8-4bd5-a990-c3815eee14d4",
+  "generated_at": "2026-03-09T03:55:16.130808",
+  "report_type": "system_comprehensive_validation",
+  "system_health": {
+    "timestamp": "2026-03-09T03:55:16.130734",
+    "overall_health": "warning",
+    "component_status": {
+      "system_validation": "warning",
+      "integration_testing": "critical"
+    },
+    "performance_score": 0.8625,
+    "data_quality_score": 0.25,
+    "latency_metrics": {},
+    "error_counts": {},
+    "alert_level": "warning",
+    "recommended_actions": []
+  },
+  "recent_operations": [
+    {
+      "operation_id": "exec_1773008716_test_8211",
+      "operation_type": "integration_testing",
+      "start_time": "2026-03-09T03:55:16.104763",
+      "end_time": "2026-03-09T03:55:16.105206",
+      "status": "failure",
+      "duration_seconds": 0.000443,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    },
+    {
+      "operation_id": "crisis_validation_1773008716",
+      "operation_type": "crisis_validation",
+      "start_time": "2026-03-09T03:55:16.105778",
+      "end_time": "2026-03-09T03:55:16.129198",
+      "status": "warning",
+      "duration_seconds": 0.02342,
+      "performance_metrics": {
+        "total_crisis_periods": 3,
+        "passed_periods": 0,
+        "average_sharpe": -0.3789365681621358,
+        "worst_drawdown": 0.5274484384662755,
+        "total_var_breaches": 83
+      },
+      "validation_results": {
+        "crisis_validation_passed": false
+      },
+      "alerts_count": 3,
+      "report_path": "reports/operation/crisis_report_20260309_035516.json"
+    }
+  ],
+  "active_operations": [],
+  "system_metrics": {
+    "total_operations": 2,
+    "success_rate": 0.0,
+    "avg_duration": 0.0119315,
+    "operation_types": [
+      "integration_testing",
+      "crisis_validation"
+    ]
+  },
+  "operational_insights": [
+    "Operation success rate is 0.0% - investigate failures"
+  ]
+}

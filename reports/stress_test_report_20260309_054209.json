@@ -1,0 +1,55 @@
+{
+  "report_date": "2026-03-09",
+  "test_summary": {
+    "total_tests": 2,
+    "passed_tests": 1,
+    "failed_tests": 1,
+    "pass_rate": 0.5
+  },
+  "scenario_results": [
+    {
+      "test_id": "stress_extreme_volatility_1773015125",
+      "scenario_name": "extreme_volatility",
+      "test_passed": false,
+      "duration_seconds": 0.645477,
+      "failure_reason": "Max drawdown 0.231 or VaR breaches 5",
+      "performance_impact": {
+        "max_drawdown": 0.23120459223220258,
+        "var_breaches": 5,
+        "volatility_multiplier_applied": 5.0
+      },
+      "recovery_required": true
+    },
+    {
+      "test_id": "stress_liquidity_crisis_1773015128",
+      "scenario_name": "liquidity_crisis",
+      "test_passed": true,
+      "duration_seconds": 1.01525,
+      "failure_reason": null,
+      "performance_impact": {
+        "avg_execution_delay": 51.381924197537685,
+        "avg_transaction_cost_bps": 77.98838108861688,
+        "avg_fill_rate": 0.7772132010099941,
+        "orders_processed": 2
+      },
+      "recovery_required": false
+    }
+  ],
+  "risk_compliance_summary": {
+    "total_validations": 2,
+    "compliant_tests": 1,
+    "compliance_rate": 0.5
+  },
+  "failure_analysis": {
+    "total_failures": 1,
+    "failure_patterns": [
+      "Most common failure scenario: extreme_volatility (1 failures)"
+    ],
+    "recovery_success_rate": 1.0
+  },
+  "recommendations": [
+    "System robustness needs improvement - consider infrastructure upgrades",
+    "Improve volatility handling - consider enhanced risk controls"
+  ],
+  "alerts_generated": 2
+}

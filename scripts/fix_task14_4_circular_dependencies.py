@@ -180,13 +180,11 @@ class CircularDependencyFixer:
                 # This is a simplified approach - in practice, each case needs individual handling
                 
                 # Pattern 1: # Optional import: module (handled by dependency injection)
-module = None
                 pattern1 = r'try:\s*import\s+(\w+)\s*except\s+ImportError:\s*\1\s*=\s*None'
                 replacement1 = r'# Optional import: \1 (handled by dependency injection)\n\1 = None'
                 content = re.sub(pattern1, replacement1, content, flags=re.MULTILINE)
                 
                 # Pattern 2: # Optional import: something (handled by dependency injection)
-something = None
                 pattern2 = r'try:\s*from\s+\w+\s+import\s+(\w+)\s*except\s+ImportError:\s*\1\s*=\s*None'
                 replacement2 = r'# Optional import: \1 (handled by dependency injection)\n\1 = None'
                 content = re.sub(pattern2, replacement2, content, flags=re.MULTILINE)

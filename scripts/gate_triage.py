@@ -8,6 +8,7 @@ import fcntl
 import hashlib
 import json
 import os
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -47,6 +48,8 @@ CODE_FREEZE_DIRS = [
     PROJECT_ROOT / "config",
 ]
 CODE_FREEZE_SUFFIXES = {".py", ".yaml", ".yml", ".sh"}
+LOCK_PROBE_ATTEMPTS = max(1, int(os.getenv("NORTHSTAR_LOCK_PROBE_ATTEMPTS", "12")))
+LOCK_PROBE_RETRY_MS = max(1, int(os.getenv("NORTHSTAR_LOCK_PROBE_RETRY_MS", "20")))
 
 
 def _read_json(path: Path) -> Dict[str, Any]:
@@ -189,6 +192,7 @@ def _lock_probe(lock_path: Path) -> Dict[str, Any]:
         "pid": None,
         "pid_alive": False,
         "exclusive_lock_available": None,
+        "probe_attempts": 0,
     }
     if not lock_path.exists():
         result["exclusive_lock_available"] = True
@@ -199,15 +203,22 @@ def _lock_probe(lock_path: Path) -> Dict[str, Any]:
     result["pid"] = pid
     result["pid_alive"] = _pid_alive(pid)
 
-    try:
-        with open(lock_path, "a+", encoding="utf-8") as handle:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-            result["exclusive_lock_available"] = True
-    except OSError:
-        result["exclusive_lock_available"] = False
-    except Exception:
-        result["exclusive_lock_available"] = False
+    for attempt in range(LOCK_PROBE_ATTEMPTS):
+        result["probe_attempts"] = attempt + 1
+        try:
+            with open(lock_path, "a+", encoding="utf-8") as handle:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                result["exclusive_lock_available"] = True
+                break
+        except OSError:
+            result["exclusive_lock_available"] = False
+        except Exception:
+            result["exclusive_lock_available"] = False
+
+        if attempt + 1 < LOCK_PROBE_ATTEMPTS:
+            time.sleep(LOCK_PROBE_RETRY_MS / 1000.0)
+
     return result
 
 

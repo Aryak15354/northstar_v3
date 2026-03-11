@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/data_integrity.py
+# hypothesis_version: 6.150.2
+
+[2022, '%Y-%m', '1.0', '=', 'CPI', 'CRITICAL', 'Date', 'EARNINGS_NIFTY500', 'GDP', '__main__', 'as_of_date', 'daily', 'data/integrity', 'data_available_date', 'data_type', 'delay_days', 'earnings', 'frequency', 'future_data_leak', 'ignore', 'integrity_log', 'integrity_verified', 'macro', 'macro_score', 'market_state', 'monthly', 'period', 'prices', 'profitability_score', 'quarterly', 'release_calendar', 'release_date', 'scores', 'series', 'severity', 'signal_date', 'violation_type']

@@ -17,7 +17,7 @@ import os
 import json
 
 # Add src to path
-, '..', '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.validation.reality_check_engine import RealityCheckEngine
 from src.validation.walk_forward_engine import WalkForwardEngine

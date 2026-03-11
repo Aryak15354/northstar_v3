@@ -24,6 +24,11 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
+try:
+    from src.cohesion.unified_state_manager import AuthorityLevel as StateAuthorityLevel
+except Exception:
+    StateAuthorityLevel = None
+
 
 class MarketRegime(Enum):
     """Market regime classifications"""
@@ -318,12 +323,21 @@ class UnifiedIntelligenceEngine:
             # Update state manager if available
             if self.state_manager:
                 state_dict = self._serialize_state_for_manager()
+                update_ts = as_of
+                try:
+                    current_state = self.state_manager.get_state()
+                    if update_ts <= current_state.timestamp:
+                        update_ts = current_state.timestamp + timedelta(microseconds=1)
+                except Exception:
+                    pass
+
+                authority = StateAuthorityLevel.SYSTEM if StateAuthorityLevel is not None else 'SYSTEM'
                 self.state_manager.update_state(
                     component='intelligence',
                     updates=state_dict,
-                    authority='SYSTEM',
+                    authority=authority,
                     reason=f"Market regime update: {new_regime.value}",
-                    timestamp=as_of
+                    timestamp=update_ts
                 )
             
             duration = (datetime.now() - start_time).total_seconds()
@@ -779,6 +793,10 @@ class UnifiedIntelligenceEngine:
             'state_warnings': len(state_validation.warnings),
             'message': f"Intelligence engine: {self.current_intelligence_state.market_regime.value} regime"
         }
+
+
+# Backward-compatible alias used by some validation paths.
+IntelligenceEngine = UnifiedIntelligenceEngine
 
 
 def main():

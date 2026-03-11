@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/macro_impact_engine/report_generator.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1.0, ' | ', '_lag(\\d+)$', '_lag\\d+$', 'abs_beta', 'abs_t_stat', 'adj_r_squared', 'average_lag', 'beta', 'coefficients', 'coerce', 'column_names', 'count', 'error', 'fdr_rejected', 'ignore', 'lag', 'macro_exposures', 'macro_variable', 'median_beta', 'message', 'n_companies', 'n_holdings', 'n_obs', 'n_significant', 'no_data', 'p_value', 'p_values', 'portfolio_beta', 'portfolio_size', 'r_squared', 'records', 'regression_failed', 'reports/macro_impact', 'sector', 'significant', 'success', 'sum', 't_stat', 't_stats', 'ticker', 'top_drivers', 'top_drivers_text', 'top_macro_drivers', 'variable', 'w', 'weight', 'weighted_beta']

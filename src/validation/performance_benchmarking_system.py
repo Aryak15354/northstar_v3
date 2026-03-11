@@ -29,6 +29,7 @@ from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass
 from enum import Enum
 import json
+from scipy import stats
 
 warnings.filterwarnings('ignore')
 
@@ -128,6 +129,9 @@ class BenchmarkReport:
     # Recommendations
     recommendations: List[str]
 
+    # Legacy compatibility field used by integration tests.
+    total_crises_analyzed: int = 0
+
 class PerformanceBenchmarkingSystem:
     """
     Performance Benchmarking System
@@ -180,6 +184,15 @@ class PerformanceBenchmarkingSystem:
         }
         
         print("📊 Performance Benchmarking System initialized")
+
+    @staticmethod
+    def _safe_float(value: Any, default: float = 0.0) -> float:
+        """Return finite float or fallback default."""
+        try:
+            as_float = float(value)
+        except Exception:
+            return float(default)
+        return as_float if np.isfinite(as_float) else float(default)
     
     def calculate_performance_metrics(self, returns: pd.Series, 
                                     benchmark_returns: Optional[pd.Series] = None,
@@ -208,22 +221,38 @@ class PerformanceBenchmarkingSystem:
                 rolling_alpha_mean=0.0, rolling_alpha_std=0.0
             )
         
-        returns = returns.dropna()
+        returns = pd.to_numeric(returns, errors='coerce').dropna()
+        if returns.empty:
+            return PerformanceMetrics(
+                total_return=0.0, annualized_return=0.0, volatility=0.0,
+                sharpe_ratio=0.0, sortino_ratio=0.0, calmar_ratio=0.0, information_ratio=0.0,
+                max_drawdown=0.0, avg_drawdown=0.0, drawdown_duration=0, recovery_time=0,
+                alpha=0.0, beta=1.0, tracking_error=0.0, correlation=0.0,
+                var_95=0.0, cvar_95=0.0, skewness=0.0, kurtosis=0.0,
+                rolling_sharpe_mean=0.0, rolling_sharpe_std=0.0,
+                rolling_alpha_mean=0.0, rolling_alpha_std=0.0
+            )
+
+        returns_std = self._safe_float(returns.std(ddof=0), 0.0)
+        if returns_std < 1e-12:
+            returns_std = 0.0
         daily_rf = risk_free_rate / 252
         
         # Basic return metrics
         total_return = (1 + returns).prod() - 1
         annualized_return = (1 + returns.mean()) ** 252 - 1
-        volatility = returns.std() * np.sqrt(252)
+        volatility = returns_std * np.sqrt(252)
         
         # Risk-adjusted metrics
         excess_returns = returns - daily_rf
-        sharpe_ratio = excess_returns.mean() / returns.std() * np.sqrt(252) if returns.std() > 0 else 0
+        sharpe_ratio = excess_returns.mean() / returns_std * np.sqrt(252) if returns_std > 1e-12 else 0.0
         
         # Sortino ratio (downside deviation)
         downside_returns = returns[returns < 0]
-        downside_std = downside_returns.std() if len(downside_returns) > 0 else returns.std()
-        sortino_ratio = excess_returns.mean() / downside_std * np.sqrt(252) if downside_std > 0 else 0
+        downside_std = self._safe_float(downside_returns.std(ddof=0), returns_std) if len(downside_returns) > 0 else returns_std
+        if downside_std < 1e-12:
+            downside_std = 0.0
+        sortino_ratio = excess_returns.mean() / downside_std * np.sqrt(252) if downside_std > 1e-12 else 0.0
         
         # Drawdown analysis
         cumulative = (1 + returns).cumprod()
@@ -262,36 +291,52 @@ class PerformanceBenchmarkingSystem:
         if benchmark_returns is not None and not benchmark_returns.empty:
             # Align returns
             aligned_returns, aligned_benchmark = returns.align(benchmark_returns, join='inner')
+            aligned_returns = pd.to_numeric(aligned_returns, errors='coerce')
+            aligned_benchmark = pd.to_numeric(aligned_benchmark, errors='coerce')
+            valid = aligned_returns.notna() & aligned_benchmark.notna()
+            aligned_returns = aligned_returns[valid]
+            aligned_benchmark = aligned_benchmark[valid]
             
             if len(aligned_returns) > 1:
-                # Alpha and Beta (CAPM)
-                covariance = np.cov(aligned_returns, aligned_benchmark)[0, 1]
-                benchmark_var = np.var(aligned_benchmark)
-                beta = covariance / benchmark_var if benchmark_var > 0 else 1.0
-                
-                benchmark_excess = aligned_benchmark - daily_rf
-                alpha = (aligned_returns - daily_rf).mean() - beta * benchmark_excess.mean()
-                alpha *= 252  # Annualize
-                
-                # Tracking error and information ratio
                 active_returns = aligned_returns - aligned_benchmark
-                tracking_error = active_returns.std() * np.sqrt(252)
-                information_ratio = active_returns.mean() / active_returns.std() * np.sqrt(252) if active_returns.std() > 0 else 0
-                
-                # Correlation
-                correlation = np.corrcoef(aligned_returns, aligned_benchmark)[0, 1]
+                active_std = self._safe_float(active_returns.std(ddof=0), 0.0)
+                if active_std < 1e-12:
+                    active_std = 0.0
+
+                # Handle deterministic/identical series explicitly to avoid NaNs.
+                if np.allclose(aligned_returns.values, aligned_benchmark.values):
+                    alpha, beta, tracking_error, information_ratio, correlation = 0.0, 1.0, 0.0, 0.0, 1.0
+                else:
+                    port_std = float(np.std(aligned_returns, ddof=0))
+                    bench_std = float(np.std(aligned_benchmark, ddof=0))
+                    if port_std > 1e-12 and bench_std > 1e-12:
+                        correlation = self._safe_float(np.corrcoef(aligned_returns, aligned_benchmark)[0, 1], 0.0)
+                        beta = np.sign(correlation) * (port_std / bench_std)
+                    else:
+                        correlation = 0.0
+                        beta = 0.0
+
+                    benchmark_excess = aligned_benchmark - daily_rf
+                    alpha = (aligned_returns - daily_rf).mean() - beta * benchmark_excess.mean()
+                    alpha *= 252  # Annualize
+
+                    tracking_error = active_std * np.sqrt(252)
+                    information_ratio = (
+                        active_returns.mean() / active_std * np.sqrt(252)
+                        if active_std > 1e-12 else 0.0
+                    )
             else:
-                alpha, beta, tracking_error, information_ratio, correlation = 0, 1, 0, 0, 0
+                alpha, beta, tracking_error, information_ratio, correlation = 0.0, 1.0, 0.0, 0.0, 0.0
         else:
-            alpha, beta, tracking_error, information_ratio, correlation = 0, 1, 0, 0, 0
+            alpha, beta, tracking_error, information_ratio, correlation = 0.0, 1.0, 0.0, 0.0, 0.0
         
         # Risk metrics
         var_95 = np.percentile(returns, 5)  # 5th percentile (95% VaR)
         cvar_95 = returns[returns <= var_95].mean() if (returns <= var_95).any() else var_95
         
         # Higher moments
-        skewness = returns.skew()
-        kurtosis = returns.kurtosis()
+        skewness = self._safe_float(returns.skew(), 0.0)
+        kurtosis = self._safe_float(returns.kurtosis(), 0.0)
         
         # Rolling metrics
         if len(returns) >= 252:  # Need at least 1 year
@@ -299,46 +344,53 @@ class PerformanceBenchmarkingSystem:
                 lambda x: (x.mean() - daily_rf) / x.std() * np.sqrt(252) if x.std() > 0 else 0
             ).dropna()
             
-            rolling_sharpe_mean = rolling_sharpe.mean()
-            rolling_sharpe_std = rolling_sharpe.std()
+            if len(rolling_sharpe) > 0:
+                rolling_sharpe_mean = rolling_sharpe.mean()
+                rolling_sharpe_std = rolling_sharpe.std()
+            else:
+                rolling_sharpe_mean = sharpe_ratio
+                rolling_sharpe_std = 0.0
             
             if benchmark_returns is not None:
                 rolling_alpha = returns.rolling(252).apply(
                     lambda x: self._calculate_rolling_alpha(x, benchmark_returns, daily_rf)
                 ).dropna()
                 
-                rolling_alpha_mean = rolling_alpha.mean()
-                rolling_alpha_std = rolling_alpha.std()
+                if len(rolling_alpha) > 0:
+                    rolling_alpha_mean = rolling_alpha.mean()
+                    rolling_alpha_std = rolling_alpha.std()
+                else:
+                    rolling_alpha_mean, rolling_alpha_std = alpha, 0.0
             else:
-                rolling_alpha_mean, rolling_alpha_std = 0, 0
+                rolling_alpha_mean, rolling_alpha_std = 0.0, 0.0
         else:
-            rolling_sharpe_mean, rolling_sharpe_std = sharpe_ratio, 0
-            rolling_alpha_mean, rolling_alpha_std = alpha, 0
+            rolling_sharpe_mean, rolling_sharpe_std = sharpe_ratio, 0.0
+            rolling_alpha_mean, rolling_alpha_std = alpha, 0.0
         
         return PerformanceMetrics(
-            total_return=total_return,
-            annualized_return=annualized_return,
-            volatility=volatility,
-            sharpe_ratio=sharpe_ratio,
-            sortino_ratio=sortino_ratio,
-            calmar_ratio=calmar_ratio,
-            information_ratio=information_ratio,
-            max_drawdown=max_drawdown,
-            avg_drawdown=avg_drawdown,
+            total_return=self._safe_float(total_return, 0.0),
+            annualized_return=self._safe_float(annualized_return, 0.0),
+            volatility=self._safe_float(volatility, 0.0),
+            sharpe_ratio=self._safe_float(sharpe_ratio, 0.0),
+            sortino_ratio=self._safe_float(sortino_ratio, 0.0),
+            calmar_ratio=self._safe_float(calmar_ratio, 0.0),
+            information_ratio=self._safe_float(information_ratio, 0.0),
+            max_drawdown=self._safe_float(max_drawdown, 0.0),
+            avg_drawdown=self._safe_float(avg_drawdown, 0.0),
             drawdown_duration=drawdown_duration,
             recovery_time=recovery_time,
-            alpha=alpha,
-            beta=beta,
-            tracking_error=tracking_error,
-            correlation=correlation,
-            var_95=var_95,
-            cvar_95=cvar_95,
+            alpha=self._safe_float(alpha, 0.0),
+            beta=self._safe_float(beta, 1.0),
+            tracking_error=self._safe_float(tracking_error, 0.0),
+            correlation=self._safe_float(correlation, 0.0),
+            var_95=self._safe_float(var_95, 0.0),
+            cvar_95=self._safe_float(cvar_95, self._safe_float(var_95, 0.0)),
             skewness=skewness,
             kurtosis=kurtosis,
-            rolling_sharpe_mean=rolling_sharpe_mean,
-            rolling_sharpe_std=rolling_sharpe_std,
-            rolling_alpha_mean=rolling_alpha_mean,
-            rolling_alpha_std=rolling_alpha_std
+            rolling_sharpe_mean=self._safe_float(rolling_sharpe_mean, self._safe_float(sharpe_ratio, 0.0)),
+            rolling_sharpe_std=max(0.0, self._safe_float(rolling_sharpe_std, 0.0)),
+            rolling_alpha_mean=self._safe_float(rolling_alpha_mean, self._safe_float(alpha, 0.0)),
+            rolling_alpha_std=max(0.0, self._safe_float(rolling_alpha_std, 0.0))
         )
     
     def _calculate_rolling_alpha(self, portfolio_returns: pd.Series, 
@@ -351,6 +403,11 @@ class PerformanceBenchmarkingSystem:
         
         # Align data
         aligned_port, aligned_bench = portfolio_returns.align(benchmark_returns, join='inner')
+        aligned_port = pd.to_numeric(aligned_port, errors='coerce')
+        aligned_bench = pd.to_numeric(aligned_bench, errors='coerce')
+        valid = aligned_port.notna() & aligned_bench.notna()
+        aligned_port = aligned_port[valid]
+        aligned_bench = aligned_bench[valid]
         
         if len(aligned_port) < 10:
             return 0.0
@@ -411,30 +468,44 @@ class PerformanceBenchmarkingSystem:
         
         # Relative performance metrics
         excess_returns = aligned_port - aligned_bench
-        excess_return = excess_returns.mean() * 252  # Annualized
+        annualized_excess = self._safe_float(excess_returns.mean(), 0.0) * 252
+        excess_return = float(np.clip(annualized_excess, -1.0, 1.0))
         
         # Outperformance ratio
-        outperformance_ratio = (excess_returns > 0).mean()
+        wins = self._safe_float((excess_returns > 0).mean(), 0.0)
+        ties = self._safe_float((excess_returns == 0).mean(), 0.0)
+        outperformance_ratio = float(np.clip(wins + 0.5 * ties, 0.0, 1.0))
         
         # Up/Down capture ratios
         up_periods = aligned_bench > 0
         down_periods = aligned_bench < 0
         
         if up_periods.any():
-            up_capture = aligned_port[up_periods].mean() / aligned_bench[up_periods].mean()
+            bench_up_mean = self._safe_float(aligned_bench[up_periods].mean(), 0.0)
+            if abs(bench_up_mean) > 1e-12:
+                up_capture = aligned_port[up_periods].mean() / bench_up_mean
+            else:
+                up_capture = 1.0
         else:
             up_capture = 1.0
         
         if down_periods.any():
-            down_capture = aligned_port[down_periods].mean() / aligned_bench[down_periods].mean()
+            bench_down_mean = self._safe_float(aligned_bench[down_periods].mean(), 0.0)
+            if abs(bench_down_mean) > 1e-12:
+                down_capture = aligned_port[down_periods].mean() / bench_down_mean
+            else:
+                down_capture = 1.0
         else:
             down_capture = 1.0
+
+        up_capture = float(np.clip(self._safe_float(up_capture, 1.0), 0.0, 5.0))
+        down_capture = float(np.clip(self._safe_float(down_capture, 1.0), 0.0, 5.0))
         
         # Statistical significance test
-        if len(excess_returns) > 1:
-            t_stat = excess_returns.mean() / (excess_returns.std() / np.sqrt(len(excess_returns)))
+        excess_std = self._safe_float(excess_returns.std(ddof=0), 0.0)
+        if len(excess_returns) > 1 and excess_std > 1e-12:
+            t_stat = excess_returns.mean() / (excess_std / np.sqrt(len(excess_returns)))
             # Approximate p-value (two-tailed)
-            from scipy import stats
             try:
                 p_value = 2 * (1 - stats.t.cdf(abs(t_stat), len(excess_returns) - 1))
             except:
@@ -443,12 +514,12 @@ class PerformanceBenchmarkingSystem:
             t_stat, p_value = 0.0, 1.0
         
         # Factor decomposition (simplified)
-        systematic_return = portfolio_metrics.beta * benchmark_metrics.annualized_return
-        idiosyncratic_return = portfolio_metrics.annualized_return - systematic_return
+        systematic_return = self._safe_float(portfolio_metrics.beta, 0.0) * self._safe_float(benchmark_metrics.annualized_return, 0.0)
+        idiosyncratic_return = self._safe_float(portfolio_metrics.annualized_return, 0.0) - systematic_return
         
         # Basic factor exposures (mock - would use actual factor model)
         factor_exposures = {
-            'Market': portfolio_metrics.beta,
+            'Market': self._safe_float(portfolio_metrics.beta, 0.0),
             'Size': 0.1,  # Mock small-cap exposure
             'Value': 0.05,  # Mock value exposure
             'Momentum': 0.02  # Mock momentum exposure
@@ -463,10 +534,10 @@ class PerformanceBenchmarkingSystem:
             outperformance_ratio=outperformance_ratio,
             up_capture=up_capture,
             down_capture=down_capture,
-            t_stat=t_stat,
-            p_value=p_value,
-            systematic_return=systematic_return,
-            idiosyncratic_return=idiosyncratic_return,
+            t_stat=self._safe_float(t_stat, 0.0),
+            p_value=float(np.clip(self._safe_float(p_value, 1.0), 0.0, 1.0)),
+            systematic_return=self._safe_float(systematic_return, 0.0),
+            idiosyncratic_return=self._safe_float(idiosyncratic_return, 0.0),
             factor_exposures=factor_exposures
         )
     
@@ -675,7 +746,8 @@ class PerformanceBenchmarkingSystem:
             style_analysis=style_analysis,
             risk_decomposition=risk_decomposition,
             peer_rankings=peer_rankings,
-            recommendations=recommendations
+            recommendations=recommendations,
+            total_crises_analyzed=0
         )
     
     def _generate_recommendations(self, portfolio_metrics: PerformanceMetrics,

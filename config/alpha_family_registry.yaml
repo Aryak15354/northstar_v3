@@ -1,0 +1,236 @@
+version: 1
+phase: 1
+generated_on: "2026-03-03"
+description: "Phase 1 alpha ontology: economic edge families with structural rationale and regime activation."
+families:
+  momentum_cross_sectional:
+    label: "Cross-Sectional Momentum"
+    family_type: "core"
+    hypothesis: "Investors underreact to information and capital rotates slowly across the cross-section."
+    structural_rationale:
+      - "Institutional mandate and benchmark constraints delay position changes."
+      - "Information diffusion is heterogeneous across sectors and size buckets."
+    core_signal_form: "Rank(Return_{t-L, t-skip})"
+    parameter_axes:
+      lookback_days: [5, 10, 20, 60, 120, 250]
+      skip_days: [0, 1, 5]
+      holding_days: [5, 10, 20, 60]
+      neutralization: ["none", "sector", "beta"]
+    interaction_axes:
+      - "momentum x medium_volatility_regime"
+      - "momentum x high_dispersion_regime"
+    activation_variables:
+      - "cross_sectional_dispersion_zscore"
+      - "volatility_regime_probability"
+      - "structural_break_flag"
+    works_when:
+      - "dispersion_high"
+      - "volatility_moderate"
+      - "liquidity_stable"
+    fails_when:
+      - "sudden_regime_reversal"
+      - "macro_shock_gap"
+      - "volatility_spike"
+    expected_decay: "medium"
+    holding_period_days: "20-60"
+    risk_profile: "medium"
+
+  mean_reversion_short_term:
+    label: "Short-Term Mean Reversion"
+    family_type: "core"
+    hypothesis: "Short-horizon overshoots are corrected by liquidity providers and inventory rebalancing."
+    structural_rationale:
+      - "Temporary order imbalances move prices away from short-run fair value."
+      - "Market making inventory control creates contrarian pressure after shocks."
+    core_signal_form: "-Rank(Return_{t-1, t})"
+    parameter_axes:
+      lookback_days: [1, 2, 3, 5]
+      holding_days: [1, 2, 3, 5]
+      entry_threshold_pct: [5, 10, 20]
+    interaction_axes:
+      - "reversion x liquidity_shock"
+      - "reversion x high_intraday_volatility"
+    activation_variables:
+      - "realized_volatility"
+      - "order_imbalance_proxy"
+      - "spread_state"
+    works_when:
+      - "volatility_high"
+      - "liquidity_thin"
+      - "no_major_macro_event"
+    fails_when:
+      - "persistent_directional_trend"
+      - "momentum_dominant_regime"
+    expected_decay: "fast"
+    holding_period_days: "1-5"
+    risk_profile: "medium_high"
+
+  liquidity_shock:
+    label: "Liquidity Shock"
+    family_type: "core"
+    hypothesis: "Transient liquidity dislocations produce predictable reversion or continuation after impact."
+    structural_rationale:
+      - "Forced flow and thin books dislocate price from fundamental equilibrium."
+      - "Spread expansion and depth withdrawal create temporary impact asymmetry."
+    core_signal_form: "Z(Volume_t - EWMA(Volume)) x ReturnShock_t"
+    parameter_axes:
+      ewma_half_life_days: [5, 10, 20]
+      shock_threshold_sigma: [1.0, 1.5, 2.0]
+      holding_days: [1, 3, 5]
+    interaction_axes:
+      - "liquidity_shock x market_stress"
+      - "liquidity_shock x etf_flow_proxy"
+    activation_variables:
+      - "volume_shock_zscore"
+      - "bid_ask_spread_zscore"
+      - "market_stress_probability"
+    works_when:
+      - "market_stress"
+      - "spread_widening"
+      - "high_index_flow_days"
+    fails_when:
+      - "calm_liquidity_conditions"
+      - "normal_spread_environment"
+    expected_decay: "fast"
+    holding_period_days: "1-5"
+    risk_profile: "high"
+
+  volatility_mispricing:
+    label: "Volatility Mispricing"
+    family_type: "core"
+    hypothesis: "Options-implied volatility can overshoot realized volatility during panic and uncertainty clustering."
+    structural_rationale:
+      - "Crash-risk demand drives implied volatility above realized paths."
+      - "Volatility-of-volatility spikes introduce temporary option mispricing."
+    core_signal_form: "RV_{window} - IV_{tenor} or Z(VolOfVol)"
+    parameter_axes:
+      realized_window_days: [5, 10, 20, 60]
+      zscore_lookback_days: [20, 60, 120]
+      threshold_sigma: [1.0, 1.5]
+    interaction_axes:
+      - "rv_iv_spread x dispersion_regime"
+      - "vol_mispricing x earnings_cluster"
+    activation_variables:
+      - "realized_implied_spread"
+      - "vol_of_vol_zscore"
+      - "event_risk_density"
+    works_when:
+      - "panic_or_event_risk_regime"
+      - "earnings_or_macro_clusters"
+    fails_when:
+      - "persistent_low_vol_carry_regime"
+      - "stable_term_structure"
+    expected_decay: "medium"
+    holding_period_days: "5-30"
+    risk_profile: "high"
+
+  dispersion_rotation:
+    label: "Dispersion Rotation"
+    family_type: "meta_allocator"
+    hypothesis: "Cross-sectional opportunity set expands with dispersion and contracts when correlation compresses."
+    structural_rationale:
+      - "High dispersion increases stock-selection signal-to-noise."
+      - "Low dispersion concentrates returns into market beta and macro factors."
+    core_signal_form: "Dispersion_t = std(Return_{i,t})"
+    parameter_axes:
+      window_days: [5, 10, 20, 60]
+      high_dispersion_quantile: [0.70, 0.80, 0.90]
+    interaction_axes:
+      - "dispersion_state x family_allocation_weights"
+    activation_variables:
+      - "cross_sectional_sigma"
+      - "realized_correlation"
+      - "regime_state_probability"
+    works_when:
+      - "dispersion_state_is_stable"
+    fails_when:
+      - "abrupt_regime_transition"
+      - "dispersion_signal_instability"
+    expected_decay: "slow"
+    holding_period_days: "allocator_dynamic"
+    risk_profile: "medium"
+
+  flow_pressure_imbalance:
+    label: "Flow / Pressure Imbalance"
+    family_type: "core"
+    hypothesis: "Order-flow imbalance produces short-term directional drift before liquidity re-equilibrates."
+    structural_rationale:
+      - "Aggressive meta-orders execute over multiple intervals and leak direction."
+      - "Price impact decays with latency, enabling short-horizon prediction."
+    core_signal_form: "BuyPressure_t - SellPressure_t (or Volume x Return proxy)"
+    parameter_axes:
+      window_days: [1, 3, 5]
+      normalization: ["raw", "zscore", "cross_sectional"]
+      holding_days: [1, 3, 5]
+    interaction_axes:
+      - "flow_imbalance x news_intensity"
+      - "flow_imbalance x retail_participation"
+    activation_variables:
+      - "signed_volume_proxy"
+      - "short_horizon_price_impact"
+      - "liquidity_depth_proxy"
+    works_when:
+      - "flow_dominant_sessions"
+      - "news_spike_sessions"
+    fails_when:
+      - "deep_liquidity_absorption"
+      - "market_neutral_flow"
+    expected_decay: "fast"
+    holding_period_days: "1-5"
+    risk_profile: "high"
+
+  earnings_drift:
+    label: "Post-Earnings Drift"
+    family_type: "core"
+    hypothesis: "Institutions reprice earnings information gradually, creating medium-horizon drift."
+    structural_rationale:
+      - "Portfolio mandates and rebalance cycles delay full earnings response."
+      - "Analyst estimate revision chains unfold over multiple weeks."
+    core_signal_form: "Z(EarningsSurprise)"
+    parameter_axes:
+      holding_days: [20, 60, 90]
+      surprise_normalization: ["sector", "market_cap", "none"]
+      liquidity_filter: ["high", "mid", "none"]
+    interaction_axes:
+      - "earnings_surprise x volatility_state"
+      - "earnings_surprise x analyst_revision_flow"
+    activation_variables:
+      - "earnings_surprise_zscore"
+      - "revision_breadth"
+      - "post_event_liquidity"
+    works_when:
+      - "earnings_season"
+      - "dispersion_high"
+    fails_when:
+      - "macro_dominated_tape"
+      - "event_conflict_noise"
+    expected_decay: "medium"
+    holding_period_days: "20-90"
+    risk_profile: "medium"
+
+  factor_compression_expansion:
+    label: "Factor Compression / Expansion"
+    family_type: "meta_allocator"
+    hypothesis: "Factor premia oscillate between crowding compression and spread expansion regimes."
+    structural_rationale:
+      - "Crowding and deleveraging cycles modulate factor spreads."
+      - "Risk appetite rotation shifts relative factor pricing."
+    core_signal_form: "Spread = Return(top_factor_bucket) - Return(bottom_factor_bucket)"
+    parameter_axes:
+      spread_lookback_days: [20, 60, 120]
+      logic: ["mean_reversion", "continuation"]
+    interaction_axes:
+      - "factor_spread_state x allocation_tilt"
+      - "factor_spread_state x volatility_regime"
+    activation_variables:
+      - "factor_spread_zscore"
+      - "crowding_proxy"
+      - "cross_factor_correlation"
+    works_when:
+      - "clear_factor_cycle"
+    fails_when:
+      - "discontinuous_macro_regime_change"
+      - "factor_signal_breakdown"
+    expected_decay: "medium"
+    holding_period_days: "20-120"
+    risk_profile: "medium"

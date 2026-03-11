@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/anticipatory_capital_allocator.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.05, 0.1, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, '1.0', '=', '__main__', 'allocation', 'allocation_history', 'allocations', 'allocations_output', 'anticipatory_score', 'belief_component', 'belief_weight', 'cash', 'cash_allocation', 'cash_buffer', 'config', 'created_at', 'date', 'dual_momentum', 'ignore', 'largest_allocation', 'low_vol', 'max_allocation', 'max_strategies', 'min_allocation', 'momentum_12m', 'performance_tracking', 'quality_growth', 'r', 'rank', 'raw_tailwind', 'rebalance_threshold', 'regret_adjustment', 'regret_component', 'regret_weight', 'sector_tilt_momentum', 'sharpe_ratio', 'strategy_scores', 'summary', 'tailwind_component', 'tailwind_weight', 'total_strategies', 'total_tailwind', 'value_tilt', 'version', 'w']

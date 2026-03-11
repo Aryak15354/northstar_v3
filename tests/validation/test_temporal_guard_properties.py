@@ -15,7 +15,7 @@ import sys
 import os
 
 # Add src to path for imports
-, '..', '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from validation.temporal_guard import (
     TemporalGuard, 

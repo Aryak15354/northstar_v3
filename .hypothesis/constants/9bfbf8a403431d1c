@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/diagnostics/capacity_curve_optimizer.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-12, 1e-08, 0.0001, 0.0004, 0.35, 0.5, 0.7, 1.0, 10000000.0, 25000000.0, 50000000.0, 100000000.0, 'base_capital', 'drawdown_curve', 'drawdown_limit', 'insufficient_returns', 'metadata', 'min_sharpe', 'optimal_capital', 'reason', 'reject', 'sharpe_at_optimal', 'sharpe_curve', 'status', 'viable']

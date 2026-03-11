@@ -1,0 +1,48 @@
+{
+  "name": "integration_test_data",
+  "version": "1.0.0",
+  "description": "",
+  "columns": {
+    "timestamp": {
+      "name": "timestamp",
+      "data_type": "datetime",
+      "nullable": false,
+      "constraints": [],
+      "description": ""
+    },
+    "symbol": {
+      "name": "symbol",
+      "data_type": "string",
+      "nullable": false,
+      "constraints": [],
+      "description": ""
+    },
+    "price": {
+      "name": "price",
+      "data_type": "float",
+      "nullable": false,
+      "constraints": [
+        {
+          "type": "min_value",
+          "value": 0.01
+        }
+      ],
+      "description": ""
+    },
+    "volume": {
+      "name": "volume",
+      "data_type": "integer",
+      "nullable": false,
+      "constraints": [],
+      "description": ""
+    }
+  },
+  "constraints": [],
+  "temporal_columns": [
+    "timestamp"
+  ],
+  "primary_key": [
+    "timestamp",
+    "symbol"
+  ]
+}

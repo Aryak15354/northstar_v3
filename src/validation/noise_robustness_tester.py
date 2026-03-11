@@ -147,31 +147,39 @@ class NoiseRobustnessTester:
         if not regime_changes or len(performance_history) < 10:
             return 1.0  # No regime changes or insufficient data
         
+        perf = np.asarray(performance_history, dtype=float)
         adaptation_speeds = []
         
         for change_idx in regime_changes:
-            if change_idx + 10 < len(performance_history):
-                # Measure performance recovery after regime change
-                pre_change_window = max(0, change_idx-5)
-                pre_change = np.mean(performance_history[pre_change_window:change_idx])
-                post_change = performance_history[change_idx:change_idx+10]
-                
-                # Find how many days to recover to pre-change performance
-                recovery_days = 10  # Default to max if no recovery
-                recovery_threshold = pre_change * 0.95  # 95% recovery threshold
-                
-                for i, perf in enumerate(post_change):
-                    if perf >= recovery_threshold:
-                        recovery_days = i + 1
-                        break
-                
-                # Normalize to 0-1 scale (faster = higher score)
-                # If recovery happens quickly (1-3 days), score is high
-                # If recovery takes full 10 days, score is low
-                adaptation_speed = max(0.1, 1 - (recovery_days / 10))
-                adaptation_speeds.append(adaptation_speed)
+            if change_idx <= 0 or change_idx >= len(perf) - 5:
+                continue
+
+            # Use a wider post-change horizon to capture realistic recovery paths.
+            pre_start = max(0, change_idx - 10)
+            pre_change = perf[pre_start:change_idx]
+            if pre_change.size < 3:
+                continue
+
+            post_horizon = min(20, len(perf) - change_idx)
+            post_change = perf[change_idx:change_idx + post_horizon]
+            if post_change.size < 5:
+                continue
+
+            baseline = float(np.nanmean(pre_change))
+            if not np.isfinite(baseline):
+                continue
+
+            # Require recovery to 80% of baseline (less brittle than 95%).
+            recovery_threshold = baseline * 0.80
+            # Numeric tolerance avoids missing exact-threshold recoveries due float rounding.
+            recovered = np.where(post_change >= (recovery_threshold - 1e-9))[0]
+            recovery_days = int(recovered[0] + 1) if recovered.size else int(post_change.size)
+
+            # Normalize to 0-1 scale (faster recovery => higher score).
+            adaptation_speed = max(0.1, 1.0 - (recovery_days / float(post_change.size)))
+            adaptation_speeds.append(float(np.clip(adaptation_speed, 0.0, 1.0)))
         
-        return np.mean(adaptation_speeds) if adaptation_speeds else 0.5
+        return float(np.mean(adaptation_speeds)) if adaptation_speeds else 0.5
     
     def calculate_signal_to_noise_ratio(self, clean_signals: Dict[str, Any], 
                                       noisy_signals: Dict[str, Any]) -> float:

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/volatility/strategy_generator.py
+# hypothesis_version: 6.150.2
+
+[-0.1, -0.01, 0.0, 0.01, 0.03, 0.05, 0.1, 0.2, 0.5, 0.6, 0.7, 0.8, 1.0, 2.0, 5.0, 10.0, 100.0, 450.0, 50000.0, 100000.0, 200000.0, 100, 500000, '=', 'Composed Strategy', 'SPY', '__main__', 'call', 'directional_long', 'directional_short', 'inf', 'long_gamma', 'long_vol', 'short_gamma', 'short_vol', 'theta_negative', 'theta_positive']

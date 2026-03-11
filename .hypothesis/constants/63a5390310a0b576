@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/anti_override_system.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.6, 0.7, 0.8, 1.0, 2.0, 'HOSTILE', 'SUPPORTIVE', 'a', 'actor', 'allowed', 'attempt_hash', 'change_type', 'cooling_off_minutes', 'daily_pnl', 'disable_shutdown', 'discretionary_sizing', 'emergency', 'escalation_required', 'exposure_override', 'justification', 'last', 'logging_config', 'manual_exit', 'module', 'next_review_time_utc', 'non_trading_metadata', 'observability_config', 'payload', 'payload_json', 'position_size', 'reason', 'regime_state', 'stop_rule_override', 'stress_level', 'system_change', 'thesis_override', 'timestamp', 'utf-8']

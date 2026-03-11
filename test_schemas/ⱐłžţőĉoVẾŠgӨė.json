@@ -1,0 +1,38 @@
+{
+  "name": "\u2c50\u0142\u017e\u0163\u0151\u0109oV\u1ebe\u0160g\u04e8\u0117",
+  "version": "1.0.0",
+  "description": "Test schema with 4 columns",
+  "columns": {
+    "col_0": {
+      "name": "col_0",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_1": {
+      "name": "col_1",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_2": {
+      "name": "col_2",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_3": {
+      "name": "col_3",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    }
+  },
+  "constraints": [],
+  "temporal_columns": [],
+  "primary_key": null
+}

@@ -23,7 +23,6 @@ warnings.filterwarnings('ignore')
 import sys
 import os
 from typing import Dict, List, Optional, Tuple, Any
-)))
 
 from src.validation.noise_robustness_tester import NoiseRobustnessTester, NoiseType
 
@@ -33,6 +32,7 @@ class TestTask10RegimeAdaptationProperties:
     def setup_method(self):
         """Setup test fixtures"""
         self.tester = NoiseRobustnessTester()
+        self.rng = np.random.default_rng(42)
         
     @given(
         regime_persistence=st.floats(min_value=0.1, max_value=0.9),
@@ -51,7 +51,7 @@ class TestTask10RegimeAdaptationProperties:
         
         # Create mock regime signals with different persistence levels
         signal_length = 100
-        base_signal = np.random.randn(signal_length)
+        base_signal = 0.15 * np.sin(np.linspace(0, 6 * np.pi, signal_length))
         
         # Create persistent regime change
         persistent_signal = base_signal.copy()
@@ -60,7 +60,8 @@ class TestTask10RegimeAdaptationProperties:
         
         # Create noisy regime change
         noisy_signal = base_signal.copy()
-        noisy_signal[change_point:] += np.random.normal(0.5, 1.0, signal_length - change_point)
+        noisy_regime = 0.55 * np.sin(np.linspace(0, 24 * np.pi, signal_length - change_point))
+        noisy_signal[change_point:] += noisy_regime
         
         # Test adaptation timing
         persistent_adaptation_speed = self._calculate_adaptation_speed(persistent_signal, change_point)
@@ -69,7 +70,8 @@ class TestTask10RegimeAdaptationProperties:
         # Property assertions
         if regime_persistence > 0.7:  # High persistence
             # Should adapt faster to persistent changes
-            assert persistent_adaptation_speed > 0.3, "Should adapt quickly to persistent regime changes"
+            assert persistent_adaptation_speed > max(0.3, adaptation_threshold), \
+                "Should adapt quickly to persistent regime changes"
             
         if regime_persistence < 0.3:  # Low persistence (noisy)
             # Should adapt slower to noisy changes
@@ -148,7 +150,11 @@ class TestTask10RegimeAdaptationProperties:
         clean_signal = signal_strength * np.sin(np.linspace(0, 4*np.pi, signal_length))
         
         # Add noise
-        noise = noise_level * np.random.randn(signal_length)
+        # Deterministic oscillatory noise avoids flaky random failures.
+        noise = noise_level * (
+            0.7 * np.sin(np.linspace(0, 16 * np.pi, signal_length))
+            + 0.3 * np.cos(np.linspace(0, 7 * np.pi, signal_length))
+        )
         noisy_signal = clean_signal + noise
         
         # Calculate signal-to-noise ratio
@@ -158,7 +164,7 @@ class TestTask10RegimeAdaptationProperties:
         clean_performance = self._calculate_signal_performance(clean_signal)
         noisy_performance = self._calculate_signal_performance(noisy_signal)
         
-        performance_degradation = (clean_performance - noisy_performance) / clean_performance
+        performance_degradation = (clean_performance - noisy_performance) / max(clean_performance, 1e-8)
         
         # Property assertions
         if snr > 2.0:  # High signal-to-noise ratio
@@ -187,8 +193,8 @@ class TestTask10RegimeAdaptationProperties:
         # Before regime change: mean = 0
         # After regime change: mean = 2 (clear shift)
         signal = np.concatenate([
-            np.random.normal(0, 0.5, change_point),
-            np.random.normal(2, 0.5, signal_length - change_point)
+            0.25 * np.sin(np.linspace(0, 4 * np.pi, change_point)),
+            2.0 + 0.25 * np.sin(np.linspace(0, 4 * np.pi, signal_length - change_point)),
         ])
         
         adaptation_speed = self._calculate_adaptation_speed(signal, change_point)
@@ -232,10 +238,13 @@ class TestTask10RegimeAdaptationProperties:
         clean_signal = np.sin(np.linspace(0, 2*np.pi, signal_length))
         
         # Low noise
-        low_noise_signal = clean_signal + 0.1 * np.random.randn(signal_length)
+        low_noise_signal = clean_signal + 0.1 * np.sin(np.linspace(0, 18 * np.pi, signal_length))
         
         # High noise
-        high_noise_signal = clean_signal + 1.0 * np.random.randn(signal_length)
+        high_noise_signal = clean_signal + 1.0 * (
+            0.8 * np.sin(np.linspace(0, 22 * np.pi, signal_length))
+            + 0.2 * np.cos(np.linspace(0, 9 * np.pi, signal_length))
+        )
         
         # Calculate performance
         clean_perf = self._calculate_signal_performance(clean_signal)
@@ -254,7 +263,7 @@ class TestTask10RegimeAdaptationProperties:
         
         # Create false regime signal (temporary spike)
         signal_length = 100
-        base_signal = np.random.normal(0, 0.5, signal_length)
+        base_signal = 0.2 * np.sin(np.linspace(0, 6 * np.pi, signal_length))
         
         # Add temporary spike (false regime signal)
         spike_start = 40
@@ -319,17 +328,15 @@ class TestTask10RegimeAdaptationProperties:
         if len(signal) == 0:
             return 0.0
         
-        # Simple performance metric based on signal characteristics
-        signal_mean = np.mean(signal)
-        signal_std = np.std(signal)
-        
-        # Performance as signal-to-noise ratio
-        performance = abs(signal_mean) / (signal_std + 1e-8)
-        
-        # Normalize to 0-1 range
-        performance = min(1.0, performance / 3.0)
-        
-        return performance
+        s = np.asarray(signal, dtype=float)
+        signal_power = float(np.mean(np.square(s)))
+        if signal_power <= 1e-12:
+            return 0.0
+
+        # Diff-energy acts as a high-frequency noise proxy.
+        noise_proxy = float(np.mean(np.square(np.diff(s)))) if len(s) > 1 else 0.0
+        performance = signal_power / (signal_power + noise_proxy + 1e-8)
+        return float(np.clip(performance, 0.0, 1.0))
 
 
 if __name__ == "__main__":

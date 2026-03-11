@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/macro_impact_engine/sector_aggregation.py
+# hypothesis_version: 6.150.2
+
+['abs_t_stat', 'beta', 'count', 'ignore', 'lag', 'macro_variable', 'mean', 'median', 'n_companies', 'p_value', 'sector', 't_stat', 'ticker']

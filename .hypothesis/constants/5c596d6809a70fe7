@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/macro_impact_engine/stability_tests.py
+# hypothesis_version: 6.150.2
+
+[0.05, 'beta_after', 'beta_before', 'f_statistic', 'ignore', 'insufficient_data', 'p_value', 'reason', 'structural_break', 'success']

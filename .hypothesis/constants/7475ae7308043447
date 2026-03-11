@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/risk/risk_controller.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1.0, 'EVENT_BLOCK_ACTIVE', 'EVENT_CALENDAR_STALE', 'Event block active', 'KILL_SWITCH_ACTIVE', 'Kill switch active', 'RISK_APPROVED', 'Risk checks passed', 'policy', 'proposal']

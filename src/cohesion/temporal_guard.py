@@ -532,7 +532,13 @@ class MockDataSource:
         
         # Apply as_of_date filter
         if query.as_of_date:
-            data = data[data['date'] <= query.as_of_date]
+            time_col = None
+            for candidate in ["date", "Date", "timestamp", "Timestamp"]:
+                if candidate in data.columns:
+                    time_col = candidate
+                    break
+            if time_col is not None:
+                data = data[pd.to_datetime(data[time_col], errors="coerce") <= query.as_of_date]
         
         # Apply other filters
         for field, value in query.filters.items():

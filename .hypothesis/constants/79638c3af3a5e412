@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/capital_allocator_bridge.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.05, 0.2, 0.25, 0.5, 1.0, '.tmp', 'aggregate_metrics', 'avg_sharpe', 'health_score', 'health_scores', 'ic', 'ic_mean', 'sharpe', 'stability', 'stability_score', 'timestamp']

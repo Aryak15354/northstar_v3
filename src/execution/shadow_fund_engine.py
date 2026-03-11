@@ -18,11 +18,14 @@ import numpy as np
 import os
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from execution.enhanced_transaction_cost_model import EnhancedTransactionCostModel
+from runtime import DecisionMode, PortfolioRuntimeService, ProposalOrigin, TradeProposal, build_certification_snapshot
+from runtime.hash_utils import canonical_hash, file_sha256
 
 class ShadowFundEngine:
     """
@@ -68,6 +71,122 @@ class ShadowFundEngine:
         self.current_capital = self.fund_params['initial_capital']
         self.current_positions = {}
         self.execution_log = []
+        self.prs = None
+        self.prs_context = {}
+        self.prs_cert_snapshot_hash = ""
+        self._init_prs_runtime()
+
+    def _runtime_db_path(self) -> str:
+        rel = str(
+            os.getenv(
+                "NORTHSTAR_PRS_SHADOW_FUND_DB",
+                "data/runtime/shadow_fund_runtime.db",
+            )
+            or "data/runtime/shadow_fund_runtime.db"
+        )
+        base = Path(rel)
+        if os.getenv("PYTEST_CURRENT_TEST"):
+            return str(base.with_name(f"{base.stem}_{os.getpid()}_{id(self)}{base.suffix}"))
+        return str(base)
+
+    def _runtime_materialized_dir(self) -> str:
+        rel = str(
+            os.getenv(
+                "NORTHSTAR_PRS_SHADOW_FUND_MATERIALIZED",
+                "data/processed/runtime/shadow_fund",
+            )
+            or "data/processed/runtime/shadow_fund"
+        )
+        base = Path(rel)
+        if os.getenv("PYTEST_CURRENT_TEST"):
+            return str(base.with_name(f"{base.name}_{os.getpid()}_{id(self)}"))
+        return str(base)
+
+    def _build_prs_context(self) -> dict:
+        prices_path = Path(self.paths["prices"])
+        weights_path = Path(self.paths["portfolio_weights"])
+        config_hash = ""
+        try:
+            config_hash = file_sha256(__file__)
+        except Exception:
+            config_hash = ""
+        return {
+            "model_hash": canonical_hash({"engine": self.name, "version": self.version}),
+            "param_hash": canonical_hash(self.fund_params),
+            "feature_hash": canonical_hash(["final_weight", "Close"]),
+            "data_revision_hash": canonical_hash(
+                {
+                    "prices_mtime_ns": prices_path.stat().st_mtime_ns if prices_path.exists() else 0,
+                    "weights_mtime_ns": weights_path.stat().st_mtime_ns if weights_path.exists() else 0,
+                }
+            ),
+            "config_hash": config_hash,
+            "drift_guard_version": "v1",
+        }
+
+    def _refresh_prs_certification_snapshot(self) -> str:
+        if self.prs is None:
+            return ""
+        now = datetime.utcnow()
+        ctx = dict(self.prs_context)
+        snap = build_certification_snapshot(
+            model_hash=str(ctx.get("model_hash", "")),
+            param_hash=str(ctx.get("param_hash", "")),
+            feature_hash=str(ctx.get("feature_hash", "")),
+            data_revision_hash=str(ctx.get("data_revision_hash", "")),
+            config_hash=str(ctx.get("config_hash", "")),
+            created_at=now,
+            ttl_days=30,
+            drift_guard_version=str(ctx.get("drift_guard_version", "v1") or "v1"),
+        )
+        self.prs.register_certification_snapshot(snap)
+        return str(snap.snapshot_hash)
+
+    def _init_prs_runtime(self) -> None:
+        self.prs = PortfolioRuntimeService(
+            db_path=self._runtime_db_path(),
+            materialized_output_dir=self._runtime_materialized_dir(),
+            starting_cash=float(self.current_capital),
+        )
+        self.prs_context = self._build_prs_context()
+        self.prs_cert_snapshot_hash = self._refresh_prs_certification_snapshot()
+
+    def close(self) -> None:
+        prs = getattr(self, "prs", None)
+        if prs is None:
+            return
+        try:
+            prs.close()
+        except Exception:
+            pass
+        self.prs = None
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass
+
+    def _sync_positions_from_prs(self, current_prices: pd.Series) -> None:
+        if self.prs is None:
+            return
+        snap = self.prs.get_portfolio_state().to_dict()
+        holdings = dict(snap.get("holdings", {}) or {})
+        synced = {}
+        for ticker, payload in holdings.items():
+            qty = float(payload.get("quantity", 0.0) or 0.0)
+            if abs(qty) <= 0.0:
+                continue
+            price = float(current_prices.get(ticker, payload.get("last_price", 0.0)) or 0.0)
+            avg_price = float(payload.get("avg_price", 0.0) or 0.0)
+            synced[str(ticker)] = {
+                "shares": qty,
+                "avg_price": avg_price,
+                "market_value": qty * price,
+                "unrealized_pnl": qty * (price - avg_price),
+            }
+        self.current_positions = synced
+        self.current_capital = float(snap.get("cash", self.current_capital) or self.current_capital)
     
     def load_target_portfolio(self):
         """Load target portfolio weights"""
@@ -213,17 +332,60 @@ class ShadowFundEngine:
                 
                 trades.append(trade)
                 total_transaction_costs += total_cost
-                
-                # Update current positions
-                self.current_positions[ticker] = {
-                    'shares': target_shares,
-                    'avg_price': effective_price,
-                    'market_value': target_shares * price,
-                    'unrealized_pnl': target_shares * (price - effective_price)
-                }
-        
-        # Update capital after transaction costs
-        self.current_capital -= total_transaction_costs
+
+                side = "buy" if trade_shares > 0 else "sell"
+                qty = float(abs(trade_shares))
+                requested_notional = float(abs(qty * effective_price))
+                proposal = TradeProposal(
+                    proposal_id=f"prop_shadow_{ticker}_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}",
+                    origin=ProposalOrigin.SHADOW,
+                    strategy_id="shadow_fund_execution",
+                    signal_id=f"sig_shadow_{ticker}_{datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}",
+                    alpha_type="directional",
+                    expected_edge=0.0,
+                    risk_score=float(requested_notional / max(1.0, float(self.current_capital))),
+                    regime_context={
+                        "market_regime": str(cost_breakdown.get("market_regime", "unknown") or "unknown"),
+                        "engine": "shadow_fund_engine",
+                    },
+                    instrument_plan={
+                        "symbol": str(ticker).upper(),
+                        "side": side,
+                        "price": float(effective_price),
+                        "quantity": qty,
+                        "direction": 1.0 if side == "buy" else -1.0,
+                        "sector": str(target.get("sector", "") or "").lower(),
+                        "instrument_type": "equity",
+                        "lifecycle_action": "open" if target_shares != 0 else "close",
+                        "position_key": f"shadow_fund:{str(ticker).upper()}",
+                    },
+                    requested_notional=requested_notional,
+                    certification_snapshot_hash=str(self.prs_cert_snapshot_hash or ""),
+                    decision_mode=DecisionMode.AUTO,
+                    trigger_reason_code="rebalance.shadow_fund.daily",
+                    risk_override_flag=False,
+                )
+                prs_result = self.prs.process_proposal(
+                    proposal,
+                    budget_snapshot={"reserve_usage": {}},
+                    risk_snapshot={"risk_budget_ratio": 0.0, "signal_entropy": 1.0},
+                    market_snapshot={},
+                    market_liquidity_snapshot={
+                        "adv_notional": float(liquidity_data.get("adv_60d", 0.0) or 0.0),
+                        "spread_bps": float(cost_breakdown.get("total_cost_bps", 0.0) or 0.0),
+                        "depth_qty": float(abs(trade_shares)),
+                        "estimated_slippage_bps": float(cost_breakdown.get("total_cost_bps", 0.0) or 0.0),
+                    },
+                    certification_context=dict(self.prs_context),
+                    auto_fill=True,
+                )
+                trade["prs_result"] = prs_result.to_dict()
+                if not prs_result.approved:
+                    trade["execution_status"] = "rejected_prs"
+                    continue
+                trade["execution_status"] = "executed_prs"
+
+        self._sync_positions_from_prs(current_prices)
         
         print(f"   ✅ Executed {len(trades)} trades")
         print(f"   💰 Total transaction costs: ₹{total_transaction_costs:,.0f}")
@@ -234,6 +396,7 @@ class ShadowFundEngine:
     
     def calculate_portfolio_pnl(self, current_prices):
         """Calculate current portfolio P&L"""
+        self._sync_positions_from_prs(current_prices)
         
         total_market_value = 0
         total_unrealized_pnl = 0

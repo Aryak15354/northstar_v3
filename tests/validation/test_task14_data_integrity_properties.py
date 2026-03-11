@@ -22,7 +22,7 @@ warnings.filterwarnings('ignore')
 
 import sys
 import os
-)))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.validation.enhanced_data_integrity_system import EnhancedDataIntegritySystem, IntegrityStatus
 

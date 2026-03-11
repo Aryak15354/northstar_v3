@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/cleanup/move_planner.py
+# hypothesis_version: 6.150.2
+
+['\n### Errors\n\n', '\n### Warnings\n\n', '*.json', '*.log', '*.py', '*.txt', '*ARCHITECTURE*.md', '*COMPLETE*.md', '*GUIDE*.md', '*REORGANIZATION*.md', '*_COMPLETE.md', '.gitignore', '.py', 'LICENSE', 'PROJECT_STRUCTURE.md', 'README.md', '__main__', 'attribution', 'backups', 'check', 'circular_move', 'debug', 'delete', 'docs/architecture', 'freeze', 'logs', 'merge', 'move', 'requirements.txt', 'run.py', 'scripts/debug', 'sealed', 'test', 'test_config', 'test_env', 'test_import', 'test_schemas', 'test_simple_config', 'test_simple_schemas', 'variance']

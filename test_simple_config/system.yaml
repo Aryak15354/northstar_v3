@@ -1,0 +1,6 @@
+backup_enabled: true
+data_retention_days: 365
+environment: production
+logging_level: INFO
+monitoring_enabled: true
+version: '3.0'

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/candidate_scorer.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.1, 0.15, 0.2, 0.25, 0.5, 1.0, 'avg_max_drawdown', 'avg_sharpe', 'candidate_score', 'dispersion', 'drawdown_penalty', 'ic', 'ic_mean', 'raw_score', 'regime_dispersion', 'sharpe', 'stability', 'stability_score', 'survival', 'survival_probability']

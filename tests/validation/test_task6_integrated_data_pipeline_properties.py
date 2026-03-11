@@ -60,6 +60,14 @@ class TestIntegratedDataPipelineProperties:
         self.pipeline.processing_status.clear()
         self.pipeline.processing_results.clear()
         self.pipeline.data_conflicts.clear()
+
+    def _reset_pipeline_state(self):
+        """Reset mutable pipeline state between Hypothesis examples."""
+        self.pipeline.data_sources.clear()
+        self.pipeline.dependency_graph = DependencyGraph()
+        self.pipeline.processing_status.clear()
+        self.pipeline.processing_results.clear()
+        self.pipeline.data_conflicts.clear()
     
     @given(
         source_count=st.integers(min_value=2, max_value=5),  # Reduced max for simpler testing
@@ -78,6 +86,7 @@ class TestIntegratedDataPipelineProperties:
         **Feature: northstar-v3-system-cohesion, Property 32: Multi-source data coordination**
         """
         
+        self._reset_pipeline_state()
         assume(len(priority_distribution) >= source_count)
         
         # Create data sources with simple linear dependencies to avoid cycles
@@ -153,6 +162,8 @@ class TestIntegratedDataPipelineProperties:
         **Feature: northstar-v3-system-cohesion, Property 33: Data conflict resolution**
         """
         
+        self._reset_pipeline_state()
+
         # Create sources with conflicting data
         sources = {}
         results = {}
@@ -226,6 +237,7 @@ class TestIntegratedDataPipelineProperties:
         **Feature: northstar-v3-system-cohesion, Property 36: Automatic retry for transient failures**
         """
         
+        self._reset_pipeline_state()
         assume(fail_count <= max_retries)  # Ensure eventual success
         
         # Create retry manager with test configuration
@@ -297,6 +309,8 @@ class TestIntegratedDataPipelineProperties:
         **Validates: Requirements 6.1, 6.6**
         """
         
+        self._reset_pipeline_state()
+
         # Register sources with valid configurations
         for i, source_name in enumerate(source_names):
             source = MockMarketDataSource(source_name)

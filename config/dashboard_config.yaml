@@ -1,0 +1,62 @@
+# Dashboard Configuration
+# This file controls various dashboard settings
+
+# System Start Date
+# This is when the Northstar system became operational and started generating meaningful data
+# All charts will be filtered to start from this date to avoid showing flat historical periods
+# Updated to February 2026 when live system data actually starts
+system_start_date: "2026-02-01"
+
+# Alternative dates you can use:
+# system_start_date: "2025-12-15"  # Mid December 2025
+# system_start_date: "2026-01-01"  # January 1, 2026
+# system_start_date: "2026-01-15"  # Mid January 2026
+
+# Chart Settings
+chart_settings:
+  # Number of days to load for historical charts (before filtering)
+  max_historical_days: 365
+  
+  # Minimum number of data points required for charts
+  min_data_points: 5
+  
+  # Portfolio normalization start value
+  portfolio_norm_start: 100
+  
+  # Benchmark settings
+  benchmark_name: "NIFTY 50"
+  benchmark_annual_return: 0.20  # 20% expected annual return
+  benchmark_volatility: 0.15     # 15% annual volatility
+
+# Performance Chart Settings
+performance_charts:
+  # Rolling window for Sharpe ratio calculation (days)
+  rolling_sharpe_window: 20
+  
+  # Reference lines for Sharpe ratio
+  sharpe_good_threshold: 1.0
+  sharpe_excellent_threshold: 2.0
+
+# Risk Chart Settings
+risk_charts:
+  # Maximum drawdown limit for visualization
+  max_drawdown_limit: 0.15  # 15%
+  
+  # VaR limits
+  var_95_limit: 50000
+  cvar_95_limit: 75000
+
+# Market Pressure Surface Settings
+market_pressure:
+  # Historical window for market pressure surface (days)
+  historical_window: 365
+  
+  # Thresholds for status indicators
+  regime_confidence_high: 0.7
+  regime_confidence_medium: 0.4
+  risk_pressure_elevated: 1.5
+  crisis_probability_high: 0.3
+  crisis_probability_medium: 0.1
+  regime_entropy_high: 1.5
+  regime_entropy_medium: 0.8
+  systemic_stress_elevated: 0.5

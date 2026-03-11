@@ -676,15 +676,19 @@ class UniverseManager(DataIntegrityEngine):
         listed_stocks = set(
             ipo_df[pd.to_datetime(ipo_df["listing_date"], errors="coerce") <= target_date]["symbol"].astype(str).tolist()
         )
-        if apply_survivorship_filter and not delisting_df.empty:
-            delisted_stocks = set(
-                delisting_df[pd.to_datetime(delisting_df["delisting_date"], errors="coerce") <= target_date]["symbol"]
-                .astype(str)
-                .tolist()
+        available_stocks = listed_stocks
+        if not delisting_df.empty:
+            delisting_dates = pd.to_datetime(delisting_df["delisting_date"], errors="coerce")
+            past_delisted_stocks = set(
+                delisting_df[delisting_dates <= target_date]["symbol"].astype(str).tolist()
             )
-            available_stocks = listed_stocks - delisted_stocks
-        else:
-            available_stocks = listed_stocks
+            available_stocks = available_stocks - past_delisted_stocks
+
+            if apply_survivorship_filter:
+                # Survivorship-safe universe should remain point-in-time:
+                # exclude only symbols already delisted by target_date.
+                # Future delistings are not removed to avoid look-ahead bias.
+                pass
 
         stock_liquidity = pd.DataFrame(columns=["symbol", "adv_60d", "market_cap"])
         if apply_liquidity_filter and not liquidity_df.empty:

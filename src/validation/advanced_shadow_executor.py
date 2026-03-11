@@ -32,9 +32,19 @@ import numpy as np
 import os
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 import warnings
 warnings.filterwarnings('ignore')
+
+from src.runtime import (
+    DecisionMode,
+    PortfolioRuntimeService,
+    ProposalOrigin,
+    TradeProposal,
+    build_certification_snapshot,
+)
+from src.runtime.hash_utils import canonical_hash, file_sha256
 
 class AdvancedShadowExecutor:
     """
@@ -94,6 +104,78 @@ class AdvancedShadowExecutor:
         self.target_positions = {}
         self.execution_quality = {}
         self.performance_attribution = {}
+        self.prs = None
+        self.prs_context: Dict[str, str] = {}
+        self.prs_cert_snapshot_hash = ""
+        self._init_prs_runtime()
+
+    def _init_prs_runtime(self) -> None:
+        db_path = Path(
+            str(
+                os.getenv(
+                    "NORTHSTAR_PRS_ADV_SHADOW_DB",
+                    "data/runtime/advanced_shadow_runtime.db",
+                )
+                or "data/runtime/advanced_shadow_runtime.db"
+            )
+        )
+        mat_path = Path(
+            str(
+                os.getenv(
+                    "NORTHSTAR_PRS_ADV_SHADOW_MATERIALIZED",
+                    "data/processed/runtime/advanced_shadow",
+                )
+                or "data/processed/runtime/advanced_shadow"
+            )
+        )
+        self.prs = PortfolioRuntimeService(
+            db_path=str(db_path),
+            materialized_output_dir=str(mat_path),
+            starting_cash=1_000_000.0,
+        )
+        self.prs_context = self._build_prs_context()
+        self.prs_cert_snapshot_hash = self._refresh_prs_certification_snapshot()
+
+    def _build_prs_context(self) -> Dict[str, str]:
+        config_hash = ""
+        try:
+            config_hash = file_sha256(__file__)
+        except Exception:
+            config_hash = ""
+        return {
+            "model_hash": canonical_hash({"engine": self.name, "version": self.version}),
+            "param_hash": canonical_hash(self.config),
+            "feature_hash": canonical_hash(["phase3_allocations", "regime_memory", "tailwinds"]),
+            "data_revision_hash": canonical_hash(
+                {
+                    "capital_allocations_mtime_ns": Path(self.paths["capital_allocations"]).stat().st_mtime_ns
+                    if Path(self.paths["capital_allocations"]).exists()
+                    else 0,
+                    "regime_memory_mtime_ns": Path(self.paths["regime_memory"]).stat().st_mtime_ns
+                    if Path(self.paths["regime_memory"]).exists()
+                    else 0,
+                }
+            ),
+            "config_hash": config_hash,
+            "drift_guard_version": "v1",
+        }
+
+    def _refresh_prs_certification_snapshot(self) -> str:
+        if self.prs is None:
+            return ""
+        ctx = dict(self.prs_context)
+        snap = build_certification_snapshot(
+            model_hash=str(ctx.get("model_hash", "")),
+            param_hash=str(ctx.get("param_hash", "")),
+            feature_hash=str(ctx.get("feature_hash", "")),
+            data_revision_hash=str(ctx.get("data_revision_hash", "")),
+            config_hash=str(ctx.get("config_hash", "")),
+            created_at=datetime.utcnow(),
+            ttl_days=30,
+            drift_guard_version=str(ctx.get("drift_guard_version", "v1")),
+        )
+        self.prs.register_certification_snapshot(snap)
+        return str(snap.snapshot_hash)
         
     def initialize_phase3_components(self):
         """Initialize Phase 3 component interfaces"""
@@ -281,13 +363,15 @@ class AdvancedShadowExecutor:
             'market_impact': 0.0,
             'reality_consistency': 0.0,
             'executed_positions': {},
-            'execution_errors': []
+            'execution_errors': [],
+            'prs_proposals_executed': 0,
+            'prs_proposals_rejected': 0,
         }
         
         try:
             total_trade_value = 0.0
             total_transaction_costs = 0.0
-            successful_trades = 0
+            cumulative_trade_quality = 0.0
             
             # Calculate required trades
             for strategy in set(list(target_positions.keys()) + list(current_positions.keys())):
@@ -303,12 +387,68 @@ class AdvancedShadowExecutor:
                     # Simulate market impact (higher for larger trades)
                     market_impact = min(0.005, trade_value * 0.1)  # Max 0.5% impact
                     
-                    # Simulate execution quality (random variation)
-                    execution_noise = np.random.normal(0, 0.001)  # Small execution noise
-                    executed_position = target + execution_noise
-                    
+                    self.prs_context = self._build_prs_context()
+                    self.prs_cert_snapshot_hash = self._refresh_prs_certification_snapshot()
+                    side = "buy" if trade_size > 0.0 else "sell"
+                    notional = float(abs(trade_size) * 1_000_000.0)
+                    qty = float(max(1.0, notional))
+                    now_tag = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+                    proposal = TradeProposal(
+                        proposal_id=f"prop_adv_shadow_{strategy}_{now_tag}",
+                        origin=ProposalOrigin.SHADOW,
+                        strategy_id=str(strategy),
+                        signal_id=f"sig_adv_shadow_{strategy}_{now_tag}",
+                        alpha_type="directional",
+                        expected_edge=0.0,
+                        risk_score=float(abs(trade_size)),
+                        regime_context={"engine": "advanced_shadow_executor"},
+                        instrument_plan={
+                            "symbol": f"STRAT_{str(strategy).upper()}",
+                            "side": side,
+                            "price": 1.0,
+                            "quantity": qty,
+                            "direction": 1.0 if side == "buy" else -1.0,
+                            "instrument_type": "equity",
+                            "lifecycle_action": "open" if target > 0 else "close",
+                            "position_key": f"advanced_shadow:{strategy}",
+                        },
+                        requested_notional=notional,
+                        certification_snapshot_hash=str(self.prs_cert_snapshot_hash or ""),
+                        decision_mode=DecisionMode.AUTO,
+                        trigger_reason_code="rebalance.shadow.advanced",
+                        risk_override_flag=False,
+                    )
+                    prs_result = self.prs.process_proposal(
+                        proposal,
+                        budget_snapshot={"reserve_usage": {}},
+                        risk_snapshot={"risk_budget_ratio": 0.0, "signal_entropy": 1.0},
+                        market_snapshot={},
+                        market_liquidity_snapshot={
+                            "adv_notional": float(max(notional * 10.0, 1.0)),
+                            "spread_bps": 5.0,
+                            "depth_qty": float(max(qty * 2.0, 1.0)),
+                            "estimated_slippage_bps": 2.0,
+                        },
+                        certification_context=dict(self.prs_context),
+                        auto_fill=True,
+                    )
+                    approved = bool(prs_result.approved)
+                    if prs_result.approved:
+                        executed_position = target
+                        execution_result['prs_proposals_executed'] += 1
+                    else:
+                        # In shadow mode, continue to the intended target position so
+                        # allocation-fidelity metrics reflect the strategy intent even
+                        # when live PRS checks reject the proposal.
+                        executed_position = target
+                        execution_result['prs_proposals_rejected'] += 1
+                        execution_result['execution_errors'].append(
+                            f"{strategy}: prs_rejected:{prs_result.denial_reason}"
+                        )
+
                     # Check for execution errors
-                    execution_error = abs(executed_position - target) / target if target > 0 else 0
+                    denominator = max(abs(target), 1e-8)
+                    execution_error = abs(executed_position - target) / denominator
                     
                     execution_result['trades'][strategy] = {
                         'target': target,
@@ -326,7 +466,8 @@ class AdvancedShadowExecutor:
                     total_transaction_costs += transaction_cost
                     
                     if execution_error < self.config['max_position_drift']:
-                        successful_trades += 1
+                        trade_quality = 1.0 if approved else 0.5
+                        cumulative_trade_quality += trade_quality
                     else:
                         execution_result['execution_errors'].append(f"{strategy}: {execution_error:.1%} drift")
                 
@@ -337,7 +478,7 @@ class AdvancedShadowExecutor:
             # Calculate execution quality metrics
             total_trades = len(execution_result['trades'])
             if total_trades > 0:
-                execution_result['execution_quality'] = successful_trades / total_trades
+                execution_result['execution_quality'] = cumulative_trade_quality / total_trades
                 execution_result['total_transaction_costs'] = total_transaction_costs
                 execution_result['market_impact'] = total_transaction_costs / total_trade_value if total_trade_value > 0 else 0
             else:

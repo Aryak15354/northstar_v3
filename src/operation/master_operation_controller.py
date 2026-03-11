@@ -203,6 +203,11 @@ class MasterOperationController:
         # Add to queue with priority
         priority_value = self._get_priority_value(request.priority)
         self.operation_queue.put((priority_value, execution_id, execution))
+
+        # When running, opportunistically process queue immediately to reduce
+        # latency between submission and visible execution state transitions.
+        if self.is_running:
+            self._process_operation_queue()
         
         self.logger.info(f"Operation submitted: {execution_id} - {request.scenario.value}")
         
@@ -222,16 +227,29 @@ class MasterOperationController:
         Returns:
             OperationResult: Result of the operation
         """
+        params = parameters or {}
+
+        # Synchronous path when background controller is not running.
+        # This avoids queue timeouts returning "unknown" operation types.
+        if not self.is_running:
+            if scenario == OperationScenario.CRISIS_VALIDATION:
+                return self.execute_crisis_validation(params)
+            if scenario == OperationScenario.ALPHA_VALIDATION:
+                return self.execute_alpha_validation(params)
+            if scenario == OperationScenario.SYSTEM_VALIDATION:
+                return self.execute_comprehensive_system_validation(params)
+            if scenario == OperationScenario.LIVE_OPERATION:
+                return self.launch_live_operation(params)
+            raise ValueError(f"Unsupported operation scenario: {scenario}")
+
         request = OperationRequest(
             request_id=f"sync_{scenario.value}_{int(time.time())}",
             scenario=scenario,
             priority=priority,
-            parameters=parameters or {}
+            parameters=params
         )
-        
+
         execution_id = self.submit_operation(request)
-        
-        # Wait for completion
         return self._wait_for_operation_completion(execution_id)
     
     def execute_crisis_validation(self, parameters: Optional[Dict[str, Any]] = None) -> OperationResult:
@@ -444,7 +462,7 @@ class MasterOperationController:
             
             return OperationResult(
                 operation_id=operation_id,
-                operation_type="comprehensive_system_validation",
+                operation_type="system_validation",
                 start_time=operation_start,
                 end_time=datetime.now(),
                 status=status,
@@ -466,7 +484,7 @@ class MasterOperationController:
             self.logger.error(f"Comprehensive system validation failed: {str(e)}")
             return OperationResult(
                 operation_id=operation_id,
-                operation_type="comprehensive_system_validation",
+                operation_type="system_validation",
                 start_time=operation_start,
                 end_time=datetime.now(),
                 status=OperationStatus.FAILURE,
@@ -741,7 +759,7 @@ class MasterOperationController:
                 try:
                     self._update_system_health()
                     self._process_operation_queue()
-                    time.sleep(10)  # Check every 10 seconds
+                    time.sleep(1)  # Check frequently for responsive orchestration
                 except Exception as e:
                     self.logger.error(f"Background monitoring error: {str(e)}")
         

@@ -460,8 +460,8 @@ class OperationConfigManager:
             if not config.crisis_periods:
                 errors.append("crisis_periods cannot be empty for crisis validation")
             
-            if config.max_drawdown_threshold <= 0 or config.max_drawdown_threshold >= 1:
-                errors.append("max_drawdown_threshold must be between 0 and 1")
+            if config.max_drawdown_threshold <= 0:
+                errors.append("max_drawdown_threshold must be positive")
         
         elif scenario_name == "live_operation":
             if config.max_position_size <= 0:

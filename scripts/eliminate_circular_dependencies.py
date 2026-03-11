@@ -205,9 +205,9 @@ class CircularDependencyEliminator:
                 # Remove sys.path manipulation patterns
                 patterns_to_remove = [
                     r'# Add project root to path\s*\n',
-                    r'                    r'sys\.path\.insert\(.*?\)\s*\n',
+                    r'sys\.path\.insert\(.*?\)\s*\n',
                     r'if project_root not in sys\.path:\s*\n\s*sys\.path\.insert\(.*?\)\s*\n',
-                    r'                    r'if _PROJECT_ROOT not in sys\.path:\s*\n\s*sys\.path\.insert\(.*?\)\s*\n'
+                    r'if _PROJECT_ROOT not in sys\.path:\s*\n\s*sys\.path\.insert\(.*?\)\s*\n'
                 ]
                 
                 for pattern in patterns_to_remove:

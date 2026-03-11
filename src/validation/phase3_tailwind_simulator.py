@@ -451,7 +451,8 @@ class Phase3TailwindSimulator:
         
         for i, date in enumerate(dates):
             is_conflict = i >= conflict_start
-            conflict_intensity = min(1.0, (i - conflict_start) / 20) if is_conflict else 0
+            conflict_ramp = max(5, length_days // 3)
+            conflict_intensity = min(1.0, (i - conflict_start) / conflict_ramp) if is_conflict else 0
             
             day_data = {
                 'date': date,
@@ -477,17 +478,17 @@ class Phase3TailwindSimulator:
                         # During conflict: group-specific trends
                         if strategy in momentum_strategies:
                             # Momentum strategies improve
-                            trend = 0.02 * conflict_intensity
+                            trend = 0.04 * conflict_intensity
                         elif strategy in value_quality_strategies:
                             # Value/Quality strategies deteriorate
-                            trend = -0.03 * conflict_intensity
+                            trend = -0.05 * conflict_intensity
                         else:
                             # Defensive strategies are volatile
-                            trend = np.random.normal(0, 0.02 * conflict_intensity)
+                            trend = np.random.normal(0, 0.03 * conflict_intensity)
                         
                         # Base evolution
-                        random_change = np.random.normal(0, 0.05)
-                        persistence = 0.9
+                        random_change = np.random.normal(0, 0.03)
+                        persistence = 0.88
                         
                         new_score = (persistence * current_score + trend + random_change)
                     

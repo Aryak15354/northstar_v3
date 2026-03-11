@@ -35,5 +35,7 @@ run_cmd() {
 run_cmd health "$PYTHON_BIN" run.py --mode health --verbose
 run_cmd update "$PYTHON_BIN" run.py --mode update --quick --verbose
 run_cmd dashboard "$PYTHON_BIN" run.py --mode dashboard --dashboard brain --verbose
+run_cmd ade "$PYTHON_BIN" scripts/run_alpha_diagnostics.py --runtime-db data/runtime/portfolio_runtime.db --diagnostics-db data/diagnostics/alpha_diagnostics.db
+run_cmd replay "$PYTHON_BIN" -c "from src.runtime import PortfolioRuntimeService; prs=PortfolioRuntimeService(db_path='data/runtime/portfolio_runtime.db', materialized_output_dir='data/processed/runtime'); out=prs.replay(); prs.close(); import json,sys; print(json.dumps(out)); sys.exit(0 if out.get('deterministic_match', True) else 1)"
 
 "$PYTHON_BIN" scripts/ci/check_strict_log_patterns.py --log-dir logs/ci

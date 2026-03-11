@@ -263,7 +263,12 @@ class DataDispatcher:
         """
         full_context = f"{context}::{data_source}"
         
-        if not self.temporal_guard.validate_data_access(timestamp, full_context):
+        try:
+            allowed = self.temporal_guard.validate_data_access(timestamp, full_context)
+        except TemporalViolationError:
+            self.logger.error(f"Data access denied for {data_source} at {timestamp}")
+            return None
+        if not allowed:
             self.logger.error(f"Data access denied for {data_source} at {timestamp}")
             return None
         
@@ -287,9 +292,21 @@ class DataDispatcher:
             List of data if temporal validation passes, None otherwise
         """
         full_context = f"{context}::{data_source}::range"
+
+        # Validate range ordering first.
+        if start_time > end_time:
+            self.logger.error(
+                f"Data range access denied for {data_source}: invalid range {start_time} > {end_time}"
+            )
+            return None
         
         # Validate end time (most restrictive)
-        if not self.temporal_guard.validate_data_access(end_time, full_context):
+        try:
+            allowed = self.temporal_guard.validate_data_access(end_time, full_context)
+        except TemporalViolationError:
+            self.logger.error(f"Data range access denied for {data_source} ending at {end_time}")
+            return None
+        if not allowed:
             self.logger.error(f"Data range access denied for {data_source} ending at {end_time}")
             return None
         
@@ -329,7 +346,8 @@ class TimeController:
         while next_date.weekday() >= 5:  # Saturday = 5, Sunday = 6
             next_date += timedelta(days=1)
         
-        if next_date > self.end_date:
+        # Treat end_date as terminal boundary (exclusive for advancement).
+        if next_date >= self.end_date:
             return None
         
         return next_date
@@ -354,6 +372,10 @@ class TimeController:
     
     def get_simulation_progress(self) -> float:
         """Returns simulation progress as percentage (0.0 to 1.0)"""
+        # If no further advancement is possible, simulation is complete.
+        if self.get_next_trading_day(self.current_date) is None:
+            return 1.0
+
         total_days = (self.end_date - self.start_date).days
         elapsed_days = (self.current_date - self.start_date).days
         

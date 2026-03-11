@@ -10,7 +10,7 @@ BACKUP_DEST_DEFAULT="/Volumes/NORTHSTAR_BACKUP/northstar_v3"
 BACKUP_DEST="${BACKUP_DEST:-$BACKUP_DEST_DEFAULT}"
 
 DAILY_EXECUTOR_CMD="0 6 * * 1-5 cd $PROJECT_ROOT && $PYTHON_BIN $PROJECT_ROOT/run_daily_v3.py --quick >> logs/cron.log 2>&1"
-TRADING_ORCH_CMD="10 9 * * 1-5 cd $PROJECT_ROOT && $PYTHON_BIN $PROJECT_ROOT/scripts/run_trading_day_orchestrator.py --run-once-day --interval-minutes 5 --aggressive >> logs/trading_day_orchestrator.log 2>&1"
+TRADING_ORCH_CMD="*/5 9-15 * * 1-5 cd $PROJECT_ROOT && (pgrep -f \"$PROJECT_ROOT/scripts/run_trading_day_orchestrator.py --run-once-day\" >/dev/null || $PYTHON_BIN $PROJECT_ROOT/scripts/run_trading_day_orchestrator.py --run-once-day --interval-minutes 5 --aggressive >> logs/trading_day_orchestrator.log 2>&1)"
 BACKUP_CMD="45 20 * * * cd $PROJECT_ROOT && $PYTHON_BIN $PROJECT_ROOT/scripts/backup_northstar_data.py --destination-root \"$BACKUP_DEST\" --verify >> logs/backup.log 2>&1"
 
 _current_crontab() {
@@ -67,6 +67,14 @@ show_jobs() {
   _current_crontab
 }
 
+install_live_schedule() {
+  add_trading_job
+}
+
+remove_live_schedule() {
+  remove_trading_job
+}
+
 add_backup_job() {
   echo "Adding daily backup cron job..."
   local current
@@ -88,6 +96,12 @@ remove_backup_job() {
 }
 
 case "${1:-}" in
+  install)
+    install_live_schedule
+    ;;
+  uninstall)
+    remove_live_schedule
+    ;;
   add)
     add_daily_job
     ;;
@@ -109,15 +123,20 @@ case "${1:-}" in
   show)
     show_jobs
     ;;
+  status)
+    show_jobs
+    ;;
   *)
-    echo "Usage: $0 {add|remove|add-trading|remove-trading|add-backup|remove-backup|show}"
+    echo "Usage: $0 {install|uninstall|add|remove|add-trading|remove-trading|add-backup|remove-backup|show|status}"
+    echo "  install        -> add trading-day orchestrator (recommended live schedule)"
+    echo "  uninstall      -> remove trading-day orchestrator"
     echo "  add            -> add daily V3 runner"
     echo "  remove         -> remove daily V3 runner"
     echo "  add-trading    -> add trading-day orchestrator (intraday + EOD)"
     echo "  remove-trading -> remove trading-day orchestrator"
     echo "  add-backup     -> add daily local backup job"
     echo "  remove-backup  -> remove daily local backup job"
-    echo "  show           -> show all crontab entries"
+    echo "  show/status    -> show all crontab entries"
     exit 1
     ;;
 esac

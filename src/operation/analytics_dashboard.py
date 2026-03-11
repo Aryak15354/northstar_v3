@@ -75,15 +75,22 @@ class AnalyticsDashboard:
             "average_return": np.mean(returns),
             "crisis_survival_rate": sum(1 for r in crisis_results if r.stress_test_passed) / len(crisis_results)
         }
+
+        rows = "\n".join(
+            f"<li>{r.crisis_period}: return {r.total_return:.2%}, drawdown {r.max_drawdown:.2%}</li>"
+            for r in crisis_results
+        )
         
         # Generate simple HTML report
         html_content = f"""
-        <html><head><title>Crisis Performance Report</title></head>
+        <html><head><title>Crisis Performance Analysis Report</title></head>
         <body>
-        <h1>Crisis Performance Analysis</h1>
+        <h1>Crisis Performance Analysis Report</h1>
         <p>Total Crises Tested: {summary_stats['total_crises_tested']}</p>
         <p>Average Return: {summary_stats['average_return']:.2%}</p>
         <p>Crisis Survival Rate: {summary_stats['crisis_survival_rate']:.1%}</p>
+        <h2>Crisis Details</h2>
+        <ul>{rows}</ul>
         </body></html>
         """
         
@@ -103,17 +110,26 @@ class AnalyticsDashboard:
         summary_stats = {
             "total_regimes_tested": len(alpha_results),
             "average_alpha": np.mean(alphas),
+            "best_alpha": np.max(alphas),
             "validation_success_rate": sum(1 for r in alpha_results if r.validation_passed) / len(alpha_results)
         }
+
+        rows = "\n".join(
+            f"<li>{r.regime}: alpha {r.alpha_generated:.2%}, IR {r.information_ratio:.2f}</li>"
+            for r in alpha_results
+        )
         
         # Generate simple HTML report
         html_content = f"""
-        <html><head><title>Alpha Validation Report</title></head>
+        <html><head><title>Alpha Validation Analysis Report</title></head>
         <body>
-        <h1>Alpha Validation Analysis</h1>
+        <h1>Alpha Validation Analysis Report</h1>
         <p>Total Regimes Tested: {summary_stats['total_regimes_tested']}</p>
         <p>Average Alpha: {summary_stats['average_alpha']:.2%}</p>
+        <p>Best Alpha: {summary_stats['best_alpha']:.2%}</p>
         <p>Validation Success Rate: {summary_stats['validation_success_rate']:.1%}</p>
+        <h2>Regime Details</h2>
+        <ul>{rows}</ul>
         </body></html>
         """
         
@@ -133,7 +149,7 @@ class AnalyticsDashboard:
         html_content = f"""
         <html><head><title>System Health Dashboard</title></head>
         <body>
-        <h1>System Health Monitoring</h1>
+        <h1>System Health Monitoring Dashboard</h1>
         <p>System Status: {health_status.overall_health.value.upper()}</p>
         <p>Performance Score: {health_status.performance_score:.1%}</p>
         <p>Operation Success Rate: {success_rate:.1%}</p>
@@ -160,7 +176,17 @@ class AnalyticsDashboard:
                 next_target=None
             )
         
-        returns = [d.get('return', 0.0) for d in performance_data]
+        returns: List[float] = []
+        for d in performance_data:
+            raw = d.get('return', 0.0)
+            try:
+                if isinstance(raw, (datetime, pd.Timestamp)):
+                    continue
+                val = float(raw)
+                if np.isfinite(val):
+                    returns.append(val)
+            except Exception:
+                continue
         
         if len(returns) >= 2:
             recent_trend = np.polyfit(range(len(returns)), returns, 1)[0]
@@ -180,7 +206,7 @@ class AnalyticsDashboard:
         return TrendAnalysis(
             trend_direction=trend_direction,
             trend_strength=trend_strength,
-            trend_duration_days=len(returns),
+            trend_duration_days=len(performance_data),
             pattern_detected="normal_volatility",
             confidence_score=confidence_score,
             support_levels=[],
@@ -201,6 +227,7 @@ class AnalyticsDashboard:
         <body>
         <h1>Northstar V3 Trading System - Investor Report</h1>
         <h2>Executive Summary</h2>
+        <h2>System Performance</h2>
         <p>System Success Rate: {success_rate:.1%}</p>
         <p>Total Operations: {total_operations}</p>
         </body></html>

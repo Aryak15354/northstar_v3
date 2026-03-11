@@ -1,0 +1,27 @@
+currency: INR
+data_sources:
+  fundamentals: screener
+  macro: rbi
+  prices: yfinance
+indices:
+  broad: NIFTY500
+  primary: NIFTY50
+market_name: india
+risk_parameters:
+  max_sector_exposure: 0.35
+  max_single_position: 0.08
+sector_classifications:
+- BANKING
+- IT
+- PHARMA
+- FMCG
+- AUTO
+- METALS
+- ENERGY
+- REALTY
+- TELECOM
+- UTILITIES
+trading_hours:
+  close: '15:30'
+  open: 09:15
+  pre_open: 09:00

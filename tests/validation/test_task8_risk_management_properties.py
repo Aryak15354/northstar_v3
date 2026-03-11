@@ -19,7 +19,8 @@ import numpy as np
 
 # Import the risk management system
 from src.volatility.risk_authority import UnifiedRiskAuthority as RiskEngine  # Updated: was cohesion.RiskEngine
-from src.volatility.risk_authority import UnifiedRiskAuthority as RiskAuthority  # Updated: was cohesion.RiskAuthority, RiskConfiguration, AuthorityLevel
+from src.volatility.risk_authority import UnifiedRiskAuthority as RiskAuthority  # Updated: was cohesion.RiskAuthority
+from src.volatility.risk_authority import RiskConfiguration, AuthorityLevel
 from src.cohesion.configuration_manager import ConfigurationManager
 from src.cohesion.unified_state_manager import UnifiedStateManager
 from src.cohesion.audit_logger import AuditLogger

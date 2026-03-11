@@ -1,0 +1,276 @@
+{
+  "validation_summary": {
+    "validation_id": "SysVal_1773006139",
+    "timestamp": "2026-03-09T03:12:19.390915",
+    "overall_status": "critical",
+    "system_health_score": 0.6375000000000001,
+    "certification_status": "FAILED - Critical issues present",
+    "execution_time_seconds": 0.000929
+  },
+  "component_results": [
+    {
+      "component_name": "data_pipeline",
+      "status": "degraded",
+      "health_score": 0.75,
+      "checks_passed": 3,
+      "checks_failed": 1,
+      "checks_total": 4,
+      "execution_time_seconds": 6e-05,
+      "recommendations": [
+        "Investigate 1 degraded checks in data_pipeline"
+      ]
+    },
+    {
+      "component_name": "intelligence_engine",
+      "status": "healthy",
+      "health_score": 1.0,
+      "checks_passed": 4,
+      "checks_failed": 0,
+      "checks_total": 4,
+      "execution_time_seconds": 4.5e-05,
+      "recommendations": []
+    },
+    {
+      "component_name": "risk_management",
+      "status": "failed",
+      "health_score": 0.0,
+      "checks_passed": 0,
+      "checks_failed": 1,
+      "checks_total": 1,
+      "execution_time_seconds": 7.3e-05,
+      "recommendations": [
+        "Fix 1 failed checks in risk_management",
+        "Review and adjust risk limits"
+      ]
+    },
+    {
+      "component_name": "portfolio_management",
+      "status": "degraded",
+      "health_score": 0.6666666666666666,
+      "checks_passed": 2,
+      "checks_failed": 1,
+      "checks_total": 3,
+      "execution_time_seconds": 2e-05,
+      "recommendations": [
+        "Investigate 1 degraded checks in portfolio_management"
+      ]
+    },
+    {
+      "component_name": "system_integration",
+      "status": "healthy",
+      "health_score": 1.0,
+      "checks_passed": 3,
+      "checks_failed": 0,
+      "checks_total": 3,
+      "execution_time_seconds": 1.7e-05,
+      "recommendations": []
+    }
+  ],
+  "detailed_check_results": [
+    {
+      "component": "data_pipeline",
+      "checks": [
+        {
+          "check_id": "data_pipeline_001",
+          "name": "Data Source Connectivity",
+          "status": "healthy",
+          "severity": "critical",
+          "message": "Connectivity OK (latency: 22.7ms)",
+          "execution_time_seconds": 2.7e-05,
+          "details": {
+            "latency_ms": 22.696152037006364
+          }
+        },
+        {
+          "check_id": "data_pipeline_002",
+          "name": "Data Quality Validation",
+          "status": "degraded",
+          "severity": "error",
+          "message": "Data quality below threshold: 0.705",
+          "execution_time_seconds": 4e-06,
+          "details": {
+            "quality_score": 0.7049619068335251
+          }
+        },
+        {
+          "check_id": "data_pipeline_003",
+          "name": "Data Latency Check",
+          "status": "healthy",
+          "severity": "warning",
+          "message": "Processing latency OK: 7.8s",
+          "execution_time_seconds": 3e-06,
+          "details": {
+            "processing_latency_s": 7.823301020445172
+          }
+        },
+        {
+          "check_id": "data_pipeline_004",
+          "name": "Data Format Validation",
+          "status": "healthy",
+          "severity": "error",
+          "message": "Data pipeline check passed",
+          "execution_time_seconds": 1e-06,
+          "details": {
+            "result": "success"
+          }
+        }
+      ]
+    },
+    {
+      "component": "intelligence_engine",
+      "checks": [
+        {
+          "check_id": "intelligence_002",
+          "name": "Model Performance Validation",
+          "status": "healthy",
+          "severity": "error",
+          "message": "Model performance OK: 0.885 accuracy",
+          "execution_time_seconds": 7e-06,
+          "details": {
+            "accuracy": 0.885444034040847
+          }
+        },
+        {
+          "check_id": "intelligence_003",
+          "name": "Memory System Validation",
+          "status": "healthy",
+          "severity": "warning",
+          "message": "Intelligence check passed",
+          "execution_time_seconds": 2e-06,
+          "details": {
+            "result": "success"
+          }
+        },
+        {
+          "check_id": "intelligence_004",
+          "name": "Narrative Engine Test",
+          "status": "healthy",
+          "severity": "info",
+          "message": "Intelligence check passed",
+          "execution_time_seconds": 1e-06,
+          "details": {
+            "result": "success"
+          }
+        },
+        {
+          "check_id": "intelligence_001",
+          "name": "Signal Generation Test",
+          "status": "healthy",
+          "severity": "critical",
+          "message": "Signal generation OK: 0.894 quality, 153 signals",
+          "execution_time_seconds": 2.1e-05,
+          "details": {
+            "signal_quality": 0.894172771885968,
+            "signals_generated": 153
+          }
+        }
+      ]
+    },
+    {
+      "component": "risk_management",
+      "checks": [
+        {
+          "check_id": "risk_mgmt_001",
+          "name": "Risk Limit Enforcement",
+          "status": "failed",
+          "severity": "critical",
+          "message": "Risk limit exceeded: 1.045 > 1.0",
+          "execution_time_seconds": 7e-06,
+          "details": {
+            "current_risk": 1.0446160107155216,
+            "risk_limit": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "component": "portfolio_management",
+      "checks": [
+        {
+          "check_id": "portfolio_002",
+          "name": "Rebalancing Logic Test",
+          "status": "healthy",
+          "severity": "error",
+          "message": "Portfolio check passed",
+          "execution_time_seconds": 2e-06,
+          "details": {
+            "result": "success"
+          }
+        },
+        {
+          "check_id": "portfolio_003",
+          "name": "Transaction Cost Estimation",
+          "status": "healthy",
+          "severity": "warning",
+          "message": "Portfolio check passed",
+          "execution_time_seconds": 0.0,
+          "details": {
+            "result": "success"
+          }
+        },
+        {
+          "check_id": "portfolio_001",
+          "name": "Position Sizing Validation",
+          "status": "degraded",
+          "severity": "critical",
+          "message": "Position sizing accuracy low: 0.858",
+          "execution_time_seconds": 5e-06,
+          "details": {
+            "sizing_accuracy": 0.8582071885681737
+          }
+        }
+      ]
+    },
+    {
+      "component": "system_integration",
+      "checks": [
+        {
+          "check_id": "integration_002",
+          "name": "Event System Validation",
+          "status": "healthy",
+          "severity": "error",
+          "message": "Integration check passed",
+          "execution_time_seconds": 2e-06,
+          "details": {
+            "result": "success"
+          }
+        },
+        {
+          "check_id": "integration_003",
+          "name": "State Synchronization",
+          "status": "healthy",
+          "severity": "error",
+          "message": "Integration check passed",
+          "execution_time_seconds": 1e-06,
+          "details": {
+            "result": "success"
+          }
+        },
+        {
+          "check_id": "integration_001",
+          "name": "Component Communication",
+          "status": "healthy",
+          "severity": "critical",
+          "message": "Component communication OK: 18.8ms",
+          "execution_time_seconds": 6e-06,
+          "details": {
+            "communication_latency_ms": 18.81554953315525
+          }
+        }
+      ]
+    }
+  ],
+  "critical_issues": [
+    "risk_management: Risk limit exceeded: 1.045 > 1.0"
+  ],
+  "recommendations": [
+    "URGENT: 1 components have failed - immediate attention required",
+    "- Fix critical issues in risk_management",
+    "Monitor 2 degraded components",
+    "Investigate 1 degraded checks in data_pipeline",
+    "Fix 1 failed checks in risk_management",
+    "Review and adjust risk limits",
+    "Investigate 1 degraded checks in portfolio_management"
+  ],
+  "next_validation_due": "2026-03-10T03:12:19.391846"
+}

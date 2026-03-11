@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/ensemble.py
+# hypothesis_version: 6.150.2
+
+[1e-12, 1.0, 'StackingMetaLearner', 'WeightedEnsemble', 'coef_', 'fit_with_context', 'indices', 'predict_with_context', 'predictions']

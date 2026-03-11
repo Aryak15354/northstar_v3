@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/strategy_regret.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.3, 0.5, 0.7, 0.8, 252, '.parquet', '3.0', '=', '__main__', 'backtests', 'beliefs', 'best_return', 'cum_regret', 'daily_return', 'date', 'drawdown', 'ignore', 'lookback_days', 'min_observations', 'normalized_regret', 'penalty_score', 'regret', 'regret_30d', 'regret_30d_window', 'regret_90d', 'regret_90d_window', 'strategy']

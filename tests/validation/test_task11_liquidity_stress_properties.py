@@ -22,7 +22,7 @@ warnings.filterwarnings('ignore')
 
 import sys
 import os
-)))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.validation.liquidity_cash_manager import LiquidityCashManager, LiquidityRegime
 

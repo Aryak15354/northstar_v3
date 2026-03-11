@@ -999,7 +999,19 @@ def build_valuation_bundle(
     df["balance_sheet_score"] = (
         df["roe_pct"] + (1 - df["debt_equity_pct"]) + df["cash_to_debt_pct"] + (1 - df["accrual_ratio_pct"])
     ) / 4.0
-    df["growth_score"] = (1 - df["peg_pct"] + df["revenue_growth_pct"]) / 2.0
+    df["growth_score"] = (
+        0.42 * df["revenue_growth_pct"].fillna(0.5)
+        + 0.28 * (1 - df["peg_pct"]).fillna(0.5)
+        + 0.20 * df["earnings_stability_raw_pct"].fillna(0.5)
+        + 0.10 * df["owner_earnings_yield_pct"].fillna(0.5)
+    ).clip(lower=0.0, upper=1.0)
+    # Guard against degenerate growth composites when one percentile family collapses.
+    if float(pd.to_numeric(df["growth_score"], errors="coerce").std(skipna=True) or 0.0) < 1e-4:
+        df["growth_score"] = (
+            0.50 * df["revenue_growth_pct"].fillna(0.5)
+            + 0.30 * df["roe_pct"].fillna(0.5)
+            + 0.20 * df["cfo_to_ni_pct"].fillna(0.5)
+        ).clip(lower=0.0, upper=1.0)
 
     df["is_financial"] = df["Industry"].map(_is_financial)
     non_fin = ~df["is_financial"]

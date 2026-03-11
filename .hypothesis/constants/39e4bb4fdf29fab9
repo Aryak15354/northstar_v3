@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/github_repo/src/risk/risk_coordinator.py
+# hypothesis_version: 6.150.2
+
+[0.0, 100.0, 'CRITICAL', 'DUMMY', 'ERROR', 'HEALTHY', 'USD', 'Unknown', 'WARNING', 'approved', 'buy', 'conditional', 'cvar', 'escalated', 'gross', 'leverage', 'max_drawdown', 'max_position_size', 'metrics', 'net', 'portfolio', 'position', 'regulatory', 'rejected', 'risk_score', 'sector', 'status', 'system', 'timestamp', 'validation', 'violations']

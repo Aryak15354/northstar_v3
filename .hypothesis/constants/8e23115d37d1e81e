@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/operation/analytics_dashboard.py
+# hypothesis_version: 6.150.2
+
+[-0.001, 0.0, 0.001, 1.0, 30.0, 100, 600, 1000, 1200, 'average_alpha', 'average_return', 'best_alpha', 'crisis_survival_rate', 'down', 'insufficient_data', 'investor_report.html', 'normal_volatility', 'plotly_white', 'reports/dashboard', 'return', 'sideways', 'success', 'total_crises_tested', 'total_regimes_tested', 'unknown', 'up', 'w']

@@ -1,0 +1,98 @@
+{
+  "report_id": "78f05220-e656-4edf-aa27-3e65749b2c86",
+  "generated_at": "2026-03-09T03:55:21.759520",
+  "report_type": "system_comprehensive_validation",
+  "system_health": {
+    "timestamp": "2026-03-09T03:55:21.744430",
+    "overall_health": "critical",
+    "component_status": {
+      "system_validation": "critical",
+      "integration_testing": "critical"
+    },
+    "performance_score": 0.875,
+    "data_quality_score": 0.16666666666666666,
+    "latency_metrics": {},
+    "error_counts": {},
+    "alert_level": "warning",
+    "recommended_actions": []
+  },
+  "recent_operations": [
+    {
+      "operation_id": "exec_1773008720_test_8356",
+      "operation_type": "full_system_test",
+      "start_time": "2026-03-09T03:55:20.170765",
+      "end_time": "2026-03-09T03:55:20.171106",
+      "status": "failure",
+      "duration_seconds": 0.000341,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    },
+    {
+      "operation_id": "exec_1773008720_test_9911",
+      "operation_type": "integration_testing",
+      "start_time": "2026-03-09T03:55:20.171152",
+      "end_time": "2026-03-09T03:55:20.254136",
+      "status": "failure",
+      "duration_seconds": 0.082984,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    },
+    {
+      "operation_id": "live_operation_1773008720",
+      "operation_type": "live_operation_launch",
+      "start_time": "2026-03-09T03:55:20.170721",
+      "end_time": "2026-03-09T03:55:20.329487",
+      "status": "success",
+      "duration_seconds": 0.158766,
+      "performance_metrics": {
+        "live_operation_status": "success",
+        "monitoring_active": true,
+        "startup_time_seconds": 0.158762
+      },
+      "validation_results": {
+        "live_operation_launched": true
+      },
+      "alerts_count": 0,
+      "report_path": null
+    },
+    {
+      "operation_id": "crisis_validation_1773008720",
+      "operation_type": "crisis_validation",
+      "start_time": "2026-03-09T03:55:20.351935",
+      "end_time": "2026-03-09T03:55:20.488851",
+      "status": "warning",
+      "duration_seconds": 0.136916,
+      "performance_metrics": {
+        "total_crisis_periods": 3,
+        "passed_periods": 0,
+        "average_sharpe": -0.3789365681621358,
+        "worst_drawdown": 0.5274484384662755,
+        "total_var_breaches": 83
+      },
+      "validation_results": {
+        "crisis_validation_passed": false
+      },
+      "alerts_count": 3,
+      "report_path": "reports/operation/crisis_report_20260309_035520.json"
+    }
+  ],
+  "active_operations": [],
+  "system_metrics": {
+    "total_operations": 4,
+    "success_rate": 0.25,
+    "avg_duration": 0.09475175,
+    "operation_types": [
+      "full_system_test",
+      "live_operation_launch",
+      "integration_testing",
+      "crisis_validation"
+    ]
+  },
+  "operational_insights": [
+    "Operation success rate is 25.0% - investigate failures"
+  ]
+}

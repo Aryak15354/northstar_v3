@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/structural_drift_monitor.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-12, 1e-08, 1e-06, 0.1, 1.0, 'drift', 'drift_z', 'expected_sharpe', 'live_sharpe', 'regime_entropy', 'residual_sharpe', 'state_1']

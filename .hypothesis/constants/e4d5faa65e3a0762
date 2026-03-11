@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/operation/logging_config.py
+# hypothesis_version: 6.150.2
+
+[1024, ', ', 'INFO', 'alerts.log', 'logs/operation', 'midnight', 'northstar_operation', 'operation.log', 'operation_daily.log', 'operation_errors.log', 'performance.log']

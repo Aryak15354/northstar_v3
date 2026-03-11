@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/audit_logger.py
+# hypothesis_version: 6.150.2
+
+['%Y-%m-%d', 'a', 'action', 'audit_dir', 'component', 'data/audit_trail', 'data_access', 'healthy', 'message', 'new_state', 'old_state', 'parameters', 'query', 'risk_action', 'source', 'state_change', 'timestamp', 'total_records', 'type']

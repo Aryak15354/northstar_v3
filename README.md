@@ -45,6 +45,27 @@ streamlit run src/dashboard/brain_window.py    # Direct dashboard launch
 
 ---
 
+## 💻 **Local Compute (Default)**
+
+Northstar v3 is configured to run fully local with no AWS dependency.
+
+```bash
+# 1) Setup venv once
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# 2) Build regime labels / data artifacts
+python3 scripts/build_regime_labels.py
+
+# 3) Run Phase 3 research gate
+bash scripts/run_research_roadmap_phase3.sh config/research_policy.yaml
+```
+
+For long local jobs, run inside `screen` or `tmux` to avoid terminal disconnect loss.
+
+---
+
 ## 🎯 **SYSTEM ARCHITECTURE**
 
 ### 🧠 **Latest Dashboard: Brain Window**
@@ -179,6 +200,14 @@ Northstar V3 includes comprehensive validation across multiple dimensions:
 - Regime detection accuracy testing
 - Signal decay monitoring
 - Strategy redundancy analysis
+
+### Validation Execution Notes (Current)
+- Stress test scenarios in [`src/operation/stress_testing_system.py`](src/operation/stress_testing_system.py) now use config-driven default durations (`StressTestConfig.default_scenario_duration_minutes`) and bounded accelerated simulation runtime to keep validation responsive.
+- Emergency protocol persistence in [`src/operation/performance_monitor.py`](src/operation/performance_monitor.py) is dispatched asynchronously so protocol execution remains low-latency under load.
+- Preferred workflow for large validation batches:
+  1. Collect all failing tests in one inventory pass.
+  2. Apply all fixes in one batch.
+  3. Run targeted validation slices (including late-suite files) before any full-suite run.
 
 ---
 

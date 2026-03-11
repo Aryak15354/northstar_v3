@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/__init__.py
+# hypothesis_version: 6.150.2
+
+['2.4.0', 'DatasetManager', 'FeatureFactory', 'ResearchController', 'ResearchEngine']

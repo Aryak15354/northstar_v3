@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/alpha_lab/family_registry.py
+# hypothesis_version: 6.150.2
+
+['; ', 'AlphaFamilyRegistry', 'activation_variables', 'core', 'core_signal_form', 'expected_decay', 'fails_when', 'families', 'family_type', 'holding_period_days', 'hypothesis', 'interaction_axes', 'label', 'parameter_axes', 'r', 'risk_profile', 'structural_rationale', 'utf-8', 'works_when']

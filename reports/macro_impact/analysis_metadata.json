@@ -1,5 +1,5 @@
 {
-  "run_date": "2026-02-28T22:26:33.471835",
+  "run_date": "2026-03-05T23:37:22.940346",
   "configuration": {
     "companies": 120,
     "start_date": "2018-01-01",
@@ -22,7 +22,7 @@
   "results_summary": {
     "successful_regressions": 120,
     "total_beta_estimates": 18000,
-    "significant_relationships": 89,
+    "significant_relationships": 327,
     "sectors_analyzed": 7
   }
 }

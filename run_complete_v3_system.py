@@ -29,7 +29,8 @@ import os
 import time
 import json
 import select
-from datetime import datetime, timedelta
+import shlex
+from datetime import datetime
 from pathlib import Path
 
 
@@ -51,6 +52,41 @@ def _archive_isolation_check() -> tuple[bool, str]:
     return True, ""
 
 
+PHASE_REQUIRED_ARTIFACTS = {
+    "data_ingestion": [
+        "data/macro/raw/",
+        "data/raw/prices_daily/",
+        "data/processed/market_state.parquet",
+    ],
+    "system_update": [
+        "data/processed/strategy_beliefs.parquet",
+        "data/processed/portfolio_weights.parquet",
+        "data/processed/market_state.parquet",
+        "data/processed/system_status.json",
+        "data/processed/integrity/v3_integrity_report_latest.json",
+        "data/processed/dashboard_view_model_live.pkl",
+        "data/processed/dashboard_view_model_live.json",
+        "data/processed/dashboard_view_model_research.pkl",
+        "data/processed/dashboard_view_model_research.json",
+        "reports/research/formula_lineage_and_unit_integrity_latest.json",
+        "data/options/live/options_dashboard_state.json",
+        "data/options/trade_ledger.parquet",
+    ],
+    "shadow_trading": [
+        "data/live/shadow_trading/positions/",
+        "data/live/shadow_trading/pnl/",
+        "data/live/shadow_trading/decisions/",
+    ],
+    "integration_alignment": [
+        "data/processed/unified_portfolio.parquet",
+        "data/processed/regime_momentum.parquet",
+        "data/processed/latest_narrative_change.json",
+        "data/sentiment/v3/v3_sentiment_summary.json",
+        "reports/capacity/capacity_walk_forward_report.json",
+    ],
+}
+
+
 class NorthstarV3SystemRunner:
     """Complete system runner for all Northstar V3 facets"""
     
@@ -59,6 +95,7 @@ class NorthstarV3SystemRunner:
         self.strict_mode = _env_flag("NORTHSTAR_STRICT_MODE", default=False)
         self.start_time = datetime.now()
         self.execution_log = []
+        self.project_root = Path(__file__).resolve().parent
         self.python = self._resolve_python()
         self.dashboard_port = None
         self.dashboard_type = None
@@ -117,6 +154,46 @@ class NorthstarV3SystemRunner:
 
         # As a last resort, return the current interpreter and let downstream commands surface errors.
         return sys.executable
+
+    def _normalize_command(self, command) -> list[str]:
+        if isinstance(command, str):
+            return shlex.split(command)
+        return [str(part) for part in command]
+
+    def _resolve_script_target(self, command: list[str]) -> Path | None:
+        if len(command) < 2:
+            return None
+
+        exe = Path(command[0]).name.lower()
+        if "python" not in exe:
+            return None
+
+        arg1 = command[1]
+        if arg1 in {"-m", "-c"}:
+            return None
+        if not arg1.endswith(".py"):
+            return None
+
+        script_path = Path(arg1)
+        if not script_path.is_absolute():
+            script_path = self.project_root / script_path
+        return script_path
+
+    def _verify_phase_artifacts(self, phase: str) -> bool:
+        artifacts = PHASE_REQUIRED_ARTIFACTS.get(phase, [])
+        if not artifacts:
+            return True
+
+        ok = True
+        for rel_path in artifacts:
+            path = Path(rel_path)
+            resolved = path if path.is_absolute() else (self.project_root / path)
+            if resolved.exists():
+                self.log_phase(phase, "success", f"Verified artifact: {rel_path}")
+            else:
+                ok = False
+                self.log_phase(phase, "failed", f"Required artifact missing: {rel_path}")
+        return ok
     
     def log_phase(self, phase, status, message="", duration=0):
         """Log phase execution"""
@@ -264,24 +341,34 @@ class NorthstarV3SystemRunner:
 
     def run_command(self, command, phase, description, timeout=1800, cwd=None):
         """Run a command and log results"""
-        
+
+        command = self._normalize_command(command)
+        if not command:
+            self.log_phase(phase, "failed", f"{description} failed: empty command")
+            return False
+
+        script_target = self._resolve_script_target(command)
+        if script_target is not None and not script_target.exists():
+            self.log_phase(phase, "failed", f"{description} failed: missing script {script_target}")
+            return False
+
+        run_cwd = str(Path(cwd).resolve()) if cwd else str(self.project_root)
+
         if self.verbose:
             print(f"\n🔄 {description}")
-            print(f"   Command: {' '.join(command) if isinstance(command, list) else command}")
+            print(f"   Command: {' '.join(shlex.quote(part) for part in command)}")
+            print(f"   CWD: {run_cwd}")
         
         start_time = time.time()
 
         try:
-            if isinstance(command, str):
-                command = command.split()
-
             env = os.environ.copy()
             env.setdefault("PYTHONUNBUFFERED", "1")
 
             # Stream stdout/stderr live so long-running steps don't look hung.
             proc = subprocess.Popen(
                 command,
-                cwd=cwd,
+                cwd=run_cwd,
                 env=env,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -392,19 +479,8 @@ class NorthstarV3SystemRunner:
         )
         
         # Verify data availability
-        data_files = [
-            "data/macro/raw/",
-            "data/raw/prices_daily/",
-            "data/processed/market_state.parquet"
-        ]
-        
-        for data_file in data_files:
-            if os.path.exists(data_file):
-                self.log_phase('data_ingestion', 'success', f"Verified: {data_file}")
-            else:
-                success = False
-                self.log_phase('data_ingestion', 'failed', f"Required artifact missing: {data_file}")
-        
+        success &= self._verify_phase_artifacts("data_ingestion")
+
         return success
     
     def phase_2_system_update(
@@ -605,25 +681,7 @@ class NorthstarV3SystemRunner:
             )
         
         # Verify system state files
-        state_files = [
-            "data/processed/strategy_beliefs.parquet",
-            "data/processed/portfolio_weights.parquet",
-            "data/processed/market_state.parquet",
-            "data/processed/system_status.json",
-            "data/processed/dashboard_view_model_live.pkl",
-            "data/processed/dashboard_view_model_live.json",
-            "data/processed/dashboard_view_model_research.pkl",
-            "data/processed/dashboard_view_model_research.json",
-            "data/options/live/options_dashboard_state.json",
-            "data/options/trade_ledger.parquet",
-        ]
-        
-        for state_file in state_files:
-            if os.path.exists(state_file):
-                self.log_phase('system_update', 'success', f"Generated: {state_file}")
-            else:
-                success = False
-                self.log_phase('system_update', 'failed', f"Required artifact missing: {state_file}")
+        success &= self._verify_phase_artifacts("system_update")
         
         return success
     
@@ -680,18 +738,7 @@ class NorthstarV3SystemRunner:
         )
         
         # Verify shadow trading outputs
-        shadow_files = [
-            "data/live/shadow_trading/positions/",
-            "data/live/shadow_trading/pnl/",
-            "data/live/shadow_trading/decisions/"
-        ]
-        
-        for shadow_file in shadow_files:
-            if os.path.exists(shadow_file):
-                self.log_phase('shadow_trading', 'success', f"Generated: {shadow_file}")
-            else:
-                success = False
-                self.log_phase('shadow_trading', 'failed', f"Required artifact missing: {shadow_file}")
+        success &= self._verify_phase_artifacts("shadow_trading")
         
         return success
     
@@ -833,19 +880,7 @@ class NorthstarV3SystemRunner:
             )
         
         # Verify key integration artifacts
-        expected_outputs = [
-            "data/processed/unified_portfolio.parquet",
-            "data/processed/regime_momentum.parquet",
-            "data/processed/latest_narrative_change.json",
-            "data/sentiment/v3/v3_sentiment_summary.json",
-            "reports/capacity/capacity_walk_forward_report.json",
-        ]
-        for path in expected_outputs:
-            if os.path.exists(path):
-                self.log_phase('integration_alignment', 'success', f"Verified: {path}")
-            else:
-                success = False
-                self.log_phase('integration_alignment', 'failed', f"Required artifact missing: {path}")
+        success &= self._verify_phase_artifacts("integration_alignment")
         
         return success
     

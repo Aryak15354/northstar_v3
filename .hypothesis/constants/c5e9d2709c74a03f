@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/survival_rules_engine.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.0025, 0.005, 0.3, 1.0, 50.0, 999999, '%A', '%H:%M', '1', 'Asia/Kolkata', 'cash_buffer', 'day', 'end', 'existing', 'existing_risk_bucket', 'next_reset', 'on', 'portfolio_risk', 'portfolio_risk_cap', 'portfolio_risk_pct', 'proposed_trade', 'single_trade_trauma', 'start', 'tax_liability', 'tax_liquidity_crisis', 'time_based_block', 'true', 'week_end', 'week_start', 'weekly_loss_limit', 'weekly_loss_pct', 'weekly_pnl', 'weekly_rollup', 'weekly_trade_count', 'weekly_trade_limit', 'yes']

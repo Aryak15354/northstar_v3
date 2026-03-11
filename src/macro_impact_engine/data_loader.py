@@ -183,18 +183,37 @@ class MacroDataLoader:
         out = df.copy()
         conversion_log: Dict[str, str] = {}
         percent_tokens = (
-            "%", "percent", "ratio", "rate", "yield", "inflation",
+            "%", "percent", "basis point", "basis points", "bps",
+            "ratio", "yield", "inflation",
             "repo", "reverse repo", "call money", "crr", "slr",
+            "bank rate", "base rate", "msf", "sdf", "treasury bill",
         )
         bps_tokens = ("bps", "basis point", "basis points")
+        currency_level_tokens = (
+            "usd",
+            "inr",
+            "rupee",
+            "dollar",
+            "exchange rate",
+            "inr per usd",
+            "usd/inr",
+            "vis-à-vis",
+        )
 
         for col in list(out.columns):
             name = str(col).lower()
-            if not any(tok in name for tok in percent_tokens):
+            explicit_percent = ("%" in name) or ("percent" in name) or ("bps" in name) or ("basis point" in name)
+            percent_like = any(tok in name for tok in percent_tokens)
+            if not percent_like:
                 continue
             s = pd.to_numeric(out[col], errors="coerce")
             clean = s.dropna()
             if clean.empty:
+                continue
+
+            # Currency/exchange-rate level series are not percentages unless explicitly marked.
+            currency_level = any(tok in name for tok in currency_level_tokens)
+            if currency_level and not explicit_percent:
                 continue
 
             q95 = float(clean.abs().quantile(0.95))

@@ -1,0 +1,181 @@
+{
+  "generated_at": "2026-03-07T13:56:49.128698+00:00",
+  "model": "xgboost",
+  "model_params": {
+    "n_estimators": 300,
+    "learning_rate": 0.03,
+    "max_depth": 6
+  },
+  "config_shape": "historical_research",
+  "regime_col_used": "regime_audit",
+  "regime_policy": {
+    "active_regimes": [],
+    "invert_regimes": [],
+    "regime_scales": {}
+  },
+  "aggregate_metrics": {
+    "windows": 0.0,
+    "avg_n_obs": 0.0,
+    "total_n_obs": 0.0,
+    "avg_sharpe": 0.0,
+    "avg_sortino": 0.0,
+    "avg_max_drawdown": 0.0,
+    "avg_calmar": 0.0,
+    "avg_hit_rate": 0.0,
+    "ic_mean": 0.0,
+    "ic_std": 0.0,
+    "top_bottom_spread_mean": 0.0,
+    "monotonic_pass_rate": 0.0,
+    "stability_score": 0.0,
+    "avg_turnover": 0.0,
+    "avg_overlap": 0.0,
+    "median_holding_days": 0.0,
+    "avg_assets_per_day": 0.0,
+    "avg_selected_assets": 0.0,
+    "avg_txn_cost_per_rebalance": 0.0,
+    "avg_rebalance_count": 0.0
+  },
+  "regime_rows": [],
+  "ic_diagnostics": {
+    "status": "ok",
+    "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/research/ic_diagnostics/ic_report_20260307_192648.json",
+    "prune_requested": false,
+    "prune_applied": false,
+    "n_features_input": 174,
+    "n_features_selected": 21,
+    "n_features_after_prune": 174,
+    "scope_mode_requested": "train_only",
+    "scope_mode_applied": "train_only",
+    "scope_rows_used": 37595,
+    "top_features": [
+      "sent_trend_score",
+      "sent_momentum_score",
+      "sent_confirmation",
+      "sent_northstar_score",
+      "sent_sentiment_score",
+      "sent_headline_count",
+      "sent_mispricing",
+      "posterior_variance",
+      "sent_cohesive_alpha_score",
+      "roe",
+      "equity",
+      "total_assets",
+      "asset_turnover",
+      "vol20_x_regime_modifier",
+      "interest_coverage",
+      "interest_expense",
+      "posterior_confidence",
+      "ni_margin",
+      "shares_outstanding",
+      "debt_to_equity"
+    ],
+    "decay_summary_selected_features": {
+      "peak_horizon": 5.0,
+      "peak_ic": 0.07249111443896997,
+      "half_life_horizon": 10.0,
+      "signed_area": 0.45622005539543065,
+      "abs_area": 0.45622005539543065,
+      "monotonicity_score": 0.75,
+      "sign_flip_count": 0.0
+    },
+    "regime_decay_summary_selected_features": {
+      "unknown": {
+        "peak_horizon": 5.0,
+        "peak_ic": 0.07249111443896997,
+        "half_life_horizon": 10.0,
+        "signed_area": 0.6254460672711264,
+        "abs_area": 0.6254460672711264,
+        "monotonicity_score": 0.75,
+        "sign_flip_count": 0.0
+      }
+    }
+  },
+  "selected_features": [],
+  "dataset_rows": 37595,
+  "dataset_features": 174,
+  "dataset_tickers": 28,
+  "dataset_unique_dates": 1567,
+  "dataset_start_date": "2020-10-21 00:00:00",
+  "dataset_end_date": "2026-02-25 00:00:00",
+  "dataset_metadata": {
+    "effective_max_tickers": 150,
+    "effective_max_rows": 200000,
+    "low_resource_mode_effective": false,
+    "macro_features_enabled": false,
+    "min_tickers_per_date": 50,
+    "n_dates_min_tickers": 0,
+    "n_dates_all_tickers": 0
+  },
+  "data_integrity": {
+    "pit_fundamentals_enabled": true,
+    "pit_fundamental_lag_days": 60,
+    "pit_use_announcement_dates": true,
+    "pit_no_future_leak": true
+  },
+  "feature_importance": {},
+  "external_data_audit": {
+    "status": "missing_optional_data",
+    "datasets": {
+      "announcement_dates": {
+        "key": "announcement_dates",
+        "status": "missing_optional_data",
+        "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/external/announcement_dates.parquet",
+        "exists": false,
+        "row_count": 0,
+        "missing_columns": [
+          "ticker"
+        ],
+        "missing_any_groups": [
+          [
+            "announcement_date",
+            "date",
+            "announced_at"
+          ]
+        ]
+      },
+      "index_membership": {
+        "key": "index_membership",
+        "status": "missing_optional_data",
+        "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/external/index_membership_history.parquet",
+        "exists": false,
+        "row_count": 0,
+        "missing_columns": [
+          "ticker"
+        ],
+        "missing_any_groups": [
+          [
+            "effective_date",
+            "date",
+            "start_date"
+          ],
+          [
+            "index_name",
+            "index"
+          ]
+        ]
+      },
+      "analyst_estimates": {
+        "key": "analyst_estimates",
+        "status": "missing_optional_data",
+        "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/external/analyst_estimates.parquet",
+        "exists": false,
+        "row_count": 0,
+        "missing_columns": [
+          "ticker"
+        ],
+        "missing_any_groups": [
+          [
+            "estimate_date",
+            "date",
+            "asof_date"
+          ],
+          [
+            "eps_estimate",
+            "consensus_eps",
+            "estimate_value"
+          ]
+        ]
+      }
+    }
+  }
+}

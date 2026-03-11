@@ -413,23 +413,19 @@ class MarketStateEngine:
         if realized_vol < 1.0:  # Convert to percentage if needed
             realized_vol *= 100
         
-        # Classify volatility regime
+        # Classify volatility regime + continuous stress for better regime sensitivity.
         if realized_vol > 30:
             vol_regime = 'extreme'
-            stress_level = 0.8
         elif realized_vol > 25:
             vol_regime = 'high'
-            stress_level = 0.6
         elif realized_vol > 20:
             vol_regime = 'elevated'
-            stress_level = 0.4
         elif realized_vol > 15:
             vol_regime = 'normal'
-            stress_level = 0.2
         else:
             vol_regime = 'low'
-            stress_level = 0.1
-        
+        stress_level = float(np.clip((realized_vol - 10.0) / 25.0, 0.05, 0.95))
+
         return {
             'volatility_regime': vol_regime,
             'stress_level': stress_level,
@@ -556,9 +552,19 @@ class MarketStateEngine:
         delta_polarity = float(sentiment.get("delta_polarity", 0.0) or 0.0)
         delta_uncertainty = float(sentiment.get("delta_uncertainty", 0.0) or 0.0)
         delta_conviction = float(sentiment.get("delta_conviction", 0.0) or 0.0)
-        negative_count = len(sentiment.get("negative_trending_companies", []) or [])
-        event_count = len(sentiment.get("event_company_impacts", []) or [])
+        negative_count = int(sentiment.get("negative_trending_company_total", len(sentiment.get("negative_trending_companies", []) or [])) or 0)
+        event_count = int(sentiment.get("event_company_impact_total", len(sentiment.get("event_company_impacts", []) or [])) or 0)
         alert_level = str(sentiment.get("alert_level", "normal") or "normal").strip().lower()
+
+        if news_signal <= 0.0:
+            derived_news_signal = (
+                0.30 * abs(delta_polarity)
+                + 0.25 * max(0.0, micro_shift)
+                + 0.20 * max(0.0, change_velocity)
+                + 0.15 * min(1.0, max(0, negative_count) / 120.0)
+                + 0.10 * min(1.0, max(0, event_count) / 180.0)
+            )
+            news_signal = float(max(0.0, min(1.0, derived_news_signal)))
 
         risk_multiplier = 1.0
         exposure_multiplier = 1.0
@@ -581,9 +587,9 @@ class MarketStateEngine:
             elif alert_level == "elevated":
                 sentiment_headwind += 0.03
 
-            sentiment_headwind = max(0.0, min(0.70, sentiment_headwind))
-            risk_multiplier = max(0.35, 1.0 - sentiment_headwind)
-            exposure_multiplier = max(0.30, 1.0 - (sentiment_headwind * 1.10))
+            sentiment_headwind = float(0.75 * np.tanh(float(sentiment_headwind) / 0.75))
+            risk_multiplier = float(np.clip(1.0 - (sentiment_headwind * 0.95), 0.30, 1.10))
+            exposure_multiplier = float(np.clip(1.0 - (sentiment_headwind * 0.85), 0.20, 1.10))
 
             # Allow a small upside adjustment only when downside stress is low.
             if event_shock < 0.25 and polarity > 0.0 and uncertainty < 0.45 and conflict < 0.45:
@@ -722,19 +728,32 @@ class MarketStateEngine:
         
         # Initialize brain-enhanced state
         enhanced_state = base_market_state.copy()
-        
+        base_sentiment_multiplier = float(base_market_state.get("sentiment_exposure_multiplier", 1.0) or 1.0)
+        stress_level = float(base_market_state.get("stress_level", 0.3) or 0.3)
+        risk_on = float(base_market_state.get("risk_on_probability", base_market_state.get("risk_on", 0.5)) or 0.5)
+        sentiment_uncertainty = float(base_market_state.get("sentiment_uncertainty", 0.0) or 0.0)
+        sentiment_conflict = float(base_market_state.get("sentiment_conflict", 0.0) or 0.0)
+        dynamic_fallback_multiplier = float(np.clip(1.0 - 0.35 * stress_level + 0.20 * (risk_on - 0.5), 0.30, 1.10))
+        blended_fallback_multiplier = float(np.clip(0.6 * base_sentiment_multiplier + 0.4 * dynamic_fallback_multiplier, 0.30, 1.10))
+        fallback_regime_similarity = float(np.clip(0.25 + 0.60 * risk_on - 0.25 * stress_level, 0.05, 0.95))
+        fallback_causal_stability = float(
+            np.clip(0.90 - 0.35 * stress_level - 0.20 * sentiment_uncertainty - 0.15 * sentiment_conflict, 0.20, 0.95)
+        )
+
         # Default brain values (if brain not available)
         brain_defaults = {
             'pulse_intensity': 0.5,
             'market_phase': 'neutral',
             'pulse_risk_level': 'medium',
-            'regime_similarity': 0.5,
+            'regime_similarity': fallback_regime_similarity,
             'regime_name': 'Unknown',
             'survival_mode': 'normal',
-            'exposure_multiplier': 1.0,
-            'causal_stability': 0.7,
+            'exposure_multiplier': blended_fallback_multiplier,
+            'causal_stability': fallback_causal_stability,
             'brain_active': False
         }
+        # Always seed defaults first so missing brain fields do not silently become constants.
+        enhanced_state.update(brain_defaults)
         
         try:
             # Try to load Market Brain outputs
@@ -762,7 +781,7 @@ class MarketStateEngine:
                 if survival_state:
                     enhanced_state['survival_mode'] = survival_state.get('survival_mode', 'normal')
                     action_params = survival_state.get('action_parameters', {})
-                    enhanced_state['exposure_multiplier'] = action_params.get('exposure_multiplier', 1.0)
+                    enhanced_state['exposure_multiplier'] = float(action_params.get('exposure_multiplier', blended_fallback_multiplier))
                 
                 # Causal stability
                 causal_stability = brain_intelligence.get('causal_stability', 0.7)

@@ -315,6 +315,8 @@ def load_sentiment_context(
         "top_trending_companies": [],
         "negative_trending_companies": [],
         "event_company_impacts": [],
+        "negative_trending_company_total": 0,
+        "event_company_impact_total": 0,
     }
 
     summary_path = data_dir / "v3_sentiment_summary.json"
@@ -342,12 +344,14 @@ def load_sentiment_context(
     if isinstance(ticker_scores, pd.DataFrame) and not ticker_scores.empty:
         rows = ticker_scores.to_dict("records")
         out["top_trending_companies"] = rows[: max(1, int(top_companies_limit))]
-        out["negative_trending_companies"] = [
+        negative_rows = [
             str(r.get("ticker", "")).upper()
             for r in rows
             if _to_int(r.get("sentiment_sign", 0)) < 0
             or str(r.get("sentiment_label", "")).strip().lower() in NEGATIVE_SENTIMENT_LABELS
-        ][:40]
+        ]
+        out["negative_trending_company_total"] = int(len(negative_rows))
+        out["negative_trending_companies"] = negative_rows[: max(20, int(top_companies_limit))]
         out["news_signal_score"] = float(
             max(
                 0.0,
@@ -365,9 +369,9 @@ def load_sentiment_context(
             edf = pd.read_parquet(event_impact_path)
             if isinstance(edf, pd.DataFrame) and not edf.empty:
                 if "impact_score" in edf.columns:
-                    ranked = edf.sort_values("impact_score", ascending=False).head(40)
+                    ranked = edf.sort_values("impact_score", ascending=False)
                 else:
-                    ranked = edf.head(40)
+                    ranked = edf
                 impacts: List[Dict[str, Any]] = []
                 for _, row in ranked.iterrows():
                     ticker = str(row.get("ticker", "") or "").replace(".NS", "").strip().upper()
@@ -381,7 +385,8 @@ def load_sentiment_context(
                             "event_type": str(row.get("event_type", "macro") or "macro").lower(),
                         }
                     )
-                out["event_company_impacts"] = impacts
+                out["event_company_impact_total"] = int(len(impacts))
+                out["event_company_impacts"] = impacts[: max(20, int(top_companies_limit))]
         except Exception:
             pass
 
@@ -438,8 +443,10 @@ def load_sentiment_context(
                 if delta_polarity < 0:
                     shock_score += 0.14 * min(1.0, abs(delta_polarity))
                 shock_score += min(0.30, _to_float(out.get("news_signal_score", 0.0)) * 0.35)
-                shock_score += min(0.20, len(out["negative_trending_companies"]) / 80.0)
-                shock_score += min(0.20, len(out["event_company_impacts"]) / 120.0)
+                negative_count = int(_to_int(out.get("negative_trending_company_total", len(out["negative_trending_companies"])), 0))
+                event_count = int(_to_int(out.get("event_company_impact_total", len(out["event_company_impacts"])), 0))
+                shock_score += min(0.20, negative_count / 80.0)
+                shock_score += min(0.20, event_count / 120.0)
 
                 if shock_score >= 0.90:
                     alert_level = "critical"
@@ -474,11 +481,13 @@ def load_sentiment_context(
             pass
 
     if (out["top_trending_companies"] or out["event_company_impacts"]) and not out["available"]:
+        negative_count = int(_to_int(out.get("negative_trending_company_total", len(out["negative_trending_companies"])), 0))
+        event_count = int(_to_int(out.get("event_company_impact_total", len(out["event_company_impacts"])), 0))
         fallback_shock = min(
             1.0,
             _to_float(out["news_signal_score"])
-            + min(0.35, len(out["negative_trending_companies"]) / 50.0)
-            + min(0.25, len(out["event_company_impacts"]) / 80.0),
+            + min(0.35, negative_count / 50.0)
+            + min(0.25, event_count / 80.0),
         )
         out["available"] = True
         out["event_shock_score"] = max(_to_float(out["event_shock_score"]), float(fallback_shock))
@@ -507,4 +516,3 @@ def aggregate_signed_sentiment(values: Iterable[float]) -> float:
     if not vals:
         return 0.0
     return float(sum(vals) / len(vals))
-

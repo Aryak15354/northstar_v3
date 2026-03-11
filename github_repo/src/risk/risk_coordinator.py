@@ -213,44 +213,17 @@ class PortfolioRiskValidator(RiskValidator):
     def validate(self, trade: Trade, portfolio: Portfolio, metrics: RiskMetrics) -> Tuple[RiskDecision, List[RiskViolation]]:
         """Validate portfolio-level risk constraints"""
         violations = []
-        
-        # Check VaR limits
-        if 'max_portfolio_var' in self.limits:
-            limit = self.limits['max_portfolio_var']
-            if metrics.portfolio_var > limit.threshold:
+
+        for limit in self.limits.values():
+            value, severity, description_template = self._resolve_limit_metric(limit, metrics)
+            if value > limit.threshold:
                 violations.append(RiskViolation(
                     limit_name=limit.name,
-                    current_value=metrics.portfolio_var,
+                    current_value=value,
                     threshold=limit.threshold,
-                    severity='ERROR',
+                    severity=severity,
                     timestamp=datetime.now(),
-                    description=f"Portfolio VaR {metrics.portfolio_var:.2f} exceeds limit {limit.threshold:.2f}"
-                ))
-        
-        # Check leverage limits
-        if 'max_leverage' in self.limits:
-            limit = self.limits['max_leverage']
-            if metrics.leverage > limit.threshold:
-                violations.append(RiskViolation(
-                    limit_name=limit.name,
-                    current_value=metrics.leverage,
-                    threshold=limit.threshold,
-                    severity='ERROR',
-                    timestamp=datetime.now(),
-                    description=f"Leverage {metrics.leverage:.2f} exceeds limit {limit.threshold:.2f}"
-                ))
-        
-        # Check gross exposure limits
-        if 'max_gross_exposure' in self.limits:
-            limit = self.limits['max_gross_exposure']
-            if metrics.gross_exposure > limit.threshold:
-                violations.append(RiskViolation(
-                    limit_name=limit.name,
-                    current_value=metrics.gross_exposure,
-                    threshold=limit.threshold,
-                    severity='WARNING',
-                    timestamp=datetime.now(),
-                    description=f"Gross exposure {metrics.gross_exposure:.2%} exceeds limit"
+                    description=description_template.format(value=value, threshold=limit.threshold),
                 ))
         
         # Determine decision
@@ -263,6 +236,47 @@ class PortfolioRiskValidator(RiskValidator):
     
     def get_risk_level(self) -> RiskLevel:
         return RiskLevel.PORTFOLIO
+
+    def _resolve_limit_metric(self, limit: RiskLimit, metrics: RiskMetrics) -> Tuple[float, str, str]:
+        """Map any portfolio-level limit to a concrete metric.
+
+        We support canonical limit names while also handling generic limits
+        (for example, a custom `strict_limit` with `limit_type='abs'`).
+        """
+        name = str(limit.name).strip().lower()
+        limit_type = str(limit.limit_type).strip().lower()
+
+        if "cvar" in name or "cvar" in limit_type:
+            return (
+                float(metrics.portfolio_cvar),
+                "ERROR",
+                "Portfolio CVaR {value:.2f} exceeds limit {threshold:.2f}",
+            )
+        if "leverage" in name or "leverage" in limit_type:
+            return (
+                float(metrics.leverage),
+                "ERROR",
+                "Leverage {value:.2f} exceeds limit {threshold:.2f}",
+            )
+        if "gross" in name or "gross" in limit_type:
+            return (
+                float(metrics.gross_exposure),
+                "WARNING",
+                "Gross exposure {value:.2%} exceeds limit {threshold:.2%}",
+            )
+        if "net" in name or "net" in limit_type:
+            return (
+                float(abs(metrics.net_exposure)),
+                "WARNING",
+                "Net exposure {value:.2%} exceeds limit {threshold:.2%}",
+            )
+
+        # Default/fallback: treat as a VaR-style absolute risk ceiling.
+        return (
+            float(metrics.portfolio_var),
+            "ERROR",
+            "Portfolio VaR {value:.2f} exceeds limit {threshold:.2f}",
+        )
 
 
 class SystemRiskValidator(RiskValidator):

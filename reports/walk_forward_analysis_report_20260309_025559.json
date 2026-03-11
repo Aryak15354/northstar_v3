@@ -1,0 +1,72 @@
+{
+  "report_date": "2026-03-09",
+  "analysis_summary": {
+    "total_windows": 6,
+    "strategies_analyzed": 1,
+    "analysis_period_start": "2020-01-01T00:00:00",
+    "analysis_period_end": "2021-12-21T00:00:00",
+    "total_analysis_duration": 0.000959
+  },
+  "window_results": [
+    {
+      "window_id": "WF_001",
+      "training_period": "2020-01-01 to 2020-06-29",
+      "testing_period": "2020-06-29 to 2020-09-27",
+      "strategies_count": 1,
+      "avg_out_of_sample_return": 0.17121866591508456,
+      "degradation_detected": false
+    },
+    {
+      "window_id": "WF_002",
+      "training_period": "2020-03-31 to 2020-09-27",
+      "testing_period": "2020-09-27 to 2020-12-26",
+      "strategies_count": 1,
+      "avg_out_of_sample_return": 0.07715526905765559,
+      "degradation_detected": false
+    },
+    {
+      "window_id": "WF_003",
+      "training_period": "2020-06-29 to 2020-12-26",
+      "testing_period": "2020-12-26 to 2021-03-26",
+      "strategies_count": 1,
+      "avg_out_of_sample_return": 0.1359797078223621,
+      "degradation_detected": false
+    },
+    {
+      "window_id": "WF_004",
+      "training_period": "2020-09-27 to 2021-03-26",
+      "testing_period": "2021-03-26 to 2021-06-24",
+      "strategies_count": 1,
+      "avg_out_of_sample_return": 0.05911073404252202,
+      "degradation_detected": false
+    },
+    {
+      "window_id": "WF_005",
+      "training_period": "2020-12-26 to 2021-06-24",
+      "testing_period": "2021-06-24 to 2021-09-22",
+      "strategies_count": 1,
+      "avg_out_of_sample_return": 0.17045509287810545,
+      "degradation_detected": false
+    },
+    {
+      "window_id": "WF_006",
+      "training_period": "2021-03-26 to 2021-09-22",
+      "testing_period": "2021-09-22 to 2021-12-21",
+      "strategies_count": 1,
+      "avg_out_of_sample_return": 0.11166456670624152,
+      "degradation_detected": false
+    }
+  ],
+  "degradation_analysis": {
+    "total_degradations": 3,
+    "critical_degradations": 2,
+    "strategies_with_degradation": 1
+  },
+  "evolution_analysis": {
+    "total_evolution_analyses": 0,
+    "strategies_with_evolution": 0
+  },
+  "recommendations": [
+    "High degradation rate detected - implement enhanced monitoring"
+  ]
+}

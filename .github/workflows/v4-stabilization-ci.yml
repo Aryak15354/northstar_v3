@@ -106,6 +106,8 @@ jobs:
         run: python scripts/ci/check_policy_immutability.py
       - name: Execution anti-bypass check
         run: python scripts/ci/check_execution_bypass.py
+      - name: No direct runtime mutation imports in legacy modules
+        run: python scripts/ci/check_no_direct_runtime_mutation_imports.py
       - name: Dashboard chart registry contract check
         run: python scripts/ci/check_dashboard_chart_registry.py
 
@@ -184,6 +186,31 @@ jobs:
           python scripts/ci/check_policy_immutability.py
           python scripts/ci/check_execution_bypass.py
 
+  gate_alpha_lab_diagnostics:
+    runs-on: ubuntu-latest
+    needs: bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff packaging
+      - name: ADE smoke and ALDH import contract
+        run: |
+          python scripts/run_alpha_diagnostics.py --runtime-db data/runtime/portfolio_runtime.db --diagnostics-db data/diagnostics/alpha_diagnostics.db
+          python - <<'PY'
+          from src.research.alpha_lab import AlphaLabController, AlphaHypothesis, AlphaLabStore, RobustnessTester
+          assert AlphaLabController is not None
+          assert AlphaHypothesis is not None
+          assert AlphaLabStore is not None
+          assert RobustnessTester is not None
+          PY
+
   gate_risk_drift:
     runs-on: ubuntu-latest
     needs: bootstrap
@@ -243,6 +270,7 @@ jobs:
       - gate_risk_safety
       - gate_runtime_integrity
       - gate_drift_detection
+      - gate_alpha_lab_diagnostics
       - gate_risk_drift
       - gate_reachability_regression
       - gate_archive_isolation
@@ -255,6 +283,7 @@ jobs:
             "gate_risk_safety": "${{ needs.gate_risk_safety.result }}",
             "gate_runtime_integrity": "${{ needs.gate_runtime_integrity.result }}",
             "gate_drift_detection": "${{ needs.gate_drift_detection.result }}",
+            "gate_alpha_lab_diagnostics": "${{ needs.gate_alpha_lab_diagnostics.result }}",
             "gate_risk_drift": "${{ needs.gate_risk_drift.result }}",
             "gate_reachability_regression": "${{ needs.gate_reachability_regression.result }}",
             "gate_archive_isolation": "${{ needs.gate_archive_isolation.result }}"

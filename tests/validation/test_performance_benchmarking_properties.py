@@ -24,7 +24,13 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 from src.validation.performance_benchmarking_system import (
     PerformanceBenchmarkingSystem, BenchmarkType, PerformanceMetrics
 )
-from hypothesis import given, strategies as st, settings, assume
+from hypothesis import HealthCheck, given, strategies as st, settings, assume
+
+HYPOTHESIS_SUPPRESS = [
+    HealthCheck.large_base_example,
+    HealthCheck.data_too_large,
+    HealthCheck.too_slow
+]
 
 class TestPerformanceBenchmarkingProperties:
     """Property-based tests for Performance Benchmarking System"""
@@ -43,7 +49,7 @@ class TestPerformanceBenchmarkingProperties:
             min_size=252, max_size=1260
         )
     )
-    @settings(max_examples=100)
+    @settings(max_examples=100, deadline=None, suppress_health_check=HYPOTHESIS_SUPPRESS)
     def test_benchmark_comparison_completeness_property(self, returns, benchmark_returns):
         """
         Property test: Benchmark comparisons should include all required metrics
@@ -96,7 +102,7 @@ class TestPerformanceBenchmarkingProperties:
         ),
         risk_free_rate=st.floats(min_value=0.01, max_value=0.10)
     )
-    @settings(max_examples=50)
+    @settings(max_examples=50, deadline=None, suppress_health_check=HYPOTHESIS_SUPPRESS)
     def test_multi_period_sharpe_calculation_property(self, returns, risk_free_rate):
         """
         Property test: Multi-period Sharpe ratios should be calculated correctly
@@ -158,7 +164,7 @@ class TestPerformanceBenchmarkingProperties:
             min_size=252, max_size=756
         )
     )
-    @settings(max_examples=50)
+    @settings(max_examples=50, deadline=None, suppress_health_check=HYPOTHESIS_SUPPRESS)
     def test_return_decomposition_completeness_property(self, portfolio_returns, market_factor, size_factor):
         """
         Property test: Return decomposition should be complete and sum appropriately
@@ -217,7 +223,7 @@ class TestPerformanceBenchmarkingProperties:
         ),
         volatility_multiplier=st.floats(min_value=0.5, max_value=2.0)
     )
-    @settings(max_examples=100)
+    @settings(max_examples=100, deadline=None, suppress_health_check=HYPOTHESIS_SUPPRESS)
     def test_performance_metric_accuracy_property(self, returns, volatility_multiplier):
         """
         Property test: Performance metrics should be mathematically accurate
@@ -274,7 +280,7 @@ class TestPerformanceBenchmarkingProperties:
         returns2=st.lists(st.floats(min_value=-0.05, max_value=0.05), min_size=252, max_size=504),
         correlation_target=st.floats(min_value=-0.8, max_value=0.8)
     )
-    @settings(max_examples=50)
+    @settings(max_examples=50, deadline=None, suppress_health_check=HYPOTHESIS_SUPPRESS)
     def test_benchmark_comparison_consistency_property(self, returns1, returns2, correlation_target):
         """
         Property test: Benchmark comparisons should be consistent and symmetric

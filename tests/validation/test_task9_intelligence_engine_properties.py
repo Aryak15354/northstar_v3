@@ -251,7 +251,7 @@ class TestIntelligenceEngineProperties:
             reason="Test initialization"
         )
         
-        self.intelligence_engine = IntelligenceEngine(self.state_manager)
+        self.intelligence_engine = UnifiedIntelligenceEngine(self.state_manager)
     
     @given(intelligence_state_strategy())
     @settings(max_examples=100, deadline=5000)

@@ -41,7 +41,7 @@ class CacheEntry:
     def is_fresh(self) -> bool:
         """Check if cache entry is still fresh"""
         age = datetime.now() - self.timestamp
-        return age <= self.max_age
+        return age < self.max_age
     
     def is_stale_but_acceptable(self) -> bool:
         """Check if entry is stale but marked as acceptable to use"""
@@ -191,7 +191,12 @@ class IntelligentCacheManager:
             
             # Check if we need to evict entries
             if self._should_evict(size_bytes):
-                self._evict_entries(size_bytes)
+                eviction_success = self._evict_entries(size_bytes, incoming_priority=priority)
+                # If we cannot free enough space without violating priority ordering,
+                # reject insertion instead of evicting higher-priority items.
+                if not eviction_success and self._should_evict(size_bytes):
+                    logger.debug(f"Rejected cache put for {key}: insufficient space with priority constraints")
+                    return False
             
             # Create cache entry
             entry = CacheEntry(
@@ -247,14 +252,14 @@ class IntelligentCacheManager:
         
         return projected_usage > threshold_bytes
     
-    def _evict_entries(self, needed_space: int):
+    def _evict_entries(self, needed_space: int, incoming_priority: Optional[int] = None) -> bool:
         """
         Evict entries to make space
         
         Enforces Property 24: Memory Threshold Enforcement (P2)
         """
         if not self._cache:
-            return
+            return False
         
         # Calculate how many entries to evict
         current_usage = self._stats.memory_usage_bytes
@@ -265,9 +270,18 @@ class IntelligentCacheManager:
         entries_to_evict = []
         freed_space = 0
         
-        eviction_candidates = self.eviction_policy.select_for_eviction(
-            self._cache, len(self._cache)
-        )
+        if incoming_priority is None:
+            eviction_candidates = self.eviction_policy.select_for_eviction(
+                self._cache, len(self._cache)
+            )
+        else:
+            # Preserve strict priority ordering for regular insertions:
+            # prefer evicting lower/equal priority entries first.
+            sorted_entries = sorted(
+                self._cache.items(),
+                key=lambda x: (x[1].priority > incoming_priority, x[1].priority, x[1].last_accessed)
+            )
+            eviction_candidates = [key for key, _ in sorted_entries]
         
         for key in eviction_candidates:
             if freed_space >= space_to_free:
@@ -275,6 +289,8 @@ class IntelligentCacheManager:
             
             entry = self._cache.get(key)
             if entry:
+                if incoming_priority is not None and entry.priority > incoming_priority:
+                    continue
                 entries_to_evict.append(key)
                 freed_space += entry.size_bytes
         
@@ -288,6 +304,7 @@ class IntelligentCacheManager:
         
         logger.info(f"Evicted {len(entries_to_evict)} entries, "
                    f"freed {freed_space} bytes")
+        return freed_space >= space_to_free
     
     def _estimate_size(self, value: Any) -> int:
         """Estimate memory size of cached value"""

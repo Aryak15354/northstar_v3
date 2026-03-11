@@ -425,8 +425,10 @@ def safe_divide(numerator, denominator, default=0.5):
 # =========================== INSTITUTIONAL INTELLIGENCE INTEGRATION ===========================
 
 # Import the intelligence stack
-# Dependency injection - import IntelligenceStack, IntelligenceDashboard from src.intelligence.intelligence_stack
-# print(f"⚠️ Intelligence stack not available: {e}")
+try:
+    from src.state.market_state import load_latest_intelligent_market_state, load_latest_market_beliefs
+    INTELLIGENCE_AVAILABLE = True
+except Exception:
     INTELLIGENCE_AVAILABLE = False
 
 # =========================== FINANCIAL INTELLIGENCE ORGANISM ===========================
@@ -465,14 +467,26 @@ def load_financial_intelligence_organism():
     if INTELLIGENCE_AVAILABLE:
         try:
             print("🤖 Loading institutional AI intelligence...")
-            
-            # Try to load intelligent market state
-            # Dependency injection - import load_latest_intelligent_market_state, load_latest_market_beliefs from src.state.market_state
-# print("   AI functions not available, using fallback")
-                organism['institutional_ai'] = {'status': 'unavailable'}
-            except Exception as e:
-                print(f"   AI loading error: {e}")
-                organism['institutional_ai'] = {'status': 'error', 'message': str(e)}
+            intelligent_state = load_latest_intelligent_market_state()
+            beliefs_data = load_latest_market_beliefs()
+
+            if intelligent_state.get('intelligence_status') == 'active':
+                organism['institutional_ai'] = {
+                    'status': 'active',
+                    'regime': intelligent_state.get('regime_ai', 'neutral'),
+                    'market_stance': beliefs_data.get('beliefs', {}).get('market_beliefs', {}).get('stance', 'Neutral'),
+                    'conviction': intelligent_state.get('conviction', 0.5),
+                    'primary_action': beliefs_data.get('actions', {}).get('primary_action', 'MAINTAIN_EXPOSURE'),
+                    'target_exposure': beliefs_data.get('actions', {}).get('exposure_recommendation', {}).get('target_exposure', 50),
+                    'system_health': intelligent_state.get('system_health', {'grade': 'C', 'overall_score': 0.5}),
+                    'beliefs': beliefs_data.get('beliefs', {}),
+                    'actions': beliefs_data.get('actions', {}),
+                    'learning_active': True,
+                    'timestamp': intelligent_state.get('intelligence_timestamp', datetime.now()),
+                }
+                print(f"   AI Status: {intelligent_state.get('system_health', {}).get('grade', 'C')} grade")
+            else:
+                organism['institutional_ai'] = {'status': 'dormant'}
                 
         except Exception as e:
             print(f"   AI Error: {e}")

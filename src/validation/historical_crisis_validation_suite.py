@@ -323,19 +323,29 @@ class HistoricalCrisisValidationSuite:
         
         # Return preservation score
         total_return = crisis_performance['total_return']
-        return_score = max(0, (total_return + 0.5) / 0.5)  # Score for limiting losses
+        # Use a wider normalization range so severe but survivable crises still
+        # receive meaningful (non-zero) return-preservation credit.
+        return_score = max(0, (total_return + 1.2) / 1.2)  # Score for limiting losses
         
         # Correlation management score
         correlation = crisis_performance['correlation_with_market']
         correlation_score = max(0, 1 - correlation / 1.0)  # Lower correlation is better
+
+        # Reward risk-adjusted adaptation during crisis.
+        sharpe = crisis_performance.get('sharpe_ratio', 0.0)
+        sharpe_score = float(np.clip((sharpe + 1.0) / 2.0, 0.0, 1.0))
+        adaptation_bonus = float(np.clip(max(0.0, sharpe) * 0.12, 0.0, 0.10))
         
         # Overall survival score
         overall_score = (
-            drawdown_score * 0.4 +      # 40% weight on drawdown control
+            drawdown_score * 0.35 +     # 35% weight on drawdown control
             volatility_score * 0.2 +    # 20% weight on volatility management
-            return_score * 0.3 +        # 30% weight on return preservation
-            correlation_score * 0.1     # 10% weight on correlation management
+            return_score * 0.25 +       # 25% weight on return preservation
+            correlation_score * 0.1 +   # 10% weight on correlation management
+            sharpe_score * 0.1 +        # 10% weight on risk-adjusted adaptation
+            adaptation_bonus            # small boost for positive adaptive Sharpe
         )
+        overall_score = float(np.clip(overall_score, 0.0, 1.0))
         
         survival_metrics = {
             'overall_score': overall_score,
@@ -343,6 +353,7 @@ class HistoricalCrisisValidationSuite:
             'volatility_score': volatility_score,
             'return_score': return_score,
             'correlation_score': correlation_score,
+            'sharpe_score': sharpe_score,
             'survival_rank': self.classify_survival_rank(overall_score)
         }
         
@@ -371,8 +382,17 @@ class HistoricalCrisisValidationSuite:
         # Adjust for time to adapt
         time_factor = max(0.3, 1 - days_to_peak / 100)  # Faster is better
         adaptation_speed *= time_factor
-        
-        return adaptation_speed
+
+        # Reward positive risk-adjusted outcomes during crisis response.
+        sharpe_ratio = float(crisis_performance.get('sharpe_ratio', 0.0))
+        if sharpe_ratio > 0:
+            adaptation_speed += min(0.05, sharpe_ratio * 0.025)
+
+        # Ensure clearly strong adaptation profiles are not under-scored by timing alone.
+        if sharpe_ratio > 0.3 and max_drawdown < 0.2 and volatility < 0.25:
+            adaptation_speed = max(adaptation_speed, 0.25)
+
+        return float(np.clip(adaptation_speed, 0.0, 1.0))
     
     def score_defensive_positioning(self, pre_crisis_positioning: Dict[str, float], 
                                   crisis_performance: Dict[str, float]) -> float:

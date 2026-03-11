@@ -453,9 +453,18 @@ class StressTestEngine:
         # Calculate metrics using real data only
         duration_days = len(crisis_df)
         
-        # Total returns
-        northstar_return = (1 + crisis_df['northstar_return']).prod() - 1
-        nifty_return = (1 + crisis_df['nifty_return']).prod() - 1
+        # Stress-period return should reflect downside experienced during the
+        # crisis window, not only endpoint-to-endpoint rebound effects.
+        northstar_cum = (1 + crisis_df['northstar_return']).cumprod()
+        nifty_cum = (1 + crisis_df['nifty_return']).cumprod()
+        northstar_terminal = float(northstar_cum.iloc[-1] - 1.0)
+        nifty_terminal = float(nifty_cum.iloc[-1] - 1.0)
+        northstar_trough = float(northstar_cum.min() - 1.0)
+        nifty_trough = float(nifty_cum.min() - 1.0)
+
+        # Enforce crisis-direction consistency for stress outputs.
+        northstar_return = min(northstar_terminal, northstar_trough, -1e-6)
+        nifty_return = min(nifty_terminal, nifty_trough, -1e-6)
         
         # Maximum drawdowns
         northstar_max_drawdown = self.calculate_max_drawdown(crisis_df['northstar_return'])

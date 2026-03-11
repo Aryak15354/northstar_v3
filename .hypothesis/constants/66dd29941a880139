@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/manifold/diversity_monitor.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-08, 1e-06, 0.1, 0.65, 1.0, 'diversity_score', 'inf', 'local_density', 'overcrowding_flag', 'redundancy_scores']

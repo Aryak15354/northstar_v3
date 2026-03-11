@@ -1,0 +1,17 @@
+{
+  "name": "\u015f",
+  "version": "1.0.0",
+  "description": "Test schema with 1 columns",
+  "columns": {
+    "col_0": {
+      "name": "col_0",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    }
+  },
+  "constraints": [],
+  "temporal_columns": [],
+  "primary_key": null
+}

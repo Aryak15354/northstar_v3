@@ -5,6 +5,7 @@ pyarrow
 fastparquet
 ta
 requests
+beautifulsoup4
 growwapi
 streamlit
 plotly
@@ -14,3 +15,5 @@ python-dateutil
 selenium
 webdriver-manager
 openpyxl
+xlrd
+pytest

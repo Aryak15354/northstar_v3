@@ -31,6 +31,12 @@ class StressTestingSystem:
     Provides stress test scenario generators, execution framework, validation,
     and reporting capabilities for extreme market conditions and system failures.
     """
+
+    # Stress simulations are synthetic and should not run in wall-clock real time.
+    # This keeps validation responsive while preserving relative scenario severity.
+    _SIMULATION_TIME_SCALE = 0.005
+    _MIN_SIMULATION_SECONDS = 0.25
+    _MAX_SIMULATION_SECONDS = 5.0
     
     def __init__(self, config: Optional[StressTestConfig] = None):
         """Initialize the stress testing system."""
@@ -327,13 +333,37 @@ class StressTestingSystem:
         scenario = generator(parameters or {})
         
         return scenario
+
+    def _resolve_scenario_duration_minutes(self, parameters: Dict[str, Any], fallback_minutes: int) -> int:
+        """Resolve scenario duration using explicit override, then config default, then fallback."""
+        override = parameters.get("duration_minutes")
+        if override is not None:
+            try:
+                return max(1, int(override))
+            except (TypeError, ValueError):
+                pass
+
+        configured_default = getattr(self.config, "default_scenario_duration_minutes", None)
+        if isinstance(configured_default, (int, float)) and configured_default > 0:
+            return max(1, int(configured_default))
+
+        return max(1, int(fallback_minutes))
+
+    def _simulation_runtime_seconds(self, duration_minutes: int) -> float:
+        """Convert configured scenario duration to bounded simulation runtime."""
+        nominal_seconds = max(float(duration_minutes), 1.0) * 60.0
+        scaled_seconds = nominal_seconds * self._SIMULATION_TIME_SCALE
+        return max(
+            self._MIN_SIMULATION_SECONDS,
+            min(self._MAX_SIMULATION_SECONDS, scaled_seconds)
+        )
     
     def _generate_extreme_volatility_scenario(self, parameters: Dict[str, Any]) -> StressTestScenario:
         """Generate extreme market volatility scenario."""
         return StressTestScenario(
             name="extreme_volatility",
             description="Extreme market volatility with 50%+ daily moves",
-            duration_minutes=parameters.get("duration_minutes", 30),
+            duration_minutes=self._resolve_scenario_duration_minutes(parameters, 30),
             severity="extreme",
             parameters={
                 "volatility_multiplier": parameters.get("volatility_multiplier", 5.0),
@@ -360,7 +390,7 @@ class StressTestingSystem:
         return StressTestScenario(
             name="liquidity_crisis",
             description="Severe liquidity crisis with wide spreads and low volumes",
-            duration_minutes=parameters.get("duration_minutes", 45),
+            duration_minutes=self._resolve_scenario_duration_minutes(parameters, 45),
             severity="high",
             parameters={
                 "spread_widening_factor": parameters.get("spread_widening_factor", 10.0),
@@ -387,7 +417,7 @@ class StressTestingSystem:
         return StressTestScenario(
             name="data_feed_interruption",
             description="Critical data feed interruptions and delays",
-            duration_minutes=parameters.get("duration_minutes", 20),
+            duration_minutes=self._resolve_scenario_duration_minutes(parameters, 20),
             severity="critical",
             parameters={
                 "interruption_probability": parameters.get("interruption_probability", 0.3),
@@ -414,7 +444,7 @@ class StressTestingSystem:
         return StressTestScenario(
             name="system_overload",
             description="System overload with high CPU and memory usage",
-            duration_minutes=parameters.get("duration_minutes", 25),
+            duration_minutes=self._resolve_scenario_duration_minutes(parameters, 25),
             severity="high",
             parameters={
                 "cpu_load_target": parameters.get("cpu_load_target", 0.95),
@@ -440,7 +470,7 @@ class StressTestingSystem:
         return StressTestScenario(
             name="network_partition",
             description="Network partitions and connectivity issues",
-            duration_minutes=parameters.get("duration_minutes", 15),
+            duration_minutes=self._resolve_scenario_duration_minutes(parameters, 15),
             severity="critical",
             parameters={
                 "partition_probability": parameters.get("partition_probability", 0.2),
@@ -466,7 +496,7 @@ class StressTestingSystem:
         return StressTestScenario(
             name="memory_pressure",
             description="Severe memory pressure and potential OOM conditions",
-            duration_minutes=parameters.get("duration_minutes", 20),
+            duration_minutes=self._resolve_scenario_duration_minutes(parameters, 20),
             severity="high",
             parameters={
                 "memory_allocation_rate": parameters.get("memory_allocation_rate", 100),  # MB/sec
@@ -552,7 +582,7 @@ class StressTestingSystem:
         
         # Simulate extreme volatility conditions
         volatility_multiplier = scenario.parameters.get("volatility_multiplier", 5.0)
-        duration_seconds = scenario.duration_minutes * 60
+        duration_seconds = self._simulation_runtime_seconds(scenario.duration_minutes)
         
         # Mock volatility stress test execution
         start_time = time.time()
@@ -603,7 +633,7 @@ class StressTestingSystem:
         # Simulate liquidity crisis conditions
         spread_widening = scenario.parameters.get("spread_widening_factor", 10.0)
         volume_reduction = scenario.parameters.get("volume_reduction_factor", 0.1)
-        duration_seconds = scenario.duration_minutes * 60
+        duration_seconds = self._simulation_runtime_seconds(scenario.duration_minutes)
         
         # Mock liquidity stress test execution
         start_time = time.time()
@@ -666,7 +696,7 @@ class StressTestingSystem:
         # Simulate data interruption conditions
         interruption_prob = scenario.parameters.get("interruption_probability", 0.3)
         interruption_duration = scenario.parameters.get("interruption_duration_seconds", 60)
-        duration_seconds = scenario.duration_minutes * 60
+        duration_seconds = self._simulation_runtime_seconds(scenario.duration_minutes)
         
         # Mock data interruption stress test execution
         start_time = time.time()
@@ -721,7 +751,7 @@ class StressTestingSystem:
         # Mock system overload stress test
         cpu_target = scenario.parameters.get("cpu_load_target", 0.95)
         memory_target = scenario.parameters.get("memory_usage_target", 0.90)
-        duration_seconds = scenario.duration_minutes * 60
+        duration_seconds = self._simulation_runtime_seconds(scenario.duration_minutes)
         
         # Simulate system load
         start_time = time.time()
@@ -777,7 +807,7 @@ class StressTestingSystem:
         # Mock network partition stress test
         partition_prob = scenario.parameters.get("partition_probability", 0.2)
         partition_duration = scenario.parameters.get("partition_duration_seconds", 30)
-        duration_seconds = scenario.duration_minutes * 60
+        duration_seconds = self._simulation_runtime_seconds(scenario.duration_minutes)
         
         # Simulate network issues
         start_time = time.time()
@@ -828,7 +858,7 @@ class StressTestingSystem:
         # Mock memory pressure stress test
         allocation_rate = scenario.parameters.get("memory_allocation_rate", 100)  # MB/sec
         gc_multiplier = scenario.parameters.get("gc_pressure_multiplier", 5.0)
-        duration_seconds = scenario.duration_minutes * 60
+        duration_seconds = self._simulation_runtime_seconds(scenario.duration_minutes)
         
         # Simulate memory pressure
         start_time = time.time()

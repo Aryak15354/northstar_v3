@@ -1,0 +1,45 @@
+{
+  "report_id": "a3d76dad-faa7-4d3a-89d6-e8a54babad1e",
+  "generated_at": "2026-03-09T03:58:03.965221",
+  "report_type": "system_comprehensive_validation",
+  "system_health": {
+    "timestamp": "2026-03-09T03:58:03.905115",
+    "overall_health": "warning",
+    "component_status": {
+      "system_validation": "warning",
+      "integration_testing": "critical"
+    },
+    "performance_score": 0.875,
+    "data_quality_score": 0.0,
+    "latency_metrics": {},
+    "error_counts": {},
+    "alert_level": "warning",
+    "recommended_actions": []
+  },
+  "recent_operations": [
+    {
+      "operation_id": "exec_1773008883_test_5026",
+      "operation_type": "integration_testing",
+      "start_time": "2026-03-09T03:58:03.120102",
+      "end_time": "2026-03-09T03:58:03.120324",
+      "status": "failure",
+      "duration_seconds": 0.000222,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    }
+  ],
+  "active_operations": [],
+  "system_metrics": {
+    "total_operations": 1,
+    "success_rate": 0.0,
+    "avg_duration": 0.000222,
+    "operation_types": [
+      "integration_testing"
+    ]
+  },
+  "operational_insights": [
+    "Operation success rate is 0.0% - investigate failures"
+  ]
+}

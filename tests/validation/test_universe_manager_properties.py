@@ -17,7 +17,7 @@ import sys
 import os
 
 # Add src to path
-, '..', '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.validation.universe_manager import UniverseManager
 

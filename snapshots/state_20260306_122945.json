@@ -1,0 +1,101 @@
+{
+  "timestamp": "2026-03-06T12:29:45.780773+05:30",
+  "cycle": 1772781447,
+  "regime": "low_vol_sell",
+  "market_data": {
+    "option_contracts": 1436,
+    "NIFTY_price": 24765.9,
+    "BANKNIFTY_price": 59055.85
+  },
+  "portfolio_greeks": {
+    "delta": 0.0,
+    "gamma": 0.0,
+    "theta": 0.0,
+    "vega": 0.0
+  },
+  "total_pnl": 20991.65,
+  "realized_pnl": 20991.65,
+  "unrealized_pnl": 0,
+  "today_pnl": 0,
+  "positions": [],
+  "performance_metrics": {
+    "total_trades": 11,
+    "win_rate": 0.8181818181818182,
+    "sharpe_ratio": 0.0,
+    "sortino_ratio": 0.0
+  },
+  "risk_metrics": {
+    "var_95": 0.0,
+    "cvar_95": 0.0,
+    "max_drawdown": 0.0,
+    "current_drawdown": 0.0
+  },
+  "strategy_allocations": {
+    "Short Vol": 0.0,
+    "Long Vol": 0.0
+  },
+  "centralized_pnl": {
+    "timestamp": "2026-03-06T12:29:45.780773+05:30",
+    "components": {
+      "options_live": {
+        "unrealized_pnl": 0.0,
+        "realized_pnl_closed_positions": 20991.65,
+        "ytd_net_pnl_after_costs_and_tax": 13517.58493762001,
+        "ytd_tax_liability": 6311.250000000001,
+        "ytd_total_costs": 1162.81506238,
+        "active_positions": 0,
+        "closed_positions": 11
+      },
+      "v3_weekly_portfolio": {
+        "equity": 0.9758199568657672,
+        "daily_return": 0.0019556428355150504,
+        "total_pnl_from_series_start": -0.02418004313423283,
+        "as_of": "2026-03-05 00:00:00"
+      },
+      "shadow_portfolio": {
+        "portfolio_value": 9944153.450473882,
+        "daily_pnl": -55846.54952612333,
+        "daily_return": -0.00558465495261233,
+        "total_pnl_from_series_start": -250165.15785794705,
+        "as_of": "2026-03-05 18:07:39.171891+00:00"
+      }
+    },
+    "aggregates": {
+      "combined_net_pnl_estimate": -236647.59710037019,
+      "options_share_pct": -0.057121158647923005,
+      "weekly_portfolio_share_pct": 1.0217742935279949e-07,
+      "shadow_share_pct": 1.0571210564704936,
+      "tax_aware_net_gate": false
+    }
+  },
+  "execution_metrics": {
+    "fill_rate": 1.0,
+    "avg_slippage": 0.0,
+    "total_orders": 11,
+    "rejected_orders": 0
+  },
+  "alpha_os": {
+    "timestamp": "2026-03-06T07:17:27.770730+00:00",
+    "mode": "blocked_contract_violation",
+    "strategy_weights": {},
+    "gross_target": 0.0,
+    "net_target": 0.0,
+    "used_fallback": true,
+    "fallback_level": "contract_block",
+    "reason_codes": [
+      "adapter_contract_blocked",
+      "stale_canonical_artifact:capital_allocations.json:47732s>2700s"
+    ],
+    "diagnostics": {
+      "contract": {
+        "ok": false,
+        "reason": "stale_canonical_artifact:capital_allocations.json:47732s>2700s"
+      }
+    },
+    "regime_snapshot": null,
+    "strategy_posteriors": [],
+    "risk_budget": null,
+    "meta_feedback": null,
+    "legacy_allocation": {}
+  }
+}

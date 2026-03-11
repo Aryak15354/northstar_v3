@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/signal_health_monitor.py
+# hypothesis_version: 6.150.2
+
+[-0.8, -0.5, -0.3, -0.2, 0.0, 1e-06, 0.001, 0.015, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999, 1.0, 1.2, 1.5, 3.0, 45.0, 50.0, -252, 100, 126, 252, 500, 1000, 2024, '=', 'INFY.NS', 'RELIANCE.NS', 'TCS.NS', '__main__', 'alert_distribution', 'average_health_score', 'crowding', 'crowding_score', 'decay', 'default_values', 'exponential_decay', 'fit_method', 'green', 'horizons_used', 'ic', 'ic_values_used', 'ignore', 'macro', 'method', 'mock_for_testing', 'momentum', 'no_data', 'quality', 'red', 'return_mean', 'return_std', 'signal_count', 'signal_mean', 'signal_std', 'specialists_at_risk', 'status', 'test', 'threshold', 'timestamp', 'value', 'yellow']

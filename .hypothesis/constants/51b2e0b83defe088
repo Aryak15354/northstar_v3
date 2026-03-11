@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/bayesian_capital_tribunal.py
+# hypothesis_version: 6.150.2
+
+[-0.5, -0.3, -0.2, -0.15, 0.001, 0.02, 0.03, 0.05, 0.08, 0.1, 0.12, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.999, 1.0, 1.2, 1.5, 18.0, 2024, '-', '=', 'RELIANCE.NS', 'TCS.NS', '__main__', 'adversarial', 'allocations', 'average_turnover', 'avg_strength', 'collapse', 'current_allocations', 'days_active', 'evidence_available', 'evidence_points', 'fake_momentum', 'honeymoon', 'ignore', 'is_adversarial', 'macro', 'momentum', 'momentum_signal', 'no_history', 'phase', 'prior_weight', 'quality', 'recovery', 'regime', 'regime_changes', 'regime_confidence', 'signal_count', 'status', 'test', 'timestamp', 'total_periods', 'value', 'vix_proxy']

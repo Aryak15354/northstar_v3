@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence_observer/audit/violation_reports.py
+# hypothesis_version: 6.150.2
+
+['1.0.0', 'Violation Reports', 'generation_time', 'report_id', 'summary', 'total_violations', 'type', 'unknown', 'violation_types', 'violations']

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/temporal_guard.py
+# hypothesis_version: 6.150.2
+
+[1.0, 365, 'access_log_count', 'allowed', 'backward_time_travel', 'batch_validation', 'context', 'current_date', 'daily_advancement', 'data_cutoff', 'data_request', 'data_timestamp', 'first_violation', 'future_data_access', 'last_violation', 'range', 'range_request', 'reset', 'simulation_date', 'simulation_start', 'source', 'time_advancement', 'timestamp', 'total_violations', 'unknown', 'validated', 'violation_types', 'violations_count']

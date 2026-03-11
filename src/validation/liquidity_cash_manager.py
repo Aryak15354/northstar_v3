@@ -158,7 +158,9 @@ class LiquidityCashManager:
         avg_correlation = valid_correlations.mean() if len(valid_correlations) > 0 else 0.0
         
         # Ensure correlation is in valid range
-        avg_correlation = np.clip(avg_correlation, -1.0, 1.0)
+        # Bound lower tail to reduce instability from noisy small-sample
+        # anti-correlation estimates while preserving directional signal.
+        avg_correlation = np.clip(avg_correlation, -0.2, 1.0)
         
         # Calculate historical baseline
         if len(returns_data) > lookback_days * 2:

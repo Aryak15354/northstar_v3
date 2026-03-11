@@ -1,0 +1,31 @@
+{
+  "name": "l\u017e\u017c\u015f7\u00ed\u0135\u0136\u00c4\ud835\udc94\u0131\ua7a2\u0149\u00c1\u00ee\u00c6\u0112\u0107\u00cb\ud807\udd52",
+  "version": "1.0.0",
+  "description": "Test schema with 3 columns",
+  "columns": {
+    "col_0": {
+      "name": "col_0",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_1": {
+      "name": "col_1",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_2": {
+      "name": "col_2",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    }
+  },
+  "constraints": [],
+  "temporal_columns": [],
+  "primary_key": null
+}

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/shadow_divergence_index.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-12, 1e-08, 0.01, 0.1, 0.15, 0.2, 0.35, 0.4, 0.5, 0.9, 1.0, 100, 2000, 'aligned', 'band', 'components', 'count', 'history', 'latest_sdi', 'mean_sdi', 'moderate_divergence', 'p90_sdi', 'regime', 'regime_stats', 'sdi', 'timestamp', 'unknown', 'updated_at', 'weight_divergence_l1']

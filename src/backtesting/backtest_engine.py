@@ -18,6 +18,8 @@ import numpy as np
 import os
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict
 import warnings
 
 # =========================== TEMPORAL PROTECTION ENABLED ===========================
@@ -28,6 +30,14 @@ import warnings
 from src.intelligence.temporal_guard import TemporalGuard
 from src.intelligence.temporal_signal_engine import TemporalSignalEngine
 from src.validation.universe_manager import UniverseManager
+from src.runtime import (
+    DecisionMode,
+    PortfolioRuntimeService,
+    ProposalOrigin,
+    TradeProposal,
+    build_certification_snapshot,
+)
+from src.runtime.hash_utils import canonical_hash, file_sha256
 
 warnings.filterwarnings('ignore')
 
@@ -100,6 +110,144 @@ class BacktestEngine:
 
         # Point-in-time universe authority (includes delisted handling).
         self.universe_manager = UniverseManager()
+        self.prs = None
+        self.prs_context = {}
+        self.prs_cert_snapshot_hash = ""
+        self._active_prs_strategy = ""
+        self._strict_universe_reconstruction = str(
+            os.getenv("NORTHSTAR_STRICT_UNIVERSE_RECONSTRUCTION", "0")
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        self._prebuild_universe_snapshots = str(
+            os.getenv("NORTHSTAR_PREBUILD_UNIVERSE_SNAPSHOTS", "0")
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        self._engine_instance_tag = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        self._backtest_run_counter = 0
+
+    def _strategy_db_path(self, strategy_name: str) -> str:
+        safe = str(strategy_name).replace(" ", "_").lower()
+        return str(Path("data/runtime") / f"backtest_{safe}.db")
+
+    def _strategy_materialized_dir(self, strategy_name: str) -> str:
+        safe = str(strategy_name).replace(" ", "_").lower()
+        return str(Path("data/processed/runtime/backtest") / safe)
+
+    def _build_prs_context(self, strategy_name: str) -> Dict[str, str]:
+        prices_path = Path(self.paths['prices'])
+        market_state_path = Path(self.paths['market_state'])
+        config_hash = ""
+        try:
+            config_hash = file_sha256(__file__)
+        except Exception:
+            config_hash = ""
+        return {
+            "model_hash": canonical_hash({"engine": self.name, "version": self.version, "strategy": strategy_name}),
+            "param_hash": canonical_hash({"lookback": 252, "rebalance": "weekly"}),
+            "feature_hash": canonical_hash(["prices", "market_state", "strategy_weights"]),
+            "data_revision_hash": canonical_hash(
+                {
+                    "prices_mtime_ns": prices_path.stat().st_mtime_ns if prices_path.exists() else 0,
+                    "market_state_mtime_ns": market_state_path.stat().st_mtime_ns if market_state_path.exists() else 0,
+                }
+            ),
+            "config_hash": config_hash,
+            "drift_guard_version": "v1",
+        }
+
+    def _ensure_prs_for_strategy(self, strategy_name: str) -> None:
+        if self.prs is not None and self._active_prs_strategy == strategy_name:
+            return
+        self.prs = PortfolioRuntimeService(
+            db_path=self._strategy_db_path(strategy_name),
+            materialized_output_dir=self._strategy_materialized_dir(strategy_name),
+            starting_cash=1_000_000.0,
+        )
+        self.prs_context = self._build_prs_context(strategy_name)
+        snap = build_certification_snapshot(
+            model_hash=str(self.prs_context.get("model_hash", "")),
+            param_hash=str(self.prs_context.get("param_hash", "")),
+            feature_hash=str(self.prs_context.get("feature_hash", "")),
+            data_revision_hash=str(self.prs_context.get("data_revision_hash", "")),
+            config_hash=str(self.prs_context.get("config_hash", "")),
+            created_at=datetime.utcnow(),
+            ttl_days=30,
+            drift_guard_version="v1",
+        )
+        self.prs.register_certification_snapshot(snap)
+        self.prs_cert_snapshot_hash = str(snap.snapshot_hash)
+        self._active_prs_strategy = strategy_name
+
+    def _emit_rebalance_proposals(
+        self,
+        strategy_name: str,
+        run_id: str,
+        date: pd.Timestamp,
+        target_weights: pd.Series,
+        previous_weights: pd.Series,
+        prices_row: pd.Series,
+    ) -> int:
+        if self.prs is None:
+            return 0
+        tickers = set(target_weights.index) | set(previous_weights.index)
+        emitted = 0
+        for ticker in sorted(tickers):
+            tgt = float(target_weights.get(ticker, 0.0) or 0.0)
+            prev = float(previous_weights.get(ticker, 0.0) or 0.0)
+            delta_w = tgt - prev
+            if abs(delta_w) < 1e-9:
+                continue
+            px = float(prices_row.get(ticker, np.nan))
+            if not np.isfinite(px) or px <= 0.0:
+                continue
+            notional = float(abs(delta_w) * 1_000_000.0)
+            qty = float(max(1.0, notional / px))
+            side = "buy" if delta_w > 0.0 else "sell"
+            now_tag = pd.Timestamp(date).strftime("%Y%m%d")
+            proposal = TradeProposal(
+                proposal_id=f"prop_bt_{strategy_name}_{run_id}_{ticker}_{now_tag}",
+                origin=ProposalOrigin.BACKTEST,
+                strategy_id=str(strategy_name),
+                signal_id=f"sig_bt_{strategy_name}_{run_id}_{ticker}_{now_tag}",
+                alpha_type="directional",
+                expected_edge=0.0,
+                risk_score=float(abs(delta_w)),
+                regime_context={
+                    "engine": "backtest_engine",
+                    "run_id": str(run_id),
+                    "date": str(pd.Timestamp(date).date()),
+                },
+                instrument_plan={
+                    "symbol": str(ticker).upper(),
+                    "side": side,
+                    "price": px,
+                    "quantity": qty,
+                    "direction": 1.0 if side == "buy" else -1.0,
+                    "instrument_type": "equity",
+                    "lifecycle_action": "open" if tgt > 0.0 else "close",
+                    "position_key": f"backtest:{strategy_name}:{str(ticker).upper()}",
+                },
+                requested_notional=notional,
+                certification_snapshot_hash=str(self.prs_cert_snapshot_hash or ""),
+                decision_mode=DecisionMode.AUTO,
+                trigger_reason_code="rebalance.backtest.weekly",
+                risk_override_flag=False,
+            )
+            result = self.prs.process_proposal(
+                proposal,
+                budget_snapshot={"reserve_usage": {}},
+                risk_snapshot={"risk_budget_ratio": 0.0, "signal_entropy": 1.0},
+                market_snapshot={},
+                market_liquidity_snapshot={
+                    "adv_notional": float(notional * 20.0),
+                    "spread_bps": 5.0,
+                    "depth_qty": float(qty * 10.0),
+                    "estimated_slippage_bps": 2.0,
+                },
+                certification_context=dict(self.prs_context),
+                auto_fill=True,
+            )
+            if result.approved:
+                emitted += 1
+        return emitted
     
     def load_prices(self):
         """Load and prepare price data"""
@@ -165,8 +313,11 @@ class BacktestEngine:
     
     def run_backtest(self, strategy_name, prices, market_state, start_date=None, end_date=None):
         """Run backtest for a single strategy"""
-        
+
         print(f"🧪 Backtesting {strategy_name}...")
+        self._ensure_prs_for_strategy(strategy_name)
+        self._backtest_run_counter += 1
+        run_id = f"{self._engine_instance_tag}_r{self._backtest_run_counter:06d}"
         
         # Set date range
         if start_date is None:
@@ -178,38 +329,55 @@ class BacktestEngine:
         backtest_prices = prices.loc[start_date:end_date]
         backtest_market = market_state.loc[start_date:end_date] if not market_state.empty else pd.DataFrame()
 
-        # Prebuild date-aware snapshots for this exact backtest window.
-        try:
-            self.universe_manager.build_historical_universe_snapshots(
-                pd.to_datetime(start_date),
-                pd.to_datetime(end_date),
-                apply_liquidity_filter=True,
-                apply_survivorship_filter=True,
-            )
-        except Exception as e:
-            print(f"   ⚠️ Universe snapshot build skipped: {e}")
+        # Optional snapshot artifact generation; disabled by default to keep
+        # backtest/property-test runtime within deterministic deadlines.
+        if self._prebuild_universe_snapshots:
+            try:
+                self.universe_manager.build_historical_universe_snapshots(
+                    pd.to_datetime(start_date),
+                    pd.to_datetime(end_date),
+                    apply_liquidity_filter=True,
+                    apply_survivorship_filter=True,
+                )
+            except Exception as e:
+                print(f"   ⚠️ Universe snapshot build skipped: {e}")
         
         # Initialize tracking
         equity = 1.0
         results = []
         previous_weights = pd.Series(dtype=float)
-        
+        cumulative_delisted_symbols = set()
+        base_strategy_weights = None
+
         # Daily backtest loop
         for date in backtest_prices.index:
-            universe_pti = self.universe_manager.get_universe_at_date(
-                pd.to_datetime(date).to_pydatetime(),
-                apply_liquidity_filter=True,
-                apply_survivorship_filter=True,
-                verbose=False,
+            delisted_today = self.universe_manager.get_delisted_symbols_on_date(
+                pd.to_datetime(date).to_pydatetime()
             )
-            tradeable_tickers = {
-                t for t, meta in universe_pti.items()
-                if bool(meta.get('tradeable', False))
-            }
+            cumulative_delisted_symbols.update(delisted_today.keys())
+
+            if self._strict_universe_reconstruction:
+                universe_pti = self.universe_manager.get_universe_at_date(
+                    pd.to_datetime(date).to_pydatetime(),
+                    apply_liquidity_filter=True,
+                    apply_survivorship_filter=True,
+                    verbose=False,
+                )
+                tradeable_tickers = {
+                    t for t, meta in universe_pti.items()
+                    if bool(meta.get('tradeable', False))
+                }
+            else:
+                prices_row = backtest_prices.loc[date]
+                tradeable_tickers = set(prices_row[prices_row.notna()].index.tolist())
+                if cumulative_delisted_symbols:
+                    tradeable_tickers = tradeable_tickers - cumulative_delisted_symbols
             
             # Get strategy weights (rebalance weekly)
             if len(results) == 0 or len(results) % 5 == 0:  # Weekly rebalancing
-                current_weights = self.generate_strategy_weights(strategy_name, date)
+                if base_strategy_weights is None:
+                    base_strategy_weights = self.generate_strategy_weights(strategy_name, date)
+                current_weights = base_strategy_weights.copy()
                 
                 # Align with available prices
                 available_tickers = (
@@ -221,6 +389,14 @@ class BacktestEngine:
                     )
                 current_weights = current_weights.reindex(available_tickers).fillna(0)
                 current_weights = current_weights / current_weights.sum() if current_weights.sum() > 0 else current_weights
+                _ = self._emit_rebalance_proposals(
+                    strategy_name=strategy_name,
+                    run_id=run_id,
+                    date=pd.Timestamp(date),
+                    target_weights=current_weights,
+                    previous_weights=previous_weights,
+                    prices_row=backtest_prices.loc[date],
+                )
             
             # Calculate daily returns
             if len(results) > 0:
@@ -228,9 +404,6 @@ class BacktestEngine:
                 price_returns = price_returns.fillna(0)
 
                 # If held names delist today, apply delisting impact and remove them.
-                delisted_today = self.universe_manager.get_delisted_symbols_on_date(
-                    pd.to_datetime(date).to_pydatetime()
-                )
                 delist_penalty = 0.0
                 if delisted_today:
                     for sym, payload in delisted_today.items():

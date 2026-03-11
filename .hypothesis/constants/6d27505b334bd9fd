@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/enhanced_performance_tracker.py
+# hypothesis_version: 6.150.2
+
+[-0.2, -0.15, -0.1, -0.05, 0.0, 1e-08, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 1.5, 2.0, 252, '%Y%m%d_%H%M%S', '2.0', 'A', 'AA', 'AAA', 'B', 'BB', 'BBB', 'C', 'NR', 'annualized_return', 'anticipatory', 'basic_metrics', 'basic_performance', 'daily', 'error', 'information_ratio', 'insufficient_data', 'last_updated', 'max_drawdown', 'monthly', 'no_edge', 'no_edge_state', 'periods_tracked', 'regime', 'regime_attribution', 'sharpe_ratio', 'tailwind_scores', 'tailwinds', 'tearsheet', 'total_return', 'tracking_error', 'tracking_period', 'volatility', 'w']

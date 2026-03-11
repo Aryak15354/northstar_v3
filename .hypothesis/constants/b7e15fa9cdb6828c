@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/volatility/gamma_scalper.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.1, 0.5, 0.7, 1.1, 1.5, 2.0, 5.0, 100, 252, 10000, 'avg_hedge_size', 'continuous', 'discrete', 'high_frequency', 'inf', 'low_frequency', 'market', 'normal', 'num_hedges', 'realized_variance', 'total_costs', 'total_pnl']

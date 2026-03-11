@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/run_morning_pipeline.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-12, 0.25, 1.0, '  None', '--config', '--date', 'BREACH', 'COMPLIANT', 'NA', 'Portfolio stats:', '__main__', 'coerce', 'dataset', 'distress', 'exposure_scale', 'final_score', 'historical_research', 'invalid --date', 'long_only', 'macro_features_path', 'macro_regime_path', 'model_meta', 'model_path', 'model_score', 'oos_ic', 'override_reason', 'portfolio_mandate', 'regime', 'regime_labels_path', 'sector', 'sentiment_multiplier', 'sentiment_overlay', 'sentiment_override', 'sentiment_path', 'suggested_weight', 'today', 'train_ic', 'trainer', 'unknown']

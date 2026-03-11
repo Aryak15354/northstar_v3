@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/risk/stress_scenario_engine.py
+# hypothesis_version: 6.150.2
+
+[-4.0, -3.5, -2.8, -2.2, 0.0, 1e-08, 0.1, 0.4, 0.45, 0.5, 0.55, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 2.0, '2008_crisis', '2018_volmageddon', '2020_covid', '2022_inflation', 'gap_risk_score', 'pnl', 'pnl_pct', 'scenario', 'scenarios', 'spot_move_sigma', 'tail_loss_p10']

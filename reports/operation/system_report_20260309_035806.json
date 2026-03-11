@@ -1,0 +1,83 @@
+{
+  "report_id": "2c9fdbaa-6ab8-4463-a038-7f84c325d12e",
+  "generated_at": "2026-03-09T03:58:06.008682",
+  "report_type": "system_comprehensive_validation",
+  "system_health": {
+    "timestamp": "2026-03-09T03:58:05.955999",
+    "overall_health": "healthy",
+    "component_status": {
+      "system_validation": "healthy",
+      "integration_testing": "critical"
+    },
+    "performance_score": 1.0,
+    "data_quality_score": 0.3333333333333333,
+    "latency_metrics": {},
+    "error_counts": {},
+    "alert_level": "info",
+    "recommended_actions": []
+  },
+  "recent_operations": [
+    {
+      "operation_id": "exec_1773008883_test_5026",
+      "operation_type": "integration_testing",
+      "start_time": "2026-03-09T03:58:03.120102",
+      "end_time": "2026-03-09T03:58:03.120324",
+      "status": "failure",
+      "duration_seconds": 0.000222,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    },
+    {
+      "operation_id": "comprehensive_validation_1773008883",
+      "operation_type": "system_validation",
+      "start_time": "2026-03-09T03:58:03.365864",
+      "end_time": "2026-03-09T03:58:04.068817",
+      "status": "warning",
+      "duration_seconds": 0.702953,
+      "performance_metrics": {
+        "system_validation_score": 0.875,
+        "integration_test_success_rate": 0.0,
+        "total_validations": 18,
+        "passed_validations": 16,
+        "total_integration_tests": 12,
+        "passed_integration_tests": 0,
+        "certification_ready": false
+      },
+      "validation_results": {
+        "system_validation_passed": false,
+        "integration_testing_passed": false,
+        "comprehensive_validation_passed": false
+      },
+      "alerts_count": 2,
+      "report_path": "reports/operation/system_report_20260309_035803.json"
+    },
+    {
+      "operation_id": "exec_1773008883_test_9515",
+      "operation_type": "walk_forward_analysis",
+      "start_time": "2026-03-09T03:58:03.247767",
+      "end_time": "2026-03-09T03:58:04.189079",
+      "status": "failure",
+      "duration_seconds": 0.941312,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    }
+  ],
+  "active_operations": [],
+  "system_metrics": {
+    "total_operations": 3,
+    "success_rate": 0.0,
+    "avg_duration": 0.5481623333333333,
+    "operation_types": [
+      "system_validation",
+      "walk_forward_analysis",
+      "integration_testing"
+    ]
+  },
+  "operational_insights": [
+    "Operation success rate is 0.0% - investigate failures"
+  ]
+}

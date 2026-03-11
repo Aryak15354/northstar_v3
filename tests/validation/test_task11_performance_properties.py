@@ -57,18 +57,20 @@ class TestCacheFreshnessValidation:
         cache.put("test_key", test_data, max_age=max_age, stale_acceptable=stale_acceptable)
         
         # Wait specified time (add small buffer for timing precision)
+        effective_wait = 0.0
         if wait_seconds > 0:
-            time.sleep(min(wait_seconds, 2) + 0.05)  # Cap sleep time and reduce buffer
+            effective_wait = min(wait_seconds, 2) + 0.05
+            time.sleep(effective_wait)  # Cap sleep time and reduce buffer
         
         # Try to retrieve data
         result = cache.get("test_key")
         
         # SYSTEM LAW: Cache freshness must be validated
         # Allow for timing precision issues
-        if wait_seconds < max_age_seconds:
+        if effective_wait < max_age_seconds:
             # Data should be fresh and returned
             assert result == test_data, f"Fresh data should be returned: wait={wait_seconds}, max_age={max_age_seconds}"
-        elif wait_seconds == max_age_seconds and stale_acceptable:
+        elif abs(effective_wait - max_age_seconds) < 0.01 and stale_acceptable:
             # Edge case: might be fresh or stale but acceptable
             assert result == test_data or result is None, f"Edge case handling failed"
         elif stale_acceptable:
@@ -109,8 +111,10 @@ class TestCacheFreshnessValidation:
             )
         
         # Wait
+        effective_wait = 0.0
         if access_delay > 0:
-            time.sleep(min(access_delay, 2) + 0.05)  # Cap sleep time and reduce buffer
+            effective_wait = min(access_delay, 2) + 0.05
+            time.sleep(effective_wait)  # Cap sleep time and reduce buffer
         
         # Check each entry independently
         for key, expected_value, max_age_seconds, stale_acceptable in entries:
@@ -118,9 +122,9 @@ class TestCacheFreshnessValidation:
             
             # SYSTEM LAW: Each entry's freshness must be validated independently
             # Allow for timing precision issues
-            if access_delay < max_age_seconds:
+            if effective_wait < max_age_seconds:
                 assert result == expected_value, f"Fresh entry {key} should be returned"
-            elif access_delay == max_age_seconds and stale_acceptable:
+            elif abs(effective_wait - max_age_seconds) < 0.01 and stale_acceptable:
                 # Edge case: might be fresh or stale but acceptable
                 assert result == expected_value or result is None, f"Edge case for entry {key}"
             elif stale_acceptable:
@@ -204,6 +208,7 @@ class TestMemoryThresholdEnforcement:
                 st.integers(min_value=1, max_value=5),  # priority
                 st.integers(min_value=100, max_value=10000)  # size
             ),
+            unique_by=lambda entry: entry[0],
             min_size=10,
             max_size=30
         )
@@ -242,21 +247,29 @@ class TestMemoryThresholdEnforcement:
         
         if len(surviving_entries) > 1 and len(surviving_entries) < len(added_entries):
             # SYSTEM LAW: Higher priority entries should survive eviction
-            surviving_priorities = [priority for _, priority, _ in surviving_entries]
-            evicted_priorities = [priority for key, priority, _ in added_entries 
-                                if cache.get(key) is None]
+            insertion_index = {key: idx for idx, (key, _, _) in enumerate(added_entries)}
+            evicted_entries = [(key, priority, size) for key, priority, size in added_entries if cache.get(key) is None]
+            surviving_entries_with_meta = [
+                (key, priority, size, insertion_index[key])
+                for key, priority, size in surviving_entries
+            ]
             
-            if evicted_priorities and surviving_priorities:  # Only check if both exist
-                min_surviving_priority = min(surviving_priorities)
-                max_evicted_priority = max(evicted_priorities)
-                
-                # Higher priority (larger number) should survive over lower priority
-                # Allow some tolerance for LRU effects within same priority
-                if max_evicted_priority > min_surviving_priority:
-                    # Check if this is due to LRU within same priority level
-                    same_priority_survivors = [p for p in surviving_priorities if p == max_evicted_priority]
-                    if not same_priority_survivors:
-                        assert False, f"Priority violation: surviving min={min_surviving_priority}, evicted max={max_evicted_priority}"
+            # A high-priority eviction is only a violation if a lower-priority
+            # survivor that already existed at that time could have been evicted
+            # instead without needing more space.
+            for evicted_key, evicted_priority, evicted_size in evicted_entries:
+                evicted_idx = insertion_index[evicted_key]
+                conflicting_survivors = [
+                    (survivor_key, survivor_priority, survivor_size)
+                    for survivor_key, survivor_priority, survivor_size, survivor_idx in surviving_entries_with_meta
+                    if survivor_idx < evicted_idx
+                    and survivor_priority < evicted_priority
+                    and survivor_size >= evicted_size
+                ]
+                assert not conflicting_survivors, (
+                    f"Priority violation: evicted key={evicted_key}, priority={evicted_priority}, size={evicted_size}, "
+                    f"but lower-priority survivors could have been evicted instead: {conflicting_survivors}"
+                )
 
 
 class TestDataFrameOptimization:

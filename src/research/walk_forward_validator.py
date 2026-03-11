@@ -7,10 +7,37 @@ from typing import Any, Dict, Sequence
 import numpy as np
 import pandas as pd
 
+from .regime_engine import RegimeEngine
+
 
 EPS = 1e-12
 MAX_ABS_PERIOD_RETURN = 1.0
 MIN_PERIOD_RETURN = -0.999
+MAX_ABS_RISK_RATIO = 25.0
+_CANONICAL_REGIME_ENGINE = RegimeEngine(config={})
+
+
+def _resolve_exposure_scale(
+    *,
+    day_regime: str,
+    regime_scale_map: Dict[str, float],
+    default_regime_scale: float,
+    high_vol_scale: float,
+) -> float:
+    reg = str(day_regime or "").strip().lower()
+    if not reg:
+        return float(default_regime_scale)
+    if reg in regime_scale_map:
+        return float(regime_scale_map.get(reg, default_regime_scale))
+    try:
+        canonical = float(_CANONICAL_REGIME_ENGINE.get_exposure_scale(reg))
+        if np.isfinite(canonical) and canonical > 0.0:
+            return float(canonical)
+    except Exception:
+        pass
+    if "high_vol" in reg:
+        return float(default_regime_scale * high_vol_scale)
+    return float(default_regime_scale)
 
 
 def _max_drawdown(returns: np.ndarray) -> float:
@@ -39,6 +66,29 @@ def _safe_spearman(a: np.ndarray, b: np.ndarray) -> float:
     sb = pd.Series(b)
     val = sa.corr(sb, method="spearman")
     return float(val) if np.isfinite(val) else 0.0
+
+
+def _safe_ratio(numer: float, denom: float, *, cap_abs: float = MAX_ABS_RISK_RATIO) -> float:
+    v = float(numer) / (float(denom) + EPS)
+    if not np.isfinite(v):
+        return 0.0
+    cap_v = float(max(1.0, cap_abs))
+    return float(np.clip(v, -cap_v, cap_v))
+
+
+def _period_to_daily_returns(period_returns: np.ndarray, period_days: int) -> np.ndarray:
+    """Convert multi-day forward returns to daily-equivalent returns."""
+    r = np.asarray(period_returns, dtype=float).reshape(-1)
+    if len(r) == 0:
+        return r
+    d = max(1, int(period_days))
+    safe = np.nan_to_num(r, nan=0.0, posinf=MAX_ABS_PERIOD_RETURN, neginf=MIN_PERIOD_RETURN)
+    safe = np.clip(safe, MIN_PERIOD_RETURN, MAX_ABS_PERIOD_RETURN)
+    if d <= 1:
+        return safe
+    gross = np.clip(1.0 + safe, 1e-6, np.inf)
+    daily = np.power(gross, 1.0 / float(d)) - 1.0
+    return np.clip(daily, MIN_PERIOD_RETURN, MAX_ABS_PERIOD_RETURN)
 
 
 def _cap_and_renormalize(weights: np.ndarray, cap: float) -> np.ndarray:
@@ -112,11 +162,27 @@ def _weighted_leg_return(group: pd.DataFrame, weights_by_ticker: Dict[str, float
     return float(np.dot(w, y))
 
 
+def _weighted_combined_return(group: pd.DataFrame, weights_by_ticker: Dict[str, float]) -> float:
+    """Return weighted return with signed combined weights (longs positive, shorts negative)."""
+    if group.empty or not weights_by_ticker:
+        return 0.0
+    tickers = group["ticker"].astype(str).to_numpy()
+    y = group["y_true"].to_numpy(dtype=float)
+    w = np.asarray([float(weights_by_ticker.get(str(t), 0.0)) for t in tickers], dtype=float)
+    mask = np.abs(w) > EPS
+    if int(mask.sum()) <= 0:
+        return 0.0
+    w = w[mask]
+    y = y[mask]
+    return float(np.dot(w, y))
+
+
 def build_cross_sectional_portfolio_returns(
     *,
     y_true: np.ndarray,
     y_pred: np.ndarray,
     dates: Sequence | np.ndarray,
+    regimes: Sequence | np.ndarray | None = None,
     tickers: Sequence | np.ndarray | None = None,
     sectors: Sequence | np.ndarray | None = None,
     vol: np.ndarray | None = None,
@@ -128,6 +194,11 @@ def build_cross_sectional_portfolio_returns(
     sector_neutralize: bool = False,
     max_sector_weight: float = 1.0,
     transaction_cost_bps_per_side: float = 0.0,
+    target_horizon_days: int = 1,
+    portfolio_mode: str = "long_short",
+    turnover_cap: float = 0.30,
+    high_vol_exposure_scale: float = 0.50,
+    regime_exposure_scales: Dict[str, float] | None = None,
     return_diagnostics: bool = False,
 ) -> np.ndarray | Dict[str, Any]:
     """Build daily long/short portfolio returns from cross-sectional predictions."""
@@ -141,6 +212,7 @@ def build_cross_sectional_portfolio_returns(
     y_t = np.nan_to_num(y_t[:n], nan=0.0, posinf=0.0, neginf=0.0)
     y_p = np.nan_to_num(y_p[:n], nan=0.0, posinf=0.0, neginf=0.0)
     d = d.iloc[:n]
+    y_t_daily = _period_to_daily_returns(y_t, period_days=int(target_horizon_days))
     if tickers is None:
         ticker_arr = np.asarray([f"asset_{i}" for i in range(n)], dtype=object)
     else:
@@ -149,6 +221,15 @@ def build_cross_sectional_portfolio_returns(
             pad = np.asarray([f"asset_{i}" for i in range(len(ticker_arr), n)], dtype=object)
             ticker_arr = np.concatenate([ticker_arr, pad], axis=0)
         ticker_arr = ticker_arr[:n]
+
+    if regimes is None:
+        regime_arr = np.asarray([""] * n, dtype=object)
+    else:
+        regime_arr = np.asarray(regimes).reshape(-1)
+        if len(regime_arr) < n:
+            pad = np.asarray([""] * (n - len(regime_arr)), dtype=object)
+            regime_arr = np.concatenate([regime_arr, pad], axis=0)
+        regime_arr = pd.Series(regime_arr[:n], dtype="string").fillna("").astype(str).to_numpy(dtype=object)
 
     if sectors is None:
         sector_arr = np.asarray(["UNKNOWN"] * n, dtype=object)
@@ -170,19 +251,36 @@ def build_cross_sectional_portfolio_returns(
 
     q = float(min(0.49, max(0.05, long_short_quantile)))
     min_assets = max(4, int(min_assets_per_day))
-    max_w = float(min(0.50, max(0.01, max_weight_per_asset)))
+    # Hard cap to prevent any single name from dominating.
+    max_w = float(min(0.05, max(0.001, max_weight_per_asset)))
     rebalance_every = max(1, int(rebalance_frequency_days))
+    turn_cap = float(min(1.0, max(0.0, turnover_cap)))
+    high_vol_scale = float(min(1.0, max(0.0, high_vol_exposure_scale)))
+    regime_scale_map: Dict[str, float] = {}
+    for k, v in dict(regime_exposure_scales or {}).items():
+        key = str(k or "").strip().lower()
+        if not key:
+            continue
+        try:
+            regime_scale_map[key] = float(min(1.0, max(0.0, float(v))))
+        except Exception:
+            continue
+    default_regime_scale = float(regime_scale_map.get("default", 1.0))
     max_sector_w = float(min(1.0, max(1e-3, max_sector_weight)))
     txn_cost_side = float(max(0.0, transaction_cost_bps_per_side)) / 10_000.0
+    mode = str(portfolio_mode or "long_short").strip().lower()
+    if mode not in {"long_short", "long_only", "short_only"}:
+        mode = "long_short"
 
     work = pd.DataFrame(
         {
             "date": d,
             "ticker": pd.Series(ticker_arr, dtype="string").fillna("").astype(str),
             "sector": pd.Series(sector_arr, dtype="string").fillna("UNKNOWN").astype(str),
-            "y_true": np.clip(y_t, -MAX_ABS_PERIOD_RETURN, MAX_ABS_PERIOD_RETURN),
+            "y_true": np.clip(y_t_daily, -MAX_ABS_PERIOD_RETURN, MAX_ABS_PERIOD_RETURN),
             "y_pred": y_p,
             "vol": np.abs(vol_arr),
+            "regime": pd.Series(regime_arr, dtype="string").fillna("").astype(str),
         }
     ).dropna(subset=["date"])
     if work.empty:
@@ -191,6 +289,8 @@ def build_cross_sectional_portfolio_returns(
             return empty
         return {
             "returns": empty,
+            "return_dates": [],
+            "rebalance_snapshots": [],
             "portfolio_days": 0.0,
             "rebalance_count": 0.0,
             "avg_turnover": 0.0,
@@ -203,8 +303,7 @@ def build_cross_sectional_portfolio_returns(
         }
 
     daily_returns: list[float] = []
-    long_weights_by_ticker: Dict[str, float] = {}
-    short_weights_by_ticker: Dict[str, float] = {}
+    combined_weights: Dict[str, float] = {}
     prev_combined_weights: Dict[str, float] = {}
     prev_names: set[str] = set()
     hold_counters: Dict[str, int] = {}
@@ -212,15 +311,17 @@ def build_cross_sectional_portfolio_returns(
     rebalance_turnovers: list[float] = []
     rebalance_overlaps: list[float] = []
     rebalance_costs: list[float] = []
+    return_dates: list[str] = []
+    rebalance_snapshots: list[Dict[str, Any]] = []
     assets_per_day: list[int] = []
     selected_assets_per_rebalance: list[int] = []
     day_counter = 0
-    for _, g in work.groupby("date", sort=True):
+    for dt, g in work.groupby("date", sort=True):
         assets_per_day.append(int(len(g)))
         if len(g) < min_assets:
             continue
 
-        do_rebalance = (day_counter % rebalance_every == 0) or (not long_weights_by_ticker) or (not short_weights_by_ticker)
+        do_rebalance = (day_counter % rebalance_every == 0) or (not combined_weights)
         day_counter += 1
         tx_cost = 0.0
 
@@ -305,11 +406,45 @@ def build_cross_sectional_portfolio_returns(
 
             selected_assets_per_rebalance.append(int(len(long_weights_by_ticker) + len(short_weights_by_ticker)))
 
-            combined_weights: Dict[str, float] = {}
-            for tk, w in long_weights_by_ticker.items():
-                combined_weights[str(tk)] = float(combined_weights.get(str(tk), 0.0) + 0.5 * float(w))
-            for tk, w in short_weights_by_ticker.items():
-                combined_weights[str(tk)] = float(combined_weights.get(str(tk), 0.0) - 0.5 * float(w))
+            target_combined_weights: Dict[str, float] = {}
+            if mode == "long_short":
+                for tk, w in long_weights_by_ticker.items():
+                    target_combined_weights[str(tk)] = float(target_combined_weights.get(str(tk), 0.0) + 0.5 * float(w))
+                for tk, w in short_weights_by_ticker.items():
+                    target_combined_weights[str(tk)] = float(target_combined_weights.get(str(tk), 0.0) - 0.5 * float(w))
+            elif mode == "long_only":
+                for tk, w in long_weights_by_ticker.items():
+                    target_combined_weights[str(tk)] = float(target_combined_weights.get(str(tk), 0.0) + float(w))
+            else:  # short_only
+                for tk, w in short_weights_by_ticker.items():
+                    target_combined_weights[str(tk)] = float(target_combined_weights.get(str(tk), 0.0) - float(w))
+
+            day_regime = ""
+            if "regime" in g.columns and len(g) > 0:
+                day_regime = str(g["regime"].iloc[0] or "").strip().lower()
+            exposure_scale = _resolve_exposure_scale(
+                day_regime=day_regime,
+                regime_scale_map=regime_scale_map,
+                default_regime_scale=default_regime_scale,
+                high_vol_scale=high_vol_scale,
+            )
+            if exposure_scale < 1.0:
+                target_combined_weights = {
+                    str(t): float(w) * float(exposure_scale) for t, w in target_combined_weights.items()
+                }
+
+            if prev_combined_weights and turn_cap < 1.0:
+                all_tickers = set(prev_combined_weights.keys()).union(set(target_combined_weights.keys()))
+                blended: Dict[str, float] = {}
+                for t in all_tickers:
+                    prev_w = float(prev_combined_weights.get(t, 0.0))
+                    new_w = float(target_combined_weights.get(t, 0.0))
+                    w = (1.0 - turn_cap) * prev_w + turn_cap * new_w
+                    if abs(w) > EPS:
+                        blended[str(t)] = float(w)
+                combined_weights = blended
+            else:
+                combined_weights = {str(t): float(w) for t, w in target_combined_weights.items() if abs(float(w)) > EPS}
 
             if prev_combined_weights:
                 all_tickers = set(prev_combined_weights.keys()).union(set(combined_weights.keys()))
@@ -317,23 +452,35 @@ def build_cross_sectional_portfolio_returns(
                 rebalance_turnovers.append(turnover)
                 if txn_cost_side > 0.0:
                     tx_cost = float(turnover * txn_cost_side)
-                curr_names = set(long_weights_by_ticker.keys()).union(set(short_weights_by_ticker.keys()))
+                curr_names = {str(t) for t, w in combined_weights.items() if abs(float(w)) > EPS}
                 overlap = float(len(curr_names.intersection(prev_names)) / max(1, len(prev_names)))
                 rebalance_overlaps.append(overlap)
                 prev_names = curr_names
             else:
-                prev_names = set(long_weights_by_ticker.keys()).union(set(short_weights_by_ticker.keys()))
-            prev_combined_weights = combined_weights
+                prev_names = {str(t) for t, w in combined_weights.items() if abs(float(w)) > EPS}
+            prev_combined_weights = dict(combined_weights)
             rebalance_costs.append(float(tx_cost))
+            rebalance_snapshots.append(
+                {
+                    "date": pd.Timestamp(dt).isoformat(),
+                    "tickers": sorted({str(t) for t, w in combined_weights.items() if abs(float(w)) > EPS}),
+                    "weights": {
+                        str(k): float(v)
+                        for k, v in sorted(combined_weights.items(), key=lambda kv: kv[0])
+                        if abs(float(v)) > EPS
+                    },
+                    "gross_exposure": float(sum(abs(float(v)) for v in combined_weights.values())),
+                    "turnover": float(rebalance_turnovers[-1]) if rebalance_turnovers else 0.0,
+                    "transaction_cost": float(tx_cost),
+                }
+            )
 
-        long_ret = _weighted_leg_return(g, long_weights_by_ticker)
-        short_ret = _weighted_leg_return(g, short_weights_by_ticker)
-        # 50/50 dollar-neutral long-short basket.
-        day_ret = 0.5 * long_ret - 0.5 * short_ret - float(tx_cost)
+        day_ret = _weighted_combined_return(g, combined_weights) - float(tx_cost)
         if np.isfinite(day_ret):
             daily_returns.append(float(np.clip(day_ret, MIN_PERIOD_RETURN, MAX_ABS_PERIOD_RETURN)))
+            return_dates.append(pd.Timestamp(dt).isoformat())
 
-        active_names = set(long_weights_by_ticker.keys()).union(set(short_weights_by_ticker.keys()))
+        active_names = {str(t) for t, w in combined_weights.items() if abs(float(w)) > EPS}
         for tk in active_names:
             hold_counters[str(tk)] = int(hold_counters.get(str(tk), 0) + 1)
         for tk in list(hold_counters.keys()):
@@ -350,6 +497,8 @@ def build_cross_sectional_portfolio_returns(
         return rets
     return {
         "returns": rets,
+        "return_dates": return_dates,
+        "rebalance_snapshots": rebalance_snapshots,
         "portfolio_days": float(len(rets)),
         "rebalance_count": float(len(rebalance_costs)),
         "avg_turnover": float(np.mean(rebalance_turnovers)) if rebalance_turnovers else 0.0,
@@ -394,8 +543,10 @@ def _decile_monotonicity(pred: np.ndarray, realized: np.ndarray) -> Dict[str, fl
 def compute_window_metrics(
     y_true: np.ndarray,
     y_pred: np.ndarray,
+    realized_returns: np.ndarray | None = None,
     *,
     dates: Sequence | np.ndarray | None = None,
+    regimes: Sequence | np.ndarray | None = None,
     tickers: Sequence | np.ndarray | None = None,
     sectors: Sequence | np.ndarray | None = None,
     vol: np.ndarray | None = None,
@@ -407,11 +558,17 @@ def compute_window_metrics(
     sector_neutralize: bool = False,
     max_sector_weight: float = 1.0,
     transaction_cost_bps_per_side: float = 0.0,
+    target_horizon_days: int = 1,
+    portfolio_mode: str = "long_short",
+    turnover_cap: float = 0.30,
+    high_vol_exposure_scale: float = 0.50,
+    regime_exposure_scales: Dict[str, float] | None = None,
 ) -> Dict[str, float]:
     """Compute return/risk + predictive diagnostics for one test window."""
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
-    n = min(len(y_true), len(y_pred))
+    realized = np.asarray(realized_returns, dtype=float) if realized_returns is not None else np.asarray(y_true, dtype=float)
+    n = min(len(y_true), len(y_pred), len(realized))
     if n == 0:
         return {
             "n_obs": 0.0,
@@ -438,18 +595,22 @@ def compute_window_metrics(
 
     y_true = y_true[:n]
     y_pred = y_pred[:n]
+    realized = realized[:n]
     y_true = np.nan_to_num(y_true, nan=0.0, posinf=0.0, neginf=0.0)
     y_pred = np.nan_to_num(y_pred, nan=0.0, posinf=0.0, neginf=0.0)
+    realized = np.nan_to_num(realized, nan=0.0, posinf=0.0, neginf=0.0)
 
     signal = np.tanh(np.clip(y_pred, -20.0, 20.0))
-    realized = np.clip(y_true, -MAX_ABS_PERIOD_RETURN, MAX_ABS_PERIOD_RETURN)
+    realized_period = np.clip(realized, -MAX_ABS_PERIOD_RETURN, MAX_ABS_PERIOD_RETURN)
+    realized_daily = _period_to_daily_returns(realized_period, period_days=int(target_horizon_days))
     strat_ret = np.asarray([], dtype=float)
     port_diag: Dict[str, Any] = {}
     if dates is not None:
         built = build_cross_sectional_portfolio_returns(
-            y_true=realized,
+            y_true=realized_period,
             y_pred=y_pred,
             dates=dates,
+            regimes=regimes,
             tickers=tickers,
             sectors=sectors,
             vol=vol,
@@ -461,6 +622,11 @@ def compute_window_metrics(
             sector_neutralize=sector_neutralize,
             max_sector_weight=max_sector_weight,
             transaction_cost_bps_per_side=transaction_cost_bps_per_side,
+            target_horizon_days=int(target_horizon_days),
+            portfolio_mode=str(portfolio_mode or "long_short"),
+            turnover_cap=turnover_cap,
+            high_vol_exposure_scale=high_vol_exposure_scale,
+            regime_exposure_scales=regime_exposure_scales,
             return_diagnostics=True,
         )
         if isinstance(built, dict):
@@ -469,22 +635,22 @@ def compute_window_metrics(
         else:
             strat_ret = np.asarray(built, dtype=float)
     if len(strat_ret) == 0:
-        strat_ret = signal * realized
+        strat_ret = signal * realized_daily
 
     mean = float(np.mean(strat_ret))
     vol = float(np.std(strat_ret))
     downside = np.asarray([x for x in strat_ret if x < 0.0], dtype=float)
     downside_vol = float(np.std(downside)) if len(downside) else 0.0
 
-    sharpe = mean / (vol + EPS)
-    sortino = mean / (downside_vol + EPS)
+    sharpe = _safe_ratio(mean, vol, cap_abs=MAX_ABS_RISK_RATIO)
+    sortino = _safe_ratio(mean, downside_vol, cap_abs=MAX_ABS_RISK_RATIO)
     max_dd = _max_drawdown(strat_ret)
     ann = mean * 252.0
-    calmar = ann / (max_dd + EPS)
+    calmar = _safe_ratio(ann, max_dd, cap_abs=MAX_ABS_RISK_RATIO)
 
-    hit = float(np.mean(np.sign(signal) == np.sign(y_true)))
-    ic = _safe_spearman(y_pred, y_true)
-    dec = _decile_monotonicity(y_pred, y_true)
+    hit = float(np.mean(np.sign(signal) == np.sign(realized_period)))
+    ic = _safe_spearman(y_pred, realized_period)
+    dec = _decile_monotonicity(y_pred, realized_period)
 
     return {
         "n_obs": float(n),
@@ -515,6 +681,8 @@ def aggregate_metrics(window_metrics: list[Dict[str, float]]) -> Dict[str, float
     if not window_metrics:
         return {
             "windows": 0.0,
+            "avg_n_obs": 0.0,
+            "total_n_obs": 0.0,
             "avg_sharpe": 0.0,
             "avg_sortino": 0.0,
             "avg_max_drawdown": 0.0,
@@ -546,6 +714,8 @@ def aggregate_metrics(window_metrics: list[Dict[str, float]]) -> Dict[str, float
 
     return {
         "windows": float(len(df)),
+        "avg_n_obs": float(df.get("n_obs", pd.Series([0.0])).mean()),
+        "total_n_obs": float(df.get("n_obs", pd.Series([0.0])).sum()),
         "avg_sharpe": sharpe_mean,
         "avg_sortino": float(df["sortino"].mean()),
         "avg_max_drawdown": float(df["max_drawdown"].mean()),

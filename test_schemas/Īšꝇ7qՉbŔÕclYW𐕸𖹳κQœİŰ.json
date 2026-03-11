@@ -1,0 +1,24 @@
+{
+  "name": "\u012a\u0161\ua7477q\u0549b\u0154\u00d5clYW\ud801\udd78\ud81b\ude73\u03baQ\u0153\u0130\u0170",
+  "version": "1.0.0",
+  "description": "Test schema with 2 columns",
+  "columns": {
+    "col_0": {
+      "name": "col_0",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    },
+    "col_1": {
+      "name": "col_1",
+      "data_type": "string",
+      "nullable": true,
+      "constraints": [],
+      "description": ""
+    }
+  },
+  "constraints": [],
+  "temporal_columns": [],
+  "primary_key": null
+}

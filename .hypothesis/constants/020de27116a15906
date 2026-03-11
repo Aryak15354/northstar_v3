@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/execution_realism_model.py
+# hypothesis_version: 6.150.2
+
+[-1.0, 0.0, 0.0005, 0.01, 0.015, 0.018, 0.02, 0.03, 0.035, 0.05, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 500000, 1000000, 2000000, 4000000, 5000000, 10000000, '.NS', '=', 'HDFCBANK', 'HIGH', 'ICICIBANK', 'INFY', 'RELIANCE', 'SMALLCAP', 'TCS', '__main__', 'adv', 'alert', 'avg_delay', 'avg_fill_rate', 'avg_slippage', 'buy', 'data/execution', 'data/test_execution', 'date', 'datetime64[ns]', 'days', 'end', 'execution', 'fill_rate', 'float64', 'high', 'ignore', 'int64', 'latest_quality', 'low', 'normal', 'period', 'quality', 'realism', 'realized_cost', 'rebalance_delay', 'sell', 'start', 'threshold_fill_rate', 'threshold_slippage', 'total_cost', 'total_trades', 'trade_count', 'volatility']

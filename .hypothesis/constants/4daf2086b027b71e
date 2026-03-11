@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/signal_decay_monitor.py
+# hypothesis_version: 6.150.2
+
+[-1.0, -0.2, -0.05, -1e-06, 0.0, 1e-12, 1e-08, 1e-06, 0.01, 0.02, 0.05, 0.2, 0.3, 0.6, 0.98, 1.0, 30.44, 180, 365, '=', '__main__', 'alert_level', 'alert_months', 'alert_summary', 'correlation', 'correlation_current', 'correlation_methods', 'correlation_window', 'current_correlation', 'data/validation', 'date', 'decay_smoothing', 'decay_threshold', 'description', 'history_length', 'ignore', 'last_updated', 'mild', 'min_observations', 'moderate', 'momentum_signal', 'none', 'observations', 'p_value', 'pearson', 'severe', 'signal_decay', 'signal_decay.parquet', 'signal_details', 'signal_name', 'signals_with_alerts', 'significance_level', 'spearman', 'timestamp', 'total_signals']

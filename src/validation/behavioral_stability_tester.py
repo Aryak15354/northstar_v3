@@ -25,6 +25,7 @@ import pandas as pd
 import numpy as np
 import os
 import json
+import hashlib
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple, Callable
 from dataclasses import dataclass, asdict
@@ -245,8 +246,9 @@ class BehavioralStabilityTester:
         base_cost = base_config.get('transaction_cost', 0.05)
         for cost in self.config['transaction_cost_variants']:
             if abs(cost - base_cost) > 0.001:  # Avoid tiny differences
+                cost_bps = int(round(float(cost) * 10000))
                 variant = ParameterVariant(
-                    variant_name=f"txcost_{cost:.1%}",
+                    variant_name=f"txcost_{cost_bps}bps",
                     parameter_changes={'transaction_cost': cost},
                     description=f"Test with {cost:.1%} transaction costs"
                 )
@@ -265,6 +267,15 @@ class BehavioralStabilityTester:
                 description="Combined parameter stress test"
             )
             variants.append(combined_variant)
+
+        # Ensure variant names are unique even when floating-point formatting collides.
+        name_counts: Dict[str, int] = {}
+        for variant in variants:
+            base_name = variant.variant_name
+            count = name_counts.get(base_name, 0) + 1
+            name_counts[base_name] = count
+            if count > 1:
+                variant.variant_name = f"{base_name}_{count}"
         
         print(f"   📊 Generated {len(variants)} parameter variants")
         for variant in variants:
@@ -291,23 +302,16 @@ class BehavioralStabilityTester:
         
         print(f"   🎯 Simulating {strategy_name} with config: {config}")
         
-        # This is a simplified simulation - in practice, this would call
-        # the actual strategy implementation with the given parameters
-        
+        # This is a simplified deterministic simulation.
+        # It keeps variants structurally related so small parameter changes
+        # produce coherent behavioral changes instead of random decorrelation.
         n_periods = len(market_data)
-        
-        # Simulate returns based on configuration
-        np.random.seed(hash(str(config)) % 2**32)  # Deterministic but config-dependent
-        
-        # Base performance parameters
-        base_return = 0.001  # Weekly return
-        base_volatility = 0.02
-        
+
         # Adjust based on configuration
         macro_source = config.get('macro_source', 'combined')
         rolling_window = config.get('rolling_window', 26)
         transaction_cost = config.get('transaction_cost', 0.05)
-        
+
         # Macro source affects signal quality
         if macro_source == 'rbi_only':
             signal_quality = 0.8
@@ -315,42 +319,43 @@ class BehavioralStabilityTester:
             signal_quality = 0.7
         else:  # combined
             signal_quality = 1.0
-        
-        # Rolling window affects stability
-        window_factor = min(1.0, rolling_window / 26.0)
-        
-        # Transaction costs reduce net returns
-        cost_impact = transaction_cost / 0.05  # Relative to 5% base
-        
-        # Generate returns
-        returns = []
-        allocations = []
-        regime_calls = []
-        
-        for i in range(n_periods):
-            # Base return adjusted by parameters
-            period_return = (base_return * signal_quality * window_factor - 
-                           transaction_cost * 0.1 + 
-                           np.random.normal(0, base_volatility))
-            returns.append(period_return)
-            
-            # Allocation (simplified)
-            allocation = 0.6 + 0.2 * np.sin(i / 10) * signal_quality
-            allocation = max(0.2, min(0.8, allocation))
-            allocations.append(allocation)
-            
-            # Regime calls (simplified)
-            regime = 1 if np.sin(i / 15) > 0 else 0
-            regime_calls.append(regime)
-        
+
+        # Use market data as a shared backbone for all variants.
+        raw_returns = market_data['returns'].to_numpy(dtype=float) if 'returns' in market_data.columns else np.zeros(n_periods)
+        macro1 = market_data['macro_factor_1'].to_numpy(dtype=float) if 'macro_factor_1' in market_data.columns else np.zeros(n_periods)
+        macro2 = market_data['macro_factor_2'].to_numpy(dtype=float) if 'macro_factor_2' in market_data.columns else np.zeros(n_periods)
+        rolling_window = int(max(2, min(rolling_window, max(2, n_periods))))
+
+        smooth_returns = pd.Series(raw_returns).rolling(window=rolling_window, min_periods=1).mean().to_numpy()
+        macro_component = 0.6 * macro1 + 0.4 * macro2
+
+        # Deterministic config-specific phase shift (stable across runs/processes).
+        config_key = json.dumps(config, sort_keys=True)
+        phase_seed = int(hashlib.md5(config_key.encode('utf-8')).hexdigest()[:8], 16)
+        phase = (phase_seed % 360) * np.pi / 180.0
+        t = np.arange(n_periods, dtype=float)
+        deterministic_shape = np.sin(t / 11.0 + phase)
+
+        base_component = 0.7 * smooth_returns + 0.3 * raw_returns
+        returns = (
+            base_component * (0.85 + 0.15 * signal_quality) +
+            0.25 * macro_component -
+            0.002 * transaction_cost +
+            0.0005 * deterministic_shape
+        )
+
+        # Allocation and regimes are deterministic functions of time and quality.
+        allocations = np.clip(0.6 + 0.2 * np.sin(t / 10.0) * signal_quality, 0.2, 0.8)
+        regime_calls = (np.sin(t / 15.0) > 0).astype(int)
+
         # Calculate turnover
         allocation_changes = np.abs(np.diff(allocations))
         monthly_turnover = np.mean(allocation_changes) * 4  # Weekly to monthly
         
         results = {
-            'returns': np.array(returns),
-            'allocations': np.array(allocations),
-            'regime_calls': np.array(regime_calls),
+            'returns': np.array(returns, dtype=float),
+            'allocations': np.array(allocations, dtype=float),
+            'regime_calls': np.array(regime_calls, dtype=int),
             'monthly_turnover': monthly_turnover,
             'config': config.copy()
         }
@@ -698,6 +703,8 @@ class BehavioralStabilityTester:
             return
         
         try:
+            os.makedirs(self.stability_dir, exist_ok=True)
+
             # Convert to DataFrame
             records_data = [record.to_dict() for record in stability_records]
             records_df = pd.DataFrame(records_data)

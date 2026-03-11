@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/execution/execution_reality_engine.py
+# hypothesis_version: 6.150.2
+
+[-1.0, 0.0, 1e-06, 0.05, 1.0, 2.0, 5.0, 12.0, 30.0, 60.0, 10000.0, 'ADV must be positive', 'buy', 'crisis', 'large_cap', 'micro_cap', 'mid_cap', 'normal', 'sell', 'small_cap']

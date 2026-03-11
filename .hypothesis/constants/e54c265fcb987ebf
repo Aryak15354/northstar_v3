@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/phase3_intelligence_monitor.py
+# hypothesis_version: 6.150.2
+
+[-0.01, 0.0, 0.01, 0.1, 0.2, 0.3, 0.5, 1.0, 100, 'accuracy', 'active', 'anomalies', 'anticipatory', 'change_frequency', 'confidence', 'confidence_scores', 'confidence_trend', 'current', 'declining', 'duration', 'error', 'frequency', 'health_score', 'health_trend', 'improving', 'insufficient_data', 'is_no_edge', 'momentum', 'no_data', 'no_edge', 'overall_health', 'positions', 'recent_changes', 'regime', 'regime_name', 'similarity_score', 'snapshot', 'stable', 'status', 'tailwinds', 'timestamp', 'total_periods', 'transition_frequency', 'triggers']

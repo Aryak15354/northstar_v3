@@ -1,0 +1,9 @@
+correlation_threshold: 0.8
+emergency_brake_params:
+  consecutive_losses: 5
+  max_drawdown_trigger: -0.1
+  volatility_trigger: 0.03
+max_drawdown_threshold: -0.4
+max_position_size: 0.08
+max_sector_exposure: 0.35
+volatility_threshold: 0.25

@@ -8,7 +8,8 @@ This shows how Northstar transforms from code into a living trading floor.
 
 import sys
 import os
-)))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 import json
 from datetime import datetime

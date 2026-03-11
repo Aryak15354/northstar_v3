@@ -1,0 +1,384 @@
+{
+  "integration_summary": {
+    "test_session_id": "IntegrationTest_1773008716",
+    "timestamp": "2026-03-09T03:55:16.128495",
+    "overall_status": "critical",
+    "certification_status": "FAILED - Critical integration issues present",
+    "execution_time_seconds": 0.00123,
+    "tests_executed": 12,
+    "tests_passed": 3,
+    "tests_failed": 9
+  },
+  "test_results": [
+    {
+      "test_id": "communication_001",
+      "name": "Inter-Component Message Passing",
+      "test_type": "component_communication",
+      "status": "degraded",
+      "severity": "high",
+      "execution_time_seconds": 4.2e-05,
+      "components_tested": [
+        "intelligence_engine",
+        "risk_management",
+        "portfolio_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Component communication degraded: delivery 0.994, response 198.5ms",
+      "performance_metrics": {
+        "delivery_rate": 0.9944956688181431,
+        "response_time_ms": 198.47292197534222,
+        "ordering_accuracy": 1.0
+      }
+    },
+    {
+      "test_id": "communication_002",
+      "name": "Event System Integration",
+      "test_type": "component_communication",
+      "status": "failed",
+      "severity": "medium",
+      "execution_time_seconds": 1.3e-05,
+      "components_tested": [
+        "data_pipeline",
+        "intelligence_engine",
+        "risk_management",
+        "portfolio_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Component communication failed: delivery 0.961, ordering True",
+      "performance_metrics": {
+        "delivery_rate": 0.9605159278142896,
+        "response_time_ms": 155.41903913302772,
+        "ordering_accuracy": 1.0
+      }
+    },
+    {
+      "test_id": "data_flow_001",
+      "name": "Data Pipeline to Intelligence Engine Flow",
+      "test_type": "data_flow",
+      "status": "failed",
+      "severity": "critical",
+      "execution_time_seconds": 1.5e-05,
+      "components_tested": [
+        "data_pipeline",
+        "intelligence_engine"
+      ],
+      "data_flow_validated": false,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Data flow validation failed: latency 1305.1ms, integrity 0.910",
+      "performance_metrics": {
+        "latency_ms": 1305.065455599695,
+        "throughput_ops_per_sec": 68.89327945690374,
+        "integrity_score": 0.9102842592157477
+      }
+    },
+    {
+      "test_id": "data_flow_002",
+      "name": "Intelligence to Risk Management Flow",
+      "test_type": "data_flow",
+      "status": "failed",
+      "severity": "critical",
+      "execution_time_seconds": 1e-05,
+      "components_tested": [
+        "intelligence_engine",
+        "risk_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Data flow validation failed: latency 1469.8ms, integrity 0.967",
+      "performance_metrics": {
+        "latency_ms": 1469.7697548958927,
+        "throughput_ops_per_sec": 177.0330836643429,
+        "integrity_score": 0.9673838898270005
+      }
+    },
+    {
+      "test_id": "data_flow_003",
+      "name": "Risk to Portfolio Management Flow",
+      "test_type": "data_flow",
+      "status": "healthy",
+      "severity": "high",
+      "execution_time_seconds": 1e-05,
+      "components_tested": [
+        "risk_management",
+        "portfolio_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Data flow validation passed: latency 520.3ms, integrity 0.968",
+      "performance_metrics": {
+        "latency_ms": 520.2775971597011,
+        "throughput_ops_per_sec": 139.13627409628958,
+        "integrity_score": 0.9676483749520605
+      }
+    },
+    {
+      "test_id": "timing_001",
+      "name": "Component Synchronization Test",
+      "test_type": "timing_sync",
+      "status": "failed",
+      "severity": "high",
+      "execution_time_seconds": 1.3e-05,
+      "components_tested": [
+        "data_pipeline",
+        "intelligence_engine",
+        "risk_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Timing synchronization failed: tolerance 64.3ms, drift 14.0ms",
+      "performance_metrics": {
+        "sync_tolerance_ms": 64.28351081106523,
+        "clock_drift_ms": 13.96811673121671,
+        "jitter_ms": 30.891162790809435
+      }
+    },
+    {
+      "test_id": "timing_002",
+      "name": "Real-time Processing Timing",
+      "test_type": "timing_sync",
+      "status": "degraded",
+      "severity": "critical",
+      "execution_time_seconds": 1e-05,
+      "components_tested": [
+        "data_pipeline",
+        "intelligence_engine"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Timing synchronization degraded: tolerance 48.6ms",
+      "performance_metrics": {
+        "sync_tolerance_ms": 48.615613237239934,
+        "clock_drift_ms": 6.2425311932303895,
+        "jitter_ms": 39.58615989109409
+      }
+    },
+    {
+      "test_id": "timing_003",
+      "name": "Batch Processing Coordination",
+      "test_type": "timing_sync",
+      "status": "failed",
+      "severity": "medium",
+      "execution_time_seconds": 9e-06,
+      "components_tested": [
+        "data_pipeline",
+        "intelligence_engine",
+        "portfolio_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Timing synchronization failed: tolerance 30.4ms, drift 14.2ms",
+      "performance_metrics": {
+        "sync_tolerance_ms": 30.36451870028676,
+        "clock_drift_ms": 14.15473181693387,
+        "jitter_ms": 15.499977019219699
+      }
+    },
+    {
+      "test_id": "error_recovery_001",
+      "name": "Data Pipeline Failure Recovery",
+      "test_type": "error_recovery",
+      "status": "failed",
+      "severity": "critical",
+      "execution_time_seconds": 1.2e-05,
+      "components_tested": [
+        "data_pipeline",
+        "intelligence_engine"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Error recovery failed: detection 6.6s, recovery 46.1s",
+      "performance_metrics": {
+        "detection_time_s": 6.627971529590085,
+        "recovery_time_s": 46.08930469209659,
+        "data_loss_rate": 0.0
+      }
+    },
+    {
+      "test_id": "error_recovery_002",
+      "name": "Intelligence Engine Failure Handling",
+      "test_type": "error_recovery",
+      "status": "healthy",
+      "severity": "critical",
+      "execution_time_seconds": 9e-06,
+      "components_tested": [
+        "intelligence_engine",
+        "risk_management",
+        "portfolio_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Error recovery passed: detection 1.5s, recovery 12.2s",
+      "performance_metrics": {
+        "detection_time_s": 1.5394897077517746,
+        "recovery_time_s": 12.203555864679574,
+        "data_loss_rate": 0.0
+      }
+    },
+    {
+      "test_id": "error_recovery_003",
+      "name": "Network Partition Recovery",
+      "test_type": "error_recovery",
+      "status": "failed",
+      "severity": "high",
+      "execution_time_seconds": 8e-06,
+      "components_tested": [
+        "data_pipeline",
+        "intelligence_engine",
+        "risk_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "Error recovery failed: detection 8.6s, recovery 7.5s",
+      "performance_metrics": {
+        "detection_time_s": 8.64501765603162,
+        "recovery_time_s": 7.474825167948341,
+        "data_loss_rate": 0.0
+      }
+    },
+    {
+      "test_id": "data_flow_004",
+      "name": "End-to-End Data Flow",
+      "test_type": "end_to_end",
+      "status": "healthy",
+      "severity": "critical",
+      "execution_time_seconds": 1.1e-05,
+      "components_tested": [
+        "data_pipeline",
+        "intelligence_engine",
+        "risk_management",
+        "portfolio_management"
+      ],
+      "data_flow_validated": true,
+      "timing_validated": true,
+      "error_handling_validated": true,
+      "message": "End-to-end flow passed: latency 1353.3ms",
+      "performance_metrics": {
+        "end_to_end_latency_ms": 1353.2966148751302,
+        "integrity_maintained": 1.0,
+        "component_responsiveness": 1.0
+      }
+    }
+  ],
+  "component_diagnostics": [
+    {
+      "component_name": "data_pipeline",
+      "status": "degraded",
+      "health_score": 0.6,
+      "response_time_ms": 150.2106800055425,
+      "throughput_ops_per_sec": 212.21352731369925,
+      "error_rate": 0.03356354126145663,
+      "recommendations": [
+        "Optimize data_pipeline response time (current: 150.2ms)",
+        "Investigate data_pipeline error rate (current: 3.4%)"
+      ]
+    },
+    {
+      "component_name": "intelligence_engine",
+      "status": "degraded",
+      "health_score": 0.6,
+      "response_time_ms": 39.67828650681386,
+      "throughput_ops_per_sec": 494.78944728356646,
+      "error_rate": 0.048863996628322366,
+      "recommendations": [
+        "Investigate intelligence_engine error rate (current: 4.9%)"
+      ]
+    },
+    {
+      "component_name": "risk_management",
+      "status": "degraded",
+      "health_score": 0.6,
+      "response_time_ms": 174.55929362178858,
+      "throughput_ops_per_sec": 180.24778472876957,
+      "error_rate": 0.023384060624243853,
+      "recommendations": [
+        "Optimize risk_management response time (current: 174.6ms)",
+        "Investigate risk_management error rate (current: 2.3%)"
+      ]
+    },
+    {
+      "component_name": "portfolio_management",
+      "status": "degraded",
+      "health_score": 0.6,
+      "response_time_ms": 72.75408682539604,
+      "throughput_ops_per_sec": 303.90431750804123,
+      "error_rate": 0.042528726400755806,
+      "recommendations": [
+        "Investigate portfolio_management error rate (current: 4.3%)",
+        "Monitor portfolio_management CPU usage (current: 75.4%)"
+      ]
+    },
+    {
+      "component_name": "system_integration",
+      "status": "degraded",
+      "health_score": 0.6,
+      "response_time_ms": 166.42191040920574,
+      "throughput_ops_per_sec": 300.28581168350524,
+      "error_rate": 0.038975835071203176,
+      "recommendations": [
+        "Optimize system_integration response time (current: 166.4ms)",
+        "Investigate system_integration error rate (current: 3.9%)",
+        "Monitor system_integration CPU usage (current: 67.3%)"
+      ]
+    }
+  ],
+  "analysis_results": {
+    "data_flow_validation": {
+      "total_tests": 3,
+      "passed_tests": 1,
+      "success_rate": 0.3333333333333333,
+      "average_latency_ms": 1098.3709358850963,
+      "average_throughput_ops_per_sec": 128.3542124058454,
+      "data_integrity_validated": false,
+      "status": "failed"
+    },
+    "timing_analysis": {
+      "total_tests": 3,
+      "passed_tests": 0,
+      "success_rate": 0.0,
+      "average_sync_tolerance_ms": 47.75454758286398,
+      "average_jitter_ms": 28.65909990037441,
+      "timing_validated": true,
+      "status": "failed"
+    },
+    "error_recovery_analysis": {
+      "total_tests": 3,
+      "passed_tests": 1,
+      "success_rate": 0.3333333333333333,
+      "average_detection_time_s": 5.604159631124493,
+      "average_recovery_time_s": 21.9225619082415,
+      "error_handling_validated": true,
+      "status": "failed"
+    }
+  },
+  "integration_issues": [
+    "Critical integration failure: Data Pipeline to Intelligence Engine Flow - Data flow validation failed: latency 1305.1ms, integrity 0.910",
+    "Critical integration failure: Intelligence to Risk Management Flow - Data flow validation failed: latency 1469.8ms, integrity 0.967",
+    "Critical integration failure: Data Pipeline Failure Recovery - Error recovery failed: detection 6.6s, recovery 46.1s",
+    "Data flow validation failed in 1 tests"
+  ],
+  "recommendations": [
+    "Fix 7 failed integration tests",
+    "Address 1 component_communication integration issues",
+    "Address 2 data_flow integration issues",
+    "Address 2 timing_sync integration issues",
+    "Address 2 error_recovery integration issues",
+    "Optimize 5 degraded components",
+    "Optimize data_pipeline response time (current: 150.2ms)",
+    "Investigate data_pipeline error rate (current: 3.4%)",
+    "Investigate intelligence_engine error rate (current: 4.9%)",
+    "Optimize risk_management response time (current: 174.6ms)"
+  ]
+}

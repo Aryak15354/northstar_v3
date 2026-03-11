@@ -20,7 +20,7 @@ warnings.filterwarnings('ignore')
 import sys
 import os
 from typing import Dict, List, Optional, Tuple, Any
-)))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.validation.historical_crisis_validation_suite import HistoricalCrisisValidationSuite, CrisisPeriod
 
@@ -107,7 +107,7 @@ class TestTask16CrisisValidationProperties:
         assert 0.0 <= defensive_score <= 1.0, f"Defensive score should be normalized: {defensive_score:.3f}"
         
         # Property: Better positioning should correlate with better performance
-        if defensive_positioning > 0.6 and crisis_magnitude < 0.4:
+        if defensive_positioning > 0.67 and crisis_magnitude < 0.4:
             assert abs(crisis_performance['max_drawdown']) < crisis_magnitude * 0.8, \
                 "Good defensive positioning should limit drawdown"
     

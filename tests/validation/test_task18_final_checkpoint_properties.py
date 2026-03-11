@@ -20,7 +20,7 @@ warnings.filterwarnings('ignore')
 import sys
 import os
 from typing import Dict, List, Optional, Tuple, Any
-)))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.validation.final_checkpoint_validation import FinalCheckpointValidation, ProductionReadiness
 

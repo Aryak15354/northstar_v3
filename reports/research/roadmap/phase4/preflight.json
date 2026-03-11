@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-03-08T05:26:51.206666+00:00",
+  "phase": "phase4",
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "base_config_exists",
+      "pass": true,
+      "detail": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/config/research_policy.yaml"
+    },
+    {
+      "name": "config_shape_valid",
+      "pass": true,
+      "detail": "historical_research"
+    },
+    {
+      "name": "prices_exists",
+      "pass": true
+    },
+    {
+      "name": "fundamentals_exists",
+      "pass": true
+    },
+    {
+      "name": "runner_exists",
+      "pass": true
+    },
+    {
+      "name": "low_resource_profile_not_forced",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "dataset_max_tickers_positive",
+      "pass": true
+    },
+    {
+      "name": "dataset_max_rows_positive",
+      "pass": true
+    }
+  ],
+  "config_shape": "historical_research"
+}

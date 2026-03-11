@@ -425,6 +425,23 @@ def main():
         # Generate outputs
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
+        # Clean up column structure - ensure Date and Equity are properly populated
+        if 'Date' not in combined_data.columns:
+            combined_data.insert(0, 'Date', combined_data['date'])
+        else:
+            combined_data['Date'] = combined_data['date']
+            
+        if 'Equity' not in combined_data.columns:
+            combined_data.insert(1, 'Equity', combined_data['equity'])
+        else:
+            combined_data['Equity'] = combined_data['equity']
+            
+        # Ensure Return column exists
+        if 'Return' not in combined_data.columns:
+            combined_data.insert(2, 'Return', combined_data['daily_return'])
+        else:
+            combined_data['Return'] = combined_data['daily_return']
+        
         # Save detailed results
         detailed_file = f'comprehensive_6month_trading_report_{timestamp}.csv'
         combined_data.to_csv(detailed_file, index=False)

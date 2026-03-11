@@ -1,0 +1,1787 @@
+{
+  "generated_at": "2026-03-08T18:26:13.720862+00:00",
+  "report_version": "formula_lineage_unit_integrity_v1.0",
+  "source_context": {
+    "project_root": "/Users/aryakghoshal/Downloads/northstar/northstar_v3",
+    "policy_path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/config/research_policy.yaml",
+    "latest_research_cycle": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/research/research_cycle_20260304_141054.json",
+    "dataset_metadata_fields": [
+      "alpha_factory_blend_weights",
+      "alpha_factory_enabled",
+      "alpha_factory_n_families",
+      "alpha_factory_report",
+      "backtest_rows",
+      "built_at",
+      "delisted_assets_handled",
+      "end_date",
+      "feature_cross_sectional_zscore",
+      "feature_hash",
+      "feature_zscore_clip_abs",
+      "forward_inclusion_check",
+      "ic_decay_summary_selected_features",
+      "ic_diagnostics_enabled",
+      "ic_diagnostics_report",
+      "ic_diagnostics_rows_used",
+      "ic_diagnostics_scope",
+      "ic_pruning_applied",
+      "label_hash",
+      "live_returns_cutover_date",
+      "live_rows",
+      "lookback_days",
+      "max_rows",
+      "max_tickers",
+      "membership_drift_rate",
+      "n_features",
+      "n_features_after_ic_prune",
+      "n_features_before_ic_prune",
+      "n_rows",
+      "n_tickers",
+      "price_hash",
+      "sentiment_company_rows",
+      "sentiment_market_rows",
+      "slice_end_date",
+      "slice_start_date",
+      "start_date",
+      "target_abs_max",
+      "target_binary_quantile",
+      "target_clip_abs",
+      "target_col",
+      "target_cross_sectional_zscore",
+      "target_horizon_days",
+      "target_market_residualize",
+      "target_mode",
+      "target_realized_col",
+      "target_residual_min_obs",
+      "target_residual_window_days",
+      "target_sector_residualize",
+      "target_winsor_quantile",
+      "target_zscore_clip_abs",
+      "tft_known_dynamic_features",
+      "tft_observed_dynamic_features",
+      "tft_static_features",
+      "universe_hash"
+    ],
+    "integrity_payload_available": true
+  },
+  "integrity_summary": {
+    "certification_mode": "enforce",
+    "hard_fail_triggered": true,
+    "critical_failures": [
+      "confidence_score",
+      "macro_unit_integrity",
+      "model_risk_tier_block",
+      "objective_surface_sanity",
+      "portfolio_integrity",
+      "regime_effectiveness",
+      "resource_guard",
+      "statistical_robustness",
+      "universe_integrity"
+    ],
+    "certification_passed": false
+  },
+  "formula_lineage": {
+    "raw_data_layers": [
+      {
+        "layer": "prices_fundamentals_macro_sentiment",
+        "source": "/src/research/dataset_manager.py",
+        "hash_fields": [
+          "universe_hash",
+          "price_hash",
+          "feature_hash",
+          "label_hash"
+        ],
+        "hash_present": {
+          "universe_hash": true,
+          "price_hash": true,
+          "feature_hash": true,
+          "label_hash": true
+        }
+      },
+      {
+        "layer": "macro_raw_feeds",
+        "source": "/src/macro_impact_engine/data_loader.py",
+        "inputs": [
+          "data/macro/comprehensive_rbi_data.parquet",
+          "data/processed/prices.parquet",
+          "data/processed/returns_daily.parquet"
+        ]
+      }
+    ],
+    "normalized_layers": [
+      {
+        "layer": "target_sanitize_clip_winsor",
+        "source": "/src/research/dataset_manager.py",
+        "formula": "y_sanitized = clip(winsorize(y_raw, q), +/-clip_abs)",
+        "config": {
+          "target_clip_abs": 1.0,
+          "target_winsor_quantile": 0.995
+        }
+      },
+      {
+        "layer": "feature_cross_sectional_normalization",
+        "source": "/src/research/dataset_manager.py",
+        "formula": "X_cs = zscore_or_rank(X by date)",
+        "config": {
+          "feature_cross_sectional_zscore": true,
+          "feature_zscore_clip_abs": 8.0
+        }
+      },
+      {
+        "layer": "macro_percent_and_bps_normalization",
+        "source": "/src/macro_impact_engine/data_loader.py",
+        "formula": "percent_to_decimal and bps_to_decimal on explicit percent-like fields"
+      },
+      {
+        "layer": "macro_stationarity_standardization",
+        "source": "/src/macro_impact_engine/preprocessing.py",
+        "formula": "stationary_series -> winsorize -> zscore"
+      },
+      {
+        "layer": "valuation_percentile_ranks",
+        "source": "/src/processing/valuation_engine.py",
+        "formula": "feature_pct = pct_rank_by_industry(feature)"
+      }
+    ],
+    "derived_layers": [
+      {
+        "layer": "market_allowed_exposure",
+        "source": "/src/state/market_state.py",
+        "formula": "allowed_exposure = clip(base_regime * momentum_adj * health_adj * vol_adj * opp_adj, 5, 95)",
+        "outputs": [
+          "allowed_exposure",
+          "risk_on_probability"
+        ]
+      },
+      {
+        "layer": "sentiment_headwind_multiplier",
+        "source": "/src/state/market_state.py",
+        "formula": "headwind = tanh(weighted(event_shock, polarity, uncertainty, conflict, counts)); exposure_multiplier = clip(1 - 0.85*headwind)",
+        "outputs": [
+          "sentiment_risk_multiplier",
+          "sentiment_exposure_multiplier"
+        ]
+      },
+      {
+        "layer": "strategy_belief_posterior",
+        "source": "/src/intelligence/strategy_beliefs.py",
+        "formula": "skill_prob = alpha/(alpha+beta); alpha,beta updated by wins/losses with decay",
+        "outputs": [
+          "belief_strength",
+          "skill_prob",
+          "effective_skill",
+          "status"
+        ]
+      },
+      {
+        "layer": "valuation_growth_score",
+        "source": "/src/processing/valuation_engine.py",
+        "formula": "growth_score = 0.42*revenue_growth_pct + 0.28*(1-peg_pct) + 0.20*earnings_stability_pct + 0.10*owner_earnings_yield_pct",
+        "outputs": [
+          "growth_score"
+        ]
+      },
+      {
+        "layer": "strategy_survival_curve",
+        "source": "/src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+        "formula": "survival(h) = (1 - clip(base_hazard * multiplier(belief), 0.01, 0.95))^(h/30)",
+        "outputs": [
+          "survival_probability"
+        ]
+      }
+    ],
+    "policy_layers": [
+      {
+        "layer": "certification_hard_fail_thresholds",
+        "source": "/config/research_policy.yaml",
+        "thresholds": {
+          "max_pairwise_corr": 0.99,
+          "max_holdings_overlap": 0.95,
+          "turnover_zero_streak_limit": 3,
+          "min_exposure_variance": 0.0001,
+          "max_family_weight_hard": 0.45,
+          "max_family_weight_soft": 0.35,
+          "corr_drift_hard": 0.1,
+          "min_family_entropy": 0.55,
+          "allocation_l1_step_max": 0.35,
+          "regime_effectiveness_min_delta_sharpe": 0.15,
+          "regime_effectiveness_min_delta_return_ann": 0.015,
+          "regime_effectiveness_min_delta_dd": 0.01,
+          "min_trials_weekday": 12,
+          "min_trials_weekend": 20,
+          "min_objective_variance": 1e-06,
+          "max_rolling_param_stability": 0.35,
+          "bootstrap_sharpe_p05_min": 0.0,
+          "block_bootstrap_dd_p95_max": 0.35,
+          "ruin_x1_max": 0.02,
+          "ruin_x2_max": 0.07,
+          "ruin_x3_max": 0.15
+        }
+      },
+      {
+        "layer": "freeze_and_burn_in_policy",
+        "source": "/src/research/research_engine.py",
+        "formula": "resume iff consecutive_pass_cycles>=target and regime_coverage>=target"
+      }
+    ],
+    "anomaly_normalization": {
+      "series_scanned": 101,
+      "flatline_series_count": 6,
+      "structural_constant_count": 12,
+      "max_unexplained_flatlines": 12,
+      "flatline_series_preview": [
+        {
+          "series": "market_state.causal_stability",
+          "column": "causal_stability",
+          "axis": "temporal_mean",
+          "n_dates": 12,
+          "n_obs": 12,
+          "n_unique": 2,
+          "cv": 2.2429892266911074e-16,
+          "classification": "flatline_flag"
+        },
+        {
+          "series": "market_state.regime_similarity",
+          "column": "regime_similarity",
+          "axis": "temporal_mean",
+          "n_dates": 10,
+          "n_obs": 10,
+          "n_unique": 5,
+          "cv": 1.7583386903498092e-16,
+          "classification": "flatline_flag"
+        },
+        {
+          "series": "market_state.sentiment_news_signal",
+          "column": "sentiment_news_signal",
+          "axis": "temporal_mean",
+          "n_dates": 6,
+          "n_obs": 6,
+          "n_unique": 1,
+          "cv": 1.688019161374101e-16,
+          "classification": "flatline_flag"
+        },
+        {
+          "series": "intelligent_state.causal_stability",
+          "column": "causal_stability",
+          "axis": "temporal_mean",
+          "n_dates": 18,
+          "n_obs": 18,
+          "n_unique": 2,
+          "cv": 1.3478687778580185e-16,
+          "classification": "flatline_flag"
+        },
+        {
+          "series": "intelligent_state.regime_similarity",
+          "column": "regime_similarity",
+          "axis": "temporal_mean",
+          "n_dates": 12,
+          "n_obs": 12,
+          "n_unique": 6,
+          "cv": 1.8992228520225306e-16,
+          "classification": "flatline_flag"
+        },
+        {
+          "series": "intelligent_state.sentiment_news_signal",
+          "column": "sentiment_news_signal",
+          "axis": "temporal_mean",
+          "n_dates": 7,
+          "n_obs": 7,
+          "n_unique": 1,
+          "cv": 1.688019161374101e-16,
+          "classification": "flatline_flag"
+        }
+      ],
+      "structural_constants_preview": [
+        {
+          "series": "macro_transmission_expected.horizon",
+          "column": "horizon",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 1,
+          "n_obs": 20,
+          "n_unique": 1,
+          "cv": 0.0,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "macro_transmission_sv_summary.obs_used",
+          "column": "obs_used",
+          "axis": "cross_sectional",
+          "n_dates": 0,
+          "n_obs": 30,
+          "n_unique": 1,
+          "cv": 0.0,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "macro_transmission_jax_betas.obs_used",
+          "column": "obs_used",
+          "axis": "cross_sectional",
+          "n_dates": 0,
+          "n_obs": 360,
+          "n_unique": 1,
+          "cv": 0.0,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.regime_modifier",
+          "column": "regime_modifier",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 2.2069542007524124e-16,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.macro_compression",
+          "column": "macro_compression",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 1.2470030659213541e-16,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.regime_low_vol_prob",
+          "column": "regime_low_vol_prob",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 2.898603214306411e-16,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.regime_normal_prob",
+          "column": "regime_normal_prob",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 1.1601237731547624e-16,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.regime_crisis_prob",
+          "column": "regime_crisis_prob",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 2.0042059932397677e-16,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.core_variance",
+          "column": "core_variance",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 0.0,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.fcfe_confidence",
+          "column": "fcfe_confidence",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 0.0,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.macro_percentile",
+          "column": "macro_percentile",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 1.7425957447120092e-16,
+          "classification": "structural_constant"
+        },
+        {
+          "series": "valuation.macro_adjustment_factor",
+          "column": "macro_adjustment_factor",
+          "axis": "snapshot_cross_sectional",
+          "n_dates": 4,
+          "n_obs": 500,
+          "n_unique": 1,
+          "cv": 1.2470030659213541e-16,
+          "classification": "structural_constant"
+        }
+      ],
+      "source_diagnostics": [
+        {
+          "source": "market_state",
+          "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/processed/market_state.parquet",
+          "exists": true,
+          "series": [
+            {
+              "series": "market_state.risk_on",
+              "column": "risk_on",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 12,
+              "cv": 0.48839924494469056,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.stress_score",
+              "column": "stress_score",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 3,
+              "cv": 0.14420107784153913,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.macro_score",
+              "column": "macro_score",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 8,
+              "cv": 0.3473335842708828,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.macro_momentum",
+              "column": "macro_momentum",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 7,
+              "cv": 0.041972801191901964,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.stress_level",
+              "column": "stress_level",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 3,
+              "cv": 0.14420107784153913,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.breadth_pct",
+              "column": "breadth_pct",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 8,
+              "cv": 0.4489814820865498,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.participation_score",
+              "column": "participation_score",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 12,
+              "cv": 0.25807379536628766,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.correlation",
+              "column": "correlation",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 12,
+              "cv": 0.836984077075894,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.health_score",
+              "column": "health_score",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 12,
+              "cv": 0.21659821814949967,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.opportunity_density",
+              "column": "opportunity_density",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 2,
+              "cv": 0.5200158087208812,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.risk_on_probability",
+              "column": "risk_on_probability",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 12,
+              "cv": 0.48839924494469056,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.allowed_exposure",
+              "column": "allowed_exposure",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 12,
+              "cv": 0.546930122136686,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.confidence",
+              "column": "confidence",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 5,
+              "cv": 0.17934603082829387,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.coherence_score",
+              "column": "coherence_score",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 4,
+              "cv": 0.04521367506096336,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.pulse_intensity",
+              "column": "pulse_intensity",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 3,
+              "cv": 0.43285823113787364,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.exposure_multiplier",
+              "column": "exposure_multiplier",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 3,
+              "cv": 0.09259198113619571,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.causal_stability",
+              "column": "causal_stability",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 2,
+              "cv": 2.2429892266911074e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "market_state.regime_similarity",
+              "column": "regime_similarity",
+              "axis": "temporal_mean",
+              "n_dates": 10,
+              "n_obs": 10,
+              "n_unique": 5,
+              "cv": 1.7583386903498092e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "market_state.sentiment_summary_age_minutes",
+              "column": "sentiment_summary_age_minutes",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 6,
+              "cv": 0.717412307686346,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_market_age_minutes",
+              "column": "sentiment_market_age_minutes",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 6,
+              "cv": 0.3665008410414398,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_polarity",
+              "column": "sentiment_polarity",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 3,
+              "cv": 0.24920366567495622,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_uncertainty",
+              "column": "sentiment_uncertainty",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 2,
+              "cv": 0.06666549590003959,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_conviction",
+              "column": "sentiment_conviction",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 3,
+              "cv": 0.035696454963237076,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_conflict",
+              "column": "sentiment_conflict",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 2,
+              "cv": 0.20327890704543544,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_bias",
+              "column": "sentiment_bias",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 3,
+              "cv": 0.24920366567495622,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_event_shock",
+              "column": "sentiment_event_shock",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 2,
+              "cv": 0.007181214810285307,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_news_signal",
+              "column": "sentiment_news_signal",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 1,
+              "cv": 1.688019161374101e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "market_state.sentiment_micro_shift",
+              "column": "sentiment_micro_shift",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 2,
+              "cv": 0.2032789070454354,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_change_velocity",
+              "column": "sentiment_change_velocity",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 1,
+              "cv": 999.0,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_delta_polarity",
+              "column": "sentiment_delta_polarity",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 1,
+              "cv": 999.0,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_delta_uncertainty",
+              "column": "sentiment_delta_uncertainty",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 1,
+              "cv": 999.0,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_delta_conviction",
+              "column": "sentiment_delta_conviction",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 1,
+              "cv": 999.0,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_negative_company_count",
+              "column": "sentiment_negative_company_count",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 3,
+              "cv": 0.10364452469860626,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_event_impact_count",
+              "column": "sentiment_event_impact_count",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 3,
+              "cv": 0.8929374435572229,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_risk_multiplier",
+              "column": "sentiment_risk_multiplier",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 4,
+              "cv": 0.1163164662047816,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_exposure_multiplier",
+              "column": "sentiment_exposure_multiplier",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 3,
+              "cv": 0.2388637307590764,
+              "classification": "ok"
+            },
+            {
+              "series": "market_state.sentiment_regime_headwind",
+              "column": "sentiment_regime_headwind",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 4,
+              "cv": 0.07490568787336759,
+              "classification": "ok"
+            }
+          ],
+          "flatline_series": [
+            {
+              "series": "market_state.causal_stability",
+              "column": "causal_stability",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 2,
+              "cv": 2.2429892266911074e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "market_state.regime_similarity",
+              "column": "regime_similarity",
+              "axis": "temporal_mean",
+              "n_dates": 10,
+              "n_obs": 10,
+              "n_unique": 5,
+              "cv": 1.7583386903498092e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "market_state.sentiment_news_signal",
+              "column": "sentiment_news_signal",
+              "axis": "temporal_mean",
+              "n_dates": 6,
+              "n_obs": 6,
+              "n_unique": 1,
+              "cv": 1.688019161374101e-16,
+              "classification": "flatline_flag"
+            }
+          ],
+          "structural_constants": [],
+          "warnings": [],
+          "passed": false
+        },
+        {
+          "source": "intelligent_state",
+          "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/processed/intelligent_market_state.parquet",
+          "exists": true,
+          "series": [
+            {
+              "series": "intelligent_state.macro_score",
+              "column": "macro_score",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 14,
+              "cv": 0.7434468592715466,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.macro_momentum",
+              "column": "macro_momentum",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 13,
+              "cv": 1.778092005410698,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.stress_level",
+              "column": "stress_level",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 4,
+              "cv": 0.1627346653274293,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.breadth_pct",
+              "column": "breadth_pct",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 12,
+              "cv": 0.6168054091774955,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.participation_score",
+              "column": "participation_score",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 16,
+              "cv": 0.3984762785478439,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.correlation",
+              "column": "correlation",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 14,
+              "cv": 0.9422938318313863,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.health_score",
+              "column": "health_score",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 18,
+              "cv": 0.3134002751586652,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.opportunity_density",
+              "column": "opportunity_density",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 4,
+              "cv": 0.4932899620608283,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.risk_on_probability",
+              "column": "risk_on_probability",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 19,
+              "cv": 0.38720776349090186,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.allowed_exposure",
+              "column": "allowed_exposure",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 19,
+              "cv": 0.4663428308116484,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.confidence",
+              "column": "confidence",
+              "axis": "temporal_mean",
+              "n_dates": 20,
+              "n_obs": 20,
+              "n_unique": 10,
+              "cv": 0.2270608500687456,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.conviction",
+              "column": "conviction",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 2,
+              "n_obs": 3,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "insufficient_observations"
+            },
+            {
+              "series": "intelligent_state.ai_allowed_exposure",
+              "column": "ai_allowed_exposure",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 2,
+              "n_obs": 3,
+              "n_unique": 1,
+              "cv": 1.5402102975300126e-16,
+              "classification": "insufficient_observations"
+            },
+            {
+              "series": "intelligent_state.exposure_blend_weight",
+              "column": "exposure_blend_weight",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 2,
+              "n_obs": 3,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "insufficient_observations"
+            },
+            {
+              "series": "intelligent_state.ai_risk_on_probability",
+              "column": "ai_risk_on_probability",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 2,
+              "n_obs": 3,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "insufficient_observations"
+            },
+            {
+              "series": "intelligent_state.coherence_score",
+              "column": "coherence_score",
+              "axis": "temporal_mean",
+              "n_dates": 18,
+              "n_obs": 18,
+              "n_unique": 4,
+              "cv": 0.05154387178376512,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.pulse_intensity",
+              "column": "pulse_intensity",
+              "axis": "temporal_mean",
+              "n_dates": 18,
+              "n_obs": 18,
+              "n_unique": 7,
+              "cv": 0.46376198854460043,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.exposure_multiplier",
+              "column": "exposure_multiplier",
+              "axis": "temporal_mean",
+              "n_dates": 18,
+              "n_obs": 18,
+              "n_unique": 4,
+              "cv": 0.11777026799251789,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.causal_stability",
+              "column": "causal_stability",
+              "axis": "temporal_mean",
+              "n_dates": 18,
+              "n_obs": 18,
+              "n_unique": 2,
+              "cv": 1.3478687778580185e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "intelligent_state.risk_on",
+              "column": "risk_on",
+              "axis": "temporal_mean",
+              "n_dates": 13,
+              "n_obs": 13,
+              "n_unique": 13,
+              "cv": 0.4833485795163927,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.stress_score",
+              "column": "stress_score",
+              "axis": "temporal_mean",
+              "n_dates": 13,
+              "n_obs": 13,
+              "n_unique": 4,
+              "cv": 0.20018664086470708,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.regime_similarity",
+              "column": "regime_similarity",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 6,
+              "cv": 1.8992228520225306e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "intelligent_state.sentiment_summary_age_minutes",
+              "column": "sentiment_summary_age_minutes",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 7,
+              "cv": 0.9255434091975787,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_market_age_minutes",
+              "column": "sentiment_market_age_minutes",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 7,
+              "cv": 0.4982943425567263,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_polarity",
+              "column": "sentiment_polarity",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 3,
+              "cv": 0.5084568408323813,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_uncertainty",
+              "column": "sentiment_uncertainty",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 2,
+              "cv": 0.1279155560363592,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_conviction",
+              "column": "sentiment_conviction",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 2,
+              "cv": 0.06780778335241396,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_conflict",
+              "column": "sentiment_conflict",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 2,
+              "cv": 0.40824829046386313,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_bias",
+              "column": "sentiment_bias",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 3,
+              "cv": 0.5084568408323813,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_event_shock",
+              "column": "sentiment_event_shock",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 2,
+              "cv": 0.013516652334796828,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_news_signal",
+              "column": "sentiment_news_signal",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 1,
+              "cv": 1.688019161374101e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "intelligent_state.sentiment_micro_shift",
+              "column": "sentiment_micro_shift",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 2,
+              "cv": 0.408248290463863,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_change_velocity",
+              "column": "sentiment_change_velocity",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 1,
+              "cv": 999.0,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_delta_polarity",
+              "column": "sentiment_delta_polarity",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 1,
+              "cv": 999.0,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_delta_uncertainty",
+              "column": "sentiment_delta_uncertainty",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 1,
+              "cv": 999.0,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_delta_conviction",
+              "column": "sentiment_delta_conviction",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 1,
+              "cv": 999.0,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_negative_company_count",
+              "column": "sentiment_negative_company_count",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 3,
+              "cv": 0.1248176512522966,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_event_impact_count",
+              "column": "sentiment_event_impact_count",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 3,
+              "cv": 0.7891696659822623,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_risk_multiplier",
+              "column": "sentiment_risk_multiplier",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 4,
+              "cv": 0.13450603130308605,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_exposure_multiplier",
+              "column": "sentiment_exposure_multiplier",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 3,
+              "cv": 0.26152061009766053,
+              "classification": "ok"
+            },
+            {
+              "series": "intelligent_state.sentiment_regime_headwind",
+              "column": "sentiment_regime_headwind",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 5,
+              "cv": 0.0925213087602955,
+              "classification": "ok"
+            }
+          ],
+          "flatline_series": [
+            {
+              "series": "intelligent_state.causal_stability",
+              "column": "causal_stability",
+              "axis": "temporal_mean",
+              "n_dates": 18,
+              "n_obs": 18,
+              "n_unique": 2,
+              "cv": 1.3478687778580185e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "intelligent_state.regime_similarity",
+              "column": "regime_similarity",
+              "axis": "temporal_mean",
+              "n_dates": 12,
+              "n_obs": 12,
+              "n_unique": 6,
+              "cv": 1.8992228520225306e-16,
+              "classification": "flatline_flag"
+            },
+            {
+              "series": "intelligent_state.sentiment_news_signal",
+              "column": "sentiment_news_signal",
+              "axis": "temporal_mean",
+              "n_dates": 7,
+              "n_obs": 7,
+              "n_unique": 1,
+              "cv": 1.688019161374101e-16,
+              "classification": "flatline_flag"
+            }
+          ],
+          "structural_constants": [],
+          "warnings": [],
+          "passed": false
+        },
+        {
+          "source": "macro_transmission_expected",
+          "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/processed/macro_transmission/macro_expected_change.parquet",
+          "exists": true,
+          "series": [
+            {
+              "series": "macro_transmission_expected.expected_change",
+              "column": "expected_change",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 1,
+              "n_obs": 20,
+              "n_unique": 20,
+              "cv": 1.2251809694844855,
+              "classification": "ok"
+            },
+            {
+              "series": "macro_transmission_expected.horizon",
+              "column": "horizon",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 1,
+              "n_obs": 20,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            }
+          ],
+          "flatline_series": [],
+          "structural_constants": [
+            {
+              "series": "macro_transmission_expected.horizon",
+              "column": "horizon",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 1,
+              "n_obs": 20,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            }
+          ],
+          "warnings": [],
+          "passed": true
+        },
+        {
+          "source": "macro_transmission_sv_summary",
+          "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/processed/macro_transmission/stochastic_volatility_summary.parquet",
+          "exists": true,
+          "series": [
+            {
+              "series": "macro_transmission_sv_summary.sigma_current",
+              "column": "sigma_current",
+              "axis": "cross_sectional",
+              "n_dates": 0,
+              "n_obs": 30,
+              "n_unique": 30,
+              "cv": 0.3480017632940689,
+              "classification": "ok"
+            },
+            {
+              "series": "macro_transmission_sv_summary.sigma_mean",
+              "column": "sigma_mean",
+              "axis": "cross_sectional",
+              "n_dates": 0,
+              "n_obs": 30,
+              "n_unique": 30,
+              "cv": 0.09144598359077728,
+              "classification": "ok"
+            },
+            {
+              "series": "macro_transmission_sv_summary.sigma_std",
+              "column": "sigma_std",
+              "axis": "cross_sectional",
+              "n_dates": 0,
+              "n_obs": 30,
+              "n_unique": 30,
+              "cv": 0.28482102339462234,
+              "classification": "ok"
+            },
+            {
+              "series": "macro_transmission_sv_summary.obs_used",
+              "column": "obs_used",
+              "axis": "cross_sectional",
+              "n_dates": 0,
+              "n_obs": 30,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            }
+          ],
+          "flatline_series": [],
+          "structural_constants": [
+            {
+              "series": "macro_transmission_sv_summary.obs_used",
+              "column": "obs_used",
+              "axis": "cross_sectional",
+              "n_dates": 0,
+              "n_obs": 30,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            }
+          ],
+          "warnings": [],
+          "passed": true
+        },
+        {
+          "source": "macro_transmission_jax_betas",
+          "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/processed/macro_transmission/jax_kalman_betas.parquet",
+          "exists": true,
+          "series": [
+            {
+              "series": "macro_transmission_jax_betas.beta_jax",
+              "column": "beta_jax",
+              "axis": "cross_sectional",
+              "n_dates": 0,
+              "n_obs": 360,
+              "n_unique": 360,
+              "cv": 11.082931276753634,
+              "classification": "ok"
+            },
+            {
+              "series": "macro_transmission_jax_betas.obs_used",
+              "column": "obs_used",
+              "axis": "cross_sectional",
+              "n_dates": 0,
+              "n_obs": 360,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            }
+          ],
+          "flatline_series": [],
+          "structural_constants": [
+            {
+              "series": "macro_transmission_jax_betas.obs_used",
+              "column": "obs_used",
+              "axis": "cross_sectional",
+              "n_dates": 0,
+              "n_obs": 360,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            }
+          ],
+          "warnings": [],
+          "passed": true
+        },
+        {
+          "source": "valuation",
+          "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/processed/valuation.parquet",
+          "exists": true,
+          "series": [
+            {
+              "series": "valuation.growth_score",
+              "column": "growth_score",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 376,
+              "cv": 0.13186652629617385,
+              "classification": "ok"
+            },
+            {
+              "series": "valuation.institutional_value_score",
+              "column": "institutional_value_score",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 497,
+              "cv": 0.19363302597698603,
+              "classification": "ok"
+            },
+            {
+              "series": "valuation.regime_modifier",
+              "column": "regime_modifier",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 2.2069542007524124e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.macro_compression",
+              "column": "macro_compression",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 1.2470030659213541e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.regime_low_vol_prob",
+              "column": "regime_low_vol_prob",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 2.898603214306411e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.regime_normal_prob",
+              "column": "regime_normal_prob",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 1.1601237731547624e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.regime_crisis_prob",
+              "column": "regime_crisis_prob",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 2.0042059932397677e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.core_variance",
+              "column": "core_variance",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.fcfe_confidence",
+              "column": "fcfe_confidence",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.macro_percentile",
+              "column": "macro_percentile",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 1.7425957447120092e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.macro_adjustment_factor",
+              "column": "macro_adjustment_factor",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 1.2470030659213541e-16,
+              "classification": "structural_constant"
+            }
+          ],
+          "flatline_series": [],
+          "structural_constants": [
+            {
+              "series": "valuation.regime_modifier",
+              "column": "regime_modifier",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 2.2069542007524124e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.macro_compression",
+              "column": "macro_compression",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 1.2470030659213541e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.regime_low_vol_prob",
+              "column": "regime_low_vol_prob",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 2.898603214306411e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.regime_normal_prob",
+              "column": "regime_normal_prob",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 1.1601237731547624e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.regime_crisis_prob",
+              "column": "regime_crisis_prob",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 2.0042059932397677e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.core_variance",
+              "column": "core_variance",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.fcfe_confidence",
+              "column": "fcfe_confidence",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 0.0,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.macro_percentile",
+              "column": "macro_percentile",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 1.7425957447120092e-16,
+              "classification": "structural_constant"
+            },
+            {
+              "series": "valuation.macro_adjustment_factor",
+              "column": "macro_adjustment_factor",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 4,
+              "n_obs": 500,
+              "n_unique": 1,
+              "cv": 1.2470030659213541e-16,
+              "classification": "structural_constant"
+            }
+          ],
+          "warnings": [],
+          "passed": true
+        },
+        {
+          "source": "strategy_beliefs",
+          "path": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/processed/strategy_beliefs.parquet",
+          "exists": true,
+          "series": [
+            {
+              "series": "strategy_beliefs.belief_strength",
+              "column": "belief_strength",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 3,
+              "n_obs": 67,
+              "n_unique": 23,
+              "cv": 0.199364976549924,
+              "classification": "ok"
+            },
+            {
+              "series": "strategy_beliefs.skill_prob",
+              "column": "skill_prob",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 3,
+              "n_obs": 67,
+              "n_unique": 23,
+              "cv": 0.199364976549924,
+              "classification": "ok"
+            },
+            {
+              "series": "strategy_beliefs.confidence",
+              "column": "confidence",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 3,
+              "n_obs": 67,
+              "n_unique": 3,
+              "cv": 0.10617233722163895,
+              "classification": "ok"
+            },
+            {
+              "series": "strategy_beliefs.effective_skill",
+              "column": "effective_skill",
+              "axis": "snapshot_cross_sectional",
+              "n_dates": 3,
+              "n_obs": 67,
+              "n_unique": 38,
+              "cv": 1.121856832687462,
+              "classification": "ok"
+            }
+          ],
+          "flatline_series": [],
+          "structural_constants": [],
+          "warnings": [],
+          "passed": true
+        }
+      ]
+    },
+    "passed": true
+  },
+  "macro_unit_integrity": {
+    "metadata_available": true,
+    "variables_checked": 20,
+    "unit_family_counts": {
+      "money": 69,
+      "unknown": 29,
+      "rate_or_ratio": 26,
+      "flow_or_stock": 15,
+      "index_or_level": 10,
+      "count_or_volume": 1
+    },
+    "percent_conversions": 23,
+    "conversion_log_sample": {
+      "daily_other_REPO RATE (OVERNIGHT)": "percent_to_decimal",
+      "daily_other_REVERSE REPO RATE (OVERNIGHT)": "percent_to_decimal",
+      "daily_other_DAILY CALL MONEY RATE -HIGH": "percent_to_decimal",
+      "daily_other_DAILY CALL MONEY RATE - LOW": "percent_to_decimal",
+      "weekly_core_Forward Premia of US$ 1-month (%)": "percent_to_decimal",
+      "weekly_core_Forward Premia of US$ 3-month (%)": "percent_to_decimal",
+      "weekly_core_Forward Premia of US$ 6-month (%)": "percent_to_decimal",
+      "weekly_core_Reverse Repo Rate (%)": "percent_to_decimal",
+      "weekly_core_Marginal Standing Facility (MSF) Rate (%)": "percent_to_decimal",
+      "weekly_core_Bank Rate (%)": "percent_to_decimal",
+      "weekly_core_Base Rate (%)": "percent_to_decimal",
+      "weekly_core_91-Day Treasury Bill (Primary) Yield (%)": "percent_to_decimal",
+      "weekly_core_182-Day Treasury Bill (Primary) Yield (%)": "percent_to_decimal",
+      "weekly_core_364-Day Treasury Bill (Primary) Yield (%)": "percent_to_decimal",
+      "weekly_core_10-Year G-Sec Yield (FBIL) (%)": "percent_to_decimal",
+      "weekly_core_Cash Reserve Ratio (%)": "percent_to_decimal",
+      "weekly_core_Statutory Liquidity Ratio (%)": "percent_to_decimal",
+      "weekly_core_Policy Repo Rate (%)": "percent_to_decimal",
+      "weekly_core_Standing Deposit Facility (SDF) Rate (%)": "percent_to_decimal",
+      "weekly_other_CALL MONEY RATE (BORROWINGS) - HIGH": "percent_to_decimal",
+      "weekly_other_CALL MONEY RATE (BORROWINGS) - LOW": "percent_to_decimal",
+      "fortnightly_core_Cash Deposit Ratio (%)": "percent_to_decimal",
+      "fortnightly_core_Credit Deposit Ratio (%)": "percent_to_decimal"
+    },
+    "conversion_log_full_size": 23,
+    "structural_constant_fields": [
+      {
+        "series": "macro_expected_change.horizon",
+        "reason": "configured_horizon_constant"
+      },
+      {
+        "series": "macro_transmission_sv_summary.obs_used",
+        "reason": "shared_history_window"
+      },
+      {
+        "series": "macro_transmission_jax_betas.obs_used",
+        "reason": "shared_history_window"
+      }
+    ],
+    "suspicious_unit_usage": [],
+    "warnings": [],
+    "passed": true
+  },
+  "belief_layer_diagnostics": {
+    "history_days": 4,
+    "updates_observed": 3,
+    "belief_dispersion": 0.13763863830892692,
+    "confidence_dispersion": 0.18232113763882918,
+    "ready_for_strict_evaluation": false,
+    "passed": true,
+    "warnings": []
+  },
+  "gate_overfitting_audit": {
+    "enabled": true,
+    "relaxed_threshold_factor": 1.2,
+    "currently_failed_rules": 11,
+    "would_pass_under_relaxed": [],
+    "would_still_fail": [
+      "confidence_score.bootstrap_confidence_width",
+      "confidence_score.regime_coverage",
+      "macro_unit_integrity.suspicious_unit_usage",
+      "model_risk_tier.promotion_allowed",
+      "model_risk_tier_block.passed",
+      "objective_surface_sanity.trials_executed",
+      "portfolio_integrity.exposure_variance",
+      "regime_effectiveness.inert_regime_layer",
+      "resource_guard.cycle_runtime_sec",
+      "statistical_robustness.bootstrap_sharpe_p05",
+      "universe_integrity.forward_inclusion_check"
+    ],
+    "threshold_pressure_ratio": 0.0,
+    "passed": true
+  },
+  "report_runtime_sec": 1.8071821669873316,
+  "passed": true,
+  "pass_vector": {
+    "formula_lineage": true,
+    "macro_unit_integrity": true,
+    "belief_layer_diagnostics": true,
+    "gate_overfitting_audit": true
+  }
+}

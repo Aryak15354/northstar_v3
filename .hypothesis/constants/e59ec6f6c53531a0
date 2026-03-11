@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/research_evolution_engine.py
+# hypothesis_version: 6.150.2
+
+[-0.02, 0.0, 0.01, 0.12, 0.3, 0.35, 0.6, 1.0, 2.0, ':', 'action', 'apply_shadow_only', 'avg_edge_decay', 'avg_err', 'avg_stability', 'coerce', 'confidence', 'crisis_lock', 'current_parameters', 'drawdown_ratio', 'durability_score', 'edge_decay', 'entropy', 'error', 'experiment_id', 'family', 'hold', 'mc_survival', 'metrics', 'parameter_bounds', 'parameter_mutation', 'parameter_vector', 'persistence_days', 'phase6_longevity', 'reason', 'records', 'regime', 'regime_features', 'regime_sensitivity', 'runtime', 'sharpe', 'shock_detected', 'stability_score', 'status', 'strategy_id', 'surface_fragility', 'timestamp_utc', 'unknown', 'wf_sharpe']

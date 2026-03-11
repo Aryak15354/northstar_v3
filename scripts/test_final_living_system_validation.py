@@ -21,8 +21,7 @@ from typing import Dict, List, Any, Tuple
 
 # Add src to path for imports
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-)
+sys.path.append(project_root)
 
 class LivingSystemValidator:
     """Comprehensive validation of the living system"""

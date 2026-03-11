@@ -79,7 +79,7 @@ def valid_decision_data(draw):
 
 
 @st.composite
-def test_date(draw):
+def sample_date(draw):
     """Generate test date"""
     year = draw(st.integers(min_value=2020, max_value=2025))
     month = draw(st.integers(min_value=1, max_value=12))
@@ -97,7 +97,7 @@ def test_date(draw):
 
 @settings(max_examples=100, deadline=None)
 @given(
-    date=test_date(),
+    date=sample_date(),
     positions=st.lists(valid_position_data(), min_size=1, max_size=20),
     pnl_data=valid_pnl_data(),
     decision_data=valid_decision_data()
@@ -206,7 +206,7 @@ def test_property_19_shadow_fund_logging_completeness(date, positions, pnl_data,
 
 @settings(max_examples=50, deadline=None)
 @given(
-    date=test_date(),
+    date=sample_date(),
     positions=st.lists(valid_position_data(), min_size=1, max_size=10)
 )
 def test_positions_logging_schema_enforcement(date, positions):
@@ -248,7 +248,7 @@ def test_positions_logging_schema_enforcement(date, positions):
 
 @settings(max_examples=50, deadline=None)
 @given(
-    date=test_date(),
+    date=sample_date(),
     pnl_data=valid_pnl_data()
 )
 def test_pnl_logging_schema_enforcement(date, pnl_data):
@@ -284,7 +284,7 @@ def test_pnl_logging_schema_enforcement(date, pnl_data):
 
 @settings(max_examples=50, deadline=None)
 @given(
-    date=test_date(),
+    date=sample_date(),
     decision_data=valid_decision_data()
 )
 def test_decisions_logging_json_format(date, decision_data):

@@ -58,6 +58,7 @@ data/options/
 logs/options_*.log
 
 # Credentials (never commit)
+.env
 *.key
 *.pem
 *.secret

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/phase3_component_attribution.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-08, 0.01, 0.05, 252, '-', '1.0', '=', 'ATTRIBUTION SUMMARY', '_', 'anticipatory_signals', 'benchmark', 'bool', 'edge_strength', 'ffill', 'interaction', 'no_edge_confidence', 'no_edge_detector', 'no_edge_state', 'position_changes', 'regime_confidence', 'regime_memory_system', 'returns', 'signal_1', 'signal_2', 'signals', 'strategy_tailwinds', 'tailwind_momentum', 'tailwind_scores', 'tailwind_strength', 'w']

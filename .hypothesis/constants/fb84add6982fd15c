@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/regime_detector.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-09, 0.15, 0.3, 0.5, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.95, 0.97, 1.0, 1.03, 1.5, -1000, 252, 1000, 'C', 'CE', 'CRISIS', 'HIGH_STRESS', 'NORMAL', 'P', 'PE', 'coerce', 'crash_hedge', 'dist', 'falling', 'high_vol_sell', 'iv', 'low_vol_sell', 'low_vol_sell_iv_rank', 'neutral', 'option_type', 'rising', 'rising_vol_buy', 'stable', 'strike', 'thresholds', 'underlying_price', 'vol_of_vol_threshold']

@@ -179,7 +179,7 @@ class PerformanceMonitor:
                 except queue.Empty:
                     pass
             
-            self._update_current_metrics(metric_name, value)
+            self._update_current_metrics(metric_name, value, timestamp)
             self._check_performance_deviation(metric_name, value, timestamp)
             
         except Exception as e:
@@ -312,8 +312,9 @@ class PerformanceMonitor:
                 except Exception as e:
                     self.logger.error(f"Error executing emergency callback: {str(e)}")
             
-            # Emergency actions
-            self._emergency_save_critical_data(reason, details)
+            # Emergency actions (persist asynchronously to avoid blocking
+            # execution-time critical paths).
+            self._emergency_save_critical_data_async(reason, details)
             
             self.logger.critical("Emergency protocol execution completed")
             return True
@@ -495,11 +496,11 @@ class PerformanceMonitor:
         
         return recommendations
     
-    def _update_current_metrics(self, metric_name: str, value: float):
+    def _update_current_metrics(self, metric_name: str, value: float, timestamp: datetime):
         """Update current performance metrics."""
         self.metrics_cache[metric_name] = {
             "value": value,
-            "timestamp": datetime.now()
+            "timestamp": timestamp
         }
     
     def _check_performance_deviation(self, metric_name: str, value: float, timestamp: datetime):
@@ -678,3 +679,16 @@ class PerformanceMonitor:
                     json.dump(alert_data, f, indent=2, default=str)
         except Exception as e:
             self.logger.error(f"Error saving emergency data: {str(e)}")
+
+    def _emergency_save_critical_data_async(self, reason: str, details: Dict[str, Any]):
+        """Dispatch emergency data persistence on a daemon thread."""
+        try:
+            thread = threading.Thread(
+                target=self._emergency_save_critical_data,
+                args=(reason, details),
+                name="EmergencyDataSave",
+                daemon=True
+            )
+            thread.start()
+        except Exception as e:
+            self.logger.error(f"Error scheduling emergency data save: {str(e)}")

@@ -754,6 +754,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+'''
     
     # Write the integration script
     integration_file = Path("scripts/generate_dashboard_production_data.py")

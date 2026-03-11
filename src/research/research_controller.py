@@ -19,6 +19,7 @@ import pandas as pd
 from .candidate_scorer import CandidateScorer
 from .capital_allocator_bridge import CapitalAllocatorBridge
 from .capital_simulator import CapitalSimulator
+from .certification import CertificationContext, CertificationEvaluator
 from .alpha_factory import (
     apply_family_feature_weights,
     build_family_factor_table,
@@ -27,6 +28,7 @@ from .alpha_factory import (
     optimize_family_blend,
     simulate_signal_stacking,
 )
+from .alpha_lab import AlphaHypothesis, AlphaLabController
 from .dataset_manager import DatasetManager
 from .diagnostics import compute_feature_ic_diagnostics, write_ic_report
 from .ensemble import StackingMetaLearner, WeightedEnsemble
@@ -46,12 +48,13 @@ from .model_adapters import (
 from .mutation_engine import MutationEngine
 from .portfolio_governor_bridge import PortfolioGovernorBridge
 from .research_memory import ResearchMemory
+from .research_types import ResearchDataset
 from .reinforcement_regime_agent import RegimeSwitchAgent
 from .regime_split import split_by_regime
 from .splits import rolling_time_splits
 from .structural_monte_carlo import StructuralMonteCarlo
 from .training_pipeline import TrainingPipeline
-from .walk_forward_validator import build_cross_sectional_portfolio_returns
+from .walk_forward_validator import build_cross_sectional_portfolio_returns, _period_to_daily_returns
 
 
 logger = logging.getLogger(__name__)
@@ -61,22 +64,61 @@ _TRADE_ID_TS_RE = re.compile(r"^POS_(\d{8})_(\d{6})_")
 class ResearchController:
     """Full historical research loop (offline only)."""
 
+    _CANONICAL_BASE_MODELS: Tuple[str, ...] = (
+        "lightgbm",
+        "xgboost",
+        "catboost",
+        "random_forest",
+        "lstm",
+        "tcn",
+        "transformer",
+    )
+    _DEEP_MODELS = {"lstm", "tcn", "transformer"}
+    _MODEL_ALIASES = {
+        "lightgbm": "lightgbm",
+        "lightbgm": "lightgbm",
+        "xgboost": "xgboost",
+        "catboost": "catboost",
+        "random_forest": "random_forest",
+        "randomforest": "random_forest",
+        "random_forrest": "random_forest",
+        "lstm": "lstm",
+        "tcn": "tcn",
+        "transformer": "transformer",
+        "weighted_ensemble_top3": "weighted_ensemble_top3",
+        "stacking_meta_top3": "stacking_meta_top3",
+    }
+
     def __init__(self, config: Dict[str, Any] | None = None, project_root: Path | None = None):
         self.config = copy.deepcopy(config or {})
         self.project_root = Path(project_root) if project_root else Path(".")
         self.low_resource_mode = self._is_low_resource_mode()
         if self.low_resource_mode:
             self._apply_low_resource_overrides()
+        self._enforce_certification_defaults()
 
         dataset_cfg = dict(self.config.get("dataset", {}))
+        training_cfg = dict(self.config.get("training", {}))
+        if "min_tickers_per_date" in training_cfg and "min_tickers_per_date" not in dataset_cfg:
+            dataset_cfg["min_tickers_per_date"] = int(training_cfg.get("min_tickers_per_date", 50))
+        dataset_cfg.setdefault("training_train_periods", int(training_cfg.get("train_periods", 756)))
+        dataset_cfg.setdefault("training_valid_periods", int(training_cfg.get("valid_periods", 126)))
+        dataset_cfg.setdefault("training_test_periods", int(training_cfg.get("test_periods", 126)))
+        dataset_cfg.setdefault("training_step_periods", int(training_cfg.get("step_periods", 63)))
+        dataset_cfg.setdefault("training_min_tickers_per_date", int(training_cfg.get("min_tickers_per_date", 50)))
+        dataset_cfg.setdefault("training_max_windows", int(training_cfg.get("max_windows", 12)))
+        if "low_resource_mode" in self.config and "low_resource_mode" not in dataset_cfg:
+            dataset_cfg["low_resource_mode"] = self.config.get("low_resource_mode")
+        if "low_resource_max_memory_gb" in self.config and "low_resource_max_memory_gb" not in dataset_cfg:
+            dataset_cfg["low_resource_max_memory_gb"] = self.config.get("low_resource_max_memory_gb")
         self.dataset_manager = DatasetManager(project_root=self.project_root, config=dataset_cfg)
 
-        training_cfg = dict(self.config.get("training", {}))
         self.pipeline = TrainingPipeline(
             train_periods=int(training_cfg.get("train_periods", 756)),
             valid_periods=int(training_cfg.get("valid_periods", 126)),
             test_periods=int(training_cfg.get("test_periods", 126)),
             step_periods=int(training_cfg.get("step_periods", 63)),
+            min_tickers_per_date=int(training_cfg.get("min_tickers_per_date", 50)),
             max_windows=int(training_cfg.get("max_windows", 10)),
             start_window=int(training_cfg.get("start_window", 0)),
             portfolio_cfg=dict(self.config.get("portfolio_construction", {})),
@@ -87,7 +129,11 @@ class ResearchController:
         self.tracker = ExperimentTracker(path=str(self.config.get("experiment_path", "data/research/experiments.ndjson")))
         self.memory = ResearchMemory(path=str(self.config.get("memory_path", "data/research/research_memory.json")))
         self.mutator = MutationEngine(random_state=int(self.config.get("random_state", 42)))
-        self.capital_sim = CapitalSimulator(initial_capital=float(self.config.get("simulation_initial_capital", 1_000_000.0)))
+        self.capital_sim = CapitalSimulator(
+            initial_capital=float(self.config.get("simulation_initial_capital", 1_000_000.0)),
+            max_abs_period_return=float(self.config.get("simulation_max_abs_period_return", 0.25)),
+            max_abs_weight=float(self.config.get("simulation_max_abs_weight", 0.35)),
+        )
         self.allocator_bridge = CapitalAllocatorBridge()
         self.governor_bridge = PortfolioGovernorBridge()
 
@@ -97,6 +143,110 @@ class ResearchController:
             random_state=int(self.config.get("random_state", 42)),
             strict_gp_only=bool(self.config.get("strict_bayesian_only", True)),
         )
+        self.certifier = CertificationEvaluator(project_root=self.project_root, config=self.config)
+
+    def _enforce_certification_defaults(self) -> None:
+        cert_cfg = dict(self.config.get("certification", {}))
+        if not cert_cfg:
+            return
+        portfolio_cfg = self.config.setdefault("portfolio_construction", {})
+        experiment_only = bool(self.config.get("experiment_only_run", False))
+        if experiment_only:
+            return
+        floor = float(cert_cfg.get("transaction_cost_floor_bps", 5.0))
+        cur = float(portfolio_cfg.get("transaction_cost_bps_per_side", 0.0) or 0.0)
+        if cur <= 0.0 and floor > 0.0:
+            portfolio_cfg["transaction_cost_bps_per_side"] = float(floor)
+
+    def _certification_cfg(self) -> Dict[str, Any]:
+        return dict(self.config.get("certification", {}))
+
+    def _certification_enabled(self) -> bool:
+        return bool(self._certification_cfg().get("enabled", True))
+
+    def _certification_mode(self) -> str:
+        mode = str(self._certification_cfg().get("mode", "enforce") or "enforce").strip().lower()
+        return mode if mode in {"enforce", "shadow"} else "enforce"
+
+    def _apply_certification_policy(
+        self,
+        *,
+        outputs: List[Dict[str, Any]],
+        cert_payload: Dict[str, Any],
+        errors: List[str],
+        summary: Dict[str, Any],
+    ) -> None:
+        integrity = cert_payload.get("integrity_summary", {}) if isinstance(cert_payload, dict) else {}
+        hard_fail = bool((integrity or {}).get("hard_fail_triggered", False))
+        cert_pass = bool((integrity or {}).get("certification_passed", False))
+        mode = self._certification_mode()
+        enforce = bool(mode == "enforce")
+
+        for out in outputs:
+            if not isinstance(out, dict):
+                continue
+            otype = str(out.get("type", "")).strip().lower()
+            if otype == "model_promotion":
+                data = out.get("data", {})
+                if isinstance(data, dict):
+                    data["integrity_summary"] = integrity
+                    data["model_risk_tier"] = cert_payload.get("model_risk_tier", {})
+                    out["data"] = data
+            if hard_fail and enforce and otype in {"parameter_search", "candidate_model", "model_promotion"}:
+                out["actionable"] = False
+                out["integrity_blocked"] = True
+                out["integrity_block_reason"] = "critical_certification_failure"
+            elif hard_fail and (not enforce) and otype in {"parameter_search", "candidate_model", "model_promotion"}:
+                out["integrity_shadow_violation"] = True
+
+        if hard_fail and enforce:
+            errors.append("certification_hard_fail")
+        summary["certification_mode"] = mode
+        summary["certification_passed"] = bool(cert_pass)
+
+    def _register_certification_snapshot(self, cert_payload: Dict[str, Any]) -> None:
+        """Persist certification snapshot into PRS store when available."""
+        if not isinstance(cert_payload, dict):
+            return
+        snapshot = cert_payload.get("certification_snapshot", {})
+        if not isinstance(snapshot, dict):
+            return
+        required = {
+            "snapshot_hash",
+            "model_hash",
+            "param_hash",
+            "feature_hash",
+            "data_revision_hash",
+            "config_hash",
+            "created_at",
+            "valid_until",
+            "drift_guard_version",
+        }
+        if not required.issubset(snapshot.keys()):
+            return
+        try:
+            from src.runtime.contracts import CertificationSnapshot
+            from src.runtime.storage import RuntimeEventStore
+
+            db_path = self.project_root / str(
+                self.config.get("runtime_db_path", "data/runtime/portfolio_runtime.db")
+            )
+            store = RuntimeEventStore(str(db_path))
+            cert = CertificationSnapshot(
+                snapshot_hash=str(snapshot.get("snapshot_hash", "")),
+                model_hash=str(snapshot.get("model_hash", "")),
+                param_hash=str(snapshot.get("param_hash", "")),
+                feature_hash=str(snapshot.get("feature_hash", "")),
+                data_revision_hash=str(snapshot.get("data_revision_hash", "")),
+                config_hash=str(snapshot.get("config_hash", "")),
+                created_at=datetime.fromisoformat(str(snapshot.get("created_at"))),
+                valid_until=datetime.fromisoformat(str(snapshot.get("valid_until"))),
+                drift_guard_version=str(snapshot.get("drift_guard_version", "v1") or "v1"),
+            )
+            store.insert_certification_snapshot(cert)
+            store.close()
+        except Exception as exc:
+            logger.warning("Could not persist certification snapshot to PRS store: %s", exc)
 
     def _holdout_training_kwargs(self) -> Dict[str, Any]:
         tcfg = dict(self.config.get("training", {}))
@@ -112,6 +262,80 @@ class ResearchController:
         if tcfg.get("holdout_min_train_periods") is not None:
             out["holdout_min_train_periods"] = int(tcfg.get("holdout_min_train_periods"))
         return out
+
+    def _alpha_lab_enabled(self, *, weekend_run: bool) -> bool:
+        cfg = dict(self.config.get("alpha_lab", {}))
+        if not bool(cfg.get("enabled", False)):
+            return False
+        if bool(cfg.get("weekend_only", True)) and (not weekend_run):
+            return False
+        return True
+
+    @staticmethod
+    def _alpha_lab_grid(base_params: Dict[str, Any], *, max_tunable: int = 2) -> Dict[str, List[Any]]:
+        out: Dict[str, List[Any]] = {}
+        tunable = 0
+        for key, value in sorted(dict(base_params or {}).items()):
+            if tunable >= max_tunable:
+                break
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, int):
+                lo = max(1, int(round(value * 0.9)))
+                hi = max(1, int(round(value * 1.1)))
+                vals = sorted({int(lo), int(value), int(hi)})
+                if len(vals) > 1:
+                    out[str(key)] = vals
+                    tunable += 1
+            elif isinstance(value, float):
+                lo = float(value * 0.9)
+                hi = float(value * 1.1)
+                vals = sorted({round(lo, 8), round(float(value), 8), round(hi, 8)})
+                if len(vals) > 1:
+                    out[str(key)] = vals
+                    tunable += 1
+        return out
+
+    def _run_alpha_lab(
+        self,
+        *,
+        dataset: ResearchDataset,
+        model_specs: List[Tuple[str, Dict[str, Any]]],
+    ) -> Dict[str, Any]:
+        lab_cfg = dict(self.config.get("alpha_lab", {}))
+        max_hyp = int(lab_cfg.get("max_hypotheses", 3))
+        max_hyp = max(1, max_hyp)
+        selected = model_specs[:max_hyp]
+        hypotheses: List[AlphaHypothesis] = []
+
+        for name, params in selected:
+            base_params = dict(params or {})
+
+            def _factory(p: Dict[str, Any], _name=name, _base=base_params):
+                merged = dict(_base)
+                merged.update(dict(p or {}))
+                return self._build_model(_name, merged)
+
+            hypotheses.append(
+                AlphaHypothesis(
+                    name=f"{name}_alpha_lab",
+                    model_factory=_factory,
+                    parameter_grid=self._alpha_lab_grid(base_params, max_tunable=int(lab_cfg.get("max_tunable_params", 2))),
+                    tags={"source_model": name},
+                )
+            )
+
+        lab = AlphaLabController(pipeline=self.pipeline)
+        suite = lab.run_hypothesis_suite(dataset=dataset, hypotheses=hypotheses)
+        promotions = lab.promote_survivors(suite.get("survivors", []))
+        lab.store.close()
+        return {
+            "enabled": True,
+            "evaluated_count": int(suite.get("evaluated_count", 0)),
+            "survivor_count": int(suite.get("survivor_count", 0)),
+            "promotions": promotions,
+            "survivors": suite.get("survivors", []),
+        }
 
     def _host_memory_gb(self) -> float:
         try:
@@ -176,8 +400,18 @@ class ResearchController:
         exploration_cfg["variants_weekend"] = min(int(exploration_cfg.get("variants_weekend", 3)), 1)
         weekend_cfg["extended_scenario_sweep"] = False
 
-        # Keep deep models opt-in on low-resource hosts unless explicitly forced.
-        if not bool(self.config.get("force_deep_models_in_low_resource", False)):
+        # Keep deep models enabled when user explicitly requested them via config.
+        requested_models = {
+            self._normalize_model_name(x)
+            for x in (self.config.get("enabled_models", []) or [])
+            if str(x).strip()
+        }
+        explicit_deep_request = bool(self.config.get("enable_deep_models", False)) or bool(
+            requested_models & self._DEEP_MODELS
+        )
+        if explicit_deep_request:
+            self.config["enable_deep_models"] = True
+        elif not bool(self.config.get("force_deep_models_in_low_resource", False)):
             self.config["enable_deep_models"] = False
 
         # Ensure tree models remain single-threaded even if external configs override defaults.
@@ -220,6 +454,23 @@ class ResearchController:
             dd = float((metrics or {}).get("max_drawdown", 0.0))
             logger.info("Model %s windows %s %d/%d done sharpe=%.4f dd=%.4f", model, bar, index, total, sharpe, dd)
 
+    @classmethod
+    def _normalize_model_name(cls, name: Any) -> str:
+        n = str(name or "").strip().lower().replace("-", "_").replace(" ", "_")
+        return cls._MODEL_ALIASES.get(n, n)
+
+    def _expected_model_names(self) -> List[str]:
+        enabled = self.config.get("enabled_models")
+        if isinstance(enabled, list) and enabled:
+            out: List[str] = []
+            for raw in enabled:
+                normalized = self._normalize_model_name(raw)
+                if normalized in self._CANONICAL_BASE_MODELS and normalized not in out:
+                    out.append(normalized)
+            if out:
+                return out
+        return list(self._CANONICAL_BASE_MODELS)
+
     def _model_specs(self) -> List[Tuple[str, Dict[str, Any]]]:
         base = [
             ("lightgbm", {"n_estimators": 240, "learning_rate": 0.03}),
@@ -246,11 +497,15 @@ class ResearchController:
         ]
 
         if not bool(self.config.get("enable_deep_models", False)):
-            base = [(n, p) for n, p in base if n not in {"lstm", "tcn", "transformer"}]
+            base = [(n, p) for n, p in base if n not in self._DEEP_MODELS]
 
         enabled = self.config.get("enabled_models")
         if isinstance(enabled, list) and enabled:
-            enabled_set = {str(x).strip().lower() for x in enabled}
+            enabled_set = {
+                self._normalize_model_name(x)
+                for x in enabled
+                if str(x).strip()
+            }
             base = [(name, params) for name, params in base if name in enabled_set]
 
         # Optional overrides from config.historical_research.model_params
@@ -474,7 +729,7 @@ class ResearchController:
 
     @staticmethod
     def _build_model(name: str, params: Dict[str, Any]):
-        n = name.lower()
+        n = ResearchController._normalize_model_name(name)
         if n == "lightgbm":
             return LightGBMModel(params=params)
         if n == "xgboost":
@@ -516,6 +771,206 @@ class ResearchController:
 
         ranked = sorted(results.items(), key=lambda x: score(x[1]), reverse=True)
         return ranked[0]
+
+    @staticmethod
+    def _aggregate_utility(aggregate_metrics: Dict[str, Any]) -> float:
+        agg = aggregate_metrics if isinstance(aggregate_metrics, dict) else {}
+        sharpe = float(agg.get("avg_sharpe", 0.0))
+        stability = float(agg.get("stability_score", 0.0))
+        ic = float(agg.get("ic_mean", 0.0))
+        dd = float(agg.get("avg_max_drawdown", 1.0))
+        monotonic = float(agg.get("monotonic_pass_rate", 0.0))
+        return float(sharpe + 0.7 * stability + 0.35 * ic + 0.2 * monotonic - 0.6 * dd)
+
+    def _parameter_sensitivity_candidates(self, model_name: str, base_params: Dict[str, Any]) -> List[Dict[str, Any]]:
+        n = str(model_name or "").strip().lower()
+        base = dict(base_params or {})
+        if not base:
+            return []
+
+        specs: List[Dict[str, Any]] = []
+        if n in {"lightgbm", "xgboost", "catboost"}:
+            if "learning_rate" in base:
+                specs.append({"param": "learning_rate", "mode": "scale", "vals": [0.80, 1.20], "lo": 0.002, "hi": 0.35, "cast": "float"})
+            est_key = "n_estimators" if "n_estimators" in base else ("iterations" if "iterations" in base else "")
+            if est_key:
+                specs.append({"param": est_key, "mode": "scale", "vals": [0.80, 1.20], "lo": 80, "hi": 1200, "cast": "int"})
+            depth_key = "max_depth" if "max_depth" in base else ("depth" if "depth" in base else "")
+            if depth_key:
+                specs.append({"param": depth_key, "mode": "delta", "vals": [-2, 2], "lo": 2, "hi": 16, "cast": "int"})
+        elif n == "random_forest":
+            if "n_estimators" in base:
+                specs.append({"param": "n_estimators", "mode": "scale", "vals": [0.80, 1.20], "lo": 80, "hi": 1500, "cast": "int"})
+            if "max_depth" in base:
+                specs.append({"param": "max_depth", "mode": "delta", "vals": [-3, 3], "lo": 2, "hi": 20, "cast": "int"})
+        else:
+            return []
+
+        out: List[Dict[str, Any]] = []
+        seen = set()
+        for spec in specs:
+            p = str(spec.get("param", ""))
+            if p not in base:
+                continue
+            base_val = base.get(p)
+            try:
+                base_f = float(base_val)
+            except Exception:
+                continue
+            for raw_v in list(spec.get("vals", [])):
+                if str(spec.get("mode")) == "scale":
+                    candidate_v = base_f * float(raw_v)
+                else:
+                    candidate_v = base_f + float(raw_v)
+                lo = float(spec.get("lo", -np.inf))
+                hi = float(spec.get("hi", np.inf))
+                candidate_v = float(np.clip(candidate_v, lo, hi))
+                if str(spec.get("cast")) == "int":
+                    candidate_v = int(round(candidate_v))
+                key = (p, str(candidate_v))
+                if key in seen:
+                    continue
+                seen.add(key)
+                params_new = dict(base)
+                params_new[p] = candidate_v
+                out.append(
+                    {
+                        "changed_parameter": p,
+                        "base_value": base_val,
+                        "candidate_value": candidate_v,
+                        "params": params_new,
+                    }
+                )
+        return out
+
+    def _run_parameter_sensitivity_search(
+        self,
+        *,
+        model_name: str,
+        dataset: Any,
+        base_params: Dict[str, Any],
+        weekend_run: bool,
+        freeze_active: bool,
+    ) -> Dict[str, Any]:
+        if not model_name:
+            return {
+                "status": "skipped",
+                "reason": "no_best_model",
+                "target_model": "none",
+                "sensitivity_results": [],
+                "requires_manual_approval": True,
+                "freeze_active": bool(freeze_active),
+                "non_actionable": True,
+            }
+
+        candidates = self._parameter_sensitivity_candidates(model_name, base_params)
+        if not candidates:
+            return {
+                "status": "skipped",
+                "reason": "model_not_supported_for_sensitivity",
+                "target_model": model_name,
+                "base_params": base_params,
+                "sensitivity_results": [],
+                "requires_manual_approval": True,
+                "freeze_active": bool(freeze_active),
+                "non_actionable": True,
+            }
+
+        max_trials_key = "parameter_sensitivity_max_trials_weekend" if weekend_run else "parameter_sensitivity_max_trials_weekday"
+        max_trials = int(self.config.get(max_trials_key, 8 if weekend_run else 6))
+        max_trials = max(2, min(max_trials, len(candidates)))
+        max_windows = int(self.config.get("parameter_sensitivity_max_windows", 1))
+        max_windows = max(1, min(max_windows, self.pipeline.max_windows))
+
+        eval_pipeline = TrainingPipeline(
+            train_periods=self.pipeline.train_periods,
+            valid_periods=self.pipeline.valid_periods,
+            test_periods=self.pipeline.test_periods,
+            step_periods=self.pipeline.step_periods,
+            max_windows=max_windows,
+            start_window=self.pipeline.start_window,
+            portfolio_cfg=dict(self.config.get("portfolio_construction", {})),
+            **self._holdout_training_kwargs(),
+        )
+
+        try:
+            base_model = self._build_model(model_name, base_params)
+            base_result = eval_pipeline.run(model=base_model, dataset=dataset)
+            base_agg = base_result.get("aggregate_metrics", {})
+            base_score = self._aggregate_utility(base_agg)
+        except Exception as exc:
+            return {
+                "status": "failed",
+                "reason": f"base_model_eval_failed:{exc}",
+                "target_model": model_name,
+                "base_params": base_params,
+                "sensitivity_results": [],
+                "requires_manual_approval": True,
+                "freeze_active": bool(freeze_active),
+                "non_actionable": True,
+            }
+
+        rows: List[Dict[str, Any]] = []
+        for idx, candidate in enumerate(candidates[:max_trials], start=1):
+            params_new = dict(candidate.get("params", {}))
+            changed_param = str(candidate.get("changed_parameter", ""))
+            row: Dict[str, Any] = {
+                "trial": int(idx),
+                "changed_parameter": changed_param,
+                "base_value": candidate.get("base_value"),
+                "candidate_value": candidate.get("candidate_value"),
+            }
+            try:
+                model = self._build_model(model_name, params_new)
+                result = eval_pipeline.run(model=model, dataset=dataset)
+                agg = result.get("aggregate_metrics", {})
+                score = self._aggregate_utility(agg)
+                row.update(
+                    {
+                        "status": "ok",
+                        "utility_score": float(score),
+                        "delta_score": float(score - base_score),
+                        "aggregate_metrics": agg,
+                        "params": params_new,
+                    }
+                )
+            except Exception as exc:
+                row.update({"status": "failed", "error": str(exc), "params": params_new})
+            rows.append(row)
+
+        valid = [r for r in rows if str(r.get("status")) == "ok"]
+        valid_sorted = sorted(valid, key=lambda x: float(x.get("utility_score", -999.0)), reverse=True)
+        best_row = valid_sorted[0] if valid_sorted else {}
+        recommendations = []
+        for r in valid_sorted[:3]:
+            delta = float(r.get("delta_score", 0.0))
+            if delta <= 0:
+                continue
+            recommendations.append(
+                {
+                    "parameter": str(r.get("changed_parameter", "")),
+                    "from": r.get("base_value"),
+                    "to": r.get("candidate_value"),
+                    "expected_delta_score": delta,
+                }
+            )
+
+        return {
+            "status": "completed" if valid_sorted else "failed",
+            "mode": "sensitivity_scan",
+            "target_model": model_name,
+            "base_params": base_params,
+            "base_utility_score": float(base_score),
+            "max_windows_used": int(max_windows),
+            "candidate_count": int(len(rows)),
+            "sensitivity_results": rows,
+            "top_candidates": valid_sorted[:5],
+            "best_candidate": best_row,
+            "recommendations": recommendations,
+            "requires_manual_approval": True,
+            "freeze_active": bool(freeze_active),
+            "non_actionable": bool(freeze_active),
+        }
 
     def _maybe_hyperopt(self, model_name: str, dataset, freeze_active: bool) -> Dict[str, Any] | None:
         if not bool(self.config.get("enable_hyperopt", False)):
@@ -807,6 +1262,17 @@ class ResearchController:
         if not bool(cfg.get("enabled", False)):
             return dataset, None
 
+        scope_mode_req = str(cfg.get("scope_mode", "train_only")).strip().lower()
+        if scope_mode_req not in {"train_only", "full_frame"}:
+            scope_mode_req = "train_only"
+        ic_frame = dataset.frame
+        scope_mode_applied = "full_frame"
+        if scope_mode_req == "train_only":
+            scoped = self._ic_diagnostics_train_scope_frame(dataset.frame)
+            if isinstance(scoped, pd.DataFrame) and not scoped.empty:
+                ic_frame = scoped
+                scope_mode_applied = "train_only"
+
         target_col = str(dataset.metadata.get("target_col", "forward_return_5d"))
         raw_h = cfg.get("horizons", [5, 10, 20])
         if isinstance(raw_h, (list, tuple)):
@@ -814,7 +1280,7 @@ class ResearchController:
         else:
             horizons = [5, 10, 20]
         report = compute_feature_ic_diagnostics(
-            dataset.frame,
+            ic_frame,
             feature_cols=list(dataset.feature_names),
             target_col=target_col,
             date_col=str(cfg.get("date_col", "date")),
@@ -868,6 +1334,8 @@ class ResearchController:
         dataset.metadata["n_features_before_ic_prune"] = before
         dataset.metadata["n_features_after_ic_prune"] = after
         dataset.metadata["ic_pruning_applied"] = bool(pruned)
+        dataset.metadata["ic_diagnostics_scope"] = str(scope_mode_applied)
+        dataset.metadata["ic_diagnostics_rows_used"] = int(len(ic_frame))
         dataset.metadata["ic_decay_summary_selected_features"] = dict(
             report.get("decay_summary_selected_features", {}) or {}
         )
@@ -880,6 +1348,9 @@ class ResearchController:
             "n_features_input": int(report.get("n_features_input", before)),
             "n_features_selected": int(report.get("n_features_selected", len(selected))),
             "n_features_after_prune": int(after),
+            "scope_mode_requested": str(scope_mode_req),
+            "scope_mode_applied": str(scope_mode_applied),
+            "scope_rows_used": int(len(ic_frame)),
             "top_features": list(report.get("top_features", [])),
             "decay_summary_selected_features": dict(
                 report.get("decay_summary_selected_features", {}) or {}
@@ -888,6 +1359,66 @@ class ResearchController:
                 report.get("regime_decay_summary_selected_features", {}) or {}
             ),
         }
+
+    def _ic_diagnostics_train_scope_frame(self, frame: pd.DataFrame) -> pd.DataFrame:
+        """Use only pre-test data for IC diagnostics to avoid lookahead feature pruning."""
+        if frame is None or frame.empty or "date" not in frame.columns:
+            return frame
+
+        work = frame.copy()
+        work["date"] = pd.to_datetime(work["date"], errors="coerce")
+        work = work.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+        if work.empty:
+            return frame
+
+        tcfg = dict(self.config.get("training", {}))
+        dataset_cfg = dict(self.config.get("dataset", {}))
+        cfg_embargo = int(tcfg.get("label_embargo_periods", 0) or 0)
+        horizon_days = int(dataset_cfg.get("target_horizon_days", 1) or 1)
+        embargo_periods = max(0, cfg_embargo if cfg_embargo > 0 else horizon_days)
+
+        scoped_mask = None
+        fixed = self.pipeline._fixed_holdout_split(work, date_col="date")
+        if fixed is not None:
+            scoped_mask = np.asarray(fixed["train_mask"], dtype=bool) | np.asarray(fixed["valid_mask"], dtype=bool)
+            scoped_mask, _ = self.pipeline._apply_label_embargo(
+                frame=work,
+                train_mask=scoped_mask,
+                test_mask=np.asarray(fixed["test_mask"], dtype=bool),
+                date_col="date",
+                embargo_periods=embargo_periods,
+            )
+        else:
+            splitter = rolling_time_splits(
+                work,
+                date_col="date",
+                ticker_col="ticker",
+                train_periods=self.pipeline.train_periods,
+                valid_periods=self.pipeline.valid_periods,
+                test_periods=self.pipeline.test_periods,
+                step_periods=self.pipeline.step_periods,
+                min_tickers_per_date=self.pipeline.min_tickers_per_date,
+            )
+            first_split = None
+            for i, split in enumerate(splitter):
+                if i >= max(0, int(self.pipeline.start_window)):
+                    first_split = split
+                    break
+            if first_split is not None:
+                scoped_mask = np.asarray(first_split["train_mask"], dtype=bool) | np.asarray(first_split["valid_mask"], dtype=bool)
+                scoped_mask, _ = self.pipeline._apply_label_embargo(
+                    frame=work,
+                    train_mask=scoped_mask,
+                    test_mask=np.asarray(first_split["test_mask"], dtype=bool),
+                    date_col="date",
+                    embargo_periods=embargo_periods,
+                )
+
+        if scoped_mask is None:
+            return work
+
+        scoped = work.loc[np.asarray(scoped_mask, dtype=bool)].copy()
+        return scoped if not scoped.empty else work
 
     def _run_alpha_factory_stage(
         self,
@@ -967,10 +1498,12 @@ class ResearchController:
             split_iter = rolling_time_splits(
                 work,
                 date_col=date_col,
+                ticker_col=ticker_col,
                 train_periods=int(cfg.get("oos_train_periods", self.pipeline.train_periods)),
                 valid_periods=int(cfg.get("oos_valid_periods", self.pipeline.valid_periods)),
                 test_periods=int(cfg.get("oos_test_periods", self.pipeline.test_periods)),
                 step_periods=int(cfg.get("oos_step_periods", self.pipeline.step_periods)),
+                min_tickers_per_date=int(cfg.get("min_tickers_per_date", self.pipeline.min_tickers_per_date)),
             )
 
             oos_returns_parts: List[pd.DataFrame] = []
@@ -1282,7 +1815,7 @@ class ResearchController:
         started = datetime.now()
         now_ist = self._now_ist()
         weekend_run = self._is_weekend(now_ist)
-        stage_total = 12 if weekend_run else 11
+        stage_total = 13 if weekend_run else 12
         stage_idx = 0
         outputs: List[Dict[str, Any]] = []
         errors: List[str] = []
@@ -1401,15 +1934,44 @@ class ResearchController:
             )
 
             stage_idx += 1
-            model_specs = self._apply_model_budget(self._model_specs(), weekend_run=weekend_run)
+            all_model_specs = self._model_specs()
+            model_specs = self._apply_model_budget(all_model_specs, weekend_run=weekend_run)
             self._log_stage(
                 stage_idx,
                 stage_total,
                 "Model Training + Walk-Forward",
                 details=f"models={len(model_specs)}",
             )
-            spec_map = {name: params for name, params in model_specs}
+            spec_map = {name: params for name, params in all_model_specs}
             model_results: Dict[str, Dict[str, Any]] = {}
+            expected_models = self._expected_model_names()
+            available_names = {name for name, _ in all_model_specs}
+            selected_names = {name for name, _ in model_specs}
+            skipped_models: List[Dict[str, Any]] = []
+            for model_name in expected_models:
+                if model_name in selected_names:
+                    continue
+                skip_reason = "budget_filtered"
+                if model_name not in available_names:
+                    skip_reason = (
+                        "deep_models_disabled_low_resource"
+                        if model_name in self._DEEP_MODELS and self.low_resource_mode
+                        else "model_not_enabled"
+                    )
+                outputs.append(
+                    {
+                        "type": "model_validation",
+                        "actionable": False,
+                        "generated_at": datetime.now().isoformat(),
+                        "data": {
+                            "model": model_name,
+                            "status": "skipped",
+                            "reason": skip_reason,
+                            "low_resource_mode": bool(self.low_resource_mode),
+                        },
+                    }
+                )
+                skipped_models.append({"model": model_name, "reason": skip_reason})
             total_models = max(1, len(model_specs))
             model_cooldown_seconds = max(
                 0.0,
@@ -1454,6 +2016,37 @@ class ResearchController:
                     msg = f"model_run_failed:{model_name}:{exc}"
                     errors.append(msg)
                     logger.warning(msg)
+                    outputs.append(
+                        {
+                            "type": "model_validation",
+                            "actionable": False,
+                            "generated_at": datetime.now().isoformat(),
+                            "data": {
+                                "model": model_name,
+                                "status": "failed",
+                                "reason": str(exc),
+                            },
+                        }
+                    )
+
+            if self._alpha_lab_enabled(weekend_run=weekend_run):
+                try:
+                    alpha_lab_payload = self._run_alpha_lab(
+                        dataset=dataset,
+                        model_specs=model_specs,
+                    )
+                    outputs.append(
+                        {
+                            "type": "alpha_lab",
+                            "actionable": False,
+                            "generated_at": datetime.now().isoformat(),
+                            "data": alpha_lab_payload,
+                        }
+                    )
+                except Exception as exc:
+                    msg = f"alpha_lab_failed:{exc}"
+                    errors.append(msg)
+                    logger.warning(msg)
 
             if not model_results:
                 raise RuntimeError("all_model_runs_failed")
@@ -1483,6 +2076,7 @@ class ResearchController:
                     dataset=dataset,
                     progress_callback=self._window_progress_callback,
                 )
+                model_results["weighted_ensemble_top3"] = ens_result
                 outputs.append(
                     {
                         "type": "model_validation",
@@ -1502,6 +2096,7 @@ class ResearchController:
                     dataset=dataset,
                     progress_callback=self._window_progress_callback,
                 )
+                model_results["stacking_meta_top3"] = stack_result
                 outputs.append(
                     {
                         "type": "model_validation",
@@ -1516,6 +2111,7 @@ class ResearchController:
                     }
                 )
             else:
+                ensemble_skip_reason = "insufficient_models" if len(top) < max(2, min_ensemble_models) else "ensemble_disabled"
                 outputs.append(
                     {
                         "type": "model_validation",
@@ -1530,6 +2126,21 @@ class ResearchController:
                         },
                     }
                 )
+                for ensemble_model in ("weighted_ensemble_top3", "stacking_meta_top3"):
+                    outputs.append(
+                        {
+                            "type": "model_validation",
+                            "actionable": False,
+                            "generated_at": datetime.now().isoformat(),
+                            "data": {
+                                "model": ensemble_model,
+                                "status": "skipped",
+                                "reason": ensemble_skip_reason,
+                                "enable_ensemble": bool(enable_ensemble),
+                                "models_available": int(len(top)),
+                            },
+                        }
+                    )
 
             # Structural Monte Carlo.
             stage_idx += 1
@@ -1584,28 +2195,54 @@ class ResearchController:
             if best_name:
                 model = self._build_model(
                     best_name,
-                    next((p for n, p in self._model_specs() if n == best_name), {}),
+                    spec_map.get(best_name, {}),
                 )
                 model.fit(dataset.X, dataset.y)
-                pred = np.asarray(model.predict(dataset.X), dtype=float)
-                strategy_returns_row = np.tanh(pred) * np.asarray(dataset.y, dtype=float)
+                pred = np.asarray(model.predict(dataset.X), dtype=float).reshape(-1)
+                target_horizon_days = int(dataset.metadata.get("target_horizon_days", 1) or 1)
+                target_realized_col = str(dataset.metadata.get("target_realized_col", "") or "").strip()
+                realized_period = (
+                    np.asarray(dataset.frame[target_realized_col], dtype=float).reshape(-1)
+                    if target_realized_col and target_realized_col in dataset.frame.columns
+                    else np.asarray(dataset.y, dtype=float).reshape(-1)
+                )
+                n_obs = int(min(len(pred), len(realized_period), len(dataset.frame)))
+                pred = pred[:n_obs]
+                realized_period = realized_period[:n_obs]
+                realized_daily = _period_to_daily_returns(realized_period, period_days=target_horizon_days)
+                strategy_returns_row = np.tanh(pred) * realized_daily
                 port_cfg = dict(self.config.get("portfolio_construction", {}))
                 strategy_returns_daily = build_cross_sectional_portfolio_returns(
-                    y_true=np.asarray(dataset.y, dtype=float),
+                    y_true=realized_period,
                     y_pred=pred,
-                    dates=dataset.frame["date"].to_numpy() if "date" in dataset.frame.columns else np.arange(len(pred)),
-                    tickers=dataset.frame["ticker"].to_numpy(dtype=str) if "ticker" in dataset.frame.columns else None,
-                    vol=dataset.frame["vol_20d"].to_numpy(dtype=float) if "vol_20d" in dataset.frame.columns else None,
+                    dates=(
+                        dataset.frame["date"].to_numpy()[:n_obs]
+                        if "date" in dataset.frame.columns
+                        else np.arange(len(pred))
+                    ),
+                    tickers=(
+                        dataset.frame["ticker"].to_numpy(dtype=str)[:n_obs]
+                        if "ticker" in dataset.frame.columns
+                        else None
+                    ),
+                    vol=(
+                        dataset.frame["vol_20d"].to_numpy(dtype=float)[:n_obs]
+                        if "vol_20d" in dataset.frame.columns
+                        else None
+                    ),
                     long_short_quantile=float(port_cfg.get("long_short_quantile", 0.20)),
                     min_assets_per_day=int(port_cfg.get("min_assets_per_day", 8)),
                     max_weight_per_asset=float(port_cfg.get("max_weight_per_asset", 0.10)),
                     use_vol_scaling=bool(port_cfg.get("use_vol_scaling", True)),
                     rebalance_frequency_days=int(port_cfg.get("rebalance_frequency_days", 1)),
+                    target_horizon_days=target_horizon_days,
                 )
                 sim_input = strategy_returns_daily if len(strategy_returns_daily) else strategy_returns_row
                 cap_metrics = self.capital_sim.simulate(sim_input)
                 cap_metrics["portfolio_days"] = int(len(strategy_returns_daily))
                 cap_metrics["row_level_obs"] = int(len(strategy_returns_row))
+                cap_metrics["target_horizon_days"] = int(target_horizon_days)
+                cap_metrics["return_source"] = "realized_target_base" if target_realized_col else "model_target"
                 # Export research-origin options opportunities for live overlay consumption.
                 options_opp = self._export_options_research_opportunities(
                     dataset=dataset,
@@ -1735,6 +2372,13 @@ class ResearchController:
                         **awareness,
                         "autonomous_budget": self._budget_cfg(),
                         "models_tested_this_cycle": [m for m, _ in model_specs],
+                        "model_selection_summary": {
+                            "expected_models": list(expected_models),
+                            "selected_models": [m for m, _ in model_specs],
+                            "skipped_models": skipped_models,
+                            "available_models_after_policy": sorted(list(available_names)),
+                            "low_resource_mode": bool(self.low_resource_mode),
+                        },
                         "mode_boundary": {
                             "current_mode": str(system_state.get("current_mode", "unknown")),
                             "weekend_run": bool(weekend_run),
@@ -1786,22 +2430,94 @@ class ResearchController:
                     }
                 )
 
-            # Optional Bayesian hyperopt for best model.
+            # Hyperopt when enabled, otherwise run governed sensitivity scan.
             hyper = self._maybe_hyperopt(best_name, dataset=dataset, freeze_active=freeze_active)
             if hyper is not None:
+                param_payload = {
+                    "target_model": best_name,
+                    "mode": "bayesian_hyperopt",
+                    "optimization": hyper,
+                    "requires_manual_approval": True,
+                    "freeze_active": bool(freeze_active),
+                    "non_actionable": bool(hyper.get("non_actionable", False)),
+                }
+            else:
+                param_payload = self._run_parameter_sensitivity_search(
+                    model_name=best_name,
+                    dataset=dataset,
+                    base_params=spec_map.get(best_name, {}),
+                    weekend_run=weekend_run,
+                    freeze_active=freeze_active,
+                )
+
+            if isinstance(param_payload, dict):
                 outputs.append(
                     {
                         "type": "parameter_search",
-                        "actionable": not bool(hyper.get("non_actionable", False)),
+                        "actionable": not bool(param_payload.get("non_actionable", False)),
                         "generated_at": datetime.now().isoformat(),
-                        "data": {
-                            "target_model": best_name,
-                            "optimization": hyper,
-                            "requires_manual_approval": True,
-                            "freeze_active": bool(freeze_active),
-                        },
+                        "data": param_payload,
                     }
                 )
+
+            stage_idx += 1
+            self._log_stage(stage_idx, stage_total, "Certification Integrity Gates")
+            if self._certification_enabled():
+                try:
+                    cert_payload = self.certifier.evaluate(
+                        CertificationContext(
+                            outputs=list(outputs),
+                            model_results=model_results,
+                            best_model=str(best_name or ""),
+                            best_payload=dict(best_payload or {}),
+                            param_payload=dict(param_payload or {}),
+                            cap_metrics=dict(cap_metrics or {}),
+                            dataset_metadata=dict(dataset.metadata),
+                            dataset_frame=dataset.frame.copy(),
+                            portfolio_cfg=dict(self.config.get("portfolio_construction", {})),
+                            freeze_active=bool(freeze_active),
+                            weekend_run=bool(weekend_run),
+                            started_at=started,
+                            completed_at=datetime.now(),
+                            system_state=dict(system_state or {}),
+                        )
+                    )
+                except Exception as exc:
+                    msg = f"certification_failed:{exc}"
+                    logger.exception(msg)
+                    errors.append(msg)
+                    cert_payload = {
+                        "integrity_summary": {
+                            "mode": self._certification_mode(),
+                            "enforcement_active": bool(self._certification_mode() == "enforce"),
+                            "certification_enabled": True,
+                            "hard_fail_triggered": True,
+                            "critical_failures": [msg],
+                            "critical_rule_failures": [msg],
+                            "critical_failure_details": [],
+                            "advisory_warnings": [],
+                            "certification_passed": False,
+                        }
+                    }
+
+                self._register_certification_snapshot(cert_payload)
+                self._apply_certification_policy(
+                    outputs=outputs,
+                    cert_payload=cert_payload,
+                    errors=errors,
+                    summary=summary,
+                )
+                outputs.append(
+                    {
+                        "type": "integrity_summary",
+                        "actionable": False,
+                        "generated_at": datetime.now().isoformat(),
+                        "data": cert_payload,
+                    }
+                )
+            else:
+                summary["certification_mode"] = "disabled"
+                summary["certification_passed"] = True
 
             # RL policy update (model-selection policy, not direct trading decisions).
             stage_idx += 1

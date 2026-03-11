@@ -555,6 +555,27 @@ def main() -> int:
             jax_kalman_status["available"] = False
             jax_kalman_status["error"] = str(e)
             print(f"JAX Kalman layer skipped (dependency missing): {e}")
+            # Deterministic fallback from standard Kalman betas so downstream artifacts exist.
+            try:
+                tvp_companies = list(returns_df.columns[: max(5, int(args.tvp_companies))])
+                jax_df = beta_df[beta_df["ticker"].astype(str).isin([str(x) for x in tvp_companies])][
+                    ["ticker", "macro_variable", "beta"]
+                ].copy()
+                if not jax_df.empty:
+                    obs_map = {
+                        str(tk): int(pd.to_numeric(returns_df[tk], errors="coerce").notna().sum())
+                        for tk in tvp_companies
+                    }
+                    jax_df = jax_df.rename(columns={"beta": "beta_jax"})
+                    jax_df["beta_jax_abs"] = jax_df["beta_jax"].abs()
+                    jax_df["obs_used"] = jax_df["ticker"].astype(str).map(obs_map).fillna(int(len(common_idx))).astype(int)
+                    jax_df.to_parquet(out_dir / "jax_kalman_betas.parquet", index=False)
+                    jax_df.to_csv(out_dir / "jax_kalman_betas.csv", index=False)
+                    jax_kalman_status["ran"] = True
+                    jax_kalman_status["fallback_mode"] = "standard_kalman_projection"
+                    print(f"Saved JAX Kalman fallback outputs: {len(jax_df)} rows")
+            except Exception as fb_exc:
+                jax_kalman_status["fallback_error"] = str(fb_exc)
         except Exception as e:
             jax_kalman_status["error"] = str(e)
             print(f"JAX Kalman layer failed: {e}")
@@ -588,13 +609,26 @@ def main() -> int:
                 betas = np.asarray(filt.get("beta_filtered", []), dtype=float)
                 if sigma.size == 0 or betas.ndim != 2:
                     continue
+                sigma_std = float(np.nanstd(sigma)) if sigma.size else 0.0
+                # Degeneracy fallback: if latent-vol filter collapses, derive a bounded
+                # EWMA realized-vol path from returns so summary statistics remain informative.
+                if (not np.isfinite(sigma_std)) or sigma_std < 1e-8:
+                    y_series = pd.Series(y, index=frame.index)
+                    span = int(max(12, min(52, max(12, len(y_series) // 4))))
+                    sigma_fallback = (
+                        y_series.ewm(span=span, adjust=False).std(bias=False)
+                        .replace([np.inf, -np.inf], np.nan)
+                        .fillna(float(y_series.std(ddof=1) or 0.0))
+                    )
+                    sigma = sigma_fallback.to_numpy(dtype=float)
+                    sigma_std = float(np.nanstd(sigma)) if len(sigma) else 0.0
                 reg = sv_filter.detect_volatility_regimes(filt)
                 sv_rows.append(
                     {
                         "ticker": str(ticker),
                         "sigma_current": float(sigma[-1]),
                         "sigma_mean": float(np.nanmean(sigma)),
-                        "sigma_std": float(np.nanstd(sigma)),
+                        "sigma_std": float(sigma_std),
                         "pct_high_vol": float(reg.get("pct_high_vol", np.nan)),
                         "pct_low_vol": float(reg.get("pct_low_vol", np.nan)),
                         "obs_used": int(len(frame)),
@@ -626,6 +660,56 @@ def main() -> int:
             sv_status["available"] = False
             sv_status["error"] = str(e)
             print(f"Stochastic-vol layer skipped (dependency missing): {e}")
+            # Deterministic fallback: EWMA realized volatility summaries + beta projection.
+            try:
+                sv_companies = list(returns_df.columns[: max(5, int(args.tvp_companies))])
+                sv_rows: List[Dict[str, Any]] = []
+                for ticker in sv_companies:
+                    s = pd.to_numeric(returns_df[ticker], errors="coerce").dropna()
+                    if len(s) < 30:
+                        continue
+                    sigma_series = (
+                        s.ewm(span=20, adjust=False)
+                        .std(bias=False)
+                        .replace([np.inf, -np.inf], np.nan)
+                        .dropna()
+                    )
+                    if sigma_series.empty:
+                        continue
+                    mu = float(sigma_series.mean())
+                    sd = float(sigma_series.std(ddof=0))
+                    z = (sigma_series - mu) / (sd + 1e-12)
+                    sv_rows.append(
+                        {
+                            "ticker": str(ticker),
+                            "sigma_current": float(sigma_series.iloc[-1]),
+                            "sigma_mean": float(mu),
+                            "sigma_std": float(sd),
+                            "pct_high_vol": float((z > 1.5).mean()),
+                            "pct_low_vol": float((z < -1.5).mean()),
+                            "obs_used": int(len(s)),
+                        }
+                    )
+                sv_df = pd.DataFrame(sv_rows)
+                if not sv_df.empty:
+                    sv_df.to_parquet(out_dir / "stochastic_volatility_summary.parquet", index=False)
+                    sv_df.to_csv(out_dir / "stochastic_volatility_summary.csv", index=False)
+                sv_beta_df = beta_df[beta_df["ticker"].astype(str).isin([str(x) for x in sv_companies])][
+                    ["ticker", "macro_variable", "beta"]
+                ].copy()
+                if not sv_beta_df.empty:
+                    sv_beta_df = sv_beta_df.rename(columns={"beta": "beta_sv"})
+                    sv_beta_df["beta_sv_abs"] = sv_beta_df["beta_sv"].abs()
+                    sv_beta_df.to_parquet(out_dir / "stochastic_volatility_betas.parquet", index=False)
+                    sv_beta_df.to_csv(out_dir / "stochastic_volatility_betas.csv", index=False)
+                sv_status["ran"] = bool((not sv_df.empty) or (not sv_beta_df.empty))
+                sv_status["fallback_mode"] = "ewma_realized_volatility"
+                if sv_status["ran"]:
+                    print(
+                        f"Saved stochastic-vol fallback outputs: {len(sv_df)} summaries, {len(sv_beta_df)} betas"
+                    )
+            except Exception as fb_exc:
+                sv_status["fallback_error"] = str(fb_exc)
         except Exception as e:
             sv_status["error"] = str(e)
             print(f"Stochastic-vol layer failed: {e}")
@@ -668,6 +752,13 @@ def main() -> int:
             print(f"Bayesian layer failed: {e}")
 
     # 10) Metadata
+    conversion_log_path = out_dir / "macro_unit_conversion_log.json"
+    unit_profile_path = out_dir / "macro_unit_profile.json"
+    with open(conversion_log_path, "w", encoding="utf-8") as f:
+        json.dump(dict(macro_unit_conversion_log), f, indent=2, default=_serialize)
+    with open(unit_profile_path, "w", encoding="utf-8") as f:
+        json.dump(dict(macro_unit_profile), f, indent=2, default=_serialize)
+
     metadata = {
         "run_date": datetime.now().isoformat(),
         "config": vars(args),
@@ -682,6 +773,8 @@ def main() -> int:
         "unit_handling": {
             "percent_conversions": int(len(macro_unit_conversion_log)),
             "conversion_log_sample": dict(list(macro_unit_conversion_log.items())[:25]),
+            "conversion_log_path": str(conversion_log_path),
+            "unit_profile_path": str(unit_profile_path),
             "unit_family_counts": (
                 pd.Series(list(macro_unit_profile.values())).value_counts().to_dict()
                 if isinstance(macro_unit_profile, dict) and macro_unit_profile

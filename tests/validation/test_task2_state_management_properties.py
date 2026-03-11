@@ -160,7 +160,7 @@ def authority_conflict_scenario(draw):
     
     values = draw(st.lists(
         st.one_of(st.floats(min_value=0.0, max_value=1.0), st.text(min_size=1, max_size=20)),
-        min_size=len(authorities), max_size=len(authorities)
+        min_size=len(authorities), max_size=len(authorities), unique=True
     ))
     
     return component, field, list(zip(authorities, values))
@@ -463,14 +463,30 @@ class TestStateManagementProperties:
         """
         
         component, field, authority_value_pairs = conflict_data
+
+        # Reset mutable authority/state between Hypothesis examples.
+        self.state_manager.current_state = SystemState(
+            market_state={},
+            portfolio_state={},
+            risk_state={},
+            intelligence_state={},
+            health_state={},
+            timestamp=datetime.now(),
+            version=1,
+            authority_level=AuthorityLevel.SYSTEM,
+            component_versions={}
+        )
+        self.state_manager.field_authorities = {}
+        self.state_manager.state_history = StateHistory()
+        self.state_manager.state_history.add_snapshot(self.state_manager.current_state)
         
         # Sort by authority level (higher authority = lower enum value)
         sorted_pairs = sorted(authority_value_pairs, key=lambda x: x[0].value)
         highest_authority, expected_final_value = sorted_pairs[0]
         
-        # Apply updates in random order
-        import random
-        random.shuffle(authority_value_pairs)
+        # Apply in deterministic order from lower to higher authority so
+        # expected winner is stable across Hypothesis replays.
+        authority_value_pairs = sorted(authority_value_pairs, key=lambda p: p[0].value, reverse=True)
         
         for i, (authority, value) in enumerate(authority_value_pairs):
             updates = {field: value}

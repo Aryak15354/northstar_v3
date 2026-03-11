@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/greeks_adapter.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.05, 'already_present', 'call', 'compute_error', 'computed', 'delta', 'equity', 'expiry', 'gamma', 'greek_delta_per_unit', 'greek_gamma_per_unit', 'greek_rho_per_unit', 'greek_theta_per_unit', 'greek_vega_per_unit', 'greeks_by_symbol', 'implied_vol', 'instrument_type', 'missing', 'not_option', 'option', 'option_greeks', 'option_type', 'options', 'position_key', 'rho', 'risk_free_rate', 'spot_price', 'strike', 'symbol', 'symbol_greeks', 'theta', 'underlying', 'vega']

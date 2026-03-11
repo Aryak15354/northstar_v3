@@ -23,19 +23,18 @@ import json
 # V3 Core Components
 from src.core.events import EventBus
 from src.core.state import UnifiedState
-from src.core.orchestrator import Orchestrator
-from src.core.memory import Memory
-from src.core.clock import Clock
+from src.core.orchestrator import OrganOrchestrator as Orchestrator
+from src.core.memory import MemoryManager as Memory
+from src.core.clock import MarketClock as Clock
 
 # V3 Intelligence Components
-from src.intelligence.intelligence_stack import IntelligenceStack
+from src.intelligence.intelligence_stack import MinimalIntelligenceStack as IntelligenceStack
 from src.intelligence.memory_engine import MemoryEngine
-from src.intelligence.bayesian_engine import BayesianEngine
+from src.intelligence.bayesian_engine import BayesianSignalFusion as BayesianEngine
 from src.intelligence.confidence_engine import ConfidenceEngine
 
 # V3 Portfolio Components
 from src.portfolio.portfolio_governor import PortfolioGovernor
-from src.portfolio.strategies import Strategies
 
 # V3 Backtesting Components
 from src.backtesting.backtest_engine import BacktestEngine
@@ -129,6 +128,7 @@ class V3ArchitectureIntegration:
         
         # Phase 4 component references
         self.phase4_components: Dict[str, Any] = {}
+        self._validation_cycle_completed = False
         
         # Integration metrics
         self.integration_metrics = {
@@ -155,6 +155,12 @@ class V3ArchitectureIntegration:
             integration_type: Type of integration ('enhancement', 'extension', 'replacement')
         """
         try:
+            # Start a fresh registration batch after each completed validation cycle.
+            if self._validation_cycle_completed:
+                self.phase4_components.clear()
+                self.component_statuses.clear()
+                self._validation_cycle_completed = False
+
             self.phase4_components[name] = {
                 'component': component,
                 'integration_type': integration_type,
@@ -371,6 +377,7 @@ class V3ArchitectureIntegration:
             
             # Store validation
             self.validation_history.append(validation)
+            self._validation_cycle_completed = True
             
             # Emit validation event
             self.event_bus.emit('v3_architecture_validation_completed', {

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/multi_dimensional_decomposer.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-08, 0.01, 0.05, 1.0, 1.96, '-', '1.0', '=', 'DIMENSION IMPORTANCE', 'DIMENSIONS ANALYZED', 'False', 'INTERACTION EFFECTS', 'MAIN EFFECTS', 'True', 'adjusted_r_squared', 'benchmark', 'binary', 'bool', 'categorical', 'continuous', 'dimensions', 'ffill', 'ignore', 'interaction', 'main1', 'main2', 'r_squared', 'returns', 'w']

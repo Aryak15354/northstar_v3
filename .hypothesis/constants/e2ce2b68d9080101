@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/promoter_pledge.py
+# hypothesis_version: 6.150.2
+
+[0.0, 30.0, 100.0, '.', '.NS', 'availability_date', 'coerce', 'date', 'mergesort', 'nse_ticker', 'pledge_change_1q', 'pledge_change_4q', 'pledge_high_flag', 'pledge_pct', 'quarter_end', 'shares_pledged', 'ticker']

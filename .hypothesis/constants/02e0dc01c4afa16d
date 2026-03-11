@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/crisis_engine.py
+# hypothesis_version: 6.150.2
+
+[-0.02, -0.01, 0.0, 0.001, 0.01, 0.015, 0.04, 0.05, 0.08, 0.1, 0.15, 0.2, 0.27, 0.48, 0.5, 1.0, 2.0, 3.0, 100, 120, 252, '\nSignal Components:', '1.0.0', '2020-01-01', '2020-12-31', '=', 'D', 'DORMANT', 'HOSTILE', 'PANIC', 'Volatility Convexity', '__main__', 'convexity_profile', 'crisis_allocation', 'cumulative_bleed', 'current_position', 'current_regime', 'current_volatility', 'date', 'engine_active', 'engine_name', 'engine_type', 'fear_acceleration', 'implied_vol_spike', 'last_activation', 'market_return', 'no_trend_overlap', 'position_limits', 'realized_vol_gap', 'regime_separation', 'regime_state', 'signal_components', 'signal_strength', 'tail_risk_mispricing', 'total_activations', 'volatility_convexity', '✅', '❌']

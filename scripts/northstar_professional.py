@@ -36,8 +36,12 @@ import argparse
 import subprocess
 import warnings
 warnings.filterwarnings('ignore')
-# Dependency injection - import compare_strategies from src.portfolio.strategies
-# print(f"⚠️ Intelligence stack not available: {e}")
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+try:
+    from src.portfolio.strategies import compare_strategies
+    INTELLIGENCE_AVAILABLE = True
+except Exception:
     INTELLIGENCE_AVAILABLE = False
 
 # =========================== HEDGE FUND INTELLIGENCE LOADER ===========================
@@ -225,7 +229,7 @@ def load_trading_desk_state():
     desk_state_manager.update_state("component", {'command_bar': command_metrics}, AuthorityLevel.SYSTEM, "State field update")
 
     # Macro plane summary
-    desk_state_manager.update_state("component", {'macro_plane': {}, AuthorityLevel.SYSTEM, "State field update")
+    macro_plane = {
         'regime_engine': {
             'regime': command_metrics.get('regime', 'Unknown'),
             'macro_score': command_metrics.get('macro_score', 0.0),
@@ -234,6 +238,7 @@ def load_trading_desk_state():
             'conviction': abs(command_metrics.get('macro_score', 0.0)),
         }
     }
+    desk_state_manager.update_state("component", {'macro_plane': macro_plane}, AuthorityLevel.SYSTEM, "State field update")
 
     # Flow plane (from sectors)
     try:
@@ -250,12 +255,13 @@ def load_trading_desk_state():
                         'flow_direction': 'Inflow' if change_pct > 0 else 'Outflow',
                         'strength': 'Strong' if abs(change_pct) > 0.5 else 'Moderate' if abs(change_pct) > 0.2 else 'Weak'
                     }
-        desk_state_manager.update_state("component", {'flow_plane': {}, AuthorityLevel.SYSTEM, "State field update")
+        flow_plane = {
             'capital_flows': {
                 'sector_flows': sector_flows,
                 'dominant_theme': 'Risk-Off' if sum((s.get('change_pct', 0) for s in sector_flows.values())) < 0 else 'Risk-On'
             }
         }
+        desk_state_manager.update_state("component", {'flow_plane': flow_plane}, AuthorityLevel.SYSTEM, "State field update")
     except Exception:
         desk_state_manager.update_state("component", {'flow_plane': {'capital_flows': {}}}, AuthorityLevel.SYSTEM, "State field update")
 
@@ -272,11 +278,12 @@ def load_trading_desk_state():
                     'role': row.get('position_role', 'Unknown'),
                     'weight': weight,
                 })
-            desk_state_manager.update_state("component", {'position_plane': {}, AuthorityLevel.SYSTEM, "State field update")
+            position_plane = {
                 'positions': positions,
                 'total_positions': len(portfolio_df),
                 'concentration': portfolio_df['final_weight'].max() * 100 if not portfolio_df.empty else 0
             }
+            desk_state_manager.update_state("component", {'position_plane': position_plane}, AuthorityLevel.SYSTEM, "State field update")
         else:
             desk_state_manager.update_state("component", {'position_plane': {'positions': [], 'total_positions': 0, 'concentration': 0}}, AuthorityLevel.SYSTEM, "State field update")
     except Exception:

@@ -1,0 +1,88 @@
+{
+  "report_id": "567aecf1-d177-4d15-9309-e4a4ee310142",
+  "generated_at": "2026-03-09T04:26:08.531968",
+  "report_type": "system_comprehensive_validation",
+  "system_health": {
+    "timestamp": "2026-03-09T04:26:08.531774",
+    "overall_health": "critical",
+    "component_status": {
+      "system_validation": "critical",
+      "integration_testing": "critical"
+    },
+    "performance_score": 0.7375,
+    "data_quality_score": 0.16666666666666666,
+    "latency_metrics": {},
+    "error_counts": {},
+    "alert_level": "warning",
+    "recommended_actions": []
+  },
+  "recent_operations": [
+    {
+      "operation_id": "alpha_validation_1773010567",
+      "operation_type": "alpha_validation",
+      "start_time": "2026-03-09T04:26:07.514716",
+      "end_time": "2026-03-09T04:26:07.838593",
+      "status": "warning",
+      "duration_seconds": 0.323877,
+      "performance_metrics": {
+        "total_regimes": 1,
+        "passed_regimes": 0,
+        "average_alpha": 0.006905679277630378,
+        "average_information_ratio": 0.044887959390217114,
+        "average_hit_rate": 0.5541298820396288,
+        "total_signals": 4
+      },
+      "validation_results": {
+        "alpha_validation_passed": false
+      },
+      "alerts_count": 1,
+      "report_path": "reports/operation/alpha_report_20260309_042607.json"
+    },
+    {
+      "operation_id": "alpha_validation_1773010567",
+      "operation_type": "alpha_validation",
+      "start_time": "2026-03-09T04:26:07.513964",
+      "end_time": "2026-03-09T04:26:07.838761",
+      "status": "warning",
+      "duration_seconds": 0.324797,
+      "performance_metrics": {
+        "total_regimes": 1,
+        "passed_regimes": 0,
+        "average_alpha": 0.006905679277630378,
+        "average_information_ratio": 0.044887959390217114,
+        "average_hit_rate": 0.5541298820396288,
+        "total_signals": 4
+      },
+      "validation_results": {
+        "alpha_validation_passed": false
+      },
+      "alerts_count": 1,
+      "report_path": "reports/operation/alpha_report_20260309_042607.json"
+    },
+    {
+      "operation_id": "exec_1773010567_test_5725",
+      "operation_type": "full_system_test",
+      "start_time": "2026-03-09T04:26:07.514959",
+      "end_time": "2026-03-09T04:26:08.521385",
+      "status": "failure",
+      "duration_seconds": 1.006426,
+      "performance_metrics": {},
+      "validation_results": {},
+      "alerts_count": 1,
+      "report_path": null
+    }
+  ],
+  "active_operations": [],
+  "system_metrics": {
+    "total_operations": 3,
+    "success_rate": 0.0,
+    "avg_duration": 0.5517,
+    "operation_types": [
+      "alpha_validation",
+      "full_system_test"
+    ]
+  },
+  "operational_insights": [
+    "Operation success rate is 0.0% - investigate failures"
+  ]
+}

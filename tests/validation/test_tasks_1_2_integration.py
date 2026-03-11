@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 # Add src to path
-, '..', '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from src.intelligence.temporal_guard import TemporalGuard
 from src.validation.northstar_brain_state import NorthstarBrain

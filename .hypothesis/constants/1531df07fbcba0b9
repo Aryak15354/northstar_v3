@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/enhanced_data_integrity_system.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.25, 0.7, 0.75, 0.8, 0.9, 0.95, 0.98, 1.0, 3.0, 5.0, 100, 150, 180, 200, 250, 1000000, 10000000, 999999999, '%Y-%m-%d', '1.0', '2023-01-01', '=', 'AAPL', 'CORRUPTED', 'CREATE', 'GOOGL', 'MISSING', 'MSFT', 'SUSPICIOUS', 'VALID', 'VALIDATE', '[\\x00-\\x1f\\x7f-\\x9f]', '__len__', '__main__', 'close', 'column_count', 'columns', 'completeness_min', 'constraints', 'corrupted_prices', 'data/audit_trail', 'data_hash', 'data_types', 'date', 'datetime64[ns]', 'fundamentals', 'hash', 'high', 'ignore', 'int64', 'low', 'market_cap', 'metadata_hash', 'object', 'open', 'operation', 'pb_ratio', 'pe_ratio', 'prices', 'r', 'required_columns', 'row_count', 'sector', 'size', 'source_name', 'symbol', 'system', 'timestamp', 'universe', 'utf-8', 'volume', 'w']

@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence_observer/question_engines/engine_diagnostics.py
+# hypothesis_version: 6.150.2
+
+[-0.02, 0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.75, 0.8, 0.85, 1.0, 30.0, 40.0, 50.0, 60.0, 70.0, 75.0, 85.0, 90.0, 92.0, 95.0, 96.0, 98.0, 100, 200, '1.0.0', 'Engine Independence', 'active_days_ratio', 'bleed_ratio', 'historical', 'ignore', 'last_return', 'ongoing', 'regime_alignment', 'volatility_response']

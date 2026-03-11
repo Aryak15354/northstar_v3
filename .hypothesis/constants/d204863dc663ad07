@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/data_ingestion_validator.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.05, 0.1, 0.8, 3.0, '%Y%m%d_%H%M%S', 'Outlier check passed', 'completeness_check', 'consistency_check', 'critical', 'data/quarantine', 'duplicate_check', 'errors', 'freshness_check', 'high', 'ignore', 'low', 'medium', 'message', 'metadata', 'object', 'original_shape', 'outlier_check', 'passed', 'price', 'quality_checks', 'quality_score', 'quarantine_timestamp', 'rate', 'severity', 'source_name', 'source_type', 'success', 'temporal_order_check', 'validated_shape', 'validation_result', 'validation_timestamp', 'volume', 'w', 'warnings']

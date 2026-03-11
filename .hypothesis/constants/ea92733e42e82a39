@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/models/vol_carry_forecaster.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-06, 0.1, 0.15, 0.6, 1.0, 'carry_score', 'conviction', 'implied_variance', 'raw_carry']

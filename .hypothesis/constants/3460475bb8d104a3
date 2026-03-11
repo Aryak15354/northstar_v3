@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/v3_risk_integration.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.015, 0.02, 1.0, 2.0, 3.0, 100.0, 5000.0, 1000000.0, 'INR', 'IRON_CONDOR', 'NIFTY_25000_CE', 'REJECTED', 'UNKNOWN', '__main__', 'approved', 'asset_class', 'buy', 'count', 'decision', 'max_loss', 'options', 'options_risk', 'percentage', 'price', 'quantity', 'reason', 'side', 'strategy_type', 'symbol', 'timestamp', 'v3_integration', 'violations']

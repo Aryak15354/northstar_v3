@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence_observer/guardrails/language_guard.py
+# hypothesis_version: 6.150.2
+
+['1.0.0', 'Language Guard', 'buy', 'do', 'enter', 'exit', 'increase', 'is_compliant', 'must', 'reduce', 'sell', 'should', 'trade', 'violation_count', 'violations', 'will']

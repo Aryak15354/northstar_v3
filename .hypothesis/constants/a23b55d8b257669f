@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/risk/risk_policy.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1e-09, 0.02, 0.04, 0.1, 1.0, ',', '1', ':', 'GITHUB_SHA', 'GIT_COMMIT_HASH', 'NORTHSTAR_VERSION', 'RiskPolicy', 'aggressive', 'aggressive_mode', 'config_hash', 'epsilon', 'epsilon must be > 0', 'git_commit_hash', 'immutable_after_init', 'max_drawdown_pct', 'on', 'policy_hash', 'strict_mode', 'true', 'unknown', 'utf-8', 'v4', 'version_tag', 'weekly_trade_cap', 'yes']

@@ -270,6 +270,15 @@ class NorthstarBrain:
         
         # Step 5: Generate specialist signals using updated state
         specialist_signals = self._generate_specialist_signals(daily_data, current_date)
+
+        # Reset decay only when there is a meaningful new market signal.
+        signal_strength = abs(float(daily_data.get('market_return', 0.0))) + abs(float(daily_data.get('market_momentum', 0.0)))
+        if signal_strength > 1e-8:
+            for signal_name in new_signal_decay:
+                new_signal_decay[signal_name] = 1.0
+            new_signal_last_update = {k: current_date for k in specialist_signals.keys()}
+        else:
+            new_signal_last_update = self.current_state.signal_last_update.copy()
         
         # Step 6: Update specialist weights using Bayesian allocation
         new_specialist_weights = self._update_specialist_weights(specialist_signals, current_date)
@@ -285,7 +294,7 @@ class NorthstarBrain:
             bayesian_priors=new_bayesian_priors,
             specialist_weights=new_specialist_weights,
             signal_decay_factors=new_signal_decay,
-            signal_last_update={k: current_date for k in specialist_signals.keys()},
+            signal_last_update=new_signal_last_update,
             correlation_matrix=new_correlation_matrix,
             risk_budgets=new_risk_budgets,
             volatility_estimates=new_volatility_estimates,

@@ -9,7 +9,8 @@ of how Northstar now speaks like a hedge fund.
 
 import sys
 import os
-)))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 import json
 from datetime import datetime

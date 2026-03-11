@@ -130,6 +130,9 @@ class StrategyBeliefs:
             else:
                 norm['skill_prob'] = 0.5
         norm['skill_prob'] = pd.to_numeric(norm['skill_prob'], errors='coerce').fillna(0.5).clip(0.01, 0.99)
+        if 'belief_strength' not in norm.columns:
+            norm['belief_strength'] = norm['skill_prob']
+        norm['belief_strength'] = pd.to_numeric(norm['belief_strength'], errors='coerce').fillna(norm['skill_prob']).clip(0.01, 0.99)
 
         defaults = {
             'confidence': 0.5,
@@ -307,6 +310,7 @@ class StrategyBeliefs:
         updated_belief = {
             'date': datetime.now(),  # Use datetime object, not date
             'strategy': strategy,
+            'belief_strength': skill_prob,
             'alpha': alpha,
             'beta': beta,
             'skill_prob': skill_prob,

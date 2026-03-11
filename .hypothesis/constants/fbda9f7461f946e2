@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/volatility/regime_detector.py
+# hypothesis_version: 6.150.2
+
+[-0.05, 0.0, 0.015, 0.05, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.55, 0.6, 0.7, 0.8, 0.85, 0.95, 1.0, 1.5, 252, 'P', 'breadth', 'correlation', 'crisis', 'distance', 'distance_to_atm', 'falling', 'high_vol', 'iv', 'low_vol', 'option_type', 'participation', 'rising', 'risk_on_score', 'stable', 'strike', 'transition', 'underlying_price', 'volatility']

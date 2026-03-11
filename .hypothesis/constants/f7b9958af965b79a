@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/volatility/strategy_ast.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.2, 95.0, 100.0, 105.0, 365.0, '=', 'Butterfly', 'Calendar', 'Call', 'Complex Strategy', 'Composite', 'Condor', 'Greeks', 'OptionLeg', 'Put', 'SPY', 'Spread', 'Straddle', 'Strangle', 'TargetGreeks', '__dict__', '__main__', 'ast', 'call', 'call_lower_strike', 'call_strike', 'call_upper_strike', 'children', 'cost_efficiency', 'expiry', 'far_expiry', 'greeks', 'legs', 'long_leg', 'lower_strike', 'middle_strike', 'name', 'near_expiry', 'option_type', 'price', 'put', 'put_lower_strike', 'put_strike', 'put_upper_strike', 'quantity', 'short_leg', 'strike', 'type', 'underlying', 'upper_strike']

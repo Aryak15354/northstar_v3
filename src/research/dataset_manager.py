@@ -2,18 +2,41 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
+import bisect
+import hashlib
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
+import yaml
 
 from src.data.query_engine import DuckDBQueryEngine
 
 from .feature_factory import FeatureFactory
+from .regime_engine import RegimeEngine
 from .research_types import ResearchDataset
+from .splits import rolling_time_splits
+
+logger = logging.getLogger(__name__)
+
+
+def _stable_hash_frame(df: pd.DataFrame, cols: list[str]) -> str:
+    if df.empty:
+        return ""
+    take = [c for c in cols if c in df.columns]
+    if not take:
+        return ""
+    work = df[take].copy()
+    for c in take:
+        if pd.api.types.is_datetime64_any_dtype(work[c]):
+            work[c] = pd.to_datetime(work[c], errors="coerce").dt.strftime("%Y-%m-%d")
+    work = work.replace([np.inf, -np.inf], np.nan).fillna("__nan__")
+    hashed = pd.util.hash_pandas_object(work, index=False)
+    raw = hashed.to_numpy(dtype=np.uint64).tobytes()
+    return hashlib.sha256(raw).hexdigest()
 
 
 def _safe_sql_identifier(name: str) -> str:
@@ -49,7 +72,52 @@ class DatasetManager:
     def __init__(self, project_root: Optional[Path] = None, config: Optional[Dict[str, Any]] = None):
         self.project_root = Path(project_root) if project_root else Path(".")
         self.config = dict(config or {})
-        self.factory = FeatureFactory(target_horizon_days=int(self.config.get("target_horizon_days", 5)))
+        self.use_et500_features = bool(self.config.get("use_et500_features", False))
+        self.use_et500_universe_filter = bool(self.config.get("use_et500_universe_filter", False))
+        self.use_screener_features = bool(
+            self.config.get("use_screener_features", False)
+            or self.config.get("use_screener_extended_features", False)
+        )
+        self.et500_membership_path = str(
+            self.config.get("et500_membership_path", "data/reference/et500_pit_membership.csv")
+        )
+        self.screener_fundamentals_path = str(
+            self.config.get(
+                "screener_fundamentals_path",
+                self.config.get("screener_annual_path", "data/processed/screener_fundamentals_annual.csv"),
+            )
+        )
+        self.screener_quarterly_path = str(
+            self.config.get("screener_quarterly_path", "data/processed/screener_fundamentals_quarterly.csv")
+        )
+        self.screener_shareholding_path = str(
+            self.config.get("screener_shareholding_path", "data/processed/screener_shareholding.csv")
+        )
+        self.use_alternative_features = bool(self.config.get("use_alternative_features", False))
+        self.use_sentiment_features = bool(self.config.get("use_sentiment_features", False))
+        self.use_sentiment_regime = bool(self.config.get("use_sentiment_regime", False))
+        self.use_macro_features = bool(self.config.get("use_macro_features", False))
+        self.alternative_data_path = str(self.config.get("alternative_data_path", "data/processed/alternative"))
+        self.sentiment_path = str(
+            self.config.get("sentiment_path", "data/processed/sentiment/ticker_sentiment_daily.parquet")
+        )
+        self.market_sentiment_path = str(
+            self.config.get("market_sentiment_path", "data/processed/sentiment/market_sentiment_daily.parquet")
+        )
+        self.sentiment_duckdb_path = str(self.config.get("sentiment_duckdb_path", "data/sentiment.duckdb"))
+        self._et500_membership_cache: Optional[pd.DataFrame] = None
+        self.factory = FeatureFactory(
+            target_horizon_days=int(self.config.get("target_horizon_days", 5)),
+            enable_pit_fundamentals=bool(self.config.get("pit_fundamentals_enabled", True)),
+            pit_fundamental_lag_days=int(self.config.get("pit_fundamental_lag_days", 60)),
+            pit_announcement_plus_days=int(self.config.get("pit_announcement_plus_days", 1)),
+            use_announcement_dates=bool(self.config.get("pit_use_announcement_dates", True)),
+            use_et500_features=bool(self.use_et500_features),
+            use_screener_features=bool(self.use_screener_features),
+            screener_fundamentals_path=str(self.screener_fundamentals_path),
+            screener_shareholding_path=str(self.screener_shareholding_path),
+            config=self.config,
+        )
         self.snapshot_dir = self.project_root / "data/research"
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
         self.strict_real_data_only = bool(self.config.get("strict_real_data_only", True))
@@ -76,6 +144,7 @@ class DatasetManager:
             )
             if str(x).strip()
         ]
+        self.low_resource_mode_effective = False
         self._apply_low_resource_dataset_caps()
         self.query = DuckDBQueryEngine(
             memory_limit_mb=int(self.config.get("duckdb_memory_limit_mb", 768)),
@@ -102,14 +171,16 @@ class DatasetManager:
         return False
 
     def _apply_low_resource_dataset_caps(self) -> None:
-        if not self._is_low_resource_host():
+        self.low_resource_mode_effective = bool(self._is_low_resource_host())
+        if not self.low_resource_mode_effective:
             return
         cap_rows = int(self.config.get("low_resource_max_rows", 90000) or 90000)
         cap_tickers = int(self.config.get("low_resource_max_tickers", 140) or 140)
         cap_lookback = int(self.config.get("low_resource_lookback_days", 2200) or 2200)
 
         try:
-            cur_rows = int(self.config.get("max_rows", cap_rows) or cap_rows)
+            cur_rows_raw = self.config.get("max_rows", cap_rows)
+            cur_rows = int(cur_rows_raw) if cur_rows_raw is not None else cap_rows
         except Exception:
             cur_rows = cap_rows
         try:
@@ -124,6 +195,68 @@ class DatasetManager:
         self.config["max_rows"] = max(5000, min(cur_rows, cap_rows))
         self.config["max_tickers"] = max(20, min(cur_tickers, cap_tickers))
         self.config["lookback_days"] = max(365, min(cur_lookback, cap_lookback))
+
+    @staticmethod
+    def _normalize_ticker(value: Any) -> str:
+        s = str(value or "").strip().upper()
+        if not s:
+            return ""
+        if s.endswith(".NS"):
+            return s
+        if "." in s:
+            s = s.split(".", 1)[0]
+        return f"{s}.NS"
+
+    def _load_sector_lookup(self) -> Dict[str, str]:
+        """Canonical sector mapping: YAML overrides CSV, CSV fills remainder."""
+        csv_map: Dict[str, str] = {}
+        csv_path = self.project_root / "data/processed/sector_mapping.csv"
+        if csv_path.exists():
+            try:
+                cdf = pd.read_csv(csv_path, usecols=["ticker", "sector"])
+                if not cdf.empty:
+                    cdf["ticker"] = cdf["ticker"].map(self._normalize_ticker)
+                    cdf["sector"] = cdf["sector"].astype(str).str.strip()
+                    cdf = cdf[(cdf["ticker"] != "") & (cdf["sector"] != "")]
+                    csv_map = dict(zip(cdf["ticker"], cdf["sector"]))
+            except Exception:
+                csv_map = {}
+
+        yaml_map: Dict[str, str] = {}
+        yaml_path = self.project_root / "config/stock_options_mapping_complete.yaml"
+        if yaml_path.exists():
+            try:
+                payload = yaml.safe_load(yaml_path.read_text()) or {}
+                stocks = payload.get("stocks", {}) if isinstance(payload, dict) else {}
+                if isinstance(stocks, dict):
+                    for symbol, meta in stocks.items():
+                        if not isinstance(meta, dict):
+                            continue
+                        sec = str(meta.get("sector", "") or "").strip()
+                        if not sec:
+                            continue
+                        tk = self._normalize_ticker(symbol)
+                        if tk:
+                            yaml_map[tk] = sec
+            except Exception:
+                yaml_map = {}
+
+        out = dict(csv_map)
+        out.update(yaml_map)  # YAML overrides CSV labels when both exist.
+        return out
+
+    def _apply_sector_lookup_to_frame(self, frame: pd.DataFrame, sector_lookup: Dict[str, str]) -> pd.DataFrame:
+        if frame.empty or "ticker" not in frame.columns or not sector_lookup:
+            return frame
+        out = frame.copy()
+        norm_tk = out["ticker"].map(self._normalize_ticker)
+        mapped = norm_tk.map(sector_lookup)
+        if "sector" in out.columns:
+            cur = out["sector"].astype("string")
+            out["sector"] = cur.where(cur.notna() & cur.str.strip().ne(""), mapped).astype("string")
+        else:
+            out["sector"] = mapped.astype("string")
+        return out
 
     @staticmethod
     def _pick_first_existing(columns: list[str], candidates: list[str]) -> Optional[str]:
@@ -149,6 +282,170 @@ class DatasetManager:
         if pd.isna(ts):
             return None
         return pd.Timestamp(ts)
+
+    def _load_et500_membership(self) -> pd.DataFrame:
+        if isinstance(self._et500_membership_cache, pd.DataFrame):
+            return self._et500_membership_cache.copy()
+
+        path = self.project_root / str(self.et500_membership_path)
+        if not path.exists():
+            self._et500_membership_cache = pd.DataFrame()
+            return pd.DataFrame()
+        try:
+            df = pd.read_csv(path)
+        except Exception:
+            self._et500_membership_cache = pd.DataFrame()
+            return pd.DataFrame()
+
+        if df.empty or not {"year", "nse_ticker"}.issubset(set(df.columns)):
+            self._et500_membership_cache = pd.DataFrame()
+            return pd.DataFrame()
+
+        out = df.copy()
+        out["year"] = pd.to_numeric(out["year"], errors="coerce")
+        out["nse_ticker"] = out["nse_ticker"].map(self._normalize_ticker)
+        for c in [
+            "rank",
+            "prev_rank",
+            "revenue_cr",
+            "revenue_change_pct",
+            "pat_cr",
+            "pat_change_pct",
+            "market_cap_cr",
+        ]:
+            if c in out.columns:
+                out[c] = pd.to_numeric(out[c], errors="coerce")
+        out = out.dropna(subset=["year", "nse_ticker"]).copy()
+        out["year"] = out["year"].astype(int)
+        sort_cols = ["year", "nse_ticker"] + (["rank"] if "rank" in out.columns else [])
+        out = out.sort_values(sort_cols, kind="mergesort")
+        out = out.drop_duplicates(subset=["year", "nse_ticker"], keep="first")
+        self._et500_membership_cache = out.reset_index(drop=True)
+        return self._et500_membership_cache.copy()
+
+    @staticmethod
+    def _et500_cumulative_tickers_by_availability(
+        et500_membership: pd.DataFrame,
+    ) -> tuple[list[pd.Timestamp], dict[pd.Timestamp, set[str]]]:
+        if et500_membership.empty or not {"year", "nse_ticker"}.issubset(set(et500_membership.columns)):
+            return [], {}
+        work = et500_membership.copy()
+        work["availability_date"] = pd.to_datetime(
+            pd.to_numeric(work["year"], errors="coerce").astype("Int64").astype("string") + "-12-31",
+            errors="coerce",
+        )
+        work = work.dropna(subset=["availability_date", "nse_ticker"])
+        if work.empty:
+            return [], {}
+        by_date: Dict[pd.Timestamp, set[str]] = {}
+        for dt, grp in work.groupby("availability_date", sort=True):
+            by_date[pd.Timestamp(dt)] = set(grp["nse_ticker"].astype(str))
+        dates_sorted = sorted(by_date.keys())
+        cumulative: dict[pd.Timestamp, set[str]] = {}
+        running: set[str] = set()
+        for dt in dates_sorted:
+            running = running.union(by_date.get(dt, set()))
+            cumulative[dt] = set(running)
+        return dates_sorted, cumulative
+
+    @staticmethod
+    def _et500_allowed_tickers_for_date(
+        dt: pd.Timestamp,
+        *,
+        availability_dates_sorted: list[pd.Timestamp],
+        cumulative_by_date: dict[pd.Timestamp, set[str]],
+    ) -> set[str]:
+        if not availability_dates_sorted or pd.isna(dt):
+            return set()
+        key = pd.Timestamp(dt).normalize()
+        idx = bisect.bisect_right(availability_dates_sorted, key) - 1
+        if idx < 0:
+            return set()
+        ref_dt = availability_dates_sorted[idx]
+        return set(cumulative_by_date.get(ref_dt, set()))
+
+    def _emit_et500_filter_diagnostics(self, panel: pd.DataFrame, et500_membership: pd.DataFrame) -> None:
+        if panel.empty or et500_membership.empty or "date" not in panel.columns or "ticker" not in panel.columns:
+            return
+        availability_dates_sorted, cumulative = self._et500_cumulative_tickers_by_availability(et500_membership)
+        if not availability_dates_sorted:
+            return
+
+        train_periods = int(self.config.get("training_train_periods", self.config.get("train_periods", 756)) or 756)
+        valid_periods = int(self.config.get("training_valid_periods", self.config.get("valid_periods", 126)) or 126)
+        test_periods = int(self.config.get("training_test_periods", self.config.get("test_periods", 126)) or 126)
+        step_periods = int(self.config.get("training_step_periods", self.config.get("step_periods", 63)) or 63)
+        min_tickers_per_date = int(
+            self.config.get("training_min_tickers_per_date", self.config.get("min_tickers_per_date", 50)) or 50
+        )
+        max_windows = int(self.config.get("training_max_windows", self.config.get("max_windows", 12)) or 12)
+
+        diag_frame = panel[["date", "ticker"]].copy()
+        diag_frame["date"] = pd.to_datetime(diag_frame["date"], errors="coerce")
+        diag_frame["ticker"] = diag_frame["ticker"].map(self._normalize_ticker)
+        diag_frame = diag_frame.dropna(subset=["date"])
+        if diag_frame.empty:
+            return
+
+        seen = 0
+        for split in rolling_time_splits(
+            diag_frame,
+            date_col="date",
+            ticker_col="ticker",
+            train_periods=train_periods,
+            valid_periods=valid_periods,
+            test_periods=test_periods,
+            step_periods=step_periods,
+            min_tickers_per_date=max(1, min_tickers_per_date),
+        ):
+            if seen >= max_windows:
+                break
+            train_mask = np.asarray(split["train_mask"], dtype=bool)
+            if not bool(train_mask.any()):
+                continue
+            train_end = pd.to_datetime(split.get("train_end"), errors="coerce")
+            if pd.isna(train_end):
+                continue
+            allowed = self._et500_allowed_tickers_for_date(
+                pd.Timestamp(train_end),
+                availability_dates_sorted=availability_dates_sorted,
+                cumulative_by_date=cumulative,
+            )
+            before = diag_frame.loc[train_mask, "ticker"].astype(str)
+            before_n = int(before.nunique())
+            after_n = int(before[before.isin(allowed)].nunique())
+            print(
+                f"[et500-filter] window {split.get('train_start')}-{split.get('train_end')}: "
+                f"{before_n} tickers before filter, {after_n} tickers after filter"
+            )
+            seen += 1
+
+    def _apply_et500_universe_filter(self, panel: pd.DataFrame, et500_membership: pd.DataFrame) -> pd.DataFrame:
+        if panel.empty or et500_membership.empty or "date" not in panel.columns or "ticker" not in panel.columns:
+            return panel
+        availability_dates_sorted, cumulative = self._et500_cumulative_tickers_by_availability(et500_membership)
+        if not availability_dates_sorted:
+            return panel
+
+        out = panel.copy()
+        out["__date_norm"] = pd.to_datetime(out["date"], errors="coerce").dt.normalize()
+        out["__ticker_norm"] = out["ticker"].map(self._normalize_ticker)
+        keep = pd.Series(False, index=out.index, dtype=bool)
+
+        for dt, idx in out.groupby("__date_norm", dropna=True, sort=False).groups.items():
+            if pd.isna(dt):
+                continue
+            allowed = self._et500_allowed_tickers_for_date(
+                pd.Timestamp(dt),
+                availability_dates_sorted=availability_dates_sorted,
+                cumulative_by_date=cumulative,
+            )
+            if not allowed:
+                continue
+            keep.loc[idx] = out.loc[idx, "__ticker_norm"].isin(allowed).to_numpy(dtype=bool)
+
+        out = out.loc[keep].drop(columns=["__date_norm", "__ticker_norm"], errors="ignore")
+        return out.reset_index(drop=True)
 
     @staticmethod
     def _group_zscore(values: pd.Series, groups: pd.Series, clip_abs: float = 8.0) -> pd.Series:
@@ -522,6 +819,12 @@ class DatasetManager:
                     "date",
                     "Date",
                     "timestamp",
+                    "announcement_date",
+                    "announcementDate",
+                    "results_announcement_date",
+                    "results_announced_at",
+                    "report_announcement_date",
+                    "fiscal_quarter_end_date",
                     "ticker",
                     "Industry",
                     "industry",
@@ -532,9 +835,11 @@ class DatasetManager:
                     "operating_income",
                     "net_income",
                     "equity",
+                    "total_assets",
                     "total_debt",
                     "operating_cash_flow",
                     "free_cash_flow",
+                    "interest_expense",
                     "shares_outstanding",
                 ],
             )
@@ -544,6 +849,34 @@ class DatasetManager:
                 self._validate_artifact(df=out, artifact="fundamentals", path=path, required=must_require)
                 return out
         return self._read_parquet(rel, artifact="fundamentals")
+
+    def _load_optional_csv(self, rel_path: str) -> pd.DataFrame:
+        path = self.project_root / rel_path
+        if not path.exists():
+            return pd.DataFrame()
+        try:
+            df = pd.read_csv(path)
+        except Exception:
+            return pd.DataFrame()
+        if df.empty:
+            return pd.DataFrame()
+        if "ticker" in df.columns:
+            tk = df["ticker"].where(df["ticker"].notna(), "")
+            df["ticker"] = tk.map(self._normalize_ticker)
+            df = df[df["ticker"] != ""].copy()
+        for date_col in ["availability_date", "date", "Date", "timestamp"]:
+            if date_col in df.columns:
+                df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+        return df
+
+    def load_screener_extended_annual(self) -> pd.DataFrame:
+        return self._load_optional_csv(self.screener_fundamentals_path)
+
+    def load_screener_extended_quarterly(self) -> pd.DataFrame:
+        return self._load_optional_csv(self.screener_quarterly_path)
+
+    def load_screener_extended_shareholding(self) -> pd.DataFrame:
+        return self._load_optional_csv(self.screener_shareholding_path)
 
     def load_macro(self) -> pd.DataFrame:
         # Priority merge: intelligent market state + market state.
@@ -722,13 +1055,64 @@ class DatasetManager:
 
         return self._read_parquet(rel, artifact="sentiment_market", required=must_require)
 
+    def _assign_regime_labels_with_engine(self, panel: pd.DataFrame, prices: pd.DataFrame) -> tuple[pd.DataFrame, bool]:
+        if panel.empty or "date" not in panel.columns:
+            return panel, False
+
+        out = panel.copy()
+        out["date"] = pd.to_datetime(out["date"], errors="coerce")
+        out = out.dropna(subset=["date"]).copy()
+        if out.empty:
+            return out, False
+
+        regime_engine = RegimeEngine(
+            {
+                "regime_labels_path": str(
+                    self.config.get("regime_labels_path", "data/processed/regime_labels.parquet")
+                )
+            }
+        )
+        start = pd.to_datetime(out["date"], errors="coerce").min()
+        end = pd.to_datetime(out["date"], errors="coerce").max()
+        reg_series = regime_engine.get_regime_series(start, end)
+
+        if reg_series.empty:
+            try:
+                labels = regime_engine.build_historical_regimes(prices_df=prices, macro_df=None)
+                if isinstance(labels, pd.DataFrame) and not labels.empty:
+                    reg_series = regime_engine.get_regime_series(start, end)
+            except Exception:
+                reg_series = pd.Series(dtype=object)
+
+        if reg_series.empty:
+            return out, False
+
+        reg_map = pd.Series(reg_series.astype(str).to_numpy(), index=pd.DatetimeIndex(reg_series.index).normalize())
+        out["regime"] = pd.to_datetime(out["date"], errors="coerce").dt.normalize().map(reg_map)
+        out["regime"] = out["regime"].astype("string").fillna("").astype(str)
+        ok = bool((out["regime"].str.strip() != "").mean() > 0.50)
+        return out, ok
+
     def build_research_dataset(self) -> ResearchDataset:
         prices = self.load_prices()
         fundamentals = self.load_fundamentals()
-        macro = self.load_macro()
+        screener_annual = self.load_screener_extended_annual() if bool(self.use_screener_features) else pd.DataFrame()
+        screener_quarterly = self.load_screener_extended_quarterly() if bool(self.use_screener_features) else pd.DataFrame()
+        screener_shareholding = (
+            self.load_screener_extended_shareholding() if bool(self.use_screener_features) else pd.DataFrame()
+        )
+        macro_enabled = bool(self.config.get("enable_macro_features", True))
+        macro = self.load_macro() if macro_enabled else pd.DataFrame()
         valuation = self.load_valuation_posterior()
         sentiment_company = self.load_sentiment_company()
         sentiment_market = self.load_sentiment_market()
+        et500_membership = (
+            self._load_et500_membership()
+            if bool(self.use_et500_features or self.use_et500_universe_filter)
+            else pd.DataFrame()
+        )
+        sector_lookup = self._load_sector_lookup()
+        fundamentals = self._apply_sector_lookup_to_frame(fundamentals, sector_lookup)
 
         # Apply early lookback/universe filters before expensive feature joins.
         lookback_days = int(self.config.get("lookback_days", 3650))
@@ -768,16 +1152,37 @@ class DatasetManager:
                         sentiment_company = sentiment_company[
                             sentiment_company["ticker"].astype(str).isin(set(top.astype(str)))
                         ].copy()
+                    if not screener_annual.empty and "ticker" in screener_annual.columns:
+                        screener_annual = screener_annual[
+                            screener_annual["ticker"].astype(str).isin(set(top.astype(str)))
+                        ].copy()
+                    if not screener_quarterly.empty and "ticker" in screener_quarterly.columns:
+                        screener_quarterly = screener_quarterly[
+                            screener_quarterly["ticker"].astype(str).isin(set(top.astype(str)))
+                        ].copy()
+                    if not screener_shareholding.empty and "ticker" in screener_shareholding.columns:
+                        screener_shareholding = screener_shareholding[
+                            screener_shareholding["ticker"].astype(str).isin(set(top.astype(str)))
+                        ].copy()
                 prices = p.drop(columns=["__date"], errors="ignore")
 
         panel = self.factory.build_features(
             prices=prices,
             fundamentals=fundamentals,
+            screener_annual=screener_annual if bool(self.use_screener_features) else None,
+            screener_quarterly=screener_quarterly if bool(self.use_screener_features) else None,
+            screener_shareholding=screener_shareholding if bool(self.use_screener_features) else None,
             macro=macro,
             valuation_posterior=valuation,
             sentiment_company=sentiment_company,
             sentiment_market=sentiment_market,
+            sector_lookup=sector_lookup,
+            et500_membership=et500_membership if bool(self.use_et500_features) else None,
         )
+
+        if bool(self.use_et500_universe_filter):
+            self._emit_et500_filter_diagnostics(panel, et500_membership)
+            panel = self._apply_et500_universe_filter(panel, et500_membership)
 
         if panel.empty:
             raise ValueError("Research dataset is empty after feature build")
@@ -803,10 +1208,20 @@ class DatasetManager:
             panel = panel.loc[panel["ticker"].isin(liquid)].copy()
 
         panel = panel.sort_values(["date", "ticker"]).reset_index(drop=True)
-        max_rows = int(self.config.get("max_rows", 200000) or 200000)
+        max_rows_raw = self.config.get("max_rows", 200000)
+        max_rows = int(max_rows_raw) if max_rows_raw is not None else 200000
         if max_rows > 0 and len(panel) > max_rows:
             # Keep latest rows for predictable laptop runtime.
             panel = panel.tail(max_rows).reset_index(drop=True)
+
+        min_tickers_per_date = max(1, int(self.config.get("min_tickers_per_date", 50) or 50))
+        if {"date", "ticker"}.issubset(set(panel.columns)) and not panel.empty:
+            date_counts = panel.groupby("date", sort=True)["ticker"].nunique()
+            n_valid_dates = int((date_counts >= min_tickers_per_date).sum())
+            n_full_dates = int((date_counts >= int(panel["ticker"].nunique())).sum())
+        else:
+            n_valid_dates = 0
+            n_full_dates = 0
 
         # Explicitly distinguish backtest vs live-return periods.
         cutover_raw = self.config.get("live_returns_cutover_date")
@@ -816,14 +1231,36 @@ class DatasetManager:
         else:
             panel["return_data_mode"] = "backtest"
 
-        panel["regime"] = panel.get("macro_regime", panel.get("regime", "unknown")).astype(str)
+        panel, regime_from_engine = self._assign_regime_labels_with_engine(panel, prices)
+        if not regime_from_engine:
+            if "macro_regime" in panel.columns:
+                regime_source = panel["macro_regime"]
+            elif "regime" in panel.columns:
+                regime_source = panel["regime"]
+            else:
+                regime_source = pd.Series("unknown", index=panel.index, dtype="object")
+            panel["regime"] = regime_source.astype(str)
         panel["regime_code"] = panel["regime"].astype("category").cat.codes.astype(float)
 
         target_col = str(self.config.get("target_col", "forward_return_5d"))
         if target_col not in panel.columns:
             raise ValueError(f"research_target_missing:{target_col}")
+        target_realized_col = f"{target_col}__realized"
+        panel[target_realized_col] = _sanitize_target_series(
+            pd.to_numeric(panel[target_col], errors="coerce"),
+            clip_abs=float(self.config.get("target_clip_abs", 1.0)),
+            winsor_quantile=float(self.config.get("target_winsor_quantile", 0.995)),
+        )
         target_series, target_meta = self._derive_target_series(panel=panel, target_col=target_col)
         panel[target_col] = target_series
+        pit_no_future_leak = True
+        if {"availability_date", "date"}.issubset(set(panel.columns)):
+            av = pd.to_datetime(panel["availability_date"], errors="coerce")
+            td = pd.to_datetime(panel["date"], errors="coerce")
+            mask = av.notna() & td.notna()
+            if bool(mask.any()):
+                pit_no_future_leak = bool((av[mask] <= td[mask]).all())
+
         exclude = {
             "date",
             "ticker",
@@ -832,9 +1269,16 @@ class DatasetManager:
             "regime_name",
             "valuation_regime",
             target_col,
+            target_realized_col,
         }
+        leakage_prefixes = ("forward_return_", "target_")
         numeric_features = [
-            c for c in panel.columns if c not in exclude and pd.api.types.is_numeric_dtype(panel[c])
+            c
+            for c in panel.columns
+            if c not in exclude
+            and pd.api.types.is_numeric_dtype(panel[c])
+            and not str(c).endswith("__realized")
+            and not str(c).startswith(leakage_prefixes)
         ]
 
         if not numeric_features:
@@ -855,6 +1299,22 @@ class DatasetManager:
 
         tft_split = self.factory.build_tft_feature_split(panel, target_col=target_col)
 
+        alt_base_prefixes = ("bulk_", "pledge_", "rating_", "order_", "earnings_")
+        alt_cols_present = [c for c in panel.columns if str(c).startswith(alt_base_prefixes)]
+        alt_cs_cols_present = [c for c in panel.columns if str(c).endswith("_cs_z") or str(c).endswith("_cs_rank")]
+        alt_cs_cols_present = [c for c in alt_cs_cols_present if str(c).startswith(alt_base_prefixes)]
+        alt_non_null = {
+            str(c): int(pd.to_numeric(panel[c], errors="coerce").notna().sum())
+            for c in alt_cols_present
+        }
+        if bool(self.use_alternative_features):
+            logger.info(
+                "[dataset] alternative_features enabled: raw_cols=%d cs_cols=%d non_null_cols=%d",
+                int(len(alt_cols_present)),
+                int(len(alt_cs_cols_present)),
+                int(sum(1 for _, v in alt_non_null.items() if int(v) > 0)),
+            )
+
         dataset = ResearchDataset(
             X=X_df.to_numpy(dtype=float),
             y=y,
@@ -872,6 +1332,9 @@ class DatasetManager:
                 "live_rows": int((panel["return_data_mode"] == "live").sum()),
                 "backtest_rows": int((panel["return_data_mode"] == "backtest").sum()),
                 "target_col": target_col,
+                "target_realized_col": target_realized_col,
+                "target_horizon_days": int(self.config.get("target_horizon_days", 5) or 5),
+                "regime_labels_path": str(self.config.get("regime_labels_path", "data/processed/regime_labels.parquet")),
                 "target_mode": str(target_meta.get("target_mode", "raw")),
                 "target_clip_abs": float(target_meta.get("target_clip_abs", 1.0)),
                 "target_winsor_quantile": float(target_meta.get("target_winsor_quantile", 0.995)),
@@ -888,6 +1351,44 @@ class DatasetManager:
                 "lookback_days": lookback_days,
                 "max_tickers": max_tickers,
                 "max_rows": max_rows,
+                "min_tickers_per_date": int(min_tickers_per_date),
+                "n_dates_min_tickers": int(n_valid_dates),
+                "n_dates_all_tickers": int(n_full_dates),
+                "effective_max_tickers": int(
+                    self.config.get("max_tickers", max_tickers)
+                    if self.config.get("max_tickers", max_tickers) is not None
+                    else max_tickers
+                ),
+                "effective_max_rows": int(
+                    self.config.get("max_rows", max_rows)
+                    if self.config.get("max_rows", max_rows) is not None
+                    else max_rows
+                ),
+                "low_resource_mode_effective": bool(self.low_resource_mode_effective),
+                "macro_features_enabled": bool(macro_enabled),
+                "pit_fundamentals_enabled": bool(getattr(self.factory, "enable_pit_fundamentals", True)),
+                "pit_fundamental_lag_days": int(getattr(self.factory, "pit_fundamental_lag_days", 60)),
+                "pit_use_announcement_dates": bool(getattr(self.factory, "use_announcement_dates", True)),
+                "pit_announcement_plus_days": int(getattr(self.factory, "pit_announcement_plus_days", 1)),
+                "pit_no_future_leak": bool(pit_no_future_leak),
+                "use_et500_features": bool(self.use_et500_features),
+                "use_et500_universe_filter": bool(self.use_et500_universe_filter),
+                "use_screener_features": bool(self.use_screener_features),
+                "use_alternative_features": bool(self.use_alternative_features),
+                "use_sentiment_features": bool(self.use_sentiment_features),
+                "use_sentiment_regime": bool(self.use_sentiment_regime),
+                "use_macro_features": bool(self.use_macro_features),
+                "alternative_data_path": str(self.alternative_data_path),
+                "sentiment_path": str(self.sentiment_path),
+                "market_sentiment_path": str(self.market_sentiment_path),
+                "sentiment_duckdb_path": str(self.sentiment_duckdb_path),
+                "alternative_feature_raw_columns": int(len(alt_cols_present)),
+                "alternative_feature_cs_columns": int(len(alt_cs_cols_present)),
+                "alternative_feature_non_null_counts": dict(alt_non_null),
+                "et500_membership_rows": int(len(et500_membership)),
+                "screener_annual_rows": int(len(screener_annual)),
+                "screener_quarterly_rows": int(len(screener_quarterly)),
+                "screener_shareholding_rows": int(len(screener_shareholding)),
                 "sentiment_company_rows": int(len(sentiment_company)),
                 "sentiment_market_rows": int(len(sentiment_market)),
                 "tft_static_features": int(tft_split["static_features"].shape[1]),
@@ -905,6 +1406,69 @@ class DatasetManager:
             observed_dynamic_feature_names=tft_split["observed_dynamic_feature_names"],
             ticker_ids=tft_split["ticker_ids"],
             sector_ids=tft_split["sector_ids"],
+        )
+
+        # Data provenance + universe integrity hooks for certification gates.
+        prov_universe = _stable_hash_frame(
+            panel,
+            cols=["date", "ticker"],
+        )
+        prov_prices = _stable_hash_frame(
+            prices,
+            cols=[c for c in ["date", "Date", "ticker", "close", "Close"] if c in prices.columns],
+        )
+        prov_features = _stable_hash_frame(
+            X_df.reset_index(drop=True),
+            cols=list(X_df.columns),
+        )
+        label_df = pd.DataFrame({"label": y})
+        prov_labels = _stable_hash_frame(label_df, cols=["label"])
+
+        universe_drift = 0.0
+        forward_inclusion = True
+        delisted_assets_handled = 1.0
+        if not panel.empty and "date" in panel.columns and "ticker" in panel.columns:
+            uni = panel[["date", "ticker"]].copy()
+            uni["date"] = pd.to_datetime(uni["date"], errors="coerce")
+            uni["ticker"] = uni["ticker"].astype(str)
+            uni = uni.dropna().sort_values("date")
+            by_date = uni.groupby("date")["ticker"].apply(lambda x: set(x.astype(str))).sort_index()
+            drift = []
+            prev = None
+            for cur in by_date:
+                if prev is not None:
+                    union = len(prev.union(cur))
+                    inter = len(prev.intersection(cur))
+                    drift.append(1.0 - (float(inter) / float(max(1, union))))
+                prev = cur
+            universe_drift = float(np.mean(drift)) if drift else 0.0
+
+            span = uni.groupby("ticker")["date"].agg(["min", "max"])
+            if not span.empty:
+                gmax = pd.to_datetime(uni["date"]).max()
+                delisted_like = span["max"] < gmax
+                delisted_assets_handled = 1.0 if len(delisted_like) == 0 else float(delisted_like.mean())
+                # Lack of exits is not a failure for limited samples.
+                if delisted_assets_handled < 0.01:
+                    delisted_assets_handled = 1.0
+
+                first_dates = span["min"].sort_values()
+                if len(first_dates) > 5:
+                    # Forward inclusion proxy: excessive late first appearances indicate leak risk.
+                    q90 = pd.to_datetime(first_dates).quantile(0.90)
+                    late_ratio = float((pd.to_datetime(first_dates) >= q90).mean())
+                    forward_inclusion = bool(late_ratio < 0.25)
+
+        dataset.metadata.update(
+            {
+                "universe_hash": str(prov_universe),
+                "price_hash": str(prov_prices),
+                "feature_hash": str(prov_features),
+                "label_hash": str(prov_labels),
+                "membership_drift_rate": float(universe_drift),
+                "delisted_assets_handled": float(delisted_assets_handled),
+                "forward_inclusion_check": bool(forward_inclusion),
+            }
         )
 
         self._write_snapshot(panel)

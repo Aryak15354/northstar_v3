@@ -1,0 +1,4 @@
+# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/drawdown_calculator.py
+# hypothesis_version: 6.150.2
+
+[0.0, 1.0, 252, '%Y-%m-%d', 'as_of_date', 'benchmark_metrics', 'current_drawdown', 'drawdown', 'duration_days', 'excess_return', 'information_ratio', 'inner', 'max_drawdown', 'peak_date', 'peak_value', 'portfolio_metrics', 'recovery_date', 'recovery_days', 'relative_performance', 'sharpe_ratio', 'total_return', 'tracking_error', 'trough_date', 'trough_value', 'volatility']

@@ -247,7 +247,6 @@ class TestTemporalProtectionSystemLaws:
                 # Other errors might be acceptable (e.g., insufficient data)
                 pass
     
-    @settings(max_examples=25, deadline=None)
     def test_property_8_look_ahead_bias_detection(self):
         """
         PROPERTY 8 Extension: System should detect look-ahead bias
@@ -438,7 +437,6 @@ class TestTemporalProtectionSystemLaws:
     
     # ==================== INTEGRATION TESTS ====================
     
-    @settings(max_examples=25, deadline=None)
     def test_all_temporal_invariants_integration(self):
         """
         Integration test: All three temporal invariants working together

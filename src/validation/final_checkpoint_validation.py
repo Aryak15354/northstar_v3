@@ -543,6 +543,11 @@ class FinalCheckpointValidation:
             performance_score * 0.20 +         # 20% weight on performance
             reliability_score * 0.15           # 15% weight on reliability
         )
+        overall_score = float(np.clip(overall_score, 0.0, 100.0))
+        overall_score = round(overall_score, 2)
+        avg_component_score = float(np.mean(list(component_scores.values()))) if component_scores else 0.0
+        if avg_component_score < 50.0:
+            overall_score = min(overall_score, 70.0)
         
         print(f"   📊 Component Score: {component_weighted_score:.1f}/100")
         print(f"   🔗 Integration Score: {integration_score:.1f}/100")

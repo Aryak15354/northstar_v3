@@ -31,6 +31,13 @@ class ResearchEngine:
         hr_cfg = dict(self.config.get("historical_research", {}))
         self.historical_controller_enabled = bool(hr_cfg.get("enabled", True))
         self.controller = ResearchController(config=hr_cfg)
+        runtime_cfg = dict(self.config.get("runtime_policy", {}))
+        self.legacy_labs_enabled = bool(runtime_cfg.get("enable_legacy_labs", False))
+        cert_cfg = dict(hr_cfg.get("certification", {}))
+        mode = str(cert_cfg.get("mode", "enforce") or "enforce").strip().lower()
+        self.cert_mode = mode if mode in {"enforce", "shadow"} else "enforce"
+        self.pause_scheduled_until_burn_in = bool(runtime_cfg.get("pause_scheduled_until_burn_in", True)) and bool(self.cert_mode == "enforce")
+        self.cert_state_path = Path(str(cert_cfg.get("state_path", "data/research/certification_state.json")))
 
     def _load_config(self) -> Dict[str, Any]:
         try:
@@ -68,6 +75,10 @@ class ResearchEngine:
             "scheduling": {
                 "run_during_market_hours": False,
             },
+            "runtime_policy": {
+                "enable_legacy_labs": False,
+                "pause_scheduled_until_burn_in": True,
+            },
             "historical_research": {
                 "enabled": True,
                 "strict_real_data_only": True,
@@ -79,6 +90,20 @@ class ResearchEngine:
                     "max_tickers": 250,
                     "max_rows": 200000,
                     "target_horizon_days": 5,
+                    "use_et500_features": False,
+                    "use_et500_universe_filter": False,
+                    "et500_membership_path": "data/reference/et500_pit_membership.csv",
+                    "use_screener_features": False,
+                    "screener_fundamentals_path": "data/processed/screener_fundamentals_annual.csv",
+                    "screener_shareholding_path": "data/processed/screener_shareholding.csv",
+                    "use_alternative_features": False,
+                    "alternative_data_path": "data/processed/alternative/",
+                    "use_sentiment_features": False,
+                    "use_sentiment_regime": False,
+                    "sentiment_path": "data/processed/sentiment/ticker_sentiment_daily.parquet",
+                    "market_sentiment_path": "data/processed/sentiment/market_sentiment_daily.parquet",
+                    "sentiment_duckdb_path": "data/sentiment.duckdb",
+                    "use_macro_features": False,
                     "strict_real_data_only": True,
                     "strict_required_artifacts": [
                         "prices",
@@ -108,7 +133,7 @@ class ResearchEngine:
                     "rebalance_frequency_days": 1,
                     "sector_neutralize": False,
                     "max_sector_weight": 1.0,
-                    "transaction_cost_bps_per_side": 0.0,
+                    "transaction_cost_bps_per_side": 5.0,
                 },
                 "structural_promotion_gate": {
                     "enabled": False,
@@ -159,6 +184,57 @@ class ResearchEngine:
                     "tcn",
                     "transformer",
                 ],
+                "certification": {
+                    "enabled": True,
+                    "mode": "enforce",
+                    "state_path": "data/research/certification_state.json",
+                    "transaction_cost_floor_bps": 5.0,
+                    "burn_in_cycles_required": 20,
+                    "burn_in_regimes_required": 2,
+                    "allow_single_regime_provisional": True,
+                    "max_pairwise_corr": 0.99,
+                    "max_holdings_overlap": 0.95,
+                    "overlap_persistence_threshold": 0.70,
+                    "turnover_zero_streak_limit": 3,
+                    "turnover_min_rebalances": 10,
+                    "min_exposure_variance": 1.0e-4,
+                    "max_family_weight_hard": 0.45,
+                    "max_family_weight_soft": 0.35,
+                    "corr_drift_hard": 0.10,
+                    "min_family_entropy": 0.55,
+                    "allocation_l1_step_max": 0.35,
+                    "allocation_l1_streak_limit": 3,
+                    "regime_effectiveness_min_delta_sharpe": 0.15,
+                    "regime_effectiveness_min_delta_return_ann": 0.015,
+                    "regime_effectiveness_min_delta_dd": 0.01,
+                    "min_trials_weekday": 12,
+                    "min_trials_weekend": 20,
+                    "min_objective_variance": 1e-6,
+                    "max_rolling_param_stability": 0.35,
+                    "bootstrap_sharpe_p05_min": 0.0,
+                    "block_bootstrap_dd_p95_max": 0.35,
+                    "ruin_x1_max": 0.02,
+                    "ruin_x2_max": 0.07,
+                    "ruin_x3_max": 0.15,
+                    "sample_coverage_min": 1.0,
+                    "regime_coverage_min": 0.67,
+                    "bootstrap_conf_width_max": 1.5,
+                    "advisory_persistence_limit": 5,
+                    "max_certification_runtime_sec": 180,
+                    "max_certification_runtime_share": 0.60,
+                    "max_cycle_runtime_sec": 2400,
+                    "max_peak_rss_mb": 4096,
+                    "max_threads": 1,
+                    "lineage_min_cv": 1e-5,
+                    "lineage_min_obs": 5,
+                    "lineage_max_unexplained_flatlines": 12,
+                    "require_macro_unit_metadata": False,
+                    "macro_percent_abs_expected_change_max": 1.0,
+                    "macro_fx_abs_expected_change_max": 0.25,
+                    "shadow_relaxed_audit_enabled": True,
+                    "shadow_relaxed_threshold_factor": 1.20,
+                    "belief_min_history_days_for_strict_eval": 20,
+                },
             },
         }
 
@@ -254,18 +330,21 @@ class ResearchEngine:
                 logger.error(msg, exc_info=True)
                 results["errors"].append(msg)
 
-        # 2) Legacy labs (kept for compatibility / parallel diagnostics).
-        for module_name, module in self.modules.items():
-            try:
-                logger.info("Running research module: %s", module_name)
-                module_results = module.run_analysis(market_data, system_state)
-                module_results = self._apply_freeze_policy(module_results)
-                results["modules_run"].append(module_name)
-                self._collect_outputs(results, module_results)
-            except Exception as e:
-                error_msg = f"Module {module_name} failed: {e}"
-                logger.error(error_msg)
-                results["errors"].append(error_msg)
+        # 2) Legacy labs: disabled by default for canonical certification runtime.
+        if self.legacy_labs_enabled:
+            for module_name, module in self.modules.items():
+                try:
+                    logger.info("Running research module: %s", module_name)
+                    module_results = module.run_analysis(market_data, system_state)
+                    module_results = self._apply_freeze_policy(module_results)
+                    results["modules_run"].append(module_name)
+                    self._collect_outputs(results, module_results)
+                except Exception as e:
+                    error_msg = f"Module {module_name} failed: {e}"
+                    logger.error(error_msg)
+                    results["errors"].append(error_msg)
+        else:
+            results["modules_run"].append("legacy_labs_skipped")
 
         self._save_cycle_results(results)
         self._save_structured_outputs(results)
@@ -319,6 +398,9 @@ class ResearchEngine:
             return False
         if system_state.get("research_throttled", False):
             return False
+        if self.pause_scheduled_until_burn_in:
+            if (not self._is_manual_run(system_state)) and (not self._burn_in_certification_passed()):
+                return False
         if not bool(self.config.get("scheduling", {}).get("run_during_market_hours", False)):
             if self._resolve_market_hours(market_data=market_data, system_state=system_state):
                 return False
@@ -330,10 +412,30 @@ class ResearchEngine:
             return f"blocked_by_mode:{current_mode}"
         if system_state.get("research_throttled", False):
             return "research_throttled"
+        if self.pause_scheduled_until_burn_in:
+            if (not self._is_manual_run(system_state)) and (not self._burn_in_certification_passed()):
+                return "certification_burn_in_incomplete"
         if not bool(self.config.get("scheduling", {}).get("run_during_market_hours", False)):
             if self._resolve_market_hours(market_data=market_data, system_state=system_state):
                 return "market_hours_guard"
         return "research_disabled"
+
+    @staticmethod
+    def _is_manual_run(system_state: Dict[str, Any]) -> bool:
+        if bool(system_state.get("manual_run", False)):
+            return True
+        trigger = str(system_state.get("trigger_source", "")).strip().lower()
+        return trigger in {"manual", "operator", "cli"}
+
+    def _burn_in_certification_passed(self) -> bool:
+        try:
+            if not self.cert_state_path.exists():
+                return False
+            payload = json.loads(self.cert_state_path.read_text())
+            burn = payload.get("burn_in", {}) if isinstance(payload, dict) else {}
+            return bool((burn or {}).get("certification_passed", False))
+        except Exception:
+            return False
 
     def _apply_freeze_policy(self, module_results: Dict[str, Any]) -> Dict[str, Any]:
         if not self.is_freeze_active():
@@ -381,6 +483,7 @@ class ResearchEngine:
             "weekend_research_sweep.json": [],
             "relationship_discovery.json": [],
             "autonomous_exploration.json": [],
+            "integrity_summary.json": [],
         }
 
         for output in results.get("outputs_generated", []):
@@ -396,7 +499,11 @@ class ResearchEngine:
                 output_map["alpha_factory_report.json"].append(output)
             if "monte_carlo" in otype:
                 output_map["monte_carlo_report.json"].append(output)
-            if "parameter" in otype:
+            if otype in {"parameter_search", "parameter_sensitivity"}:
+                if otype == "parameter_sensitivity":
+                    payload = output.get("data") if isinstance(output.get("data"), dict) else {}
+                    if str(payload.get("status", "")).strip().lower() == "skipped_no_real_sensitivity_engine":
+                        continue
                 output_map["parameter_search_results.json"].append(output)
             if otype in {"model_validation", "model_promotion"}:
                 output_map["model_training_results.json"].append(output)
@@ -416,6 +523,8 @@ class ResearchEngine:
                 output_map["relationship_discovery.json"].append(output)
             if otype == "autonomous_exploration":
                 output_map["autonomous_exploration.json"].append(output)
+            if otype == "integrity_summary":
+                output_map["integrity_summary.json"].append(output)
 
         timestamp = datetime.now().isoformat()
         for file_name, payload in output_map.items():
