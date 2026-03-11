@@ -55,22 +55,67 @@ class RegimeConditionalTrainer:
             return "|".join(parts[:2])
         return str(regime or "").strip()
 
-    def _build_model(self):
+    def _build_model(self, n_obs: int = 10000):
+        """
+        Build XGBoost model with adaptive regularization based on sample size.
+        
+        For thin regimes (<10k obs), use stronger regularization to prevent overfitting.
+        For well-sampled regimes (>50k obs), use standard regularization.
+        """
         try:
             from xgboost import XGBRegressor
 
-            # CRITICAL: Regularization params to prevent overfitting
-            # Train ICs should drop from 0.87-0.99 to 0.3-0.5 range
-            # Stronger regularization for small-sample regimes
+            # Adaptive regularization based on sample size
+            if n_obs < 5000:
+                # Very thin regime: aggressive regularization
+                max_depth = 2
+                min_child_weight = 50.0
+                subsample = 0.6
+                colsample_bytree = 0.6
+                reg_alpha = 0.5
+                reg_lambda = 5.0
+                n_estimators = 100
+                learning_rate = 0.03
+            elif n_obs < 10000:
+                # Thin regime: strong regularization
+                max_depth = 3
+                min_child_weight = 40.0
+                subsample = 0.7
+                colsample_bytree = 0.7
+                reg_alpha = 0.3
+                reg_lambda = 3.0
+                n_estimators = 150
+                learning_rate = 0.04
+            elif n_obs < 30000:
+                # Medium regime: moderate regularization
+                max_depth = 3
+                min_child_weight = 30.0
+                subsample = 0.75
+                colsample_bytree = 0.75
+                reg_alpha = 0.2
+                reg_lambda = 2.0
+                n_estimators = 180
+                learning_rate = 0.05
+            else:
+                # Well-sampled regime: standard regularization
+                max_depth = 4
+                min_child_weight = 20.0
+                subsample = 0.8
+                colsample_bytree = 0.8
+                reg_alpha = 0.1
+                reg_lambda = 1.0
+                n_estimators = 200
+                learning_rate = 0.05
+
             model = XGBRegressor(
-                n_estimators=int(self.config.get("xgb_n_estimators", 200) or 200),
-                learning_rate=float(self.config.get("xgb_learning_rate", 0.05) or 0.05),
-                max_depth=int(self.config.get("xgb_max_depth", 3) or 3),  # Reduced from 4
-                min_child_weight=float(self.config.get("xgb_min_child_weight", 30.0) or 30.0),  # Increased from 20
-                subsample=float(self.config.get("xgb_subsample", 0.7) or 0.7),  # Reduced from 0.8
-                colsample_bytree=float(self.config.get("xgb_colsample_bytree", 0.7) or 0.7),  # Reduced from 0.8
-                reg_alpha=float(self.config.get("xgb_reg_alpha", 0.2) or 0.2),  # Increased from 0.1
-                reg_lambda=float(self.config.get("xgb_reg_lambda", 2.0) or 2.0),  # Increased from 1.0
+                n_estimators=n_estimators,
+                learning_rate=learning_rate,
+                max_depth=max_depth,
+                min_child_weight=min_child_weight,
+                subsample=subsample,
+                colsample_bytree=colsample_bytree,
+                reg_alpha=reg_alpha,
+                reg_lambda=reg_lambda,
                 n_jobs=int(self.config.get("n_jobs", 1) or 1),
                 random_state=self.random_state,
             )
@@ -162,7 +207,8 @@ class RegimeConditionalTrainer:
             X = X.fillna(X.median(numeric_only=True)).fillna(0.0)
             y = pd.to_numeric(local[target_col], errors="coerce").fillna(0.0).to_numpy(dtype=float)
 
-            model, backend = self._build_model()
+            # Pass n_obs for adaptive regularization
+            model, backend = self._build_model(n_obs=len(local))
             model.fit(X.to_numpy(dtype=float), y)
             pred = np.asarray(model.predict(X.to_numpy(dtype=float)), dtype=float).reshape(-1)
             ic_train = _safe_spearman(y, pred)

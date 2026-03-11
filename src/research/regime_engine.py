@@ -285,17 +285,12 @@ class RegimeEngine:
             z = z.loc[:, z.columns[keep_mask]].copy()
             x = z.to_numpy(dtype=float)
 
-        # Use safe_pca_fit to guard against degenerate matrices in early windows
-        ipca = safe_pca_fit(x, n_components=1)
-        if ipca is None:
-            # Fallback: cross-feature mean z-score for degenerate periods
-            fallback = pd.to_numeric(z.mean(axis=1), errors="coerce")
-            fallback = fallback.where(pd.Series(observed_mask, index=z.index), np.nan)
-            return fallback.astype(float)
-        
+        # PIT-safe: Initialize IncrementalPCA but DON'T pre-fit on full data
+        # The expanding window loop below will fit incrementally
+        ipca = IncrementalPCA(n_components=1)
         scores = np.full(len(z), np.nan, dtype=float)
         fitted_rows = 0
-        has_components = True  # Already fitted via safe_pca_fit
+        has_components = False  # Start False - will become True after warmup
         fit_batch: list[np.ndarray] = []
         # PIT-safe warmup should not scale linearly with feature count for wide macro panels.
         # Use a bounded warmup horizon to avoid all-NaN scores when columns are numerous.
@@ -335,11 +330,13 @@ class RegimeEngine:
                 continue
             row = np.asarray(x[i : i + 1], dtype=float)
             row = np.nan_to_num(row, nan=0.0, posinf=0.0, neginf=0.0)
+            # Only score AFTER we have enough historical data (PIT-safe)
             if has_components and fitted_rows >= min_fit:
                 try:
                     scores[i] = float(ipca.transform(row)[0, 0])
                 except Exception:
                     scores[i] = np.nan
+            # Add to batch for incremental fitting (only historical data up to row i)
             fit_batch.append(row.reshape(-1))
             if len(fit_batch) >= batch_size:
                 _fit_pending_batch()
