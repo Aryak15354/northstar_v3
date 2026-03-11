@@ -1038,6 +1038,124 @@ class DatasetManager:
             date_col = self._pick_first_existing(all_cols, ["date", "Date", "timestamp"])
             lookback_days = int(self.config.get("lookback_days", 3650) or 3650)
             start_date = None
+
+    def load_sentiment_features(self) -> pd.DataFrame:
+        """
+        Load sentiment features from legacy_news_clean.parquet when use_sentiment_features is enabled.
+        
+        Builds these PIT-safe features per ticker per date:
+        - sentiment_5d_mean: mean sentiment score over last 5 trading days
+        - sentiment_21d_mean: mean sentiment score over last 21 trading days
+        - sentiment_5d_count: number of news items in last 5 days
+        - sentiment_shock: sentiment_5d_mean - sentiment_60d_mean (deviation from baseline)
+        - sentiment_momentum: sentiment_5d_mean - sentiment_5d_mean_lag10 (direction change)
+        
+        All features use only news published before the current date (PIT-safe).
+        """
+        if not bool(self.config.get("use_sentiment_features", False)):
+            return pd.DataFrame()
+        
+        sentiment_path = self.project_root / str(
+            self.config.get("sentiment_path", "data/processed/news/legacy_news_clean.parquet")
+        )
+        
+        if not sentiment_path.exists():
+            logger.warning(f"Sentiment features enabled but file not found: {sentiment_path}")
+            return pd.DataFrame()
+        
+        try:
+            news_df = pd.read_parquet(sentiment_path)
+        except Exception as e:
+            logger.warning(f"Failed to load sentiment data: {e}")
+            return pd.DataFrame()
+        
+        if news_df.empty:
+            return pd.DataFrame()
+        
+        # Normalize columns
+        news_df = news_df.copy()
+        if "date" not in news_df.columns and "Date" in news_df.columns:
+            news_df["date"] = pd.to_datetime(news_df["Date"], errors="coerce")
+        elif "date" in news_df.columns:
+            news_df["date"] = pd.to_datetime(news_df["date"], errors="coerce")
+        elif "timestamp" in news_df.columns:
+            news_df["date"] = pd.to_datetime(news_df["timestamp"], errors="coerce").dt.normalize()
+        
+        if "ticker" not in news_df.columns and "symbol" in news_df.columns:
+            news_df["ticker"] = news_df["symbol"].astype(str).str.upper()
+            if not news_df["ticker"].str.endswith(".NS").all():
+                news_df["ticker"] = news_df["ticker"] + ".NS"
+        elif "ticker" in news_df.columns:
+            news_df["ticker"] = news_df["ticker"].astype(str).str.upper()
+            if not news_df["ticker"].str.endswith(".NS").all():
+                news_df["ticker"] = news_df["ticker"] + ".NS"
+        
+        if "sentiment_score" not in news_df.columns and "sentiment" in news_df.columns:
+            news_df["sentiment_score"] = pd.to_numeric(news_df["sentiment"], errors="coerce")
+        elif "sentiment_score" in news_df.columns:
+            news_df["sentiment_score"] = pd.to_numeric(news_df["sentiment_score"], errors="coerce")
+        
+        news_df = news_df.dropna(subset=["date", "ticker", "sentiment_score"])
+        
+        if news_df.empty:
+            return pd.DataFrame()
+        
+        # Aggregate daily sentiment per ticker
+        daily_sent = (
+            news_df.groupby(["date", "ticker"])
+            .agg(
+                sentiment_daily_mean=("sentiment_score", "mean"),
+                sentiment_daily_count=("sentiment_score", "count"),
+            )
+            .reset_index()
+        )
+        
+        # Sort for rolling calculations
+        daily_sent = daily_sent.sort_values(["ticker", "date"])
+        
+        # PIT-safe: shift all features by 1 day to ensure no future leakage
+        daily_sent["sentiment_daily_mean"] = daily_sent.groupby("ticker")["sentiment_daily_mean"].shift(1)
+        daily_sent["sentiment_daily_count"] = daily_sent.groupby("ticker")["sentiment_daily_count"].shift(1)
+        
+        # Calculate rolling features
+        for window in [5, 21, 60]:
+            daily_sent[f"sentiment_{window}d_mean"] = (
+                daily_sent.groupby("ticker")["sentiment_daily_mean"]
+                .transform(lambda x: x.rolling(window, min_periods=1).mean())
+            )
+        
+        # sentiment_5d_count: rolling sum of news count
+        daily_sent["sentiment_5d_count"] = (
+            daily_sent.groupby("ticker")["sentiment_daily_count"]
+            .transform(lambda x: x.rolling(5, min_periods=1).sum())
+        )
+        
+        # sentiment_shock: 5d mean - 60d mean
+        daily_sent["sentiment_shock"] = (
+            daily_sent["sentiment_5d_mean"] - daily_sent["sentiment_60d_mean"]
+        )
+        
+        # sentiment_momentum: 5d mean - 5d mean lagged by 10 days
+        daily_sent["sentiment_5d_mean_lag10"] = daily_sent.groupby("ticker")["sentiment_5d_mean"].shift(10)
+        daily_sent["sentiment_momentum"] = (
+            daily_sent["sentiment_5d_mean"] - daily_sent["sentiment_5d_mean_lag10"]
+        )
+        
+        # Fill NaN with 0 (no news)
+        sentiment_features = [
+            "sentiment_5d_mean",
+            "sentiment_21d_mean",
+            "sentiment_5d_count",
+            "sentiment_shock",
+            "sentiment_momentum",
+        ]
+        daily_sent[sentiment_features] = daily_sent[sentiment_features].fillna(0.0)
+        
+        # Select final columns
+        result = daily_sent[["date", "ticker"] + sentiment_features].copy()
+        
+        logger.info(f"Loaded sentiment features: {len(result)} rows, {len(sentiment_features)} features")
+        return result
             if date_col and lookback_days > 0:
                 max_date = self.query.scalar(path, f"max({_safe_sql_identifier(date_col)})")
                 if max_date is not None:
@@ -1106,6 +1224,10 @@ class DatasetManager:
         valuation = self.load_valuation_posterior()
         sentiment_company = self.load_sentiment_company()
         sentiment_market = self.load_sentiment_market()
+        
+        # Load sentiment features from legacy news if enabled
+        sentiment_features_df = self.load_sentiment_features() if bool(self.config.get("use_sentiment_features", False)) else pd.DataFrame()
+        
         et500_membership = (
             self._load_et500_membership()
             if bool(self.use_et500_features or self.use_et500_universe_filter)
@@ -1179,6 +1301,15 @@ class DatasetManager:
             sector_lookup=sector_lookup,
             et500_membership=et500_membership if bool(self.use_et500_features) else None,
         )
+
+        # Merge sentiment features if enabled
+        if not sentiment_features_df.empty:
+            panel = panel.merge(
+                sentiment_features_df,
+                on=["date", "ticker"],
+                how="left"
+            )
+            logger.info(f"Merged sentiment features: {len(sentiment_features_df.columns) - 2} columns")
 
         if bool(self.use_et500_universe_filter):
             self._emit_et500_filter_diagnostics(panel, et500_membership)

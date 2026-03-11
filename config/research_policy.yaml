@@ -372,3 +372,5 @@ historical_research:
     belief_min_history_days_for_strict_eval: 20
 use_sentiment_features: true
 use_sentiment_regime: true
+max_weekly_turnover: 0.30
+sentiment_path: data/processed/news/legacy_news_clean.parquet

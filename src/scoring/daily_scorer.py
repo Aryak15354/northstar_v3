@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pickle
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,102 @@ from src.research.dataset_manager import DatasetManager
 from src.research.regime_conditional_trainer import RegimeConditionalTrainer
 from src.research.regime_engine import RegimeEngine
 from src.signals.sentiment_overlay import SentimentOverlay
+
+
+# Turnover constraint cache file
+_TURNOVER_CACHE_PATH = Path("data/paper_trading/.prev_portfolio.pkl")
+
+
+def apply_turnover_constraint(
+    new_ranks: pd.DataFrame,
+    prev_portfolio: pd.DataFrame | None,
+    max_turnover: float = 0.30,
+    top_n: int = 20,
+    keep_threshold: int = 35,
+) -> pd.DataFrame:
+    """
+    Limit weekly rebalance to replacing maximum 30% of positions.
+    
+    Logic:
+    - Keep any stock from last week's portfolio if it ranks in the top 35 this week
+    - Only replace positions that have fallen below rank 35
+    - Fill new slots from the top of this week's ranking
+    - Cap total turnover at 30% of portfolio per week
+    
+    Args:
+        new_ranks: DataFrame with ticker and final_score columns for current week
+        prev_portfolio: DataFrame with ticker column from last week (or None)
+        max_turnover: Maximum fraction of portfolio to turnover (default 0.30)
+        top_n: Target number of positions (default 20)
+        keep_threshold: Keep prev holdings if ranked in top N this week (default 35)
+    
+    Returns:
+        DataFrame with turnover-constrained portfolio
+    """
+    if prev_portfolio is None or prev_portfolio.empty:
+        # No previous portfolio, just take top N
+        work = new_ranks.copy()
+        work["rank"] = work["final_score"].rank(method="first", ascending=False).astype(int)
+        work["keep_from_prev"] = False
+        return work[work["rank"] <= top_n].copy()
+    
+    work = new_ranks.copy()
+    work["rank"] = work["final_score"].rank(method="first", ascending=False).astype(int)
+    
+    # Get previous tickers
+    prev_tickers = set(prev_portfolio["ticker"].astype(str).tolist())
+    
+    # Mark which stocks are from previous portfolio
+    work["ticker_str"] = work["ticker"].astype(str)
+    work["is_prev_holding"] = work["ticker_str"].isin(prev_tickers)
+    
+    # Keep prev holdings if they're still in top keep_threshold
+    keep_mask = (work["is_prev_holding"]) & (work["rank"] <= keep_threshold)
+    work["keep_from_prev"] = keep_mask
+    
+    # Calculate how many we're keeping
+    n_keep = int(keep_mask.sum())
+    n_new_slots = max(0, top_n - n_keep)
+    
+    # Get non-kept stocks ranked by current score
+    non_kept = work[~work["keep_from_prev"]].copy()
+    non_kept = non_kept.sort_values("final_score", ascending=False)
+    
+    # Take top n_new_slots from non-kept
+    new_picks = non_kept.head(n_new_slots).copy()
+    new_picks["keep_from_prev"] = False
+    
+    # Get kept stocks
+    kept = work[work["keep_from_prev"]].copy()
+    
+    # Combine
+    result = pd.concat([kept, new_picks], ignore_index=True)
+    result = result.sort_values("final_score", ascending=False).reset_index(drop=True)
+    
+    # Verify turnover constraint
+    n_prev_in_result = int(result["is_prev_holding"].sum())
+    n_turnover = top_n - n_prev_in_result
+    max_allowed_turnover = int(top_n * max_turnover)
+    
+    # If we exceeded turnover limit, force more holds
+    if n_turnover > max_allowed_turnover:
+        # Need to keep more from prev
+        extra_holds_needed = n_turnover - max_allowed_turnover
+        
+        # Find prev holdings that we didn't keep but are in top keep_threshold + buffer
+        prev_not_kept = work[(work["is_prev_holding"]) & (~work["keep_from_prev"])]
+        prev_not_kept = prev_not_kept.sort_values("rank").head(extra_holds_needed)
+        
+        # Remove lowest ranked new picks
+        result = result.drop(prev_not_kept.index[:0], errors="ignore")
+        
+        # Add the extra holds
+        if len(prev_not_kept) > 0:
+            result = pd.concat([result, prev_not_kept], ignore_index=True)
+            result = result.sort_values("final_score", ascending=False).reset_index(drop=True)
+            result = result.head(top_n)
+    
+    return result
 
 
 class DailyScorer:
@@ -112,13 +209,52 @@ class DailyScorer:
         q = np.ceil(rank * 5.0).clip(1, 5)
         return q.astype(int)
 
+    def _load_prev_portfolio(self) -> pd.DataFrame | None:
+        """Load previous week's portfolio from cache."""
+        if not _TURNOVER_CACHE_PATH.exists():
+            return None
+        try:
+            with _TURNOVER_CACHE_PATH.open("rb") as f:
+                return pickle.load(f)
+        except Exception:
+            return None
+    
+    def _save_prev_portfolio(self, portfolio: pd.DataFrame) -> None:
+        """Save current portfolio for next week's turnover constraint."""
+        _TURNOVER_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with _TURNOVER_CACHE_PATH.open("wb") as f:
+            pickle.dump(portfolio, f)
+    
     def _build_weights(
         self,
         frame: pd.DataFrame,
         *,
         exposure_scale: float,
         mandate: str,
+        apply_turnover: bool = True,
     ) -> pd.Series:
+        # Get max_weekly_turnover from config
+        max_turnover = float(self.config.get("max_weekly_turnover", 0.30) or 0.30)
+        top_n = 20  # Target portfolio size
+        
+        # Apply turnover constraint if enabled and we have previous portfolio
+        if apply_turnover:
+            prev_portfolio = self._load_prev_portfolio()
+            constrained = apply_turnover_constraint(
+                new_ranks=frame,
+                prev_portfolio=prev_portfolio,
+                max_turnover=max_turnover,
+                top_n=top_n,
+                keep_threshold=35,
+            )
+            # Mark which positions are kept from prev
+            frame = frame.copy()
+            frame["keep_from_prev"] = False
+            if "keep_from_prev" in constrained.columns:
+                for idx in constrained.index:
+                    if idx in frame.index:
+                        frame.loc[idx, "keep_from_prev"] = constrained.loc[idx, "keep_from_prev"]
+        
         q = frame["quintile"].astype(int)
         w = pd.Series(0.0, index=frame.index, dtype=float)
 
@@ -230,6 +366,11 @@ class DailyScorer:
         out["quintile"] = self._assign_quintiles(out["final_score"])
         mandate = str(self.config.get("portfolio_mandate", "long_only") or "long_only").strip().lower()
         out["suggested_weight"] = self._build_weights(out, exposure_scale=exposure_scale, mandate=mandate)
+
+        # Save current portfolio for next week's turnover constraint
+        top_portfolio = out[out["suggested_weight"] > 0][["ticker", "final_score", "suggested_weight"]].copy()
+        if not top_portfolio.empty:
+            self._save_prev_portfolio(top_portfolio)
 
         self._last_info = {
             "as_of_date": str(dt.date()),
