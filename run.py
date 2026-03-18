@@ -23,6 +23,7 @@ from typing import Dict, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parent
 DASHBOARD_FILE = PROJECT_ROOT / "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py"
 RUN_COMPLETE = PROJECT_ROOT / "run_complete_v3_system.py"
+CI_UPDATE_SMOKE = PROJECT_ROOT / "scripts/ci/run_update_gate_smoke.py"
 FREEZE_STATE_FILE = PROJECT_ROOT / "data/processed/model_freeze_state.json"
 
 
@@ -131,6 +132,12 @@ def run_dashboard_mode(dashboard_type: str, verbose: bool = False) -> bool:
 
 
 def run_update_mode(quick: bool = False, verbose: bool = False) -> bool:
+    if _ci_gate_mode():
+        if not CI_UPDATE_SMOKE.exists():
+            print(f"ERROR: Missing CI update smoke runner: {CI_UPDATE_SMOKE}")
+            return False
+        return _run_subprocess([sys.executable, str(CI_UPDATE_SMOKE)], verbose=verbose)
+
     if not RUN_COMPLETE.exists():
         print(f"ERROR: Missing update runner: {RUN_COMPLETE}")
         return False

@@ -32,6 +32,7 @@ run_cmd() {
   fi
 }
 
+run_cmd bootstrap "$PYTHON_BIN" scripts/ci/bootstrap_runtime_gate_state.py
 run_cmd health "$PYTHON_BIN" run.py --mode health --verbose
 run_cmd update "$PYTHON_BIN" run.py --mode update --quick --verbose
 run_cmd dashboard "$PYTHON_BIN" run.py --mode dashboard --dashboard brain --verbose
