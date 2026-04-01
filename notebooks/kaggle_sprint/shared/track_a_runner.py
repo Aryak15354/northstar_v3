@@ -277,11 +277,15 @@ class TrackARunner:
         y_values: np.ndarray,
         group_sizes: list[int],
         *,
-        max_relevance: int = 31,
+        max_relevance: int = 30,
     ) -> np.ndarray:
         """
         Convert continuous signed returns into non-negative integer relevance labels
         per date-group so ranking libraries can optimize NDCG-style objectives.
+
+        LightGBM rankers expect integer labels in ``[0, n_labels - 1]``. Keeping the
+        largest emitted label at 30 avoids the ``Label 31 is not less than the number
+        of label mappings`` failure that shows up on larger cross-sections.
         """
 
         y_arr = np.asarray(y_values, dtype=float).reshape(-1)
@@ -299,14 +303,18 @@ class TrackARunner:
 
             order = np.argsort(np.argsort(window, kind="mergesort"), kind="mergesort")
             if size - 1 <= max_relevance:
-                labels[cursor : cursor + size] = order.astype(np.int32)
+                labels[cursor : cursor + size] = np.minimum(order, max_relevance).astype(np.int32)
             else:
                 scaled = np.floor(order.astype(float) * float(max_relevance) / float(size - 1))
-                labels[cursor : cursor + size] = scaled.astype(np.int32)
+                labels[cursor : cursor + size] = np.clip(scaled, 0, max_relevance).astype(np.int32)
             cursor += size
 
         if cursor != len(y_arr):
             raise ValueError(f"Constructed relevance labels for {cursor} rows, expected {len(y_arr)}")
+        if len(labels) and int(labels.max()) > max_relevance:
+            raise ValueError(
+                f"Constructed relevance labels with max {int(labels.max())}, expected <= {max_relevance}"
+            )
         return labels
 
     def run(self) -> dict[str, Any]:

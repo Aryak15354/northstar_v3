@@ -1314,11 +1314,19 @@ class FactorICAnalyzer:
 
         return ic_table.reindex(ic_table["mean_ic"].abs().sort_values(ascending=False).index).head(n).reset_index(drop=True)
 
-    def decay_check(self, features_df, feature_names, split_date: str) -> pd.DataFrame:
+    def decay_check(
+        self,
+        features_df,
+        feature_names,
+        split_date: str,
+        *,
+        min_abs_first_half_ic: float = 0.005,
+    ) -> pd.DataFrame:
         """
         Computes IC in first half vs second half of history.
         decay_ratio = ic_second_half / ic_first_half.
-        Flag decay_alert if decay_ratio < 0.5.
+        Flag decay_alert only when the feature had real first-half signal and
+        its second-half absolute IC fell below half of that strength.
         """
 
         split_ts = pd.Timestamp(split_date)
@@ -1330,20 +1338,28 @@ class FactorICAnalyzer:
             second_ics = self._date_level_ics(second_half[["date", feature, "target_weekly_return"]], feature, "target_weekly_return")
             ic_first = float(np.mean(first_ics)) if len(first_ics) else 0.0
             ic_second = float(np.mean(second_ics)) if len(second_ics) else 0.0
-            if abs(ic_first) > 1e-12:
+            has_signal = bool(np.isfinite(ic_first) and abs(ic_first) >= float(min_abs_first_half_ic))
+            if has_signal and abs(ic_first) > 1e-12:
                 decay_ratio = ic_second / ic_first
+                abs_decay_ratio = abs(ic_second) / abs(ic_first)
             else:
-                decay_ratio = 0.0
+                decay_ratio = float("nan")
+                abs_decay_ratio = float("nan")
             rows.append(
                 {
                     "feature": feature,
                     "ic_first_half": ic_first,
                     "ic_second_half": ic_second,
                     "decay_ratio": decay_ratio,
-                    "decay_alert": bool(decay_ratio < 0.5),
+                    "abs_decay_ratio": abs_decay_ratio,
+                    "decay_alert": bool(has_signal and np.isfinite(abs_decay_ratio) and abs_decay_ratio < 0.5),
                 }
             )
-        return pd.DataFrame(rows).sort_values("decay_ratio").reset_index(drop=True)
+        return pd.DataFrame(rows).sort_values(
+            ["decay_alert", "abs_decay_ratio"],
+            ascending=[False, True],
+            na_position="last",
+        ).reset_index(drop=True)
 
 
 class RegimeConditionalIC:
@@ -1401,6 +1417,15 @@ class SectorICAnalyzer:
     Uses sector column if present in features_df, else skips gracefully.
     """
 
+    @staticmethod
+    def _resolve_sector_column(features_df: pd.DataFrame, requested: str) -> str | None:
+        if requested in features_df.columns:
+            return requested
+        for candidate in ("broad_sector", "sector_group", "sector"):
+            if candidate in features_df.columns:
+                return candidate
+        return None
+
     def compute(self, features_df, feature_names, sector_col="sector") -> pd.DataFrame:
         """
         Per sector: mean IC, IC hit rate, n_stocks.
@@ -1408,7 +1433,8 @@ class SectorICAnalyzer:
         Returns DataFrame sorted by mean_ic descending.
         """
 
-        if sector_col not in features_df.columns:
+        resolved_sector_col = self._resolve_sector_column(features_df, sector_col)
+        if resolved_sector_col is None:
             return pd.DataFrame(columns=["sector", "mean_ic", "hit_rate", "n_stocks"])
 
         numeric_features = [feature for feature in feature_names if feature in features_df.columns]
@@ -1417,7 +1443,7 @@ class SectorICAnalyzer:
 
         analyzer = FactorICAnalyzer()
         rows: list[dict[str, Any]] = []
-        for sector, sector_df in features_df.groupby(sector_col):
+        for sector, sector_df in features_df.groupby(resolved_sector_col):
             if sector_df["ticker"].nunique() < 10:
                 continue
             composite_name = "__sector_composite__"
