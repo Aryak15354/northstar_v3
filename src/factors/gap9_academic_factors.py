@@ -185,18 +185,44 @@ class Gap9AcademicFactors:
         return score.where(valid >= int(self.min_piotroski_signals)).astype(float)
 
     def _compute_bab_signal(self, frame: pd.DataFrame) -> pd.Series:
-        nifty = (
-            frame[["date", "nifty_close"]]
-            .copy()
-            .dropna(subset=["date"])
-            .sort_values("date", kind="mergesort")
-            .drop_duplicates(subset=["date"], keep="last")
-        )
-        if nifty.empty or "nifty_close" not in nifty.columns:
+        if "date" not in frame.columns:
             return pd.Series(np.nan, index=frame.index, dtype=float)
 
-        nifty["nifty_ret_1d"] = pd.to_numeric(nifty["nifty_close"], errors="coerce").pct_change()
-        out = frame[["ticker", "date", "ret_1d"]].copy()
+        if "nifty_ret_1d" in frame.columns:
+            nifty = (
+                frame[["date", "nifty_ret_1d"]]
+                .copy()
+                .dropna(subset=["date"])
+                .sort_values("date", kind="mergesort")
+                .drop_duplicates(subset=["date"], keep="last")
+            )
+            nifty["nifty_ret_1d"] = pd.to_numeric(nifty["nifty_ret_1d"], errors="coerce")
+        elif "nifty_close" in frame.columns:
+            nifty = (
+                frame[["date", "nifty_close"]]
+                .copy()
+                .dropna(subset=["date"])
+                .sort_values("date", kind="mergesort")
+                .drop_duplicates(subset=["date"], keep="last")
+            )
+            nifty["nifty_ret_1d"] = pd.to_numeric(nifty["nifty_close"], errors="coerce").pct_change()
+        else:
+            return pd.Series(np.nan, index=frame.index, dtype=float)
+
+        if nifty.empty:
+            return pd.Series(np.nan, index=frame.index, dtype=float)
+
+        out = frame[["ticker", "date"]].copy()
+        if "ret_1d" in frame.columns:
+            out["ret_1d"] = pd.to_numeric(frame["ret_1d"], errors="coerce")
+        elif "close" in frame.columns:
+            out["ret_1d"] = (
+                pd.to_numeric(frame["close"], errors="coerce")
+                .groupby(frame["ticker"], sort=False)
+                .pct_change()
+            )
+        else:
+            return pd.Series(np.nan, index=frame.index, dtype=float)
         out["nifty_ret_1d"] = pd.to_datetime(out["date"], errors="coerce").map(
             nifty.set_index("date")["nifty_ret_1d"]
         )
