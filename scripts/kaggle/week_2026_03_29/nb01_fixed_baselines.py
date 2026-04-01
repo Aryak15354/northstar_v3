@@ -52,6 +52,22 @@ from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
     write_json,
 )
 
+MOMENTUM_VARIANT_DROP_MAP = {
+    "res_mom_5d": ("res_mom_5d_cs_rank", "res_mom_5d_cs_z"),
+    "ret_5d": ("ret_5d_cs_rank", "ret_5d_cs_z"),
+    "res_mom_20d_slope_5d": ("res_mom_20d_slope_5d_cs_rank", "res_mom_20d_slope_5d_cs_z"),
+    "mom_5d": ("mom_5d_cs_rank", "mom_5d_cs_z"),
+    "price_to_sma20": ("price_to_sma20_cs_rank", "price_to_sma20_cs_z"),
+}
+
+FORCE_INCLUDE_TRAINING_FEATURES = (
+    "val_earnings_quality_score_zscore",
+    "eps_sue_decay",
+    "eps_sue_decay_cs_z",
+    "screener_fii_pct",
+    "fii_interaction",
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run NB-01 fixed baseline models.")
@@ -140,6 +156,65 @@ def _diagnostic_feature_extras(full_features: pd.DataFrame) -> list[str]:
     return list(dict.fromkeys(extras))
 
 
+def _preferred_fii_pair(columns: list[str]) -> tuple[str | None, str | None]:
+    lower_map = {str(column).lower(): str(column) for column in columns}
+    pct_col = (
+        lower_map.get("screener_fii_pct")
+        or lower_map.get("screener_fii_pct_cs_z")
+        or lower_map.get("screener_fii_pct_cs_rank")
+    )
+    change_col = (
+        lower_map.get("screener_fii_change_1q")
+        or lower_map.get("screener_fii_change_1q_cs_z")
+        or lower_map.get("screener_fii_change_1q_cs_rank")
+    )
+    if pct_col and change_col and pct_col != change_col:
+        return pct_col, change_col
+
+    fallback = [str(column) for column in columns if str(column) != "fii_interaction"]
+    if len(fallback) >= 2:
+        return fallback[0], fallback[1]
+    return None, None
+
+
+def _augment_training_features(full_features: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    augmented = full_features.copy()
+    derived: list[str] = []
+    fii_cols = [column for column in augmented.columns if "fii" in str(column).lower()]
+    pct_col, change_col = _preferred_fii_pair(fii_cols)
+    if pct_col and change_col and "fii_interaction" not in augmented.columns:
+        augmented["fii_interaction"] = pd.to_numeric(augmented[pct_col], errors="coerce") * pd.to_numeric(
+            augmented[change_col], errors="coerce"
+        )
+        derived.append("fii_interaction")
+    return augmented, derived
+
+
+def _drop_redundant_momentum_variants(selected_features: list[str]) -> tuple[list[str], list[str]]:
+    selected_set = set(selected_features)
+    dropped: list[str] = []
+    kept: list[str] = []
+    redundant_lookup = {
+        redundant
+        for canonical, variants in MOMENTUM_VARIANT_DROP_MAP.items()
+        if canonical in selected_set
+        for redundant in variants
+    }
+    for feature in selected_features:
+        if feature in redundant_lookup:
+            dropped.append(feature)
+            continue
+        kept.append(feature)
+    return kept, dropped
+
+
+def _force_include_training_features(selected_features: list[str], full_features: pd.DataFrame) -> tuple[list[str], list[str]]:
+    available = {str(column) for column in full_features.columns}
+    forced = [feature for feature in FORCE_INCLUDE_TRAINING_FEATURES if feature in available]
+    combined = list(dict.fromkeys([*selected_features, *forced]))
+    return combined, forced
+
+
 def _prune_dead_features(
     candidate_features: list[str],
     coverage_audit: pd.DataFrame,
@@ -191,6 +266,7 @@ def main() -> int:
 
     selected = _selected_features(export_artifacts.export_dir, args.nb00_report)
     full_features, _, _, _ = load_export_artifacts(export_artifacts.export_dir)
+    full_features, derived_training_features = _augment_training_features(full_features)
     candidate_features = selected if selected else select_feature_columns(full_features)
     coverage_audit = build_feature_coverage_audit(
         full_features,
@@ -208,6 +284,8 @@ def main() -> int:
         min_abs_ic=args.dead_feature_min_abs_ic,
         min_abs_tstat=args.dead_feature_min_abs_tstat,
     )
+    filtered_selected, dropped_redundant_variants = _drop_redundant_momentum_variants(filtered_selected)
+    filtered_selected, forced_training_features = _force_include_training_features(filtered_selected, full_features)
     write_json(output_dir / "feature_coverage_audit.json", coverage_audit.to_dict(orient="records"))
     coverage_audit.to_csv(output_dir / "feature_coverage_audit.csv", index=False)
 
@@ -218,6 +296,7 @@ def main() -> int:
         output_dir=filtered_export_dir,
         selected_features=[*filtered_selected, *diagnostic_extras] if filtered_selected else None,
         model_feature_names=filtered_selected,
+        feature_frame=full_features,
     )
 
     config = TrackARunConfig(
@@ -273,6 +352,12 @@ def main() -> int:
         "dead_features": dead_features,
         "protected_dead_feature_count": len(protected_dead_features),
         "protected_dead_features": protected_dead_features,
+        "dropped_redundant_variant_count": len(dropped_redundant_variants),
+        "dropped_redundant_variants": dropped_redundant_variants,
+        "force_included_feature_count": len(forced_training_features),
+        "force_included_features": forced_training_features,
+        "derived_training_feature_count": len(derived_training_features),
+        "derived_training_features": derived_training_features,
         "diagnostic_extra_count": len(diagnostic_extras),
         "diagnostic_extras": diagnostic_extras,
         "models": rows,

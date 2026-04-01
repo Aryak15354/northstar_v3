@@ -875,12 +875,17 @@ def subset_feature_export(
     output_dir: str | Path,
     selected_features: Sequence[str] | None = None,
     model_feature_names: Sequence[str] | None = None,
+    feature_frame: pd.DataFrame | None = None,
     ticker_mask: Sequence[str] | None = None,
     date_min: str | None = None,
     date_max: str | None = None,
 ) -> ExportArtifacts:
     artifacts = resolve_export_dir(source_dir)
     features, splits, regimes, metadata = load_export_artifacts(artifacts.export_dir)
+    if feature_frame is not None:
+        features = feature_frame.copy()
+        features["date"] = pd.to_datetime(features["date"], errors="coerce").dt.normalize()
+        features["ticker"] = features["ticker"].astype("string")
 
     tickers = {_normalize_ticker(value) for value in (ticker_mask or []) if _normalize_ticker(value)}
     if tickers:

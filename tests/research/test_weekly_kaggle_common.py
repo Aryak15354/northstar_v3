@@ -12,6 +12,9 @@ from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _profile_
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _dataset_runtime_config
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _validate_raw_bundle_support_artifacts
 from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import parse_args as parse_nb01_args
+from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _augment_training_features
+from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _drop_redundant_momentum_variants
+from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _force_include_training_features
 from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _prune_dead_features
 from scripts.kaggle.week_2026_03_29.common import (
     MODEL_FEATURE_MANIFEST,
@@ -250,6 +253,57 @@ def test_nb01_cli_defaults_match_track_a_catboost_defaults(monkeypatch: pytest.M
     assert args.catboost_min_leaf == 40
     assert args.catboost_l2 == 15.0
     assert args.catboost_iterations == 800
+
+
+def test_drop_redundant_momentum_variants_keeps_canonical_signals():
+    kept, dropped = _drop_redundant_momentum_variants(
+        [
+            "res_mom_5d",
+            "res_mom_5d_cs_rank",
+            "res_mom_5d_cs_z",
+            "ret_5d",
+            "ret_5d_cs_rank",
+            "other_feature",
+        ]
+    )
+
+    assert kept == ["res_mom_5d", "ret_5d", "other_feature"]
+    assert dropped == ["res_mom_5d_cs_rank", "res_mom_5d_cs_z", "ret_5d_cs_rank"]
+
+
+def test_force_include_training_features_adds_india_diagnostics_when_present():
+    frame = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2026-01-02"]),
+            "ticker": ["AAA.NS"],
+            "target_weekly_return": [0.01],
+            "eps_sue_decay": [0.4],
+            "screener_fii_pct": [12.0],
+            "val_earnings_quality_score_zscore": [0.2],
+        }
+    )
+
+    combined, forced = _force_include_training_features(["ret_5d"], frame)
+
+    assert combined == ["ret_5d", "val_earnings_quality_score_zscore", "eps_sue_decay", "screener_fii_pct"]
+    assert forced == ["val_earnings_quality_score_zscore", "eps_sue_decay", "screener_fii_pct"]
+
+
+def test_augment_training_features_derives_fii_interaction_from_raw_inputs():
+    frame = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2026-01-02"]),
+            "ticker": ["AAA.NS"],
+            "target_weekly_return": [0.01],
+            "screener_fii_pct": [10.0],
+            "screener_fii_change_1q": [0.2],
+        }
+    )
+
+    augmented, derived = _augment_training_features(frame)
+
+    assert derived == ["fii_interaction"]
+    assert float(augmented.loc[0, "fii_interaction"]) == pytest.approx(2.0)
 
 
 def test_subset_feature_export_writes_model_feature_manifest(tmp_path: Path):

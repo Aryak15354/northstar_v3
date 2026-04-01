@@ -121,6 +121,71 @@ def _safe_float(value: Any, default: float = float("-inf")) -> float:
     return numeric if np.isfinite(numeric) else default
 
 
+def _pick_first_existing(columns: list[str], preferred: list[str]) -> str | None:
+    lookup = {str(column).lower(): str(column) for column in columns}
+    for candidate in preferred:
+        chosen = lookup.get(candidate.lower())
+        if chosen:
+            return chosen
+    return None
+
+
+def _preferred_fii_feature_pair(columns: list[str]) -> tuple[str | None, str | None]:
+    pct_col = _pick_first_existing(
+        columns,
+        [
+            "screener_fii_pct",
+            "screener_fii_pct_cs_z",
+            "screener_fii_pct_cs_rank",
+        ],
+    )
+    change_col = _pick_first_existing(
+        columns,
+        [
+            "screener_fii_change_1q",
+            "screener_fii_change_1q_cs_z",
+            "screener_fii_change_1q_cs_rank",
+        ],
+    )
+    if pct_col and change_col and pct_col != change_col:
+        return pct_col, change_col
+
+    fallback = [str(column) for column in columns if str(column) != "fii_interaction"]
+    if len(fallback) >= 2:
+        return fallback[0], fallback[1]
+    return None, None
+
+
+def _apply_track_a_investigate_band(
+    verdict: dict[str, Any],
+    *,
+    ic_table: pd.DataFrame,
+    best_model_summary: dict[str, Any],
+    track_name: str,
+) -> dict[str, Any]:
+    if verdict.get("verdict") != "C":
+        return verdict
+
+    moderate_factors = int((ic_table["mean_ic"].abs() > 0.020).sum()) if not ic_table.empty else 0
+    ic_ir = _safe_float(best_model_summary.get("ic_ir"), default=float("nan"))
+    ratio = _safe_float(best_model_summary.get("mean_train_test_ratio"), default=float("inf"))
+    if moderate_factors < 1 or not np.isfinite(ic_ir) or ic_ir < 0.50 or ratio >= 3.0:
+        return verdict
+
+    updated = dict(verdict)
+    updated["verdict"] = "B_INVESTIGATE"
+    updated["verdict_label"] = "PROMOTE_LIMITED_INVESTIGATE"
+    updated["recommendation"] = (
+        f"Promote {track_name} into a limited investigate band under a CAUTIOUS regime, keep deployment near "
+        "20-30%, and prioritize reducing the remaining train/test overshoot before the freeze review."
+    )
+    evidence = dict(updated.get("evidence") or {})
+    evidence["investigate_band"] = True
+    evidence["investigate_band_ratio_cap"] = 3.0
+    updated["evidence"] = evidence
+    return updated
+
+
 @dataclass
 class TrackARunConfig:
     data_dir: Path | None = None
@@ -1739,8 +1804,14 @@ class TrackARunner:
             print(fii_ic[["feature", "mean_ic", "ic_tstat"]].to_string(index=False))
         if len(fii_cols) >= 2:
             test_df3 = features_df.copy()
-            test_df3["fii_interaction"] = test_df3[fii_cols[0]] * test_df3[fii_cols[1]]
-            fii_ic = analyzer.compute_ic_table(test_df3, fii_cols[:2] + ["fii_interaction"])
+            fii_left, fii_right = _preferred_fii_feature_pair(fii_cols)
+            if fii_left and fii_right:
+                test_df3["fii_interaction"] = pd.to_numeric(test_df3[fii_left], errors="coerce") * pd.to_numeric(
+                    test_df3[fii_right], errors="coerce"
+                )
+                fii_ic = analyzer.compute_ic_table(test_df3, [fii_left, fii_right, "fii_interaction"])
+            else:
+                fii_ic = analyzer.compute_ic_table(test_df3, fii_cols[:2])
             india_results["fii_interaction"] = fii_ic.to_dict(orient="records")
             print("\nFII interaction vs components:")
             print(fii_ic[["feature", "mean_ic", "ic_tstat"]].to_string(index=False))
@@ -1839,18 +1910,26 @@ class TrackARunner:
                     simulated_exposure = 0.20
                 else:
                     simulated_exposure = 0.05
-                simulated_exposure = min(simulated_exposure, float(regime_caps.get(regime_name, regime_caps["default"])))
+                regime_cap = float(regime_caps.get(regime_name, regime_caps["default"]))
+                simulated_exposure = min(simulated_exposure, regime_cap)
                 deployment_simulation.append(
                     {
                         "window_id": window["window_id"],
                         "regime": regime_name,
                         "test_ic": test_ic,
+                        "regime_cap": regime_cap,
                         "simulated_exposure": simulated_exposure,
                     }
                 )
 
         sim_df = pd.DataFrame(deployment_simulation)
         if not sim_df.empty:
+            for row in sim_df.itertuples(index=False):
+                print(
+                    f"  Window {int(row.window_id):02d}: regime={row.regime} "
+                    f"test_ic={float(row.test_ic):+.4f} cap={float(row.regime_cap):.0%} "
+                    f"exposure={float(row.simulated_exposure):.0%}"
+                )
             print(f"Mean simulated exposure: {sim_df['simulated_exposure'].mean():.1%}")
             print(f"Windows above 20% exposure: {(sim_df['simulated_exposure'] >= 0.20).sum()}/{len(sim_df)}")
             print(f"Windows in HOLD (5%): {(sim_df['simulated_exposure'] <= 0.05).sum()}/{len(sim_df)}")
@@ -1881,13 +1960,20 @@ class TrackARunner:
             "ic_gain": self.state.get("mean_gain"),
             "passes_min_parity": self.state.get("passes_parity"),
         }
+        ic_table = self._ensure_ic_table_available("final verdict")
         verdict = verdict_engine.compute(
-            self._ensure_ic_table_available("final verdict"),
+            ic_table,
             best_summary,
             best_stability,
             best_regime,
             ensemble_gain_result,
             self.track_name,
+        )
+        verdict = _apply_track_a_investigate_band(
+            verdict,
+            ic_table=ic_table,
+            best_model_summary=best_summary,
+            track_name=self.track_name,
         )
 
         print("\n" + "=" * 60)

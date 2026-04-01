@@ -14,7 +14,13 @@ if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
 from sprint_utils import FactorICAnalyzer, SectorICAnalyzer, SprintDataLoader, SprintWalkForward  # noqa: E402
-from track_a_runner import TrackARunConfig, TrackARunner, run_track_a_notebook  # noqa: E402
+from track_a_runner import (  # noqa: E402
+    TrackARunConfig,
+    TrackARunner,
+    _apply_track_a_investigate_band,
+    _preferred_fii_feature_pair,
+    run_track_a_notebook,
+)
 
 
 def _build_synthetic_export(root: Path) -> Path:
@@ -248,3 +254,39 @@ def test_sprint_data_loader_honors_model_feature_manifest(tmp_path):
     feature_names = loader.get_feature_names(features_df)
 
     assert feature_names == ["earnings_quality_signal", "pledge_signal"]
+
+
+def test_preferred_fii_feature_pair_prefers_raw_pct_and_change():
+    left, right = _preferred_fii_feature_pair(
+        [
+            "screener_fii_change_1q_cs_rank",
+            "screener_fii_pct_cs_z",
+            "screener_fii_change_1q",
+            "screener_fii_pct",
+        ]
+    )
+
+    assert (left, right) == ("screener_fii_pct", "screener_fii_change_1q")
+
+
+def test_track_a_investigate_band_upgrades_borderline_c_result():
+    verdict = {
+        "verdict": "C",
+        "verdict_label": "DO_NOT_PROMOTE",
+        "evidence": {},
+        "recommendation": "Hold.",
+        "open_questions": [],
+    }
+    ic_table = pd.DataFrame({"mean_ic": [0.021, 0.018, 0.005]})
+    summary = {"ic_ir": 0.61, "mean_train_test_ratio": 2.8}
+
+    updated = _apply_track_a_investigate_band(
+        verdict,
+        ic_table=ic_table,
+        best_model_summary=summary,
+        track_name="track_a_classical",
+    )
+
+    assert updated["verdict"] == "B_INVESTIGATE"
+    assert updated["verdict_label"] == "PROMOTE_LIMITED_INVESTIGATE"
+    assert updated["evidence"]["investigate_band"] is True

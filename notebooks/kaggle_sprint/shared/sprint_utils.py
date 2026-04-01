@@ -1703,8 +1703,10 @@ class PromotionVerdict:
         """
 
         evidence = verdict_dict.get("evidence", {})
-        target_regime = "STANDARD" if verdict_dict.get("verdict") == "A" else "CAUTIOUS" if verdict_dict.get("verdict") == "B" else "HOLD"
-        target_equity = "40-60%" if verdict_dict.get("verdict") == "A" else "20-30%" if verdict_dict.get("verdict") == "B" else "0-20%"
+        verdict_code = str(verdict_dict.get("verdict") or "C")
+        is_b_band = verdict_code == "B" or verdict_code.startswith("B_")
+        target_regime = "STANDARD" if verdict_code == "A" else "CAUTIOUS" if is_b_band else "HOLD"
+        target_equity = "40-60%" if verdict_code == "A" else "20-30%" if is_b_band else "0-20%"
         return "\n".join(
             [
                 "# Research Verdict - Week of 2026-03-22",
