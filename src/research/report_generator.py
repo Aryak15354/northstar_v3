@@ -10,7 +10,7 @@ from typing import Any, Dict
 
 def _collect_summary(research_dir: Path) -> Dict[str, Any]:
     latest_cycle = None
-    cycle_files = sorted(research_dir.glob("research_cycle_*.json"))
+    cycle_files = sorted(research_dir.rglob("research_cycle_*.json"))
     if cycle_files:
         try:
             latest_cycle = json.loads(cycle_files[-1].read_text())
@@ -25,8 +25,8 @@ def _collect_summary(research_dir: Path) -> Dict[str, Any]:
 
 
 def generate_nightly_report(
-    research_dir: Path | str = "data/research",
-    output_dir: Path | str = "data/research_reports",
+    research_dir: Path | str = "data/results/research/cycles",
+    output_dir: Path | str = "data/results/research/reports/nightly",
 ) -> Path:
     research_path = Path(research_dir)
     output_path = Path(output_dir)

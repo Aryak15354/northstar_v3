@@ -22,8 +22,10 @@ class ResearchEngine:
     def __init__(self, config_path: Optional[Path] = None):
         self.config_path = Path(config_path) if config_path is not None else Path("config/research_policy.yaml")
         self.config = self._load_config()
-        self.research_output_dir = Path("data/research")
-        self.research_output_dir.mkdir(parents=True, exist_ok=True)
+        self.research_state_dir = Path("data/results/research/state")
+        self.research_cycle_dir = Path("data/results/research/cycles")
+        self.research_state_dir.mkdir(parents=True, exist_ok=True)
+        self.research_cycle_dir.mkdir(parents=True, exist_ok=True)
 
         self.modules: Dict[str, Any] = {}
         self._initialize_modules()
@@ -37,7 +39,7 @@ class ResearchEngine:
         mode = str(cert_cfg.get("mode", "enforce") or "enforce").strip().lower()
         self.cert_mode = mode if mode in {"enforce", "shadow"} else "enforce"
         self.pause_scheduled_until_burn_in = bool(runtime_cfg.get("pause_scheduled_until_burn_in", True)) and bool(self.cert_mode == "enforce")
-        self.cert_state_path = Path(str(cert_cfg.get("state_path", "data/research/certification_state.json")))
+        self.cert_state_path = Path(str(cert_cfg.get("state_path", "data/results/research/state/certification_state.json")))
 
     def _load_config(self) -> Dict[str, Any]:
         try:
@@ -94,16 +96,17 @@ class ResearchEngine:
                     "use_et500_universe_filter": False,
                     "et500_membership_path": "data/reference/et500_pit_membership.csv",
                     "use_screener_features": False,
-                    "screener_fundamentals_path": "data/processed/screener_fundamentals_annual.csv",
-                    "screener_shareholding_path": "data/processed/screener_shareholding.csv",
+                    "screener_fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.csv",
+                    "screener_shareholding_path": "data/canonical/fundamentals/shareholding_quarterly.csv",
                     "use_alternative_features": False,
-                    "alternative_data_path": "data/processed/alternative/",
+                    "alternative_data_path": "data/canonical/alternative/",
                     "use_sentiment_features": False,
                     "use_sentiment_regime": False,
-                    "sentiment_path": "data/processed/sentiment/ticker_sentiment_daily.parquet",
-                    "market_sentiment_path": "data/processed/sentiment/market_sentiment_daily.parquet",
+                    "sentiment_path": "data/canonical/sentiment/company_sentiment_daily.parquet",
+                    "market_sentiment_path": "data/canonical/sentiment/market_sentiment_daily.parquet",
                     "sentiment_duckdb_path": "data/sentiment.duckdb",
                     "use_macro_features": False,
+                    "macro_features_path": "data/canonical/macro/macro_regime_features.parquet",
                     "strict_real_data_only": True,
                     "strict_required_artifacts": [
                         "prices",
@@ -144,7 +147,7 @@ class ResearchEngine:
                 },
                 "alpha_factory": {
                     "enabled": False,
-                    "output_dir": "data/research/alpha_factory",
+                    "output_dir": "data/results/research/alpha_factory",
                     "max_rows": 120000,
                     "window_isolated_oos": True,
                     "oos_train_periods": 756,
@@ -187,7 +190,7 @@ class ResearchEngine:
                 "certification": {
                     "enabled": True,
                     "mode": "enforce",
-                    "state_path": "data/research/certification_state.json",
+                    "state_path": "data/results/research/state/certification_state.json",
                     "transaction_cost_floor_bps": 5.0,
                     "burn_in_cycles_required": 20,
                     "burn_in_regimes_required": 2,
@@ -459,7 +462,8 @@ class ResearchEngine:
     def _save_cycle_results(self, results: Dict[str, Any]) -> None:
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = self.research_output_dir / f"research_cycle_{timestamp}.json"
+            output_file = self.research_cycle_dir / timestamp[:4] / timestamp[4:6] / f"research_cycle_{timestamp}.json"
+            output_file.parent.mkdir(parents=True, exist_ok=True)
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(results, f, indent=2, default=str)
             logger.debug("Research cycle results saved: %s", output_file)
@@ -530,7 +534,7 @@ class ResearchEngine:
         for file_name, payload in output_map.items():
             if not payload:
                 continue
-            target = self.research_output_dir / file_name
+            target = self.research_state_dir / file_name
             with open(target, "w", encoding="utf-8") as handle:
                 json.dump(
                     {
@@ -572,7 +576,7 @@ class ResearchEngine:
         try:
             from .report_generator import generate_nightly_report
 
-            report_path = generate_nightly_report(self.research_output_dir)
+            report_path = generate_nightly_report(self.research_cycle_dir)
             logger.info("Nightly report generated: %s", report_path)
         except Exception as e:
             logger.warning("Nightly report generation failed: %s", e)
@@ -584,7 +588,8 @@ class ResearchEngine:
             "modules_available": list(self.modules.keys()),
             "historical_controller_enabled": bool(self.historical_controller_enabled),
             "config_loaded": self.config_path.exists(),
-            "output_directory": str(self.research_output_dir),
+            "output_directory": str(self.research_cycle_dir),
+            "state_directory": str(self.research_state_dir),
             "freeze_config": {
                 "freeze_start": self.config.get("freeze_start_ist"),
                 "freeze_days": self.config.get("freeze_days"),

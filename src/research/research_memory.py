@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 
 class ResearchMemory:
-    def __init__(self, path: str = "data/research/research_memory.json"):
+    def __init__(self, path: str = "data/results/research/state/research_memory.json"):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if not self.path.exists():

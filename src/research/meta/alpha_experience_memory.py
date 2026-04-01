@@ -33,7 +33,7 @@ class AlphaExperience:
 
 
 class AlphaExperienceMemory:
-    def __init__(self, db_path: str = "data/research/alpha_experience_memory.db"):
+    def __init__(self, db_path: str = "data/results/research/trackers/alpha_experience_memory.db"):
         self.db_path = str(db_path)
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.db_path)

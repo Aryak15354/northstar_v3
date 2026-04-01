@@ -17,8 +17,8 @@ class MonteCarloLab:
 
     @staticmethod
     def _latest_snapshot() -> pd.DataFrame:
-        root = Path("data/research")
-        snaps = sorted(root.glob("research_snapshot_*.parquet"))
+        root = Path("data/results/research/snapshots")
+        snaps = sorted(root.rglob("research_snapshot_*.parquet"))
         if not snaps:
             return pd.DataFrame()
         try:

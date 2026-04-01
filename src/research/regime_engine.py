@@ -27,34 +27,6 @@ from sklearn.decomposition import IncrementalPCA
 logger = logging.getLogger(__name__)
 
 
-def safe_pca_fit(X: np.ndarray, n_components: int = 3) -> IncrementalPCA | None:
-    """
-    Guard against degenerate matrices in early expanding windows.
-    
-    Drops columns with zero or near-zero variance before fitting PCA.
-    Returns None if not enough valid columns for the requested components.
-    """
-    if X.ndim != 2 or X.shape[0] < 2 or X.shape[1] < 1:
-        return None
-    
-    # Drop columns with zero or near-zero variance
-    col_var = np.var(X, axis=0)
-    valid_cols = col_var > 1e-8
-    
-    if valid_cols.sum() < n_components:
-        return None  # Not enough valid columns, skip this window
-    
-    X_clean = X[:, valid_cols]
-    
-    try:
-        ipca = IncrementalPCA(n_components=min(n_components, X_clean.shape[1]))
-        ipca.fit(X_clean)
-        return ipca
-    except Exception as e:
-        logger.warning(f"pca_fit_failed: {e}")
-        return None
-
-
 class RegimeEngine:
     """
     Single source of truth for regime labels.
@@ -69,6 +41,11 @@ class RegimeEngine:
     """
 
     EXPOSURE_MAP = {
+        # 2-axis regime labels (VIX + Nifty trend)
+        "risk_on_calm": 0.9,
+        "risk_on_volatile": 0.7,
+        "risk_off_calm": 0.5,
+        "risk_off_volatile": 0.3,
         "low_vol|uptrend|expansion": 1.0,
         "low_vol|uptrend|neutral": 0.9,
         "low_vol|uptrend|contraction": 0.7,
@@ -84,6 +61,10 @@ class RegimeEngine:
     }
 
     BASE_FALLBACK_NEUTRAL = {
+        "risk_on_calm": 0.9,
+        "risk_on_volatile": 0.7,
+        "risk_off_calm": 0.5,
+        "risk_off_volatile": 0.3,
         "low_vol|uptrend": 0.9,
         "low_vol|downtrend": 0.5,
         "high_vol|uptrend": 0.7,
@@ -106,6 +87,11 @@ class RegimeEngine:
             self.config.get("sentiment_coverage_threshold", 0.50) or 0.50
         )
         self.macro_col_min_coverage = float(self.config.get("macro_col_min_coverage", 0.05) or 0.05)
+        self.regime_mode = str(self.config.get("regime_mode", "auto")).strip().lower()
+        self.vix_threshold = float(self.config.get("vix_threshold", 20.0) or 20.0)
+        self.nifty_sma_window = int(self.config.get("nifty_sma_window", 200) or 200)
+        self.nifty_prices_path = Path(str(self.config.get("nifty_prices_path", "data/processed/nifty.parquet")))
+        self.vix_path = Path(str(self.config.get("india_vix_path", "data/processed/india_vix.parquet")))
         self._labels: pd.DataFrame | None = None
 
     @staticmethod
@@ -193,6 +179,72 @@ class RegimeEngine:
         )
         return out
 
+    def _load_nifty_series(self) -> pd.DataFrame:
+        if not self.nifty_prices_path.exists():
+            return pd.DataFrame(columns=["date", "close"])
+        try:
+            if self.nifty_prices_path.suffix.lower() in {".parquet", ".pq"}:
+                df = pd.read_parquet(self.nifty_prices_path)
+            else:
+                df = pd.read_csv(self.nifty_prices_path)
+        except Exception:
+            return pd.DataFrame(columns=["date", "close"])
+        if df is None or df.empty:
+            return pd.DataFrame(columns=["date", "close"])
+        work = df.copy()
+        if "date" not in work.columns:
+            if "Date" in work.columns:
+                work["date"] = work["Date"]
+            else:
+                try:
+                    work = work.reset_index()
+                    if "Date" in work.columns:
+                        work["date"] = work["Date"]
+                except Exception:
+                    work["date"] = pd.NaT
+        work["date"] = pd.to_datetime(work["date"], errors="coerce")
+        close_col = "close" if "close" in work.columns else ("Close" if "Close" in work.columns else None)
+        if close_col is None:
+            return pd.DataFrame(columns=["date", "close"])
+        work["close"] = pd.to_numeric(work[close_col], errors="coerce")
+        work = work.dropna(subset=["date", "close"]).sort_values("date", kind="mergesort")
+        return work[["date", "close"]].drop_duplicates(subset=["date"], keep="last").reset_index(drop=True)
+
+    def _load_vix_series(self) -> pd.DataFrame:
+        if not self.vix_path.exists():
+            return pd.DataFrame(columns=["date", "vix"])
+        try:
+            if self.vix_path.suffix.lower() in {".parquet", ".pq"}:
+                df = pd.read_parquet(self.vix_path)
+            else:
+                df = pd.read_csv(self.vix_path)
+        except Exception:
+            return pd.DataFrame(columns=["date", "vix"])
+        if df is None or df.empty:
+            return pd.DataFrame(columns=["date", "vix"])
+        work = df.copy()
+        if "date" not in work.columns:
+            if "Date" in work.columns:
+                work["date"] = work["Date"]
+            else:
+                try:
+                    work = work.reset_index()
+                    if "Date" in work.columns:
+                        work["date"] = work["Date"]
+                except Exception:
+                    work["date"] = pd.NaT
+        work["date"] = pd.to_datetime(work["date"], errors="coerce")
+        vix_col = None
+        for c in ["india_vix", "vix", "VIX", "close", "Close"]:
+            if c in work.columns:
+                vix_col = c
+                break
+        if vix_col is None:
+            return pd.DataFrame(columns=["date", "vix"])
+        work["vix"] = pd.to_numeric(work[vix_col], errors="coerce")
+        work = work.dropna(subset=["date", "vix"]).sort_values("date", kind="mergesort")
+        return work[["date", "vix"]].drop_duplicates(subset=["date"], keep="last").reset_index(drop=True)
+
     def _prepare_macro_matrix(self, macro_df: pd.DataFrame, daily_index: pd.DatetimeIndex) -> pd.DataFrame:
         if macro_df is None or macro_df.empty:
             return pd.DataFrame(index=daily_index)
@@ -268,6 +320,28 @@ class RegimeEngine:
         return out
 
     def _compute_macro_activity_score(self, macro_daily: pd.DataFrame) -> pd.Series:
+        """
+        Compute macro activity score using PIT-safe incremental PCA.
+        
+        CRITICAL PIT SAFETY:
+        This method ensures point-in-time compliance by:
+        1. Using IncrementalPCA with expanding window (not full dataset)
+        2. Only scoring row i after model has seen rows 0 to i-1
+        3. Tracking fitted_cutoff_idx to prevent future data leakage
+        4. Batch fitting only on historical data up to current row
+        
+        The key invariant: When scoring row i, the PCA model has only been
+        trained on rows 0 to i-1, ensuring no future information leaks.
+        
+        Reference: Northstar V3 Signal Engineering Plan, Requirement 47.4
+        Task 1.3: PIT bug fix in regime_engine.py
+        
+        Args:
+            macro_daily: DataFrame with macro features indexed by date
+            
+        Returns:
+            Series of macro activity scores (PCA first component)
+        """
         if macro_daily.empty:
             return pd.Series(np.nan, index=macro_daily.index, dtype=float)
 
@@ -276,14 +350,8 @@ class RegimeEngine:
         x = z.to_numpy(dtype=float)
         if x.ndim != 2 or x.shape[1] < 2:
             return pd.Series(np.nan, index=macro_daily.index, dtype=float)
-        # Drop globally near-constant columns to avoid PCA degeneracy warnings.
-        col_var_full = np.nanvar(x, axis=0)
-        keep_mask = np.isfinite(col_var_full) & (col_var_full > 1e-8)
-        if int(keep_mask.sum()) < 2:
-            return pd.Series(np.nan, index=macro_daily.index, dtype=float)
-        if not bool(keep_mask.all()):
-            z = z.loc[:, z.columns[keep_mask]].copy()
-            x = z.to_numpy(dtype=float)
+        # Avoid global variance filters here to keep the PCA guard PIT-safe.
+        # Degenerate-batch checks are handled inside the expanding window loop.
 
         # PIT-safe: Initialize IncrementalPCA but DON'T pre-fit on full data
         # The expanding window loop below will fit incrementally
@@ -291,7 +359,9 @@ class RegimeEngine:
         scores = np.full(len(z), np.nan, dtype=float)
         fitted_rows = 0
         has_components = False  # Start False - will become True after warmup
-        fit_batch: list[np.ndarray] = []
+        fitted_cutoff_idx = -1  # CRITICAL: Highest row index seen by partial_fit; used for PIT guard.
+        fit_batch_rows: list[np.ndarray] = []
+        fit_batch_idx: list[int] = []
         # PIT-safe warmup should not scale linearly with feature count for wide macro panels.
         # Use a bounded warmup horizon to avoid all-NaN scores when columns are numerous.
         min_fit = max(int(self.pca_min_periods), 30)
@@ -299,11 +369,13 @@ class RegimeEngine:
         batch_size = max(8, min(32, int(self.config.get("regime_pca_batch_size", 16) or 16)))
 
         def _fit_pending_batch() -> None:
-            nonlocal fitted_rows, has_components, fit_batch
-            if not fit_batch:
+            nonlocal fitted_rows, has_components, fitted_cutoff_idx, fit_batch_rows, fit_batch_idx
+            if not fit_batch_rows:
                 return
-            batch = np.vstack(fit_batch).astype(float)
-            fit_batch = []
+            batch = np.vstack(fit_batch_rows).astype(float)
+            batch_idx = np.asarray(fit_batch_idx, dtype=int)
+            fit_batch_rows = []
+            fit_batch_idx = []
             # Skip degenerate batches; IncrementalPCA on near-constant batches
             # emits divide warnings and produces unstable explained variance.
             if batch.shape[0] < 2:
@@ -322,6 +394,8 @@ class RegimeEngine:
                     hasattr(ipca, "components_")
                     and np.isfinite(np.asarray(ipca.components_, dtype=float)).all()
                 )
+                if batch_idx.size > 0:
+                    fitted_cutoff_idx = max(fitted_cutoff_idx, int(batch_idx.max()))
             except Exception:
                 return
 
@@ -330,15 +404,18 @@ class RegimeEngine:
                 continue
             row = np.asarray(x[i : i + 1], dtype=float)
             row = np.nan_to_num(row, nan=0.0, posinf=0.0, neginf=0.0)
-            # Only score AFTER we have enough historical data (PIT-safe)
-            if has_components and fitted_rows >= min_fit:
+            # CRITICAL PIT SAFETY: Only score AFTER we have enough historical data
+            # and only if the model has only seen rows strictly before i.
+            # This ensures no future information leaks into the score at row i.
+            if has_components and fitted_rows >= min_fit and fitted_cutoff_idx < i:
                 try:
                     scores[i] = float(ipca.transform(row)[0, 0])
                 except Exception:
                     scores[i] = np.nan
             # Add to batch for incremental fitting (only historical data up to row i)
-            fit_batch.append(row.reshape(-1))
-            if len(fit_batch) >= batch_size:
+            fit_batch_rows.append(row.reshape(-1))
+            fit_batch_idx.append(i)
+            if len(fit_batch_rows) >= batch_size:
                 _fit_pending_batch()
         _fit_pending_batch()
 
@@ -429,9 +506,30 @@ class RegimeEngine:
         sentiment_df: pd.DataFrame | None = None,
     ) -> pd.DataFrame:
         """
-        Build regime labels for full historical period.
+        Build regime labels for full historical period with PIT safety.
+        
+        CRITICAL PIT SAFETY:
+        All calculations use only data available up to each date:
+        - Volatility: Rolling window on historical returns
+        - Trend: Rolling SMA on historical prices
+        - Macro PCA: Incremental fitting with expanding window
+        - All auxiliary data: Uses availability_date for PIT compliance
+        
         Priority order: vol+trend -> macro PCA -> CEA+GST -> sentiment.
         Graceful degradation: missing sources = fewer regime dimensions.
+        
+        Reference: Northstar V3 Signal Engineering Plan, Requirements 1.3, 47
+        Task 1.3: PIT bug fix validation
+        
+        Args:
+            prices_df: Price data with date and close columns
+            macro_df: Optional macro features with availability_date
+            power_df: Optional power consumption data
+            gst_df: Optional GST data
+            sentiment_df: Optional sentiment data
+            
+        Returns:
+            DataFrame with regime labels and auxiliary features
         """
         px = self._extract_benchmark_prices(prices_df)
         if px.empty:
@@ -462,6 +560,70 @@ class RegimeEngine:
         px["base_regime"] = px["vol_label"].astype(str) + "|" + px["trend_label"].astype(str)
 
         idx = pd.DatetimeIndex(px["date"])
+        vix = self._load_vix_series()
+        nifty = self._load_nifty_series()
+        use_vix_mode = self.regime_mode in {"vix_nifty", "vix"} or (
+            self.regime_mode == "auto" and (not vix.empty) and (not nifty.empty)
+        )
+        if use_vix_mode and (not vix.empty) and (not nifty.empty):
+            vix_idx = vix.set_index("date").reindex(idx).ffill()
+            nifty_idx = nifty.set_index("date").reindex(idx).ffill()
+            nifty_close = pd.to_numeric(nifty_idx.get("close"), errors="coerce")
+            sma_window = max(20, int(self.nifty_sma_window))
+            nifty_sma = nifty_close.rolling(sma_window, min_periods=max(50, sma_window // 2)).mean()
+            above_sma = nifty_close > nifty_sma
+            vix_val = pd.to_numeric(vix_idx.get("vix"), errors="coerce")
+            volatile = vix_val > float(self.vix_threshold)
+
+            regime = np.where(
+                above_sma & (~volatile),
+                "risk_on_calm",
+                np.where(
+                    above_sma & volatile,
+                    "risk_on_volatile",
+                    np.where(
+                        (~above_sma) & (~volatile),
+                        "risk_off_calm",
+                        "risk_off_volatile",
+                    ),
+                ),
+            )
+            out = pd.DataFrame(
+                {
+                    "date": idx,
+                    "regime": regime,
+                    "vol_label": np.where(volatile, "high_vol", "low_vol"),
+                    "trend_label": np.where(above_sma, "uptrend", "downtrend"),
+                    "macro_label": "",
+                    "macro_activity_score": np.nan,
+                    "realized_vol": pd.to_numeric(px["realized_vol"], errors="coerce").to_numpy(),
+                    "trend_signal": (nifty_close / (nifty_sma + 1e-12) - 1.0).to_numpy(),
+                    "india_vix": vix_val.to_numpy(),
+                    "nifty_close": nifty_close.to_numpy(),
+                    "nifty_sma_200": nifty_sma.to_numpy(),
+                    "nifty_above_200d": above_sma.astype(float).to_numpy(),
+                }
+            )
+            out["power_yoy_growth"] = self._optional_series(
+                power_df if isinstance(power_df, pd.DataFrame) else None,
+                daily_index=idx,
+                value_name="power_yoy_growth",
+            ).to_numpy()
+            out["gst_yoy_growth"] = self._optional_series(
+                gst_df if isinstance(gst_df, pd.DataFrame) else None,
+                daily_index=idx,
+                value_name="gst_yoy_growth",
+            ).to_numpy()
+            out["sentiment_polarity"] = self._optional_series(
+                sentiment_df if isinstance(sentiment_df, pd.DataFrame) else None,
+                daily_index=idx,
+                value_name="sentiment_polarity",
+            ).to_numpy()
+            out["date"] = pd.to_datetime(out["date"], errors="coerce")
+            out = out.dropna(subset=["date"]).sort_values("date", kind="mergesort").reset_index(drop=True)
+            self._labels = out.copy()
+            return out
+
         macro_activity_score = pd.Series(np.nan, index=idx, dtype=float)
         macro_label = pd.Series(np.nan, index=idx, dtype=object)
 

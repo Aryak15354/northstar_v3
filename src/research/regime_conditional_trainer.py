@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import pickle
 from pathlib import Path
 from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
+
+
+logger = logging.getLogger(__name__)
 
 
 def _safe_spearman(a: np.ndarray, b: np.ndarray) -> float:
@@ -35,6 +39,9 @@ class RegimeConditionalTrainer:
         self.model_dir = Path(str(self.config.get("model_dir", model_dir)))
         self.model_dir.mkdir(parents=True, exist_ok=True)
         self.min_obs = int(self.config.get("min_obs_per_regime", 500) or 500)
+        self.thin_regime_obs_threshold = int(
+            self.config.get("thin_regime_obs_threshold", 10000) or 10000
+        )
         self.random_state = int(self.config.get("random_state", 42) or 42)
         self._registry_path = self.model_dir / "regime_model_registry.json"
         self._last_prediction_meta: dict[str, Any] = {}
@@ -60,33 +67,64 @@ class RegimeConditionalTrainer:
         Build XGBoost model with fixed regularization params.
         Original params that gave average train IC of ~0.58.
         """
+        base_params = {
+            "n_estimators": 200,
+            "learning_rate": 0.05,
+            "max_depth": 4,
+            "min_child_weight": 20.0,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "reg_alpha": 0.1,
+            "reg_lambda": 1.0,
+        }
+        thin_params = {
+            "n_estimators": 100,
+            "max_depth": 2,
+            "min_child_weight": 50.0,
+        }
+        use_thin_regularization = int(n_obs) < int(self.thin_regime_obs_threshold)
+        if use_thin_regularization:
+            params = dict(base_params)
+            params.update(thin_params)
+        else:
+            params = dict(base_params)
+
         try:
             from xgboost import XGBRegressor
 
-            # Fixed params - original set that gave avg train IC ~0.58
             model = XGBRegressor(
-                n_estimators=200,
-                learning_rate=0.05,
-                max_depth=4,
-                min_child_weight=20.0,
-                subsample=0.8,
-                colsample_bytree=0.8,
-                reg_alpha=0.1,
-                reg_lambda=1.0,
+                n_estimators=int(params["n_estimators"]),
+                learning_rate=float(params["learning_rate"]),
+                max_depth=int(params["max_depth"]),
+                min_child_weight=float(params["min_child_weight"]),
+                subsample=float(params["subsample"]),
+                colsample_bytree=float(params["colsample_bytree"]),
+                reg_alpha=float(params["reg_alpha"]),
+                reg_lambda=float(params["reg_lambda"]),
                 n_jobs=int(self.config.get("n_jobs", 1) or 1),
                 random_state=self.random_state,
             )
-            return model, "xgboost"
+            return model, "xgboost", params, use_thin_regularization
         except Exception:
             from sklearn.ensemble import HistGradientBoostingRegressor
 
+            sk_max_iter = int(self.config.get("sk_n_estimators", 300) or 300)
+            sk_max_depth = int(self.config.get("sk_max_depth", 6) or 6)
+            if use_thin_regularization:
+                sk_max_iter = min(sk_max_iter, 120)
+                sk_max_depth = min(sk_max_depth, 3)
             model = HistGradientBoostingRegressor(
                 learning_rate=float(self.config.get("sk_learning_rate", 0.03) or 0.03),
-                max_iter=int(self.config.get("sk_n_estimators", 300) or 300),
-                max_depth=int(self.config.get("sk_max_depth", 6) or 6),
+                max_iter=sk_max_iter,
+                max_depth=sk_max_depth,
                 random_state=self.random_state,
             )
-            return model, "sklearn_hist_gradient_boosting"
+            params = {
+                "max_iter": int(sk_max_iter),
+                "max_depth": int(sk_max_depth),
+                "learning_rate": float(self.config.get("sk_learning_rate", 0.03) or 0.03),
+            }
+            return model, "sklearn_hist_gradient_boosting", params, use_thin_regularization
 
     def _feature_importance(self, model: Any, feature_cols: list[str]) -> dict[str, float]:
         if hasattr(model, "feature_importances_"):
@@ -165,7 +203,7 @@ class RegimeConditionalTrainer:
             y = pd.to_numeric(local[target_col], errors="coerce").fillna(0.0).to_numpy(dtype=float)
 
             # Pass n_obs for adaptive regularization
-            model, backend = self._build_model(n_obs=len(local))
+            model, backend, model_params, thin_regime_regularization = self._build_model(n_obs=len(local))
             model.fit(X.to_numpy(dtype=float), y)
             pred = np.asarray(model.predict(X.to_numpy(dtype=float)), dtype=float).reshape(-1)
             ic_train = _safe_spearman(y, pred)
@@ -193,6 +231,8 @@ class RegimeConditionalTrainer:
                 "train_ic": float(ic_train),
                 "oos_ic": None,
                 "backend": str(backend),
+                "thin_regime_regularization": bool(thin_regime_regularization),
+                "model_params": model_params,
                 "feature_importance": fi,
                 "feature_cols": feats,
                 "model_path": str(model_path),
@@ -259,11 +299,19 @@ class RegimeConditionalTrainer:
         model = payload.get("model")
         feats = [str(c) for c in list(payload.get("feature_cols", []))]
 
-        use_cols = [c for c in feats if c in frame.columns]
-        if not use_cols:
+        if not feats:
             return np.zeros(len(frame), dtype=float)
 
-        X = frame[use_cols].replace([np.inf, -np.inf], np.nan)
+        missing_cols = [c for c in feats if c not in frame.columns]
+        if missing_cols:
+            logger.warning(
+                "[regime-predict] %s missing trained features for regime %s; zero-filling sample=%s",
+                int(len(missing_cols)),
+                regime_key,
+                ", ".join(missing_cols[:10]),
+            )
+
+        X = frame.reindex(columns=feats, fill_value=0.0).replace([np.inf, -np.inf], np.nan)
         X = X.fillna(X.median(numeric_only=True)).fillna(0.0)
 
         pred = np.asarray(model.predict(X.to_numpy(dtype=float)), dtype=float).reshape(-1)

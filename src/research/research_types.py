@@ -42,6 +42,8 @@ class ResearchWindowResult:
     n_train: int
     n_test: int
     metrics: Dict[str, float]
+    feature_importance: Dict[str, float] = field(default_factory=dict)
+    artifact_path: str | None = None
 
 
 @dataclass

@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 import logging
 
 import numpy as np
 import pandas as pd
 
+from .feature_stability import compute_feature_stability_report, map_feature_importance_names
 from .regime_engine import RegimeEngine
 from .research_types import ModelRunResult, ResearchDataset, ResearchWindowResult
 from .splits import eligible_trading_dates, rolling_time_splits
@@ -39,6 +41,11 @@ class TrainingPipeline:
         holdout_test_end_date: Optional[str] = None,
         holdout_valid_periods: Optional[int] = None,
         holdout_min_train_periods: int = 252,
+        feature_winsorize_quantiles: tuple[float, float] = (0.01, 0.99),
+        feature_standardize: bool = True,
+        disable_model_specific_window_caps: bool = False,
+        emit_train_metrics: bool = False,
+        window_artifact_dir: Optional[str] = None,
     ):
         self.train_periods = int(train_periods)
         self.valid_periods = int(valid_periods)
@@ -53,6 +60,78 @@ class TrainingPipeline:
         self.holdout_test_end_date = str(holdout_test_end_date).strip() if holdout_test_end_date else ""
         self.holdout_valid_periods = int(holdout_valid_periods) if holdout_valid_periods is not None else int(valid_periods)
         self.holdout_min_train_periods = max(20, int(holdout_min_train_periods))
+        self.feature_winsorize_quantiles = feature_winsorize_quantiles
+        self.feature_standardize = bool(feature_standardize)
+        self.disable_model_specific_window_caps = bool(disable_model_specific_window_caps)
+        self.emit_train_metrics = bool(emit_train_metrics)
+        self.window_artifact_dir = Path(str(window_artifact_dir)).expanduser().resolve() if window_artifact_dir else None
+        self._logged_imputation = False
+
+    @staticmethod
+    def _artifact_date_token(value: Any) -> str:
+        try:
+            ts = pd.Timestamp(value)
+            if pd.isna(ts):
+                return "na"
+            return ts.strftime("%Y%m%d")
+        except Exception:
+            raw = str(value or "").strip()
+            return raw[:10].replace("-", "") if raw else "na"
+
+    def _build_window_artifact_path(self, *, window_index: int, split: Dict[str, Any], suffix: str = ".pt") -> Path | None:
+        if self.window_artifact_dir is None:
+            return None
+        test_start = self._artifact_date_token(split.get("test_start"))
+        test_end = self._artifact_date_token(split.get("test_end"))
+        name = f"window_{int(window_index):02d}_{test_start}_{test_end}{suffix}"
+        return self.window_artifact_dir / name
+
+    def _compute_feature_stats(self, X_train: np.ndarray) -> Dict[str, np.ndarray]:
+        Xtr = np.asarray(X_train, dtype=float)
+        med = np.nanmedian(Xtr, axis=0)
+        med = np.where(np.isfinite(med), med, 0.0)
+        X_imp = np.where(np.isnan(Xtr), med, Xtr)
+        lo = None
+        hi = None
+        ql, qu = self.feature_winsorize_quantiles
+        if ql is not None and qu is not None and 0.0 <= float(ql) < float(qu) <= 1.0:
+            try:
+                lo = np.nanquantile(X_imp, float(ql), axis=0)
+                hi = np.nanquantile(X_imp, float(qu), axis=0)
+            except Exception:
+                lo = None
+                hi = None
+        if lo is not None and hi is not None:
+            lo = np.where(np.isfinite(lo), lo, -np.inf)
+            hi = np.where(np.isfinite(hi), hi, np.inf)
+        mu = np.nanmean(X_imp, axis=0)
+        sigma = np.nanstd(X_imp, axis=0)
+        mu = np.where(np.isfinite(mu), mu, 0.0)
+        sigma = np.where((~np.isfinite(sigma)) | (sigma <= 1e-8), 1.0, sigma)
+        return {
+            "median": med,
+            "winsor_lo": lo,
+            "winsor_hi": hi,
+            "mean": mu,
+            "std": sigma,
+        }
+
+    def _apply_feature_transform(self, X: np.ndarray, stats: Dict[str, np.ndarray]) -> np.ndarray:
+        Z = np.asarray(X, dtype=float)
+        med = stats.get("median")
+        if med is not None:
+            Z = np.where(np.isnan(Z), med, Z)
+        lo = stats.get("winsor_lo")
+        hi = stats.get("winsor_hi")
+        if lo is not None and hi is not None:
+            Z = np.minimum(np.maximum(Z, lo), hi)
+        if bool(self.feature_standardize):
+            mu = stats.get("mean")
+            sigma = stats.get("std")
+            if mu is not None and sigma is not None:
+                Z = (Z - mu) / sigma
+        Z[~np.isfinite(Z)] = 0.0
+        return Z
 
     def _apply_label_embargo(
         self,
@@ -341,7 +420,12 @@ class TrainingPipeline:
             {
                 "regime_labels_path": str(
                     dataset.metadata.get("regime_labels_path", "data/processed/regime_labels.parquet")
-                )
+                ),
+                "regime_mode": dataset.metadata.get("regime_mode", "auto"),
+                "vix_threshold": dataset.metadata.get("vix_threshold", 20.0),
+                "nifty_sma_window": dataset.metadata.get("nifty_sma_window", 200),
+                "india_vix_path": dataset.metadata.get("india_vix_path", "data/processed/india_vix.parquet"),
+                "nifty_prices_path": dataset.metadata.get("nifty_prices_path", "data/processed/nifty.parquet"),
             }
         )
         start = pd.to_datetime(work["date"], errors="coerce").min()
@@ -416,15 +500,18 @@ class TrainingPipeline:
 
         X = dataset.X
         y = dataset.y
+        feature_names = list(getattr(dataset, "feature_names", []) or [])
         target_horizon_days = int(dataset.metadata.get("target_horizon_days", 1) or 1)
         target_realized_col = str(dataset.metadata.get("target_realized_col", "") or "").strip()
         frame = self._ensure_regime_labels(frame, dataset, regime_col)
 
         windows: List[ResearchWindowResult] = []
         metrics_raw: List[Dict[str, float]] = []
+        train_metrics_raw: List[Dict[str, float]] = []
         regime_bucket: Dict[str, List[Dict[str, float]]] = {}
         portfolio_series_rows: List[Dict[str, Any]] = []
         rebalance_snapshots: List[Dict[str, Any]] = []
+        train_windows_payload: List[Dict[str, Any]] = []
         ls_q = float(self.portfolio_cfg.get("long_short_quantile", 0.20))
         min_assets = int(self.portfolio_cfg.get("min_assets_per_day", 8))
         max_w = float(self.portfolio_cfg.get("max_weight_per_asset", 0.10))
@@ -478,6 +565,11 @@ class TrainingPipeline:
 
         fixed_split = self._fixed_holdout_split(frame, date_col="date")
         holdout_requested = self._holdout_requested()
+        model_name = str(getattr(model, "name", type(model).__name__)).strip().lower()
+        max_windows_effective = int(self.max_windows)
+        if (not self.disable_model_specific_window_caps) and model_name in {"xgboost", "xgb"}:
+            max_windows_effective = min(max_windows_effective, 5)
+
         if fixed_split is not None:
             splits_iter = [fixed_split]
             target_windows = 1
@@ -511,13 +603,13 @@ class TrainingPipeline:
                 step_periods=self.step_periods,
                 min_tickers_per_date=self.min_tickers_per_date,
             )
-            target_windows = int(self.max_windows)
+            target_windows = int(max_windows_effective)
 
         seen_windows = 0
         for i, split in enumerate(splits_iter):
             if i < self.start_window:
                 continue
-            if seen_windows >= self.max_windows:
+            if seen_windows >= max_windows_effective:
                 break
             seen_windows += 1
             if callable(progress_callback):
@@ -543,21 +635,66 @@ class TrainingPipeline:
             if train_mask.sum() < 50 or te.sum() < 20:
                 continue
 
-            X_train, y_train = X[train_mask], y[train_mask]
-            X_test, y_test = X[te], y[te]
+            X_all = np.asarray(X, dtype=float)
+            stats = self._compute_feature_stats(X_all[train_mask])
+            if not self._logged_imputation and hasattr(dataset, "feature_names"):
+                names = list(getattr(dataset, "feature_names", []))
+                nan_counts = np.isnan(X_all[train_mask]).sum(axis=0)
+                denom = max(1, int(train_mask.sum()))
+                for i, n in enumerate(names[: len(nan_counts)]):
+                    pct = 100.0 * float(nan_counts[i]) / float(denom)
+                    logger.info("[impute] feature=%s pct=%.2f%%", str(n), pct)
+                self._logged_imputation = True
+
+            X_all_scaled = self._apply_feature_transform(X_all, stats)
+            X_train, y_train = X_all_scaled[train_mask], y[train_mask]
+            X_test, y_test = X_all_scaled[te], y[te]
 
             train_indices = np.where(train_mask)[0]
             valid_indices = np.where(va)[0]
             test_indices = np.where(te)[0]
 
             pred_indices = test_indices
+            fold_dataset = dataset
             if hasattr(model, "fit_with_context") and hasattr(model, "predict_with_context"):
+                obs = getattr(dataset, "observed_dynamic_features", None)
+                known = getattr(dataset, "known_dynamic_features", None)
+                static = getattr(dataset, "static_features", None)
+
+                def _scale_block(block: np.ndarray | None) -> np.ndarray | None:
+                    if block is None:
+                        return None
+                    arr = np.asarray(block, dtype=float)
+                    if arr.ndim != 2 or arr.shape[1] == 0:
+                        return arr
+                    if arr.shape[0] != X_all.shape[0]:
+                        return arr
+                    blk_stats = self._compute_feature_stats(arr[train_mask])
+                    return self._apply_feature_transform(arr, blk_stats)
+
+                fold_dataset = ResearchDataset(
+                    X=X_all_scaled,
+                    y=dataset.y,
+                    feature_names=list(getattr(dataset, "feature_names", [])),
+                    metadata=dict(getattr(dataset, "metadata", {})),
+                    index=getattr(dataset, "index", None),
+                    tickers=getattr(dataset, "tickers", None),
+                    frame=getattr(dataset, "frame", None),
+                    static_features=_scale_block(static),
+                    known_dynamic_features=_scale_block(known),
+                    observed_dynamic_features=_scale_block(obs),
+                    static_feature_names=list(getattr(dataset, "static_feature_names", [])),
+                    known_dynamic_feature_names=list(getattr(dataset, "known_dynamic_feature_names", [])),
+                    observed_dynamic_feature_names=list(getattr(dataset, "observed_dynamic_feature_names", [])),
+                    ticker_ids=getattr(dataset, "ticker_ids", None),
+                    sector_ids=getattr(dataset, "sector_ids", None),
+                )
                 model.fit_with_context(
-                    dataset=dataset,
+                    dataset=fold_dataset,
                     train_indices=train_indices,
                     valid_indices=valid_indices,
                 )
-                pred_obj = model.predict_with_context(dataset=dataset, target_indices=test_indices)
+                pred_obj = model.predict_with_context(dataset=fold_dataset, target_indices=test_indices)
                 if isinstance(pred_obj, dict):
                     pred_indices = np.asarray(pred_obj.get("indices", test_indices), dtype=int).reshape(-1)
                     y_pred = np.asarray(pred_obj.get("predictions", []), dtype=float).reshape(-1)
@@ -567,6 +704,10 @@ class TrainingPipeline:
                 model.fit(X_train, y_train)
                 y_pred = np.asarray(model.predict(X_test), dtype=float).reshape(-1)
                 pred_indices = test_indices
+            window_feature_importance = map_feature_importance_names(
+                getattr(model, "feature_importance", lambda: {})(),
+                feature_names=feature_names,
+            )
 
             y_true = np.asarray(y[pred_indices], dtype=float).reshape(-1)
             y_realized = (
@@ -583,6 +724,32 @@ class TrainingPipeline:
 
             if n == 0:
                 continue
+
+            window_artifact_path: str | None = None
+            if self.window_artifact_dir is not None and hasattr(model, "save_window_artifact"):
+                artifact_path = self._build_window_artifact_path(window_index=seen_windows, split=split)
+                if artifact_path is not None:
+                    try:
+                        artifact_meta = model.save_window_artifact(
+                            path=artifact_path,
+                            dataset=fold_dataset,
+                            target_indices=pred_indices,
+                            split=dict(split),
+                            window_index=int(seen_windows),
+                            feature_names=feature_names,
+                        )
+                        if isinstance(artifact_meta, dict):
+                            window_artifact_path = str(artifact_meta.get("path") or artifact_path)
+                        else:
+                            window_artifact_path = str(artifact_path)
+                    except Exception as exc:
+                        logger.warning(
+                            "window_artifact_save_failed model=%s window=%s path=%s err=%s",
+                            str(getattr(model, "name", type(model).__name__)),
+                            int(seen_windows),
+                            str(artifact_path),
+                            str(exc),
+                        )
 
             dates = frame.iloc[pred_indices]["date"].to_numpy()
             regimes = (
@@ -647,6 +814,118 @@ class TrainingPipeline:
                 regime_exposure_scales=regime_exposure_scales,
             )
             metrics_raw.append(m)
+
+            if self.emit_train_metrics:
+                train_pred_indices = train_indices
+                if hasattr(model, "predict_with_context") and 'fold_dataset' in locals():
+                    train_pred_obj = model.predict_with_context(dataset=fold_dataset, target_indices=train_indices)
+                    if isinstance(train_pred_obj, dict):
+                        train_pred_indices = np.asarray(train_pred_obj.get("indices", train_indices), dtype=int).reshape(-1)
+                        train_y_pred = np.asarray(train_pred_obj.get("predictions", []), dtype=float).reshape(-1)
+                    else:
+                        train_y_pred = np.asarray(train_pred_obj, dtype=float).reshape(-1)
+                else:
+                    train_y_pred = np.asarray(model.predict(X_all_scaled[train_indices]), dtype=float).reshape(-1)
+
+                train_y_true = np.asarray(y[train_pred_indices], dtype=float).reshape(-1)
+                train_y_realized = (
+                    np.asarray(frame.iloc[train_pred_indices][target_realized_col], dtype=float).reshape(-1)
+                    if target_realized_col and target_realized_col in frame.columns
+                    else np.asarray(train_y_true, dtype=float).reshape(-1)
+                )
+
+                train_n = min(len(train_y_pred), len(train_y_true), len(train_y_realized))
+                train_y_pred = train_y_pred[:train_n]
+                train_y_true = train_y_true[:train_n]
+                train_y_realized = train_y_realized[:train_n]
+                train_pred_indices = train_pred_indices[:train_n]
+
+                if train_n > 0:
+                    train_dates = frame.iloc[train_pred_indices]["date"].to_numpy()
+                    train_regimes = (
+                        frame.iloc[train_pred_indices][regime_col].to_numpy(dtype=object)
+                        if regime_col in frame.columns
+                        else None
+                    )
+                    train_slice_frame = frame.iloc[train_pred_indices].copy()
+                    if regime_policy:
+                        active_regimes_cfg = regime_policy.get("active_regimes", None)
+                        if not active_regimes_cfg:
+                            active_raw = str(regime_policy.get("active_regime", "") or "").strip()
+                            active_regimes_cfg = [x.strip() for x in active_raw.split(",") if x.strip()] if active_raw else []
+                        train_y_pred = self._apply_regime_policy_to_predictions(
+                            y_pred=train_y_pred,
+                            regimes=train_regimes,
+                            active_regimes=list(active_regimes_cfg or []),
+                            invert_regimes=list(regime_policy.get("invert_regimes", []) or []),
+                            regime_scales=dict(regime_policy.get("regime_scales", {}) or {}),
+                        )
+                    if pred_neutral_factors or pred_sector_neutral:
+                        train_y_pred = self._neutralize_predictions(
+                            y_pred=train_y_pred,
+                            slice_frame=train_slice_frame,
+                            dates=train_dates,
+                            factor_cols=pred_neutral_factors,
+                            sector_col=sector_col,
+                            sector_neutralize=pred_sector_neutral,
+                        )
+                    train_y_pred = self._apply_prediction_transform(
+                        y_pred=train_y_pred,
+                        dates=train_dates,
+                        mode=pred_transform,
+                        rank_power=pred_rank_power,
+                        tanh_scale=pred_tanh_scale,
+                    )
+                    train_tickers = (
+                        train_slice_frame["ticker"].to_numpy(dtype=str)
+                        if "ticker" in train_slice_frame.columns
+                        else None
+                    )
+                    train_sectors = (
+                        train_slice_frame[sector_col].to_numpy(dtype=str)
+                        if sector_col is not None
+                        else None
+                    )
+                    train_vol = (
+                        train_slice_frame["vol_20d"].to_numpy(dtype=float)
+                        if "vol_20d" in train_slice_frame.columns
+                        else None
+                    )
+                    train_metrics = compute_window_metrics(
+                        y_true=train_y_true,
+                        y_pred=train_y_pred,
+                        realized_returns=train_y_realized,
+                        dates=train_dates,
+                        regimes=train_regimes,
+                        tickers=train_tickers,
+                        sectors=train_sectors,
+                        vol=train_vol,
+                        long_short_quantile=ls_q,
+                        min_assets_per_day=min_assets,
+                        max_weight_per_asset=max_w,
+                        use_vol_scaling=use_vol,
+                        rebalance_frequency_days=rebalance_days,
+                        sector_neutralize=sector_neutralize,
+                        max_sector_weight=max_sector_weight,
+                        transaction_cost_bps_per_side=txn_cost_bps,
+                        target_horizon_days=target_horizon_days,
+                        portfolio_mode=portfolio_mode,
+                        turnover_cap=turnover_cap,
+                        high_vol_exposure_scale=high_vol_exposure_scale,
+                        regime_exposure_scales=regime_exposure_scales,
+                    )
+                    train_metrics_raw.append(train_metrics)
+                    train_windows_payload.append(
+                        {
+                            "train_start": str(split["train_start"]),
+                            "train_end": str(split["train_end"]),
+                            "test_start": str(split["test_start"]),
+                            "test_end": str(split["test_end"]),
+                            "n_train": int(train_mask.sum()),
+                            "n_test": int(te.sum()),
+                            "metrics": train_metrics,
+                        }
+                    )
 
             # Emit cycle-level portfolio trace for strategy duplication / turnover integrity gates.
             trace = build_cross_sectional_portfolio_returns(
@@ -716,6 +995,8 @@ class TrainingPipeline:
                 n_train=int(train_mask.sum()),
                 n_test=int(te.sum()),
                 metrics=m,
+                feature_importance=window_feature_importance,
+                artifact_path=window_artifact_path,
             )
             windows.append(win)
 
@@ -751,6 +1032,7 @@ class TrainingPipeline:
                     regime_bucket.setdefault(regime, []).append(rm)
 
         agg = aggregate_metrics(metrics_raw)
+        train_agg = aggregate_metrics(train_metrics_raw)
         regime_metrics = {k: aggregate_metrics(v) for k, v in regime_bucket.items()}
 
         result = ModelRunResult(
@@ -761,6 +1043,22 @@ class TrainingPipeline:
         )
         payload = asdict(result)
         payload["status"] = "ok" if windows else "insufficient_windows"
+        payload["aggregate_train_metrics"] = train_agg
+        payload["train_windows"] = train_windows_payload
+        test_ic_mean = float(agg.get("ic_mean", 0.0) or 0.0)
+        train_ic_mean = float(train_agg.get("ic_mean", 0.0) or 0.0)
+        test_ic_std = float(agg.get("ic_std", 0.0) or 0.0)
+        train_ic_std = float(train_agg.get("ic_std", 0.0) or 0.0)
+        test_ic_ir = float(test_ic_mean / (test_ic_std + 1e-12)) if abs(test_ic_mean) > 0.0 else 0.0
+        train_ic_ir = float(train_ic_mean / (train_ic_std + 1e-12)) if abs(train_ic_mean) > 0.0 else 0.0
+        payload["overfit_diagnostics"] = {
+            "train_ic_mean": train_ic_mean,
+            "test_ic_mean": test_ic_mean,
+            "train_ic_ir": train_ic_ir,
+            "test_ic_ir": test_ic_ir,
+            "train_test_ic_mean_ratio": float(abs(train_ic_mean) / max(abs(test_ic_mean), 1e-12)) if abs(test_ic_mean) > 1e-12 else float("inf"),
+            "train_test_ic_ir_ratio": float(abs(train_ic_ir) / max(abs(test_ic_ir), 1e-12)) if abs(test_ic_ir) > 1e-12 else float("inf"),
+        }
         payload["regime_metrics"] = regime_metrics
         if portfolio_series_rows:
             series_df = pd.DataFrame(portfolio_series_rows)
@@ -803,7 +1101,14 @@ class TrainingPipeline:
         payload["holdout_train_end_date"] = self.holdout_train_end_date or None
         payload["holdout_test_start_date"] = self.holdout_test_start_date or None
         payload["holdout_test_end_date"] = self.holdout_test_end_date or None
-        payload["feature_importance"] = getattr(model, "feature_importance", lambda: {})()
+        payload["feature_importance"] = map_feature_importance_names(
+            getattr(model, "feature_importance", lambda: {})(),
+            feature_names=feature_names,
+        )
+        payload["feature_stability"] = compute_feature_stability_report(
+            [asdict(window) for window in windows],
+            top_k=15,
+        )
         payload["label_embargo_periods"] = int(label_embargo_periods)
         logger.info(
             "TrainingPipeline complete model=%s status=%s windows=%s avg_sharpe=%.4f avg_dd=%.4f ic=%.4f",

@@ -45,6 +45,7 @@ from .model_adapters import (
     TransformerModel,
     XGBoostModel,
 )
+from .shap_validator import compute_feature_importance
 from .mutation_engine import MutationEngine
 from .portfolio_governor_bridge import PortfolioGovernorBridge
 from .research_memory import ResearchMemory
@@ -126,8 +127,8 @@ class ResearchController:
         )
 
         self.scorer = CandidateScorer()
-        self.tracker = ExperimentTracker(path=str(self.config.get("experiment_path", "data/research/experiments.ndjson")))
-        self.memory = ResearchMemory(path=str(self.config.get("memory_path", "data/research/research_memory.json")))
+        self.tracker = ExperimentTracker(path=str(self.config.get("experiment_path", "data/results/research/trackers/experiments.ndjson")))
+        self.memory = ResearchMemory(path=str(self.config.get("memory_path", "data/results/research/state/research_memory.json")))
         self.mutator = MutationEngine(random_state=int(self.config.get("random_state", 42)))
         self.capital_sim = CapitalSimulator(
             initial_capital=float(self.config.get("simulation_initial_capital", 1_000_000.0)),
@@ -474,24 +475,46 @@ class ResearchController:
     def _model_specs(self) -> List[Tuple[str, Dict[str, Any]]]:
         base = [
             ("lightgbm", {"n_estimators": 240, "learning_rate": 0.03}),
-            ("xgboost", {"n_estimators": 300, "learning_rate": 0.03, "max_depth": 6}),
+            (
+                "xgboost",
+                {
+                    "n_estimators": 200,
+                    "learning_rate": 0.05,
+                    "max_depth": 4,
+                    "min_child_weight": 20.0,
+                    "subsample": 0.8,
+                    "colsample_bytree": 0.8,
+                    "objective": "reg:squarederror",
+                },
+            ),
             ("catboost", {"iterations": 220, "depth": 6, "learning_rate": 0.03}),
             ("random_forest", {"n_estimators": 350, "max_depth": 12}),
-            ("lstm", {"lookback": 20, "epochs": 10, "hidden_dim": 64, "lr": 1e-3}),
-            ("tcn", {"lookback": 20, "epochs": 8, "channels": 32, "lr": 1e-3}),
+            ("lstm", {"lookback": 60, "epochs": 10, "hidden_dim": 64, "lr": 1e-3}),
+            (
+                "tcn",
+                {
+                    "lookback": 60,
+                    "epochs": 20,
+                    "channels": 64,
+                    "dilations": [1, 2, 4, 8],
+                    "dropout": 0.2,
+                    "lr": 1e-3,
+                    "patience": 10,
+                },
+            ),
             (
                 "transformer",
                 {
-                    "lookback": 30,
+                    "lookback": 60,
                     "epochs": 12,
-                    "d_model": 64,
+                    "d_model": 128,
                     "nhead": 4,
                     "num_layers": 2,
-                    "dim_feedforward": 128,
-                    "dropout": 0.1,
+                    "dim_feedforward": 256,
+                    "dropout": 0.2,
                     "batch_size": 128,
-                    "patience": 4,
-                    "lr": 1e-3,
+                    "patience": 10,
+                    "lr": 1e-4,
                 },
             ),
         ]
@@ -1210,6 +1233,29 @@ class ResearchController:
         confirmation = np.clip(0.6 * conf + 0.4 * mispricing, 0.0, 1.0)
         combined = mispricing * confirmation
 
+        def _alt_series(name: str) -> pd.Series:
+            if name not in latest.columns:
+                return pd.Series(0.0, index=latest.index, dtype=float)
+            return pd.to_numeric(latest.get(name), errors="coerce").fillna(0.0)
+
+        alt_component_map = {
+            "bulk_flow": 0.20 * np.tanh(_alt_series("bulk_net_pressure_21d")),
+            "bulk_institutional": 0.15 * np.tanh(_alt_series("bulk_net_institutional_21d")),
+            "order_flow": 0.12 * _alt_series("order_win_flag_30d"),
+            "capex": 0.08 * _alt_series("capex_announced_flag"),
+            "insider": 0.10 * (_alt_series("insider_buy_flag_30d") - _alt_series("insider_sell_flag_30d")),
+            "ratings": 0.16 * np.tanh(_alt_series("rating_change_1y"))
+            + 0.10 * (_alt_series("recent_upgrade_flag") - _alt_series("recent_downgrade_flag"))
+            - 0.08 * _alt_series("watch_negative_flag"),
+            "pledge": -0.18 * _alt_series("pledge_high_flag") - 0.10 * _alt_series("pledge_increasing_flag"),
+        }
+        alt_component_df = pd.DataFrame(alt_component_map, index=latest.index)
+        alt_signal_score = np.tanh(alt_component_df.sum(axis=1))
+        alt_component_abs = alt_component_df.abs()
+        alt_driver = alt_component_abs.idxmax(axis=1).where(alt_component_abs.max(axis=1) > 0.03, "none")
+        alt_event_flag = (alt_component_abs.max(axis=1) >= 0.20).astype(float)
+        alt_signal_direction = np.where(alt_signal_score >= 0.0, "bullish", "bearish")
+
         # Try to resolve top macro drivers from feature importance.
         macro_rank = []
         for k, v in (feature_importance or {}).items():
@@ -1244,6 +1290,10 @@ class ResearchController:
                 "sentiment_trend_score": sent_trend.fillna(0.0).to_numpy(dtype=float),
                 "market_sentiment_polarity": mkt_polarity.fillna(0.0).to_numpy(dtype=float),
                 "market_sentiment_conviction": mkt_conviction.fillna(0.0).to_numpy(dtype=float),
+                "alternative_signal_score": alt_signal_score.to_numpy(dtype=float),
+                "alternative_signal_direction": alt_signal_direction,
+                "alternative_driver": alt_driver.astype(str).to_numpy(),
+                "alternative_event_flag": alt_event_flag.to_numpy(dtype=float),
                 "generated_at": datetime.utcnow().isoformat(),
             }
         )
@@ -1298,11 +1348,11 @@ class ResearchController:
             min_regime_days=int(cfg.get("min_regime_days", 30)),
         )
 
-        out_dir = Path(str(cfg.get("output_dir", "data/research/ic_diagnostics")))
+        out_dir = Path(str(cfg.get("output_dir", "data/results/research/ic_diagnostics")))
         if not out_dir.is_absolute():
             out_dir = self.project_root / out_dir
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_path = out_dir / f"ic_report_{ts}.json"
+        report_path = out_dir / ts[:4] / ts[4:6] / f"ic_report_{ts}.json"
         write_ic_report(report, report_path)
 
         prune = bool(cfg.get("prune_features", False))
@@ -1691,12 +1741,12 @@ class ResearchController:
             )
         )
 
-        out_dir = Path(str(cfg.get("output_dir", "data/research/alpha_factory")))
+        out_dir = Path(str(cfg.get("output_dir", "data/results/research/alpha_factory")))
         if not out_dir.is_absolute():
             out_dir = self.project_root / out_dir
-        out_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_path = out_dir / f"alpha_factory_report_{ts}.json"
+        report_path = out_dir / ts[:4] / ts[4:6] / f"alpha_factory_report_{ts}.json"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
         report_blob = {
             "generated_at": datetime.utcnow().isoformat(),
             "status": "ok",
@@ -1811,6 +1861,50 @@ class ResearchController:
         gate_payload["reason"] = "pass" if len(failed) == 0 else "threshold_violation"
         return gate_payload
 
+    def _run_shap_validation(self, dataset: ResearchDataset) -> Dict[str, Any] | None:
+        cfg = dict(self.config.get("shap_validation", {}))
+        if not bool(cfg.get("enabled", False)):
+            return None
+        xgb_params = {}
+        for name, params in self._model_specs():
+            if str(name).strip().lower() == "xgboost":
+                xgb_params = dict(params)
+                break
+        model = XGBoostModel(params=xgb_params)
+        X = np.asarray(dataset.X, dtype=float)
+        if X.ndim != 2 or X.shape[1] == 0:
+            return {"status": "skipped", "reason": "empty_features"}
+
+        med = np.nanmedian(X, axis=0)
+        med = np.where(np.isfinite(med), med, 0.0)
+        X_imp = np.where(np.isnan(X), med, X)
+        mu = np.nanmean(X_imp, axis=0)
+        sd = np.nanstd(X_imp, axis=0)
+        mu = np.where(np.isfinite(mu), mu, 0.0)
+        sd = np.where((~np.isfinite(sd)) | (sd <= 1e-8), 1.0, sd)
+        X_scaled = (X_imp - mu) / sd
+        X_scaled[~np.isfinite(X_scaled)] = 0.0
+
+        model.fit(X_scaled, dataset.y)
+        out_dir = str(cfg.get("output_dir", "reports/shap"))
+        raw = compute_feature_importance(
+            getattr(model, "estimator", model),
+            X_scaled,
+            list(dataset.feature_names),
+            y=dataset.y,
+            max_samples=int(cfg.get("max_samples", 2000) or 2000),
+            output_dir=out_dir,
+        )
+        imps = raw.get("importances", {}) if isinstance(raw, dict) else {}
+        low = [k for k, v in imps.items() if abs(float(v)) < 0.01]
+        return {
+            "status": "ok",
+            "method": raw.get("method", "none") if isinstance(raw, dict) else "none",
+            "plot_path": raw.get("plot_path") if isinstance(raw, dict) else None,
+            "low_importance_features": low,
+            "output_dir": out_dir,
+        }
+
     def run(self, system_state: Dict[str, Any], freeze_active: bool) -> Dict[str, Any]:
         started = datetime.now()
         now_ist = self._now_ist()
@@ -1871,6 +1965,16 @@ class ResearchController:
                     },
                 }
             )
+            shap_payload = self._run_shap_validation(dataset)
+            if isinstance(shap_payload, dict):
+                outputs.append(
+                    {
+                        "type": "shap_validation",
+                        "actionable": False,
+                        "generated_at": datetime.now().isoformat(),
+                        "data": shap_payload,
+                    }
+                )
             outputs.append(
                 {
                     "type": "returns_partition",

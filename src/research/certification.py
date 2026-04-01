@@ -201,7 +201,7 @@ class CertificationEvaluator:
         self.mode = mode if mode in {"enforce", "shadow"} else "enforce"
         self.enabled = bool(cert_cfg.get("enabled", True))
         self.state_path = self.project_root / str(
-            cert_cfg.get("state_path", "data/research/certification_state.json")
+            cert_cfg.get("state_path", "data/results/research/state/certification_state.json")
         )
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
         self.state = self._load_state()

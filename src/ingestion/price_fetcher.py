@@ -35,7 +35,7 @@ def get_first_date(filepath):
     return pd.to_datetime(df["Date"]).min()
 
 
-def _download_slice(ticker, start_dt, end_dt):
+def _download_slice(ticker, start_dt, end_dt, *, timeout_seconds=8):
     if start_dt >= end_dt:
         return pd.DataFrame()
     data = yf.download(
@@ -43,6 +43,8 @@ def _download_slice(ticker, start_dt, end_dt):
         start=start_dt.strftime("%Y-%m-%d"),
         end=end_dt.strftime("%Y-%m-%d"),
         progress=False,
+        threads=False,
+        timeout=max(1, int(timeout_seconds)),
     )
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = data.columns.droplevel(1)
@@ -53,7 +55,7 @@ def _download_slice(ticker, start_dt, end_dt):
     return data[["Date", "Open", "High", "Low", "Close", "Volume"]]
 
 
-def fetch_and_update(symbol, *, start_year=None, history_years=5):
+def fetch_and_update(symbol, *, start_year=None, history_years=5, download_timeout=8):
     ticker = normalize_ticker(symbol)
     filepath = f"{RAW_PRICE_DIR}/{ticker}.csv"
 
@@ -76,7 +78,12 @@ def fetch_and_update(symbol, *, start_year=None, history_years=5):
     if start_floor is not None and first_date is not None and first_date > start_floor:
         backfill_end = first_date - timedelta(days=1)
         print(f"⬇ Backfilling {ticker} from {start_floor.date()} to {backfill_end.date()}")
-        backfill = _download_slice(ticker, start_floor, backfill_end + timedelta(days=1))
+        backfill = _download_slice(
+            ticker,
+            start_floor,
+            backfill_end + timedelta(days=1),
+            timeout_seconds=download_timeout,
+        )
         if not backfill.empty:
             parts.append(backfill)
 
@@ -93,7 +100,12 @@ def fetch_and_update(symbol, *, start_year=None, history_years=5):
             print(f"🔄 Updating {ticker} from {forward_start.date()}")
 
     if forward_start is not None:
-        forward = _download_slice(ticker, forward_start, datetime.today() + timedelta(days=1))
+        forward = _download_slice(
+            ticker,
+            forward_start,
+            datetime.today() + timedelta(days=1),
+            timeout_seconds=download_timeout,
+        )
         if not forward.empty:
             parts.append(forward)
 
@@ -113,6 +125,12 @@ def main():
     ap.add_argument("--start-year", type=int, default=None, help="Backfill history starting from this year.")
     ap.add_argument("--history-years", type=int, default=5, help="Default history length if no start-year.")
     ap.add_argument("--max-tickers", type=int, default=0, help="Probe mode: limit tickers processed (0 = all).")
+    ap.add_argument(
+        "--download-timeout",
+        type=int,
+        default=8,
+        help="Per-request yfinance timeout in seconds.",
+    )
     args = ap.parse_args()
 
     df = pd.read_csv(UNIVERSE_FILE)
@@ -124,7 +142,12 @@ def main():
 
     for sym in symbols:
         try:
-            fetch_and_update(sym, start_year=args.start_year, history_years=args.history_years)
+            fetch_and_update(
+                sym,
+                start_year=args.start_year,
+                history_years=args.history_years,
+                download_timeout=args.download_timeout,
+            )
         except Exception as e:
             print(f"❌ {sym}: {e}")
 

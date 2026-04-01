@@ -1,7 +1,7 @@
 """Alpha Lab discovery harness package."""
 
 from .alpha_lab_controller import AlphaLabController, AlphaLabThresholds
-from .family_registry import AlphaFamily, AlphaFamilyRegistry
+from .alpha_lab_family_registry import AlphaFamily, AlphaFamilyRegistry
 from .hypothesis_registry import AlphaHypothesis, HypothesisRegistry
 from .parameter_surface_explorer import ParameterSurfaceExplorer, SurfacePointResult, SurfaceThresholds
 from .robustness_tester import RobustnessTester

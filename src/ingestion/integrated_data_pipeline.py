@@ -54,6 +54,26 @@ class IntegratedDataPipeline:
         # Create directories
         for dir_path in [self.raw_price_dir, self.market_data_dir, self.macro_raw_dir]:
             os.makedirs(dir_path, exist_ok=True)
+
+    def _fast_market_refresh_enabled(self) -> bool:
+        raw = str(os.getenv("NORTHSTAR_FAST_MARKET_REFRESH", "")).strip().lower()
+        if raw in {"1", "true", "yes", "on"}:
+            return True
+        return str(os.getenv("NORTHSTAR_CI_GATE", "")).strip() == "1"
+
+    def _price_fetch_timeout_seconds(self) -> int:
+        raw = str(os.getenv("NORTHSTAR_PRICE_FETCH_TIMEOUT_SECONDS", "300")).strip()
+        try:
+            return max(30, int(raw))
+        except Exception:
+            return 300
+
+    def _price_fetch_max_tickers(self) -> int:
+        raw = str(os.getenv("NORTHSTAR_PRICE_FETCH_MAX_TICKERS", "0")).strip()
+        try:
+            return max(0, int(raw))
+        except Exception:
+            return 0
     
     def check_data_freshness(self):
         """Check freshness of both macro and market data"""
@@ -186,18 +206,39 @@ class IntegratedDataPipeline:
         """Update YFinance market data pipeline"""
         print("\n📈 UPDATING YFINANCE MARKET DATA PIPELINE")
         print("-" * 50)
-        
+
         try:
-            # Update individual stock prices
-            print("📊 Updating individual stock prices...")
-            price_result = subprocess.run([
-                sys.executable, "src/ingestion/price_fetcher.py"
-            ], capture_output=True, text=True, timeout=1800)  # 30 min timeout
-            
-            if price_result.returncode != 0:
-                print(f"⚠️ Price fetcher had issues: {price_result.stderr}")
-                # Continue anyway - we can work with existing data
-            
+            if self._fast_market_refresh_enabled():
+                print("📊 Fast market refresh enabled - skipping full stock price backfill")
+            else:
+                print("📊 Updating individual stock prices...")
+                price_cmd = [
+                    sys.executable,
+                    "-u",
+                    "src/ingestion/price_fetcher.py",
+                    "--download-timeout",
+                    str(min(15, self._price_fetch_timeout_seconds())),
+                ]
+                max_tickers = self._price_fetch_max_tickers()
+                if max_tickers > 0:
+                    price_cmd.extend(["--max-tickers", str(max_tickers)])
+                try:
+                    price_result = subprocess.run(
+                        price_cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=self._price_fetch_timeout_seconds(),
+                        check=False,
+                    )
+                    if price_result.stdout:
+                        print(price_result.stdout[-4000:])
+                    if price_result.returncode != 0:
+                        err = (price_result.stderr or "").strip()
+                        print(f"⚠️ Price fetcher had issues: {err or 'non-zero exit'}")
+                        # Continue anyway - market-state refresh can still rely on current files + index proxy.
+                except subprocess.TimeoutExpired:
+                    print("⚠️ Price fetcher timed out; continuing with existing local price cache")
+
             # Update market indices and create live market data
             print("📊 Updating market indices...")
             success = self.fetch_market_indices()
@@ -254,7 +295,7 @@ class IntegratedDataPipeline:
         for name, ticker in indices.items():
             try:
                 # Get 2 days of data to calculate change
-                data = yf.download(ticker, period='2d', progress=False)
+                data = yf.download(ticker, period='2d', progress=False, timeout=8, threads=False)
                 
                 if not data.empty and len(data) >= 2:
                     current_close = float(data['Close'].iloc[-1])

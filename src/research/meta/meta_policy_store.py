@@ -9,7 +9,7 @@ from typing import Any, Dict
 
 
 class MetaPolicyStore:
-    def __init__(self, policy_path: str = "data/research/meta_policy.json"):
+    def __init__(self, policy_path: str = "data/results/research/state/meta_policy.json"):
         self.policy_path = Path(policy_path)
         self.policy_path.parent.mkdir(parents=True, exist_ok=True)
         self.history_dir = self.policy_path.parent / "meta_policy_versions"

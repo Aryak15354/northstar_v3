@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, Optional
 import logging
 import os
@@ -126,13 +127,15 @@ class XGBoostModel(SklearnRegressorModel):
             from xgboost import XGBRegressor
 
             model = XGBRegressor(
-                n_estimators=int(p.get("n_estimators", 300)),
-                learning_rate=float(p.get("learning_rate", 0.03)),
-                max_depth=int(p.get("max_depth", 6)),
-                subsample=float(p.get("subsample", 0.9)),
-                colsample_bytree=float(p.get("colsample_bytree", 0.9)),
+                n_estimators=int(p.get("n_estimators", 200)),
+                learning_rate=float(p.get("learning_rate", 0.05)),
+                max_depth=int(p.get("max_depth", 4)),
+                min_child_weight=float(p.get("min_child_weight", 20.0)),
+                subsample=float(p.get("subsample", 0.8)),
+                colsample_bytree=float(p.get("colsample_bytree", 0.8)),
                 reg_alpha=float(p.get("reg_alpha", 0.0)),
                 reg_lambda=float(p.get("reg_lambda", 1.0)),
+                objective=str(p.get("objective", "reg:squarederror")),
                 random_state=int(p.get("random_state", 42)),
                 n_jobs=_safe_n_jobs(p, default=1),
             )
@@ -150,6 +153,24 @@ class XGBoostModel(SklearnRegressorModel):
             name = "xgboost_fallback_rf"
         super().__init__(model, name=name, params=p)
 
+    def feature_importance(self) -> Dict[str, float]:
+        if hasattr(self.estimator, "get_booster"):
+            try:
+                importance_type = str(self.params.get("importance_type", "gain") or "gain")
+                booster = self.estimator.get_booster()
+                raw = dict(booster.get_score(importance_type=importance_type) or {})
+                if raw:
+                    out = {str(name): 0.0 for name in list(self._feature_names)}
+                    for key, value in raw.items():
+                        try:
+                            out[str(key)] = float(value)
+                        except Exception:
+                            continue
+                    return out
+            except Exception:
+                pass
+        return super().feature_importance()
+
 
 class CatBoostModel(SklearnRegressorModel):
     def __init__(self, params: Optional[Dict[str, Any]] = None):
@@ -157,15 +178,35 @@ class CatBoostModel(SklearnRegressorModel):
         try:
             from catboost import CatBoostRegressor
 
-            model = CatBoostRegressor(
-                iterations=int(p.get("iterations", 250)),
-                depth=int(p.get("depth", 6)),
-                learning_rate=float(p.get("learning_rate", 0.03)),
-                loss_function="RMSE",
-                random_seed=int(p.get("random_state", 42)),
-                thread_count=_safe_n_jobs(p, default=1),
-                verbose=False,
-            )
+            bootstrap_type = p.get("bootstrap_type")
+            if bootstrap_type is None and p.get("subsample") is not None:
+                bootstrap_type = "Bernoulli"
+            kwargs = {
+                "iterations": int(p.get("iterations", 250)),
+                "depth": int(p.get("depth", 6)),
+                "learning_rate": float(p.get("learning_rate", 0.03)),
+                "loss_function": str(p.get("loss_function", "RMSE")),
+                "random_seed": int(p.get("random_state", 42)),
+                "thread_count": _safe_n_jobs(p, default=1),
+                "verbose": bool(p.get("verbose", False)),
+                "allow_writing_files": bool(p.get("allow_writing_files", False)),
+                "l2_leaf_reg": float(p.get("l2_leaf_reg", 3.0)),
+                "min_data_in_leaf": int(p.get("min_data_in_leaf", 1)),
+                "random_strength": float(p.get("random_strength", 1.0)),
+            }
+            if p.get("subsample") is not None:
+                kwargs["subsample"] = float(p.get("subsample"))
+            if bootstrap_type is not None:
+                kwargs["bootstrap_type"] = str(bootstrap_type)
+            if p.get("boosting_type") is not None:
+                kwargs["boosting_type"] = str(p.get("boosting_type"))
+            if p.get("grow_policy") is not None:
+                kwargs["grow_policy"] = str(p.get("grow_policy"))
+            if p.get("rsm") is not None:
+                kwargs["rsm"] = float(p.get("rsm"))
+            if p.get("bagging_temperature") is not None:
+                kwargs["bagging_temperature"] = float(p.get("bagging_temperature"))
+            model = CatBoostRegressor(**kwargs)
             name = "catboost"
         except Exception:
             from sklearn.ensemble import ExtraTreesRegressor
@@ -173,12 +214,21 @@ class CatBoostModel(SklearnRegressorModel):
             model = ExtraTreesRegressor(
                 n_estimators=int(p.get("iterations", 300)),
                 max_depth=None if int(p.get("depth", 8)) <= 0 else int(p.get("depth", 8)),
-                min_samples_leaf=int(p.get("min_samples_leaf", 2)),
+                min_samples_leaf=int(p.get("min_samples_leaf", p.get("min_data_in_leaf", 2))),
                 random_state=int(p.get("random_state", 42)),
                 n_jobs=_safe_n_jobs(p, default=1),
             )
             name = "catboost_fallback_extra_trees"
         super().__init__(model, name=name, params=p)
+
+    def feature_importance(self) -> Dict[str, float]:
+        if hasattr(self.estimator, "get_feature_importance"):
+            try:
+                arr = np.asarray(self.estimator.get_feature_importance(type="FeatureImportance"), dtype=float)
+                return {f"f{i}": float(v) for i, v in enumerate(arr)}
+            except Exception:
+                pass
+        return super().feature_importance()
 
 
 class RandomForestModel(SklearnRegressorModel):
@@ -296,7 +346,7 @@ class TCNModel(BaseResearchModel):
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         p = dict(params or {})
         super().__init__(name="tcn", params=p)
-        self.lookback = int(p.get("lookback", 20))
+        self.lookback = int(p.get("lookback", 60))
         self._torch_mode = False
         self._model = None
         self._fallback = None
@@ -305,6 +355,7 @@ class TCNModel(BaseResearchModel):
         try:
             import torch
             import torch.nn as nn
+            import torch.nn.functional as F
 
             from .sequence_builder import create_sequences
 
@@ -312,28 +363,59 @@ class TCNModel(BaseResearchModel):
             if len(Xs) == 0:
                 raise RuntimeError("insufficient sequence samples")
 
-            channels = int(self.params.get("channels", 32))
-            epochs = int(self.params.get("epochs", 10))
+            channels = int(self.params.get("channels", 64))
+            epochs = int(self.params.get("epochs", 20))
             lr = float(self.params.get("lr", 1e-3))
+            dropout = float(self.params.get("dropout", 0.2))
+            dilations = self.params.get("dilations", [1, 2, 4, 8])
+            patience = int(self.params.get("patience", 10))
+
+            class _CausalConv1d(nn.Module):
+                def __init__(self, in_ch: int, out_ch: int, dilation: int):
+                    super().__init__()
+                    self.pad = (3 - 1) * dilation
+                    self.conv = nn.Conv1d(in_ch, out_ch, kernel_size=3, dilation=dilation)
+
+                def forward(self, x):
+                    x = F.pad(x, (self.pad, 0))
+                    return self.conv(x)
+
+            class _ResidualBlock(nn.Module):
+                def __init__(self, in_ch: int, out_ch: int, dilation: int, drop: float):
+                    super().__init__()
+                    self.conv1 = _CausalConv1d(in_ch, out_ch, dilation)
+                    self.conv2 = _CausalConv1d(out_ch, out_ch, dilation)
+                    self.relu = nn.ReLU()
+                    self.drop = nn.Dropout(drop)
+                    self.down = nn.Conv1d(in_ch, out_ch, kernel_size=1) if in_ch != out_ch else None
+
+                def forward(self, x):
+                    out = self.relu(self.conv1(x))
+                    out = self.drop(out)
+                    out = self.relu(self.conv2(out))
+                    out = self.drop(out)
+                    res = x if self.down is None else self.down(x)
+                    return self.relu(out + res)
 
             class _TCN(nn.Module):
-                def __init__(self, in_dim: int, c: int):
+                def __init__(self, in_dim: int, c: int, ds: list[int]):
                     super().__init__()
-                    self.conv1 = nn.Conv1d(in_dim, c, kernel_size=3, padding=2, dilation=2)
-                    self.conv2 = nn.Conv1d(c, c, kernel_size=3, padding=4, dilation=4)
-                    self.relu = nn.ReLU()
+                    layers = []
+                    ch_in = in_dim
+                    for d in ds:
+                        layers.append(_ResidualBlock(ch_in, c, int(d), dropout))
+                        ch_in = c
+                    self.net = nn.Sequential(*layers)
                     self.fc = nn.Linear(c, 1)
 
                 def forward(self, x):
-                    # x: [B, T, F] -> [B, F, T]
                     z = x.transpose(1, 2)
-                    z = self.relu(self.conv1(z))
-                    z = self.relu(self.conv2(z))
+                    z = self.net(z)
                     z = z[:, :, -1]
                     return self.fc(z).squeeze(-1)
 
             device = _safe_torch_device(torch, self.params)
-            net = _TCN(int(X.shape[1]), channels).to(device)
+            net = _TCN(int(X.shape[1]), channels, list(dilations)).to(device)
             opt = torch.optim.Adam(net.parameters(), lr=lr)
             loss_fn = nn.MSELoss()
 
@@ -341,12 +423,27 @@ class TCNModel(BaseResearchModel):
             yt = torch.tensor(ys, dtype=torch.float32, device=device)
 
             net.train()
+            best_loss = float("inf")
+            best_state = None
+            stale = 0
             for _ in range(max(1, epochs)):
                 opt.zero_grad()
                 pred = net(Xt)
                 loss = loss_fn(pred, yt)
                 loss.backward()
                 opt.step()
+                loss_val = float(loss.detach().cpu().item())
+                if loss_val + 1e-8 < best_loss:
+                    best_loss = loss_val
+                    best_state = {k: v.detach().cpu().clone() for k, v in net.state_dict().items()}
+                    stale = 0
+                else:
+                    stale += 1
+                    if stale >= max(1, patience):
+                        break
+
+            if best_state is not None:
+                net.load_state_dict(best_state)
 
             self._model = (net, device)
             self._torch_mode = True
@@ -394,7 +491,7 @@ class TransformerModel(BaseResearchModel):
     def __init__(self, params: Optional[Dict[str, Any]] = None):
         p = dict(params or {})
         super().__init__(name="transformer", params=p)
-        self.lookback = max(2, int(p.get("lookback", 30)))
+        self.lookback = max(2, int(p.get("lookback", 60)))
         self._torch_mode = False
         self._model = None
         self._fallback = None
@@ -540,6 +637,125 @@ class TransformerModel(BaseResearchModel):
         if ctx["static"].shape[1] > 0:
             parts.append(ctx["static"])
         return np.concatenate(parts, axis=1).astype(np.float32, copy=False)
+
+    @staticmethod
+    def _context_feature_names(dataset: Any, feature_names: Optional[list[str]] = None) -> Dict[str, list[str]]:
+        observed_names = list(getattr(dataset, "observed_dynamic_feature_names", []) or [])
+        known_names = list(getattr(dataset, "known_dynamic_feature_names", []) or [])
+        static_names = list(getattr(dataset, "static_feature_names", []) or [])
+        if not observed_names:
+            observed_names = list(feature_names or list(getattr(dataset, "feature_names", []) or []))
+        return {
+            "observed_feature_names": [str(x) for x in observed_names],
+            "known_feature_names": [str(x) for x in known_names],
+            "static_feature_names": [str(x) for x in static_names],
+        }
+
+    @staticmethod
+    def _bundle_architecture(net: Any) -> Dict[str, Any]:
+        layer0 = net.encoder.layers[0] if len(getattr(net.encoder, "layers", [])) else None
+        ticker_emb = getattr(net, "ticker_emb", None)
+        sector_emb = getattr(net, "sector_emb", None)
+        return {
+            "observed_dim": int(net.observed_proj.in_features),
+            "known_dim": int(net.known_proj.in_features) if getattr(net, "known_proj", None) is not None else 0,
+            "static_dim": int(net.static_proj.in_features) if getattr(net, "static_proj", None) is not None else 0,
+            "d_model": int(net.observed_proj.out_features),
+            "nhead": int(layer0.self_attn.num_heads) if layer0 is not None else 1,
+            "num_layers": int(len(getattr(net.encoder, "layers", [])) or 1),
+            "dim_feedforward": int(layer0.linear1.out_features) if layer0 is not None else int(net.observed_proj.out_features),
+            "dropout": float(getattr(net.dropout, "p", 0.0)),
+            "max_len": int(net.pos_embedding.num_embeddings),
+            "n_tickers": int(ticker_emb.num_embeddings) if ticker_emb is not None else 0,
+            "n_sectors": int(sector_emb.num_embeddings) if sector_emb is not None else 0,
+            "embed_dim": int(ticker_emb.embedding_dim) if ticker_emb is not None else (int(sector_emb.embedding_dim) if sector_emb is not None else 16),
+        }
+
+    def save_window_artifact(
+        self,
+        *,
+        path: str | Path,
+        dataset: Any,
+        target_indices: np.ndarray,
+        split: Optional[Dict[str, Any]] = None,
+        window_index: Optional[int] = None,
+        feature_names: Optional[list[str]] = None,
+    ) -> Dict[str, Any]:
+        save_path = Path(path).expanduser().resolve()
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if not self._torch_mode or self._model is None:
+            raise RuntimeError("transformer_window_artifact_requires_native_torch_model")
+
+        import torch
+
+        ctx = self._extract_context(dataset, np.asarray(target_indices, dtype=np.int64))
+        if len(ctx.get("indices", [])) == 0:
+            raise ValueError("transformer_window_artifact_no_valid_context_rows")
+
+        net, device = self._model
+        obs = self._scale_seq(ctx["obs_seq"], fit=False, key="obs")
+        known = (
+            self._scale_seq(ctx["known_seq"], fit=False, key="known")
+            if ctx["known_seq"].shape[2] > 0
+            else ctx["known_seq"]
+        )
+        static = (
+            self._scale_X(ctx["static"], fit=False, key="static")
+            if ctx["static"].shape[1] > 0
+            else ctx["static"]
+        )
+
+        obs_t = torch.tensor(obs, dtype=torch.float32, device=device)
+        known_t = torch.tensor(known, dtype=torch.float32, device=device) if known.shape[2] > 0 else None
+        static_t = torch.tensor(static, dtype=torch.float32, device=device) if static.shape[1] > 0 else None
+        ticker_t = torch.tensor(ctx["ticker_ids"], dtype=torch.long, device=device)
+        sector_t = torch.tensor(ctx["sector_ids"], dtype=torch.long, device=device)
+
+        net.eval()
+        with torch.no_grad():
+            pred = (
+                net(
+                    observed=obs_t,
+                    known=known_t,
+                    static=static_t,
+                    ticker_id=ticker_t,
+                    sector_id=sector_t,
+                )["return_pred"]
+                .detach()
+                .cpu()
+                .numpy()
+                .reshape(-1)
+            )
+
+        payload = {
+            "artifact_type": "transformer_window_bundle",
+            "model_name": "transformer",
+            "mode": "torch",
+            "window_index": int(window_index) if window_index is not None else None,
+            "split": dict(split or {}),
+            "lookback": int(self.lookback),
+            "params": dict(self.params or {}),
+            "architecture": self._bundle_architecture(net),
+            "feature_meta": self._context_feature_names(dataset, feature_names=feature_names),
+            "context": {
+                "obs": np.asarray(obs, dtype=np.float32),
+                "known": np.asarray(known, dtype=np.float32),
+                "static": np.asarray(static, dtype=np.float32),
+                "ticker_ids": np.asarray(ctx["ticker_ids"], dtype=np.int64),
+                "sector_ids": np.asarray(ctx["sector_ids"], dtype=np.int64),
+                "indices": np.asarray(ctx["indices"], dtype=np.int64),
+                "y": np.asarray(ctx["y"], dtype=np.float32),
+            },
+            "baseline_predictions": np.asarray(pred, dtype=np.float32),
+            "model_state": {k: v.detach().cpu() for k, v in net.state_dict().items()},
+        }
+        torch.save(payload, save_path)
+        return {
+            "path": str(save_path),
+            "mode": "torch",
+            "n_rows": int(len(ctx["indices"])),
+        }
 
     def _torch_fit_context(self, train_ctx: Dict[str, np.ndarray], valid_ctx: Optional[Dict[str, np.ndarray]] = None) -> None:
         import torch

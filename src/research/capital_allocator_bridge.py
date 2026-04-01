@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 
 class CapitalAllocatorBridge:
-    def __init__(self, out_path: str = "data/research/research_allocator_bridge.json"):
+    def __init__(self, out_path: str = "data/results/research/state/research_allocator_bridge.json"):
         self.out_path = Path(out_path)
         self.out_path.parent.mkdir(parents=True, exist_ok=True)
 

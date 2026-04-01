@@ -1,10 +1,12 @@
-"""Historical research dataset manager."""
+"""Historical research dataset manager - REFACTORED to use IngestionRegistry."""
 
 from __future__ import annotations
 
 import bisect
+import fnmatch
 import hashlib
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -13,6 +15,16 @@ import numpy as np
 import pandas as pd
 import yaml
 
+# REFACTORED: Use unified ingestion layer instead of direct loaders
+from src.ingestion import IngestionRegistry
+
+from src.data.loaders import (
+    load_fundamentals as load_fundamentals_artifact,
+    load_macro as load_macro_artifact,
+    load_prices as load_prices_artifact,
+    load_regime_labels as load_regime_labels_artifact,
+    load_sentiment as load_sentiment_artifact,
+)
 from src.data.query_engine import DuckDBQueryEngine
 
 from .feature_factory import FeatureFactory
@@ -72,6 +84,17 @@ class DatasetManager:
     def __init__(self, project_root: Optional[Path] = None, config: Optional[Dict[str, Any]] = None):
         self.project_root = Path(project_root) if project_root else Path(".")
         self.config = dict(config or {})
+        
+        # REFACTORED: Initialize IngestionRegistry for unified data access
+        self.ingestion = IngestionRegistry(self.config)
+        
+        self.policy_config_path = str(
+            Path(
+                self.config.get("policy_config_path", "config/research_policy.yaml")
+            )
+            if Path(str(self.config.get("policy_config_path", "config/research_policy.yaml"))).is_absolute()
+            else (self.project_root / str(self.config.get("policy_config_path", "config/research_policy.yaml")))
+        )
         self.use_et500_features = bool(self.config.get("use_et500_features", False))
         self.use_et500_universe_filter = bool(self.config.get("use_et500_universe_filter", False))
         self.use_screener_features = bool(
@@ -84,25 +107,25 @@ class DatasetManager:
         self.screener_fundamentals_path = str(
             self.config.get(
                 "screener_fundamentals_path",
-                self.config.get("screener_annual_path", "data/processed/screener_fundamentals_annual.csv"),
+                self.config.get("screener_annual_path", "data/canonical/fundamentals/fundamentals_annual_panel.csv"),
             )
         )
         self.screener_quarterly_path = str(
-            self.config.get("screener_quarterly_path", "data/processed/screener_fundamentals_quarterly.csv")
+            self.config.get("screener_quarterly_path", "data/canonical/fundamentals/fundamentals_quarterly_panel.csv")
         )
         self.screener_shareholding_path = str(
-            self.config.get("screener_shareholding_path", "data/processed/screener_shareholding.csv")
+            self.config.get("screener_shareholding_path", "data/canonical/fundamentals/shareholding_quarterly.csv")
         )
         self.use_alternative_features = bool(self.config.get("use_alternative_features", False))
         self.use_sentiment_features = bool(self.config.get("use_sentiment_features", False))
         self.use_sentiment_regime = bool(self.config.get("use_sentiment_regime", False))
         self.use_macro_features = bool(self.config.get("use_macro_features", False))
-        self.alternative_data_path = str(self.config.get("alternative_data_path", "data/processed/alternative"))
+        self.alternative_data_path = str(self.config.get("alternative_data_path", "data/canonical/alternative"))
         self.sentiment_path = str(
-            self.config.get("sentiment_path", "data/processed/sentiment/ticker_sentiment_daily.parquet")
+            self.config.get("sentiment_path", "data/canonical/sentiment/company_sentiment_daily.parquet")
         )
         self.market_sentiment_path = str(
-            self.config.get("market_sentiment_path", "data/processed/sentiment/market_sentiment_daily.parquet")
+            self.config.get("market_sentiment_path", "data/canonical/sentiment/market_sentiment_daily.parquet")
         )
         self.sentiment_duckdb_path = str(self.config.get("sentiment_duckdb_path", "data/sentiment.duckdb"))
         self._et500_membership_cache: Optional[pd.DataFrame] = None
@@ -118,7 +141,7 @@ class DatasetManager:
             screener_shareholding_path=str(self.screener_shareholding_path),
             config=self.config,
         )
-        self.snapshot_dir = self.project_root / "data/research"
+        self.snapshot_dir = self.project_root / "data/results/research/snapshots"
         self.snapshot_dir.mkdir(parents=True, exist_ok=True)
         self.strict_real_data_only = bool(self.config.get("strict_real_data_only", True))
         self.required_artifacts = {
@@ -156,8 +179,12 @@ class DatasetManager:
             import psutil  # type: ignore
 
             return float(psutil.virtual_memory().total / (1024 ** 3))
-        except Exception:
+        except ModuleNotFoundError:
+            logger.warning("psutil not available; host memory autodetect disabled")
             return 0.0
+        except Exception:
+            logger.exception("Failed to detect host memory")
+            raise
 
     def _is_low_resource_host(self) -> bool:
         flag = str(self.config.get("low_resource_mode", "auto")).strip().lower()
@@ -178,19 +205,10 @@ class DatasetManager:
         cap_tickers = int(self.config.get("low_resource_max_tickers", 140) or 140)
         cap_lookback = int(self.config.get("low_resource_lookback_days", 2200) or 2200)
 
-        try:
-            cur_rows_raw = self.config.get("max_rows", cap_rows)
-            cur_rows = int(cur_rows_raw) if cur_rows_raw is not None else cap_rows
-        except Exception:
-            cur_rows = cap_rows
-        try:
-            cur_tickers = int(self.config.get("max_tickers", cap_tickers) or cap_tickers)
-        except Exception:
-            cur_tickers = cap_tickers
-        try:
-            cur_lookback = int(self.config.get("lookback_days", cap_lookback) or cap_lookback)
-        except Exception:
-            cur_lookback = cap_lookback
+        cur_rows_raw = self.config.get("max_rows", cap_rows)
+        cur_rows = int(cur_rows_raw) if cur_rows_raw is not None else cap_rows
+        cur_tickers = int(self.config.get("max_tickers", cap_tickers) or cap_tickers)
+        cur_lookback = int(self.config.get("lookback_days", cap_lookback) or cap_lookback)
 
         self.config["max_rows"] = max(5000, min(cur_rows, cap_rows))
         self.config["max_tickers"] = max(20, min(cur_tickers, cap_tickers))
@@ -207,8 +225,30 @@ class DatasetManager:
             s = s.split(".", 1)[0]
         return f"{s}.NS"
 
+    @staticmethod
+    def _as_date(df: pd.DataFrame, preferred: list[str]) -> pd.Series:
+        for c in preferred:
+            if c in df.columns:
+                out = pd.to_datetime(df[c], errors="coerce")
+                try:
+                    if getattr(out.dt, "tz", None) is not None:
+                        out = out.dt.tz_localize(None)
+                except Exception:
+                    pass
+                try:
+                    out = out.astype("datetime64[ns]")
+                except Exception:
+                    out = pd.to_datetime(out, errors="coerce")
+                return out
+        return pd.Series(pd.NaT, index=df.index)
+
     def _load_sector_lookup(self) -> Dict[str, str]:
-        """Canonical sector mapping: YAML overrides CSV, CSV fills remainder."""
+        """
+        Canonical sector mapping: YAML overrides CSV, CSV fills remainder.
+        
+        NOTE: This reads auxiliary reference data (sector mappings), not primary market data.
+        Primary data (prices, fundamentals, macro) is loaded through IngestionRegistry.
+        """
         csv_map: Dict[str, str] = {}
         csv_path = self.project_root / "data/processed/sector_mapping.csv"
         if csv_path.exists():
@@ -220,7 +260,8 @@ class DatasetManager:
                     cdf = cdf[(cdf["ticker"] != "") & (cdf["sector"] != "")]
                     csv_map = dict(zip(cdf["ticker"], cdf["sector"]))
             except Exception:
-                csv_map = {}
+                logger.exception("Failed loading sector mapping CSV: %s", csv_path)
+                raise
 
         yaml_map: Dict[str, str] = {}
         yaml_path = self.project_root / "config/stock_options_mapping_complete.yaml"
@@ -239,7 +280,8 @@ class DatasetManager:
                         if tk:
                             yaml_map[tk] = sec
             except Exception:
-                yaml_map = {}
+                logger.exception("Failed loading sector mapping YAML: %s", yaml_path)
+                raise
 
         out = dict(csv_map)
         out.update(yaml_map)  # YAML overrides CSV labels when both exist.
@@ -283,6 +325,15 @@ class DatasetManager:
             return None
         return pd.Timestamp(ts)
 
+    def _config_int(self, key: str, default: int) -> int:
+        raw = self.config.get(key, default)
+        if raw in (None, "", "null"):
+            return int(default)
+        try:
+            return int(raw)
+        except Exception:
+            return int(default)
+
     def _load_et500_membership(self) -> pd.DataFrame:
         if isinstance(self._et500_membership_cache, pd.DataFrame):
             return self._et500_membership_cache.copy()
@@ -294,8 +345,8 @@ class DatasetManager:
         try:
             df = pd.read_csv(path)
         except Exception:
-            self._et500_membership_cache = pd.DataFrame()
-            return pd.DataFrame()
+            logger.exception("Failed loading ET500 membership file: %s", path)
+            raise
 
         if df.empty or not {"year", "nse_ticker"}.issubset(set(df.columns)):
             self._et500_membership_cache = pd.DataFrame()
@@ -447,6 +498,312 @@ class DatasetManager:
         out = out.loc[keep].drop(columns=["__date_norm", "__ticker_norm"], errors="ignore")
         return out.reset_index(drop=True)
 
+    def _add_sector_dummies(self, panel: pd.DataFrame) -> pd.DataFrame:
+        if panel.empty:
+            return panel
+        sector_col = next(
+            (c for c in ["sector_name", "sector", "Industry", "industry", "Sector"] if c in panel.columns),
+            None,
+        )
+        if sector_col is None:
+            return panel
+        sec = panel[sector_col].astype(str).fillna("UNKNOWN")
+        dummies = pd.get_dummies(sec, prefix="sector_dummy")
+        if dummies.empty:
+            return panel
+        # Sanitize dummy column names to ASCII-safe tokens.
+        dummies.columns = [re.sub(r"[^A-Za-z0-9_]+", "_", str(c)) for c in dummies.columns]
+        return pd.concat([panel.reset_index(drop=True), dummies.reset_index(drop=True)], axis=1)
+
+    def _load_delisting_database(self) -> pd.DataFrame:
+        path = self.project_root / "data/universe/delisting_database.parquet"
+        if not path.exists():
+            return pd.DataFrame()
+        try:
+            df = pd.read_parquet(path)
+        except Exception:
+            logger.exception("Failed loading delisting database: %s", path)
+            raise
+        if df.empty:
+            return pd.DataFrame()
+        out = df.copy()
+        sym_col = "symbol" if "symbol" in out.columns else ("ticker" if "ticker" in out.columns else None)
+        if sym_col is None:
+            return pd.DataFrame()
+        out["ticker"] = out[sym_col].map(self._normalize_ticker)
+        out["delisting_date"] = pd.to_datetime(out.get("delisting_date"), errors="coerce")
+        out["final_price"] = pd.to_numeric(out.get("final_price"), errors="coerce")
+        out["takeover_price"] = pd.to_numeric(out.get("takeover_price"), errors="coerce")
+        out["pnl_impact"] = pd.to_numeric(out.get("pnl_impact"), errors="coerce")
+        dtype_raw = out.get("delisting_type_original", pd.Series("", index=out.index)).astype(str).str.lower()
+        reason_raw = out.get("reason", pd.Series("", index=out.index)).astype(str).str.lower()
+        forced = (
+            reason_raw.isin({"financial_distress", "regulatory"})
+            | dtype_raw.str.contains("compulsory|liquidation|insolvency", regex=True, na=False)
+        )
+        out["delisting_class"] = np.where(forced, "forced", "voluntary")
+        keep = ["ticker", "delisting_date", "delisting_class", "final_price", "takeover_price", "pnl_impact"]
+        out = out.dropna(subset=["ticker", "delisting_date"])
+        return out[keep].reset_index(drop=True)
+
+    def _apply_delisting_adjustments(self, panel: pd.DataFrame, delist_df: pd.DataFrame) -> pd.DataFrame:
+        if panel.empty or delist_df.empty or not {"date", "ticker"}.issubset(set(panel.columns)):
+            return panel
+        work = panel.copy()
+        work["date"] = pd.to_datetime(work["date"], errors="coerce")
+        work["ticker"] = work["ticker"].map(self._normalize_ticker)
+        delist = delist_df.copy()
+        delist["ticker"] = delist["ticker"].map(self._normalize_ticker)
+        delist["delisting_date"] = pd.to_datetime(delist["delisting_date"], errors="coerce")
+        delist = delist.dropna(subset=["ticker", "delisting_date"])
+        if delist.empty:
+            return work
+
+        work = work.merge(delist, on="ticker", how="left")
+        if "delisting_date" not in work.columns:
+            return panel
+
+        after_delist = work["delisting_date"].notna() & (work["date"] > work["delisting_date"])
+        work = work.loc[~after_delist].copy()
+
+        on_delist = work["delisting_date"].notna() & (work["date"] == work["delisting_date"])
+        if on_delist.any() and "forward_return_5d" in work.columns:
+            forced = work["delisting_class"].astype(str).str.lower().eq("forced")
+            use_forced = on_delist & forced
+            work.loc[use_forced, "forward_return_5d"] = -1.0
+
+            voluntary_mask = on_delist & (~forced)
+            if voluntary_mask.any():
+                close = pd.to_numeric(work.loc[voluntary_mask, "close"], errors="coerce")
+                takeover = pd.to_numeric(work.loc[voluntary_mask, "takeover_price"], errors="coerce")
+                final_price = pd.to_numeric(work.loc[voluntary_mask, "final_price"], errors="coerce")
+                pnl_impact = pd.to_numeric(work.loc[voluntary_mask, "pnl_impact"], errors="coerce")
+                price = takeover.where(takeover.notna(), final_price)
+                ret = price / close.replace(0.0, np.nan) - 1.0
+                ret = ret.where(ret.notna(), pnl_impact)
+                work.loc[voluntary_mask, "forward_return_5d"] = ret
+        work = work.drop(columns=["delisting_date", "delisting_class", "final_price", "takeover_price", "pnl_impact"], errors="ignore")
+        return work.reset_index(drop=True)
+
+    def _apply_liquidity_filter(self, panel: pd.DataFrame, prices: pd.DataFrame) -> pd.DataFrame:
+        if panel.empty or prices is None or prices.empty:
+            return panel
+        threshold = float(self.config.get("liquidity_threshold_cr", 0.0) or 0.0)
+        if threshold <= 0.0:
+            return panel
+        p = prices.copy()
+        date_col = "Date" if "Date" in p.columns else ("date" if "date" in p.columns else None)
+        if date_col is None or "ticker" not in p.columns:
+            return panel
+        close_col = "Close" if "Close" in p.columns else ("close" if "close" in p.columns else None)
+        vol_col = "Volume" if "Volume" in p.columns else ("volume" if "volume" in p.columns else None)
+        if close_col is None or vol_col is None:
+            return panel
+        p["date"] = pd.to_datetime(p[date_col], errors="coerce")
+        p["ticker"] = p["ticker"].map(self._normalize_ticker)
+        p["close"] = pd.to_numeric(p[close_col], errors="coerce")
+        p["volume"] = pd.to_numeric(p[vol_col], errors="coerce")
+        p = p.dropna(subset=["date", "ticker", "close", "volume"])
+        if p.empty:
+            return panel
+        p = p.sort_values(["ticker", "date"], kind="mergesort")
+        p["rupee_volume"] = p["close"] * p["volume"]
+        p["adt_21d"] = (
+            p.groupby("ticker", sort=False)["rupee_volume"]
+            .rolling(21, min_periods=10)
+            .mean()
+            .reset_index(level=0, drop=True)
+        )
+        p["quarter"] = p["date"].dt.to_period("Q")
+        first = p.groupby(["ticker", "quarter"], sort=False).first().reset_index()
+        first["liquid_flag"] = (pd.to_numeric(first["adt_21d"], errors="coerce") >= (threshold * 1e7)).astype(bool)
+
+        membership = first[["ticker", "quarter", "liquid_flag"]].copy()
+        mem_path = self.project_root / "data/universe/liquidity_membership.parquet"
+        try:
+            membership.to_parquet(mem_path, index=False)
+        except Exception:
+            logger.warning("Failed to write liquidity membership table: %s", mem_path)
+
+        work = panel.copy()
+        work["date"] = pd.to_datetime(work["date"], errors="coerce")
+        work["ticker"] = work["ticker"].map(self._normalize_ticker)
+        work["quarter"] = work["date"].dt.to_period("Q")
+        work = work.merge(membership, on=["ticker", "quarter"], how="left")
+        work = work.loc[work["liquid_flag"].fillna(False)].copy()
+        work = work.drop(columns=["quarter", "liquid_flag"], errors="ignore")
+        return work.reset_index(drop=True)
+
+    def _enforce_feature_budget_and_correlation(self, X_df: pd.DataFrame, feature_names: list[str], n_tickers: int) -> tuple[str | None, float, int]:
+        if X_df is None or X_df.empty or not feature_names:
+            return None, 0.0, 0
+        n_universe = int(self.config.get("universe_size", n_tickers) or n_tickers)
+        budget_enforce = bool(self.config.get("feature_budget_enforce", True))
+        budget_override = self.config.get("feature_budget")
+        if budget_override is not None:
+            budget = int(budget_override)
+        else:
+            budget = max(1, int(n_universe // 5))
+            if n_universe == 150:
+                budget = 32
+            elif n_universe == 300:
+                budget = 45
+
+        def _base_name(name: str) -> str:
+            base = str(name)
+            for suf in ["_cs_z", "_cs_rank"]:
+                if base.endswith(suf):
+                    base = base[: -len(suf)]
+            if base.startswith("sector_dummy_"):
+                return "sector_dummy"
+            return base
+
+        base_names = sorted({ _base_name(n) for n in feature_names })
+        utilization = (len(base_names) / float(max(1, budget))) * 100.0
+        logger.info(
+            "[feature-budget] base_features=%d budget=%d utilization=%.1f%%",
+            int(len(base_names)),
+            int(budget),
+            float(utilization),
+        )
+        if len(base_names) > budget:
+            if budget_enforce:
+                raise ValueError(f"feature_budget_exceeded:{len(base_names)}>{budget}")
+            logger.warning("[feature-budget] exceeded %d>%d but enforcement disabled", int(len(base_names)), int(budget))
+
+        if bool(self.config.get("feature_correlation_skip", False)):
+            logger.info("[feature-corr] skipped by config")
+            return None, utilization, budget
+
+        corr_warn_threshold = float(self.config.get("feature_correlation_warn_threshold", 0.70) or 0.70)
+        corr_reject_threshold = float(self.config.get("feature_correlation_reject_threshold", 0.85) or 0.85)
+        corr_enforce = bool(self.config.get("feature_correlation_enforce", True))
+        corr_warn_limit_raw = self.config.get("feature_correlation_warn_limit")
+        corr_warn_limit = None
+        if corr_warn_limit_raw not in (None, "", "null"):
+            try:
+                corr_warn_limit = max(0, int(corr_warn_limit_raw))
+            except Exception:
+                corr_warn_limit = None
+        corr = X_df.corr(method="spearman")
+        corr = corr.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        if corr.shape[0] >= 2:
+            mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
+            stacked = corr.where(mask).stack()
+            high = stacked[stacked.abs() > corr_reject_threshold]
+            warn = stacked[(stacked.abs() > corr_warn_threshold) & (stacked.abs() <= corr_reject_threshold)]
+            warn_items = list(warn.items())
+            if corr_warn_limit is not None:
+                warn_items = warn_items[:corr_warn_limit]
+            for (f1, f2), val in warn_items:
+                logger.warning("[feature-corr] warning %s vs %s = %.3f", f1, f2, float(val))
+            if corr_warn_limit is not None and len(warn) > corr_warn_limit:
+                logger.warning(
+                    "[feature-corr] suppressed %d additional warnings above %.2f",
+                    int(len(warn) - corr_warn_limit),
+                    float(corr_warn_threshold),
+                )
+            if not high.empty:
+                pairs = ", ".join([f"{a}:{b}:{float(v):.3f}" for (a, b), v in high.items()][:5])
+                if corr_enforce:
+                    raise ValueError(f"feature_correlation_reject:{pairs}")
+                logger.warning("[feature-corr] reject-threshold exceeded but enforcement disabled: %s", pairs)
+
+        corr_path = None
+        try:
+            ts = datetime.now().strftime("%Y%m%d")
+            corr_path = str(self.project_root / f"reports/feature_correlation_matrix_{ts}.parquet")
+            corr.to_parquet(corr_path)
+        except Exception:
+            logger.warning("Failed to write feature correlation matrix")
+            corr_path = None
+        return corr_path, utilization, budget
+
+    def _enforce_feature_pit_registry(self, feature_names: list[str]) -> tuple[dict[str, float], list[str], int]:
+        if not feature_names:
+            return {}, [], 0
+
+        registry = self.config.get("feature_pit_lags", {}) or {}
+        rules: list[tuple[str, object]] = []
+        if isinstance(registry, dict):
+            for k, v in registry.items():
+                rules.append((str(k), v))
+        elif isinstance(registry, list):
+            for item in registry:
+                if isinstance(item, dict):
+                    pattern = item.get("pattern") or item.get("feature") or item.get("name")
+                    if pattern:
+                        rules.append((str(pattern), item.get("lag", item.get("lag_days", 0))))
+
+        def _normalize_feature(name: str) -> str:
+            base = str(name)
+            for suf in ["_cs_z", "_cs_rank", "_ts_z", "_zscore"]:
+                if base.endswith(suf):
+                    base = base[: -len(suf)]
+            if base.endswith("_signal"):
+                base = base[: -len("_signal")]
+            if base.startswith("sector_dummy_"):
+                return "sector_dummy"
+            return base
+
+        def _match(pattern: str, name: str) -> bool:
+            key = str(pattern)
+            if key.startswith("re:"):
+                try:
+                    return re.search(key[3:], name) is not None
+                except re.error:
+                    return False
+            if any(ch in key for ch in "*?[]"):
+                return fnmatch.fnmatch(name, key)
+            return key == name
+
+        def _resolve_lag(raw: object) -> float:
+            if isinstance(raw, (int, float)) and np.isfinite(raw):
+                return float(raw)
+            token = str(raw or "").strip().lower()
+            if token in {"price", "technical", "market"}:
+                return 0.0
+            if token in {"announcement"}:
+                return float(self.config.get("pit_announcement_plus_days", 1))
+            if token in {"earnings"}:
+                return float(self.config.get("pit_earnings_announcement_plus_days", self.config.get("pit_announcement_plus_days", 1)))
+            if token in {"financials"}:
+                return float(self.config.get("pit_financials_plus_days", self.config.get("pit_announcement_plus_days", 1)))
+            if token in {"fundamental", "quarterly", "annual"}:
+                return float(self.config.get("pit_fundamental_lag_days", 60))
+            if token in {"shareholding"}:
+                return float(self.config.get("pit_shareholding_lag_days", 2))
+            if token in {"bulk", "bulk_deals", "alt", "altdata"}:
+                return float(self.config.get("pit_bulk_deal_lag_days", 1))
+            if token in {"sentiment"}:
+                return float(self.config.get("pit_sentiment_lag_days", 1))
+            if token in {"macro"}:
+                return float(self.config.get("pit_macro_lag_days", 1))
+            return 0.0
+
+        matched: dict[str, float] = {}
+        missing: list[str] = []
+        base_names = {_normalize_feature(str(f)) for f in feature_names}
+        for feat in feature_names:
+            base = _normalize_feature(str(feat))
+            found = False
+            for pattern, raw in rules:
+                if _match(pattern, base):
+                    matched[str(feat)] = _resolve_lag(raw)
+                    found = True
+                    break
+            if not found:
+                missing.append(base)
+
+        missing = sorted({m for m in missing if m})
+        enforce = bool(self.config.get("feature_pit_enforce", True))
+        if missing:
+            sample = ", ".join(missing[:20])
+            if enforce:
+                raise ValueError(f"feature_pit_lag_missing:{len(missing)}:{sample}")
+            logger.warning("[pit-registry] missing=%d sample=%s", int(len(missing)), sample)
+        return matched, missing, int(len(base_names))
+
     @staticmethod
     def _group_zscore(values: pd.Series, groups: pd.Series, clip_abs: float = 8.0) -> pd.Series:
         v = pd.to_numeric(values, errors="coerce")
@@ -473,6 +830,86 @@ class DatasetManager:
         sec_mean = t.groupby(key, sort=False).transform("mean")
         resid = (t - sec_mean).replace([np.inf, -np.inf], np.nan).fillna(0.0)
         return resid.astype(float)
+
+    def _apply_regime_signal_weights(self, panel: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
+        if panel is None or panel.empty or "regime" not in panel.columns:
+            return panel, {}
+        if not bool(self.config.get("regime_signal_weighting_enabled", True)):
+            return panel, {}
+
+        weights_cfg = self.config.get("regime_signal_weights", {}) or {}
+        if not isinstance(weights_cfg, dict) or not weights_cfg:
+            return panel, {}
+
+        cap = float(self.config.get("regime_signal_weight_cap", 1.5) or 1.5)
+        floor = float(self.config.get("regime_signal_weight_floor", 0.6) or 0.6)
+        floor = max(0.0, min(floor, cap))
+
+        default_patterns = {
+            "bab": [r"bab_beta", r"\bbab(_|$)"],
+            "momentum": [r"\bmom_", r"\bret_[0-9]+d", r"log_return", r"price_to_sma", r"trend"],
+            "flow": [r"^bulk_", r"flow_", r"order_", r"amihud"],
+            "quality": [
+                r"piotroski",
+                r"earnings_quality",
+                r"\broe\b",
+                r"operating_margin",
+                r"ebitda_margin",
+                r"accrual",
+                r"cash_conversion",
+                r"asset_turnover",
+                r"interest_coverage",
+                r"debt_to_equity",
+                r"working_capital",
+                r"roce",
+                r"opm",
+            ],
+        }
+        patterns_cfg = self.config.get("regime_signal_feature_patterns") or default_patterns
+
+        compiled: dict[str, list[re.Pattern]] = {}
+        for cat, patterns in dict(patterns_cfg).items():
+            compiled[str(cat).lower()] = [re.compile(p) for p in list(patterns or []) if p]
+
+        def _canonical(name: str) -> str:
+            base = str(name or "").strip().lower()
+            return re.sub(r"(_cs_(z|rank))$", "", base)
+
+        category_cols: dict[str, list[str]] = {k: [] for k in compiled.keys()}
+        for col in panel.columns:
+            if not pd.api.types.is_numeric_dtype(panel[col]):
+                continue
+            if str(col).startswith(("forward_return_", "target_")):
+                continue
+            base = _canonical(str(col))
+            for cat, regexes in compiled.items():
+                if any(r.search(base) for r in regexes):
+                    category_cols.setdefault(cat, []).append(str(col))
+                    break
+
+        if not any(category_cols.values()):
+            return panel, {}
+
+        reg_series = panel["regime"].astype(str).str.lower()
+        regime_weights: dict[str, dict[str, float]] = {}
+        for regime, cat_map in weights_cfg.items():
+            if not isinstance(cat_map, dict):
+                continue
+            regime_key = str(regime).lower()
+            regime_weights[regime_key] = {str(k).lower(): float(v) for k, v in cat_map.items()}
+
+        out = panel.copy()
+        applied_counts: dict[str, int] = {}
+        for cat, cols in category_cols.items():
+            if not cols:
+                continue
+            weight_map = {r: regime_weights.get(r, {}).get(cat, 1.0) for r in reg_series.unique()}
+            weights = reg_series.map(weight_map).fillna(1.0).astype(float)
+            weights = weights.clip(lower=floor, upper=cap)
+            out.loc[:, cols] = out[cols].mul(weights, axis=0)
+            applied_counts[cat] = int(len(cols))
+
+        return out, applied_counts
 
     @staticmethod
     def _rolling_beta_residualized_target(
@@ -653,9 +1090,8 @@ class DatasetManager:
         try:
             df = pd.read_parquet(path)
         except Exception as exc:
-            if must_require:
-                raise RuntimeError(f"required_{artifact}_artifact_corrupt:{path}:{exc}") from exc
-            return pd.DataFrame()
+            logger.exception("Failed reading parquet artifact '%s': %s", artifact, path)
+            raise RuntimeError(f"{artifact}_artifact_corrupt:{path}:{exc}") from exc
         self._validate_artifact(df=df, artifact=artifact, path=path, required=must_require)
         return df
 
@@ -741,8 +1177,8 @@ class DatasetManager:
             date_col = self._pick_first_existing(all_cols, ["Date", "date", "timestamp"])
             close_col = self._pick_first_existing(all_cols, ["Close", "close"])
             if date_col and close_col and "ticker" in {str(c) for c in all_cols}:
-                lookback_days = int(self.config.get("lookback_days", 3650) or 3650)
-                max_tickers = int(self.config.get("max_tickers", 250) or 250)
+                lookback_days = self._config_int("lookback_days", 3650)
+                max_tickers = self._config_int("max_tickers", 250)
                 cfg_start = self._config_date("start_date")
                 cfg_end = self._config_date("end_date")
 
@@ -753,12 +1189,9 @@ class DatasetManager:
                 else:
                     max_date = self.query.scalar(path, f"max({_safe_sql_identifier(date_col)})")
                     if max_date is not None and lookback_days > 0:
-                        try:
-                            max_ts = pd.to_datetime(max_date, errors="coerce")
-                            if pd.notna(max_ts):
-                                start_date = pd.Timestamp(max_ts) - pd.Timedelta(days=lookback_days + 180)
-                        except Exception:
-                            start_date = None
+                        max_ts = pd.to_datetime(max_date, errors="coerce")
+                        if pd.notna(max_ts):
+                            start_date = pd.Timestamp(max_ts) - pd.Timedelta(days=lookback_days + 180)
                 if cfg_end is not None and start_date is not None and cfg_end < start_date:
                     start_date = cfg_end
 
@@ -794,6 +1227,28 @@ class DatasetManager:
                 )
                 self._validate_artifact(df=pushed, artifact="prices", path=path, required=must_require)
                 return pushed
+
+        # Canonical loader path for live/research parity (2b).
+        if rel.strip() == "data/processed/prices.parquet":
+            try:
+                df = load_prices_artifact(config_path=self.policy_config_path)
+            except FileNotFoundError:
+                if must_require:
+                    raise
+                return pd.DataFrame()
+            self._validate_artifact(df=df, artifact="prices", path=path, required=must_require)
+            if not df.empty:
+                date_col = next((c for c in ["Date", "date", "timestamp"] if c in df.columns), None)
+                if date_col is not None:
+                    dts = pd.to_datetime(df[date_col], errors="coerce")
+                    cfg_start = self._config_date("start_date")
+                    cfg_end = self._config_date("end_date")
+                    if cfg_start is not None:
+                        df = df.loc[dts >= cfg_start].copy()
+                        dts = pd.to_datetime(df[date_col], errors="coerce")
+                    if cfg_end is not None:
+                        df = df.loc[dts <= cfg_end].copy()
+            return df
 
         df = self._read_parquet(rel, artifact="prices")
         if not df.empty:
@@ -841,6 +1296,15 @@ class DatasetManager:
                     "free_cash_flow",
                     "interest_expense",
                     "shares_outstanding",
+                    "gross_profit",
+                    "cost_of_revenue",
+                    "working_capital",
+                    "cash_and_equivalents",
+                    "receivables",
+                    "inventory",
+                    "payables",
+                    "deferred_revenue",
+                    "lease_liabilities",
                 ],
             )
             if cols:
@@ -848,6 +1312,18 @@ class DatasetManager:
                 must_require = bool(self.strict_real_data_only and ("fundamentals" in self.required_artifacts))
                 self._validate_artifact(df=out, artifact="fundamentals", path=path, required=must_require)
                 return out
+
+        if rel.strip() == "data/processed/fundamentals.parquet":
+            must_require = bool(self.strict_real_data_only and ("fundamentals" in self.required_artifacts))
+            try:
+                out = load_fundamentals_artifact(config_path=self.policy_config_path)
+            except FileNotFoundError:
+                if must_require:
+                    raise
+                return pd.DataFrame()
+            self._validate_artifact(df=out, artifact="fundamentals", path=path, required=must_require)
+            return out
+
         return self._read_parquet(rel, artifact="fundamentals")
 
     def _load_optional_csv(self, rel_path: str) -> pd.DataFrame:
@@ -857,7 +1333,8 @@ class DatasetManager:
         try:
             df = pd.read_csv(path)
         except Exception:
-            return pd.DataFrame()
+            logger.exception("Failed loading optional CSV artifact: %s", path)
+            raise
         if df.empty:
             return pd.DataFrame()
         if "ticker" in df.columns:
@@ -878,43 +1355,165 @@ class DatasetManager:
     def load_screener_extended_shareholding(self) -> pd.DataFrame:
         return self._load_optional_csv(self.screener_shareholding_path)
 
-    def load_macro(self) -> pd.DataFrame:
-        # Priority merge: intelligent market state + market state.
-        ims = self._read_parquet("data/processed/intelligent_market_state.parquet", artifact="macro", required=False)
-        ms = self._read_parquet("data/processed/market_state.parquet", artifact="macro", required=False)
+    @staticmethod
+    def _normalize_macro_state_frame(raw: pd.DataFrame) -> pd.DataFrame:
+        if raw is None or raw.empty:
+            return pd.DataFrame()
+        out = raw.copy()
+        date_col = next((c for c in ["date", "Date", "timestamp", "intelligence_timestamp_str"] if c in out.columns), None)
+        if date_col is None:
+            return pd.DataFrame()
+        out["date"] = pd.to_datetime(out[date_col], errors="coerce")
+        out = out.dropna(subset=["date"]).sort_values("date", kind="mergesort")
+        out = out.drop_duplicates(subset=["date"], keep="last").reset_index(drop=True)
+        return out
 
+    def _build_macro_state_spine(self, intelligent: pd.DataFrame, market: pd.DataFrame) -> pd.DataFrame:
+        ims = self._normalize_macro_state_frame(intelligent)
+        ms = self._normalize_macro_state_frame(market)
         if ims.empty and ms.empty:
-            if self.strict_real_data_only and "macro" in self.required_artifacts:
-                raise ValueError("required_macro_artifact_empty_after_merge")
             return pd.DataFrame()
 
-        def _norm(df: pd.DataFrame) -> pd.DataFrame:
-            out = df.copy()
-            date_col = None
-            for c in ["date", "Date", "timestamp", "intelligence_timestamp_str"]:
-                if c in out.columns:
-                    date_col = c
-                    break
-            if date_col is None:
-                return pd.DataFrame()
-            out["date"] = pd.to_datetime(out[date_col], errors="coerce")
-            return out.dropna(subset=["date"]).sort_values("date")
+        anchor_dates = pd.concat(
+            [df[["date"]] for df in [ims, ms] if not df.empty],
+            ignore_index=True,
+        ).drop_duplicates(subset=["date"]).sort_values("date", kind="mergesort")
+        spine = anchor_dates.reset_index(drop=True)
 
-        ims = _norm(ims)
-        ms = _norm(ms)
+        if not ims.empty:
+            ims_work = ims.copy()
+            ims_work["_ims_source_date"] = pd.to_datetime(ims_work["date"], errors="coerce")
+            spine = pd.merge_asof(
+                spine.sort_values("date"),
+                ims_work.sort_values("date"),
+                on="date",
+                direction="backward",
+            )
+
+        if not ms.empty:
+            ms_work = ms.copy()
+            ms_work["_ms_source_date"] = pd.to_datetime(ms_work["date"], errors="coerce")
+            spine = pd.merge_asof(
+                spine.sort_values("date"),
+                ms_work.sort_values("date"),
+                on="date",
+                direction="backward",
+                suffixes=("", "_ms"),
+            )
+
+        if ms.empty:
+            return spine.reset_index(drop=True)
+
+        shared_cols = sorted((set(ims.columns) & set(ms.columns)) - {"date"}) if not ims.empty else []
+        max_stale_days = int(self.config.get("macro_state_fallback_staleness_days", 5) or 5)
+
+        if "_ims_source_date" in spine.columns:
+            ims_age_days = (
+                pd.to_datetime(spine["date"], errors="coerce")
+                - pd.to_datetime(spine["_ims_source_date"], errors="coerce")
+            ).dt.days
+            stale_base = ims_age_days > max_stale_days
+        else:
+            stale_base = pd.Series(True, index=spine.index, dtype=bool)
+
+        fallback_updates = 0
+        for col in shared_cols:
+            ms_col = f"{col}_ms"
+            if ms_col not in spine.columns:
+                continue
+            if col not in spine.columns:
+                spine[col] = spine[ms_col]
+                fallback_updates += int(spine[ms_col].notna().sum())
+                continue
+            use_ms = spine[col].isna() | stale_base
+            if bool(use_ms.any()):
+                spine.loc[use_ms, col] = spine.loc[use_ms, ms_col]
+                fallback_updates += int(use_ms.sum())
 
         if ims.empty:
-            return ms
-        if ms.empty:
-            return ims
+            non_key = [c for c in ms.columns if c != "date"]
+            for col in non_key:
+                ms_col = f"{col}_ms"
+                if ms_col in spine.columns and col not in spine.columns:
+                    spine[col] = spine[ms_col]
 
-        merged = pd.merge_asof(
-            ims.sort_values("date"),
-            ms.sort_values("date"),
-            on="date",
-            direction="backward",
-            suffixes=("", "_ms"),
+        if fallback_updates > 0:
+            logger.info(
+                "[macro] filled %d stale/missing intelligent-state cells from market_state fallback",
+                int(fallback_updates),
+            )
+
+        return spine.reset_index(drop=True)
+
+    @staticmethod
+    def _normalize_canonical_macro_frame(raw: pd.DataFrame) -> pd.DataFrame:
+        if raw is None or raw.empty:
+            return pd.DataFrame()
+        out = raw.copy()
+        out["date"] = pd.to_datetime(out.get("date"), errors="coerce")
+        if "availability_date" in out.columns:
+            out["availability_date"] = pd.to_datetime(out["availability_date"], errors="coerce")
+        else:
+            out["availability_date"] = pd.to_datetime(out.get("date"), errors="coerce")
+        out = out.dropna(subset=["availability_date"]).sort_values("availability_date", kind="mergesort")
+        out = out.drop_duplicates(subset=["availability_date"], keep="last").reset_index(drop=True)
+        return out
+
+    def _merge_canonical_macro_with_state(
+        self,
+        state_spine: pd.DataFrame,
+        canonical_macro: pd.DataFrame,
+    ) -> pd.DataFrame:
+        canon = self._normalize_canonical_macro_frame(canonical_macro)
+        if canon.empty:
+            return state_spine.reset_index(drop=True) if isinstance(state_spine, pd.DataFrame) else pd.DataFrame()
+
+        if state_spine is None or state_spine.empty:
+            out = canon.copy()
+            out["date"] = pd.to_datetime(out["availability_date"], errors="coerce")
+            return out.reset_index(drop=True)
+
+        right = canon.rename(
+            columns={
+                "date": "macro_period_date",
+                "availability_date": "macro_availability_date",
+            }
         )
+        merged = pd.merge_asof(
+            state_spine.sort_values("date"),
+            right.sort_values("macro_availability_date", kind="mergesort"),
+            left_on="date",
+            right_on="macro_availability_date",
+            direction="backward",
+            allow_exact_matches=True,
+        )
+        return merged.reset_index(drop=True)
+
+    def load_macro(self) -> pd.DataFrame:
+        must_require = bool(self.strict_real_data_only and ("macro" in self.required_artifacts))
+        macro_path = self.project_root / str(
+            self.config.get("macro_features_path", "data/canonical/macro/macro_regime_features.parquet")
+        )
+        canonical = pd.DataFrame()
+        try:
+            canonical = load_macro_artifact(config_path=self.policy_config_path)
+            canonical = self._normalize_canonical_macro_frame(canonical)
+        except FileNotFoundError:
+            if must_require:
+                raise
+        except ValueError:
+            if must_require:
+                raise
+
+        # Rich daily macro surface: intelligent market state + market state,
+        # with canonical macro pack PIT-merged on top.
+        ims = self._read_parquet("data/processed/intelligent_market_state.parquet", artifact="macro", required=False)
+        ms = self._read_parquet("data/processed/market_state.parquet", artifact="macro", required=False)
+        state_spine = self._build_macro_state_spine(ims, ms)
+        merged = self._merge_canonical_macro_with_state(state_spine, canonical)
+        self._validate_artifact(df=merged, artifact="macro", path=macro_path, required=must_require)
+        if merged.empty and must_require:
+            raise ValueError("required_macro_artifact_empty_after_merge")
         return merged
 
     def load_valuation_posterior(self) -> pd.DataFrame:
@@ -943,12 +1542,176 @@ class DatasetManager:
                 return out
         return self._read_parquet(rel, artifact="valuation_posterior")
 
+    def _enrich_company_sentiment_frame(self, raw: pd.DataFrame) -> pd.DataFrame:
+        if raw is None or raw.empty:
+            return pd.DataFrame()
+        out = raw.copy()
+        def _num_series(col: str) -> pd.Series:
+            if col in out.columns:
+                return pd.to_numeric(out[col], errors="coerce")
+            return pd.Series(np.nan, index=out.index, dtype=float)
+
+        out["date"] = self._as_date(out, ["availability_date", "date", "Date", "timestamp"])
+        if "availability_date" in out.columns:
+            out["availability_date"] = self._as_date(out, ["availability_date"])
+        else:
+            out["availability_date"] = out["date"]
+        if "ticker" not in out.columns and "symbol" in out.columns:
+            out["ticker"] = out["symbol"]
+        if "ticker" not in out.columns:
+            return pd.DataFrame()
+        out["ticker"] = out["ticker"].map(self._normalize_ticker)
+        out = out.dropna(subset=["date", "ticker"]).copy()
+        if out.empty:
+            return out
+
+        polarity = _num_series("sentiment_score").where(_num_series("sentiment_score").notna(), _num_series("sentiment_polarity")).fillna(0.0)
+        conviction = _num_series("sentiment_intensity").where(_num_series("sentiment_intensity").notna(), _num_series("sentiment_conviction")).fillna(0.0)
+        surprise = _num_series("sentiment_surprise").fillna(0.0)
+        uncertainty = _num_series("sentiment_uncertainty").fillna(1.0).clip(lower=0.0, upper=1.0)
+        news_volume = _num_series("headline_count").where(_num_series("headline_count").notna(), _num_series("news_volume")).fillna(0.0)
+
+        out["sentiment_score"] = polarity
+        out["headline_count"] = news_volume
+        out["sentiment_intensity"] = conviction
+        out["signed_sentiment_intensity"] = polarity * conviction
+
+        out = out.sort_values(["ticker", "date"], kind="mergesort")
+        trend_default = (
+            out.groupby("ticker", sort=False)["sentiment_score"]
+            .transform(lambda x: x.rolling(5, min_periods=1).mean())
+        )
+        northstar_default = polarity * (0.5 + 0.5 * conviction)
+        confirmation_default = conviction * (1.0 - uncertainty)
+
+        out["trend_score"] = _num_series("trend_score").where(
+            _num_series("trend_score").notna(),
+            trend_default,
+        )
+        out["event_shock_factor"] = _num_series("event_shock_factor").where(
+            _num_series("event_shock_factor").notna(),
+            surprise.abs() * (1.0 + conviction),
+        )
+        out["northstar_score"] = _num_series("northstar_score").where(
+            _num_series("northstar_score").notna(),
+            northstar_default,
+        )
+        momentum_default = out.groupby("ticker", sort=False)["trend_score"].diff(3).fillna(0.0)
+        out["momentum_score"] = _num_series("momentum_score").where(
+            _num_series("momentum_score").notna(),
+            momentum_default,
+        )
+        out["mispricing"] = _num_series("mispricing").where(
+            _num_series("mispricing").notna(),
+            surprise,
+        )
+        out["confirmation"] = _num_series("confirmation").where(
+            _num_series("confirmation").notna(),
+            confirmation_default,
+        )
+        out["cohesive_alpha_score"] = _num_series("cohesive_alpha_score").where(
+            _num_series("cohesive_alpha_score").notna(),
+            out["northstar_score"] * out["confirmation"],
+        )
+
+        keep = [
+            "date",
+            "availability_date",
+            "ticker",
+            "sentiment_score",
+            "trend_score",
+            "event_shock_factor",
+            "headline_count",
+            "sentiment_intensity",
+            "signed_sentiment_intensity",
+            "northstar_score",
+            "momentum_score",
+            "mispricing",
+            "confirmation",
+            "cohesive_alpha_score",
+        ]
+        keep = [c for c in keep if c in out.columns]
+        return out[keep].sort_values(["ticker", "date"], kind="mergesort").reset_index(drop=True)
+
+    def _enrich_market_sentiment_frame(self, raw: pd.DataFrame) -> pd.DataFrame:
+        if raw is None or raw.empty:
+            return pd.DataFrame()
+        out = raw.copy()
+        def _num_series(col: str) -> pd.Series:
+            if col in out.columns:
+                return pd.to_numeric(out[col], errors="coerce")
+            return pd.Series(np.nan, index=out.index, dtype=float)
+
+        out["date"] = self._as_date(out, ["availability_date", "date", "Date", "timestamp"])
+        if "availability_date" in out.columns:
+            out["availability_date"] = self._as_date(out, ["availability_date"])
+        else:
+            out["availability_date"] = out["date"]
+        out = out.dropna(subset=["date"]).sort_values("date", kind="mergesort").copy()
+        if out.empty:
+            return out
+
+        polarity = _num_series("polarity").where(_num_series("polarity").notna(), _num_series("india_market_polarity")).fillna(0.0)
+        conviction = _num_series("conviction").where(_num_series("conviction").notna(), _num_series("india_market_conviction")).fillna(0.0)
+        uncertainty = _num_series("uncertainty").where(_num_series("uncertainty").notna(), _num_series("india_market_uncertainty")).fillna(1.0).clip(lower=0.0, upper=1.0)
+        policy_weight = _num_series("policy_weight").where(_num_series("policy_weight").notna(), _num_series("global_risk_sentiment")).fillna(0.0)
+
+        out["polarity"] = polarity
+        out["conviction"] = conviction
+        out["uncertainty"] = uncertainty
+        out["policy_weight"] = policy_weight
+        out["narrative_cohesion"] = _num_series("narrative_cohesion").where(
+            _num_series("narrative_cohesion").notna(),
+            conviction * (1.0 - uncertainty),
+        )
+        out["narrative_conflict"] = _num_series("narrative_conflict").where(
+            _num_series("narrative_conflict").notna(),
+            uncertainty * (1.0 - polarity.abs().clip(upper=1.0)),
+        )
+        out["delta_polarity"] = _num_series("delta_polarity").where(
+            _num_series("delta_polarity").notna(),
+            polarity.diff().fillna(0.0),
+        )
+        out["delta_uncertainty"] = _num_series("delta_uncertainty").where(
+            _num_series("delta_uncertainty").notna(),
+            uncertainty.diff().fillna(0.0),
+        )
+        out["delta_conviction"] = _num_series("delta_conviction").where(
+            _num_series("delta_conviction").notna(),
+            conviction.diff().fillna(0.0),
+        )
+        out["change_velocity"] = _num_series("change_velocity").where(
+            _num_series("change_velocity").notna(),
+            out["delta_polarity"].abs() + out["delta_uncertainty"].abs() + out["delta_conviction"].abs(),
+        )
+        out["micro_shift_score"] = _num_series("micro_shift_score").where(
+            _num_series("micro_shift_score").notna(),
+            out["delta_polarity"] * (0.5 + 0.5 * conviction),
+        )
+
+        keep = [
+            "date",
+            "availability_date",
+            "polarity",
+            "conviction",
+            "uncertainty",
+            "narrative_cohesion",
+            "policy_weight",
+            "narrative_conflict",
+            "delta_polarity",
+            "delta_uncertainty",
+            "delta_conviction",
+            "change_velocity",
+            "micro_shift_score",
+        ]
+        keep = [c for c in keep if c in out.columns]
+        return out[keep].reset_index(drop=True)
+
     def load_sentiment_company(self) -> pd.DataFrame:
         rel = str(
-            self.config.get(
-                "sentiment_company_path",
-                "data/sentiment/v3/company_sentiment_trends.parquet",
-            )
+            self.config.get("sentiment_path")
+            or self.config.get("sentiment_company_path")
+            or "data/canonical/sentiment/company_sentiment_daily.parquet"
         )
         path = self.project_root / rel
         must_require = bool(self.strict_real_data_only and ("sentiment_company" in self.required_artifacts))
@@ -964,14 +1727,20 @@ class DatasetManager:
                     "timestamp",
                     "date",
                     "Date",
+                    "availability_date",
                     "ticker",
                     "symbol",
                     "sentiment_score",
+                    "sentiment_polarity",
                     "trend_score",
                     "event_shock_factor",
                     "headline_count",
+                    "news_volume",
                     "sentiment_intensity",
+                    "sentiment_conviction",
                     "signed_sentiment_intensity",
+                    "sentiment_surprise",
+                    "sentiment_uncertainty",
                     "northstar_score",
                     "momentum_score",
                     "mispricing",
@@ -981,7 +1750,7 @@ class DatasetManager:
             )
             all_cols = self.query.columns(path)
             date_col = self._pick_first_existing(all_cols, ["date", "Date", "timestamp"])
-            lookback_days = int(self.config.get("lookback_days", 3650) or 3650)
+            lookback_days = self._config_int("lookback_days", 3650)
             start_date = None
             if date_col and lookback_days > 0:
                 max_date = self.query.scalar(path, f"max({_safe_sql_identifier(date_col)})")
@@ -996,52 +1765,14 @@ class DatasetManager:
                 start_date=start_date,
             )
             self._validate_artifact(df=out, artifact="sentiment_company", path=path, required=must_require)
-            return out
+            return self._enrich_company_sentiment_frame(out)
 
-        return self._read_parquet(rel, artifact="sentiment_company", required=must_require)
-
-    def load_sentiment_market(self) -> pd.DataFrame:
-        rel = str(
-            self.config.get(
-                "sentiment_market_path",
-                "data/sentiment/v3/market_sentiment_india.parquet",
-            )
-        )
-        path = self.project_root / rel
-        must_require = bool(self.strict_real_data_only and ("sentiment_market" in self.required_artifacts))
-        if not path.exists():
-            if must_require:
-                raise FileNotFoundError(f"required_sentiment_market_artifact_missing:{path}")
-            return pd.DataFrame()
-
-        if self.query.available:
-            cols = self._select_existing_columns(
-                path,
-                [
-                    "date",
-                    "Date",
-                    "timestamp",
-                    "polarity",
-                    "conviction",
-                    "uncertainty",
-                    "narrative_cohesion",
-                    "policy_weight",
-                    "narrative_conflict",
-                    "delta_polarity",
-                    "delta_uncertainty",
-                    "delta_conviction",
-                    "change_velocity",
-                    "micro_shift_score",
-                ],
-            )
-            all_cols = self.query.columns(path)
-            date_col = self._pick_first_existing(all_cols, ["date", "Date", "timestamp"])
-            lookback_days = int(self.config.get("lookback_days", 3650) or 3650)
-            start_date = None
+        out = self._read_parquet(rel, artifact="sentiment_company", required=must_require)
+        return self._enrich_company_sentiment_frame(out)
 
     def load_sentiment_features(self) -> pd.DataFrame:
         """
-        Load sentiment features from legacy_news_clean.parquet when use_sentiment_features is enabled.
+        Load sentiment features from the canonical daily ticker sentiment artifact when enabled.
         
         Builds these PIT-safe features per ticker per date:
         - sentiment_5d_mean: mean sentiment score over last 5 trading days
@@ -1056,18 +1787,17 @@ class DatasetManager:
             return pd.DataFrame()
         
         sentiment_path = self.project_root / str(
-            self.config.get("sentiment_path", "data/processed/news/legacy_news_clean.parquet")
+            self.config.get("sentiment_path", "data/processed/sentiment/ticker_sentiment_daily.parquet")
         )
-        
-        if not sentiment_path.exists():
+
+        try:
+            news_df = load_sentiment_artifact(config_path=self.policy_config_path, prefer_legacy=False)
+        except FileNotFoundError:
             logger.warning(f"Sentiment features enabled but file not found: {sentiment_path}")
             return pd.DataFrame()
-        
-        try:
-            news_df = pd.read_parquet(sentiment_path)
         except Exception as e:
-            logger.warning(f"Failed to load sentiment data: {e}")
-            return pd.DataFrame()
+            logger.exception("Failed to load sentiment data: %s", sentiment_path)
+            raise RuntimeError(f"sentiment_artifact_corrupt:{sentiment_path}:{e}") from e
         
         if news_df.empty:
             return pd.DataFrame()
@@ -1090,12 +1820,29 @@ class DatasetManager:
             if not news_df["ticker"].str.endswith(".NS").all():
                 news_df["ticker"] = news_df["ticker"] + ".NS"
         
-        if "sentiment_score" not in news_df.columns and "sentiment" in news_df.columns:
-            news_df["sentiment_score"] = pd.to_numeric(news_df["sentiment"], errors="coerce")
-        elif "sentiment_score" in news_df.columns:
-            news_df["sentiment_score"] = pd.to_numeric(news_df["sentiment_score"], errors="coerce")
+        sentiment_col = None
+        for candidate in ["sentiment_score", "sentiment", "sentiment_polarity", "sentiment_mean"]:
+            if candidate in news_df.columns:
+                sentiment_col = candidate
+                break
+        if sentiment_col is not None:
+            news_df["sentiment_score"] = pd.to_numeric(news_df[sentiment_col], errors="coerce")
+
+        count_col = None
+        for candidate in ["sentiment_item_count", "news_volume", "headline_count"]:
+            if candidate in news_df.columns:
+                count_col = candidate
+                break
+        if count_col is not None:
+            news_df["sentiment_item_count"] = pd.to_numeric(news_df[count_col], errors="coerce").fillna(0.0)
+        else:
+            news_df["sentiment_item_count"] = 1.0
         
-        news_df = news_df.dropna(subset=["date", "ticker", "sentiment_score"])
+        required_cols = ["date", "ticker"]
+        if "sentiment_score" not in news_df.columns:
+            logger.warning("Sentiment artifact missing a usable score column; skipping sentiment features")
+            return pd.DataFrame()
+        news_df = news_df.dropna(subset=required_cols + ["sentiment_score"])
         
         if news_df.empty:
             return pd.DataFrame()
@@ -1105,7 +1852,7 @@ class DatasetManager:
             news_df.groupby(["date", "ticker"])
             .agg(
                 sentiment_daily_mean=("sentiment_score", "mean"),
-                sentiment_daily_count=("sentiment_score", "count"),
+                sentiment_daily_count=("sentiment_item_count", "sum"),
             )
             .reset_index()
         )
@@ -1159,10 +1906,9 @@ class DatasetManager:
 
     def load_sentiment_market(self) -> pd.DataFrame:
         rel = str(
-            self.config.get(
-                "sentiment_market_path",
-                "data/sentiment/v3/market_sentiment_india.parquet",
-            )
+            self.config.get("market_sentiment_path")
+            or self.config.get("sentiment_market_path")
+            or "data/canonical/sentiment/market_sentiment_daily.parquet"
         )
         path = self.project_root / rel
         must_require = bool(self.strict_real_data_only and ("sentiment_market" in self.required_artifacts))
@@ -1178,9 +1924,15 @@ class DatasetManager:
                     "date",
                     "Date",
                     "timestamp",
+                    "availability_date",
                     "polarity",
                     "conviction",
                     "uncertainty",
+                    "india_market_polarity",
+                    "india_market_conviction",
+                    "india_market_uncertainty",
+                    "global_risk_sentiment",
+                    "news_volume_total",
                     "narrative_cohesion",
                     "policy_weight",
                     "narrative_conflict",
@@ -1193,7 +1945,7 @@ class DatasetManager:
             )
             all_cols = self.query.columns(path)
             date_col = self._pick_first_existing(all_cols, ["date", "Date", "timestamp"])
-            lookback_days = int(self.config.get("lookback_days", 3650) or 3650)
+            lookback_days = self._config_int("lookback_days", 3650)
             start_date = None
             if date_col and lookback_days > 0:
                 max_date = self.query.scalar(path, f"max({_safe_sql_identifier(date_col)})")
@@ -1208,9 +1960,10 @@ class DatasetManager:
                 start_date=start_date,
             )
             self._validate_artifact(df=out, artifact="sentiment_market", path=path, required=must_require)
-            return out
+            return self._enrich_market_sentiment_frame(out)
 
-        return self._read_parquet(rel, artifact="sentiment_market", required=must_require)
+        out = self._read_parquet(rel, artifact="sentiment_market", required=must_require)
+        return self._enrich_market_sentiment_frame(out)
 
     def _assign_regime_labels_with_engine(self, panel: pd.DataFrame, prices: pd.DataFrame) -> tuple[pd.DataFrame, bool]:
         if panel.empty or "date" not in panel.columns:
@@ -1222,11 +1975,45 @@ class DatasetManager:
         if out.empty:
             return out, False
 
+        # Prefer canonical regime labels artifact when available (2b).
+        try:
+            labels = load_regime_labels_artifact(config_path=self.policy_config_path)
+        except FileNotFoundError:
+            labels = pd.DataFrame()
+        except Exception:
+            logger.exception("Failed to load canonical regime labels")
+            labels = pd.DataFrame()
+
+        if isinstance(labels, pd.DataFrame) and not labels.empty:
+            date_col = "date" if "date" in labels.columns else ("Date" if "Date" in labels.columns else None)
+            regime_col = None
+            for cand in ["regime", "macro_regime", "macro_regime_label"]:
+                if cand in labels.columns:
+                    regime_col = cand
+                    break
+            if date_col and regime_col:
+                labels = labels.copy()
+                labels[date_col] = pd.to_datetime(labels[date_col], errors="coerce").dt.normalize()
+                reg_map = pd.Series(
+                    labels[regime_col].astype(str).to_numpy(),
+                    index=pd.DatetimeIndex(labels[date_col]),
+                )
+                out["regime"] = pd.to_datetime(out["date"], errors="coerce").dt.normalize().map(reg_map)
+                out["regime"] = out["regime"].astype("string").fillna("").astype(str)
+                ok = bool((out["regime"].str.strip() != "").mean() > 0.50)
+                if ok:
+                    return out, True
+
         regime_engine = RegimeEngine(
             {
                 "regime_labels_path": str(
                     self.config.get("regime_labels_path", "data/processed/regime_labels.parquet")
-                )
+                ),
+                "regime_mode": self.config.get("regime_mode", "auto"),
+                "vix_threshold": self.config.get("vix_threshold", 20.0),
+                "nifty_sma_window": self.config.get("nifty_sma_window", 200),
+                "india_vix_path": self.config.get("india_vix_path", "data/processed/india_vix.parquet"),
+                "nifty_prices_path": self.config.get("nifty_prices_path", "data/processed/nifty.parquet"),
             }
         )
         start = pd.to_datetime(out["date"], errors="coerce").min()
@@ -1239,7 +2026,8 @@ class DatasetManager:
                 if isinstance(labels, pd.DataFrame) and not labels.empty:
                     reg_series = regime_engine.get_regime_series(start, end)
             except Exception:
-                reg_series = pd.Series(dtype=object)
+                logger.exception("Failed to build fallback historical regimes")
+                raise
 
         if reg_series.empty:
             return out, False
@@ -1354,6 +2142,18 @@ class DatasetManager:
             self._emit_et500_filter_diagnostics(panel, et500_membership)
             panel = self._apply_et500_universe_filter(panel, et500_membership)
 
+        # Liquidity filter (quarterly rebalance, Rs 2 crore ADT default).
+        panel = self._apply_liquidity_filter(panel, prices)
+
+        # Delisting adjustments (forced delist = -100% on delist date).
+        delist_df = self._load_delisting_database()
+        if not delist_df.empty:
+            panel = self._apply_delisting_adjustments(panel, delist_df)
+
+        # Sector dummies for XGBoost feature set.
+        panel = self._add_sector_dummies(panel)
+        panel = self.factory.apply_sentiment_feature_mode(panel)
+
         if panel.empty:
             raise ValueError("Research dataset is empty after feature build")
 
@@ -1365,6 +2165,12 @@ class DatasetManager:
             panel = panel.loc[panel["date"] >= cfg_start].copy()
         if cfg_end is not None:
             panel = panel.loc[panel["date"] <= cfg_end].copy()
+
+        min_history_days = int(self.config.get("min_history_days", 0) or 0)
+        if min_history_days > 0 and {"date", "ticker"}.issubset(set(panel.columns)):
+            hist_counts = panel.groupby("ticker")["date"].nunique()
+            eligible = hist_counts[hist_counts >= min_history_days].index
+            panel = panel.loc[panel["ticker"].isin(set(eligible))].copy()
 
         # Optional universe cap for laptop safety.
         if max_tickers > 0 and panel["ticker"].nunique() > max_tickers:
@@ -1411,6 +2217,7 @@ class DatasetManager:
                 regime_source = pd.Series("unknown", index=panel.index, dtype="object")
             panel["regime"] = regime_source.astype(str)
         panel["regime_code"] = panel["regime"].astype("category").cat.codes.astype(float)
+        panel, regime_weight_counts = self._apply_regime_signal_weights(panel)
 
         target_col = str(self.config.get("target_col", "forward_return_5d"))
         if target_col not in panel.columns:
@@ -1438,6 +2245,7 @@ class DatasetManager:
             "macro_regime",
             "regime_name",
             "valuation_regime",
+            "volume",
             target_col,
             target_realized_col,
         }
@@ -1455,9 +2263,8 @@ class DatasetManager:
             raise ValueError("No numeric feature columns available for research dataset")
 
         X_df = panel[numeric_features].replace([np.inf, -np.inf], np.nan)
-        X_df = X_df.fillna(X_df.median(numeric_only=True)).fillna(0.0)
         X_df = self._apply_feature_cross_sectional_normalization(X_df, panel["date"])
-        X_df = X_df.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        X_df = X_df.replace([np.inf, -np.inf], np.nan)
         y = panel[target_col].to_numpy(dtype=float)
         feature_cs_z = bool(self.config.get("feature_cross_sectional_zscore", False))
         feature_z_clip = float(self.config.get("feature_zscore_clip_abs", 8.0))
@@ -1467,7 +2274,16 @@ class DatasetManager:
             if float(np.abs(y).mean()) <= 1e-10:
                 raise ValueError("research_target_degenerate_all_zero")
 
+        pit_registry, pit_missing, pit_base_count = self._enforce_feature_pit_registry(list(X_df.columns))
+        pit_coverage = 1.0 - (len(pit_missing) / float(max(1, pit_base_count)))
+
         tft_split = self.factory.build_tft_feature_split(panel, target_col=target_col)
+
+        corr_path, budget_utilization, feature_budget = self._enforce_feature_budget_and_correlation(
+            X_df,
+            list(X_df.columns),
+            int(panel["ticker"].nunique()),
+        )
 
         alt_base_prefixes = ("bulk_", "pledge_", "rating_", "order_", "earnings_")
         alt_cols_present = [c for c in panel.columns if str(c).startswith(alt_base_prefixes)]
@@ -1505,6 +2321,11 @@ class DatasetManager:
                 "target_realized_col": target_realized_col,
                 "target_horizon_days": int(self.config.get("target_horizon_days", 5) or 5),
                 "regime_labels_path": str(self.config.get("regime_labels_path", "data/processed/regime_labels.parquet")),
+                "regime_mode": str(self.config.get("regime_mode", "auto")),
+                "vix_threshold": float(self.config.get("vix_threshold", 20.0) or 20.0),
+                "nifty_sma_window": int(self.config.get("nifty_sma_window", 200) or 200),
+                "india_vix_path": str(self.config.get("india_vix_path", "data/processed/india_vix.parquet")),
+                "nifty_prices_path": str(self.config.get("nifty_prices_path", "data/processed/nifty.parquet")),
                 "target_mode": str(target_meta.get("target_mode", "raw")),
                 "target_clip_abs": float(target_meta.get("target_clip_abs", 1.0)),
                 "target_winsor_quantile": float(target_meta.get("target_winsor_quantile", 0.995)),
@@ -1547,6 +2368,8 @@ class DatasetManager:
                 "use_alternative_features": bool(self.use_alternative_features),
                 "use_sentiment_features": bool(self.use_sentiment_features),
                 "use_sentiment_regime": bool(self.use_sentiment_regime),
+                "sentiment_feature_mode": str(getattr(self.factory, "sentiment_feature_mode", "full")),
+                "use_gap9_academic_factors": bool(getattr(self.factory, "use_gap9_academic_factors", False)),
                 "use_macro_features": bool(self.use_macro_features),
                 "alternative_data_path": str(self.alternative_data_path),
                 "sentiment_path": str(self.sentiment_path),
@@ -1555,6 +2378,16 @@ class DatasetManager:
                 "alternative_feature_raw_columns": int(len(alt_cols_present)),
                 "alternative_feature_cs_columns": int(len(alt_cs_cols_present)),
                 "alternative_feature_non_null_counts": dict(alt_non_null),
+                "feature_budget": int(feature_budget),
+                "feature_budget_utilization_pct": float(budget_utilization),
+                "feature_correlation_matrix_path": str(corr_path) if corr_path else None,
+                "feature_pit_registry_base_features": int(pit_base_count),
+                "feature_pit_registry_missing_count": int(len(pit_missing)),
+                "feature_pit_registry_coverage_pct": float(pit_coverage * 100.0),
+                "feature_pit_registry_missing_sample": pit_missing[:20],
+                "feature_pit_registry_enforced": bool(self.config.get("feature_pit_enforce", True)),
+                "regime_signal_weighting_enabled": bool(self.config.get("regime_signal_weighting_enabled", True)),
+                "regime_signal_weight_counts": dict(regime_weight_counts),
                 "et500_membership_rows": int(len(et500_membership)),
                 "screener_annual_rows": int(len(screener_annual)),
                 "screener_quarterly_rows": int(len(screener_quarterly)),
@@ -1641,14 +2474,16 @@ class DatasetManager:
             }
         )
 
-        self._write_snapshot(panel)
+        if bool(self.config.get("write_snapshot", True)):
+            self._write_snapshot(panel)
         return dataset
 
     def _write_snapshot(self, panel: pd.DataFrame) -> None:
         ts = datetime.now().strftime("%Y%m%d")
-        path = self.snapshot_dir / f"research_snapshot_{ts}.parquet"
+        path = self.snapshot_dir / ts[:4] / ts[4:6] / f"research_snapshot_{ts}.parquet"
+        path.parent.mkdir(parents=True, exist_ok=True)
         try:
             panel.to_parquet(path, index=False)
         except Exception as exc:
-            if self.strict_real_data_only:
-                raise RuntimeError(f"failed_to_write_research_snapshot:{path}:{exc}") from exc
+            logger.exception("Failed writing research snapshot: %s", path)
+            raise RuntimeError(f"failed_to_write_research_snapshot:{path}:{exc}") from exc

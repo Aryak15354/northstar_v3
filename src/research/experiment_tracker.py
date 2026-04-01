@@ -9,7 +9,7 @@ from typing import Any, Dict
 
 
 class ExperimentTracker:
-    def __init__(self, path: str = "data/research/experiments.ndjson"):
+    def __init__(self, path: str = "data/results/research/trackers/experiments.ndjson"):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
