@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+import scripts.kaggle.week_2026_03_29.common as weekly_common
 from scripts.kaggle.export_weekly_raw_inputs import kaggle_safe_relative_path
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _effective_split_config
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _profile_overrides
@@ -23,6 +24,7 @@ from scripts.kaggle.week_2026_03_29.common import (
     derive_size_rank,
     infer_feature_unit_kind,
     prepare_runtime_project,
+    resolve_export_dir,
     select_feature_columns,
     subset_feature_export,
 )
@@ -340,3 +342,42 @@ def test_subset_feature_export_writes_model_feature_manifest(tmp_path: Path):
 
     manifest = json.loads((output_dir / MODEL_FEATURE_MANIFEST).read_text(encoding="utf-8"))
     assert manifest == ["train_feature"]
+
+
+def test_resolve_export_dir_falls_back_to_sibling_valid_export(tmp_path: Path):
+    valid_export = tmp_path / "week_run_v6" / "00_export"
+    valid_export.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2026-01-02"]),
+            "ticker": ["AAA.NS"],
+            "target_weekly_return": [0.01],
+        }
+    ).to_parquet(valid_export / "northstar_features.parquet", index=False)
+    pd.DataFrame({"date": pd.to_datetime(["2026-01-02"]), "regime": ["R1"]}).to_parquet(
+        valid_export / "northstar_regime_labels.parquet", index=False
+    )
+    pd.DataFrame({"date": pd.to_datetime(["2026-01-02"]), "ticker": ["AAA.NS"]}).to_parquet(
+        valid_export / "northstar_metadata.parquet", index=False
+    )
+    (valid_export / "northstar_walk_forward_splits.json").write_text(
+        '[{"window_id": 1, "train_start": "2026-01-02", "train_end": "2026-01-02", "test_start": "2026-01-09", "test_end": "2026-01-09"}]',
+        encoding="utf-8",
+    )
+
+    missing_export = tmp_path / "week_run_v3" / "00_export"
+    artifacts = resolve_export_dir(missing_export)
+
+    assert artifacts.export_dir == valid_export.resolve()
+
+
+def test_resolve_export_dir_missing_message_mentions_rerun(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    missing_export = tmp_path / "week_run_v3" / "00_export"
+    isolated_root = tmp_path / "isolated_results"
+    isolated_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(weekly_common, "PROJECT_ROOT", tmp_path / "project_root")
+    monkeypatch.setattr(weekly_common, "default_results_root", lambda: isolated_root)
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="rerun build_weekly_feature_export.py first"):
+        resolve_export_dir(missing_export)

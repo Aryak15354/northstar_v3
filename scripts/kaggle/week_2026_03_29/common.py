@@ -258,38 +258,81 @@ def resolve_raw_bundle_dir(data_dir: str | Path | None = None) -> Path:
     raise FileNotFoundError("could_not_resolve_weekly_raw_bundle")
 
 
+def _build_export_artifacts(base: Path) -> ExportArtifacts:
+    return ExportArtifacts(
+        export_dir=base,
+        features_path=base / "northstar_features.parquet",
+        splits_path=base / "northstar_walk_forward_splits.json",
+        regimes_path=base / "northstar_regime_labels.parquet",
+        metadata_path=base / "northstar_metadata.parquet",
+    )
+
+
+def _is_valid_export_dir(base: Path) -> bool:
+    return base.exists() and all((base / name).exists() for name in FEATURE_EXPORT_FILES)
+
+
+def _discover_export_dir(search_roots: Sequence[Path]) -> Path | None:
+    candidates: dict[Path, tuple[int, float]] = {}
+
+    def register(candidate: Path) -> None:
+        resolved = candidate.expanduser().resolve()
+        if not _is_valid_export_dir(resolved):
+            return
+        try:
+            mtime = resolved.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        score = (1 if resolved.name == "00_export" else 0, mtime)
+        previous = candidates.get(resolved)
+        if previous is None or score > previous:
+            candidates[resolved] = score
+
+    for root in search_roots:
+        expanded = root.expanduser()
+        if not expanded.exists():
+            continue
+        register(expanded)
+        for path in expanded.rglob("northstar_features.parquet"):
+            register(path.parent)
+
+    if not candidates:
+        return None
+    return max(candidates.items(), key=lambda item: (item[1][0], item[1][1], str(item[0])))[0]
+
+
 def resolve_export_dir(export_dir: str | Path | None = None) -> ExportArtifacts:
     if export_dir is not None:
         base = Path(export_dir).expanduser().resolve()
+        if _is_valid_export_dir(base):
+            return _build_export_artifacts(base)
+
+        fallback = _discover_export_dir(
+            [
+                base.parent,
+                base.parent.parent if base.parent != base else base.parent,
+                Path.cwd(),
+                default_results_root(),
+                PROJECT_ROOT / "tmp",
+                Path("/kaggle/working"),
+            ]
+        )
+        if fallback is not None:
+            print(f"[resolve_export_dir] requested export unavailable; using {fallback}")
+            return _build_export_artifacts(fallback)
+
         if not base.exists():
-            raise FileNotFoundError(f"feature_export_missing:{base}")
+            raise FileNotFoundError(
+                f"feature_export_missing:{base} (no valid export found in this session; rerun build_weekly_feature_export.py first)"
+            )
         missing = [name for name in FEATURE_EXPORT_FILES if not (base / name).exists()]
-        if missing:
-            raise FileNotFoundError(f"feature_export_missing_files:{missing} in {base}")
-        return ExportArtifacts(
-            export_dir=base,
-            features_path=base / "northstar_features.parquet",
-            splits_path=base / "northstar_walk_forward_splits.json",
-            regimes_path=base / "northstar_regime_labels.parquet",
-            metadata_path=base / "northstar_metadata.parquet",
+        raise FileNotFoundError(
+            f"feature_export_missing_files:{missing} in {base} (rerun build_weekly_feature_export.py first)"
         )
 
-    search_roots = [Path.cwd(), default_results_root(), PROJECT_ROOT / "tmp"]
-    for root in search_roots:
-        if not root.exists():
-            continue
-        for path in sorted(root.rglob("northstar_features.parquet"), reverse=True):
-            candidate = path.parent
-            missing = [name for name in FEATURE_EXPORT_FILES if not (candidate / name).exists()]
-            if missing:
-                continue
-            return ExportArtifacts(
-                export_dir=candidate,
-                features_path=candidate / "northstar_features.parquet",
-                splits_path=candidate / "northstar_walk_forward_splits.json",
-                regimes_path=candidate / "northstar_regime_labels.parquet",
-                metadata_path=candidate / "northstar_metadata.parquet",
-            )
+    fallback = _discover_export_dir([Path.cwd(), default_results_root(), PROJECT_ROOT / "tmp", Path("/kaggle/working")])
+    if fallback is not None:
+        return _build_export_artifacts(fallback)
     raise FileNotFoundError("could_not_resolve_weekly_feature_export")
 
 
