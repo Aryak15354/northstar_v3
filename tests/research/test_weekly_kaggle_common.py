@@ -3,10 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _effective_split_config
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _profile_overrides
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _dataset_runtime_config
+from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _validate_raw_bundle_support_artifacts
 from scripts.kaggle.week_2026_03_29.common import (
     build_feature_unit_registry,
     derive_size_rank,
@@ -137,3 +139,11 @@ def test_derive_size_rank_falls_back_to_close_when_market_cap_rank_missing():
     assert float(rank.iloc[0]) == 0.5
     assert float(rank.iloc[1]) == 1.0
     assert float(rank.iloc[2]) == 1.0
+
+
+def test_validate_raw_bundle_support_artifacts_fails_fast_for_stale_bundle(tmp_path: Path):
+    (tmp_path / "data" / "processed").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "processed" / "market_state.parquet").write_text("stub", encoding="utf-8")
+
+    with pytest.raises(FileNotFoundError, match="weekly_raw_bundle_incomplete"):
+        _validate_raw_bundle_support_artifacts(tmp_path)

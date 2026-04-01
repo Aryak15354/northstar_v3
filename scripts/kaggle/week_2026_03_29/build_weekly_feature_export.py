@@ -39,6 +39,14 @@ from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
     write_runtime_policy,
 )
 
+REQUIRED_WEEKLY_BUNDLE_PATHS = (
+    "data/processed/intelligent_market_state.parquet",
+    "data/processed/market_state.parquet",
+    "data/processed/regime_labels.parquet",
+    "data/processed/sector_mapping.csv",
+    "data/processed/valuation_posterior.parquet",
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build the weekly Kaggle feature export from raw inputs.")
@@ -57,6 +65,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rebuild-screener", choices=["auto", "true", "false"], default="auto")
     parser.add_argument("--profile", choices=["smoke", "full"], default="full")
     return parser.parse_args()
+
+
+def _validate_raw_bundle_support_artifacts(raw_bundle_dir: Path) -> None:
+    missing = [rel for rel in REQUIRED_WEEKLY_BUNDLE_PATHS if not (raw_bundle_dir / rel).exists()]
+    if not missing:
+        return
+
+    raise FileNotFoundError(
+        "weekly_raw_bundle_incomplete: missing required support artifacts "
+        f"{missing} under {raw_bundle_dir}. "
+        "Rebuild the Kaggle raw bundle with "
+        "`python3 scripts/kaggle/export_weekly_raw_inputs.py --output-dir ...` "
+        "from the latest repo state and version the dataset again."
+    )
 
 
 def _profile_overrides(args: argparse.Namespace) -> dict[str, int | str]:
@@ -278,6 +300,7 @@ def _maybe_rebuild_screener(runtime_root: Path, mode: str) -> dict[str, object]:
 def main() -> int:
     args = parse_args()
     raw_bundle_dir = resolve_raw_bundle_dir(args.data_dir)
+    _validate_raw_bundle_support_artifacts(raw_bundle_dir)
     export_dir = (args.output_dir.expanduser().resolve() if args.output_dir else make_run_dir(None, "feature_export"))
     export_dir.mkdir(parents=True, exist_ok=True)
 
