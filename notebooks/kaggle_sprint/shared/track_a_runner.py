@@ -142,8 +142,8 @@ class TrackARunConfig:
     require_group_ranking: bool = True
     xgboost_mode: str = "ranking"
     catboost_depth: int = 4
-    catboost_min_data_in_leaf: int = 35
-    catboost_l2_leaf_reg: float = 12.0
+    catboost_min_data_in_leaf: int = 40
+    catboost_l2_leaf_reg: float = 15.0
     catboost_iterations: int = 800
 
     @classmethod
@@ -178,8 +178,8 @@ class TrackARunConfig:
             require_group_ranking=_parse_bool(os.environ.get("TRACK_A_REQUIRE_GROUP_RANKING"), True),
             xgboost_mode=os.environ.get("TRACK_A_XGBOOST_MODE", "ranking").strip().lower() or "ranking",
             catboost_depth=int(os.environ.get("TRACK_A_CATBOOST_DEPTH", "4")),
-            catboost_min_data_in_leaf=int(os.environ.get("TRACK_A_CATBOOST_MIN_LEAF", "35")),
-            catboost_l2_leaf_reg=float(os.environ.get("TRACK_A_CATBOOST_L2", "12.0")),
+            catboost_min_data_in_leaf=int(os.environ.get("TRACK_A_CATBOOST_MIN_LEAF", "40")),
+            catboost_l2_leaf_reg=float(os.environ.get("TRACK_A_CATBOOST_L2", "15.0")),
             catboost_iterations=int(os.environ.get("TRACK_A_CATBOOST_ITERATIONS", "800")),
         )
 

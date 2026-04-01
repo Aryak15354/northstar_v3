@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -10,14 +11,17 @@ from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _effectiv
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _profile_overrides
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _dataset_runtime_config
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _validate_raw_bundle_support_artifacts
+from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import parse_args as parse_nb01_args
 from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _prune_dead_features
 from scripts.kaggle.week_2026_03_29.common import (
+    MODEL_FEATURE_MANIFEST,
     build_feature_coverage_audit,
     build_feature_unit_registry,
     derive_size_rank,
     infer_feature_unit_kind,
     prepare_runtime_project,
     select_feature_columns,
+    subset_feature_export,
 )
 
 
@@ -228,3 +232,57 @@ def test_prune_dead_features_keeps_sparse_feature_with_real_ic_signal():
     assert "eps_sue_decay_cs_z" in protected
     assert "truly_dead_feature" in removed
     assert "alive_feature" in kept
+
+
+def test_nb01_cli_defaults_match_track_a_catboost_defaults(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "nb01_fixed_baselines.py",
+            "--export-dir",
+            "/tmp/export",
+        ],
+    )
+
+    args = parse_nb01_args()
+
+    assert args.catboost_depth == 4
+    assert args.catboost_min_leaf == 40
+    assert args.catboost_l2 == 15.0
+    assert args.catboost_iterations == 800
+
+
+def test_subset_feature_export_writes_model_feature_manifest(tmp_path: Path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    features = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2026-01-02", "2026-01-09"]),
+            "ticker": ["AAA.NS", "AAA.NS"],
+            "target_weekly_return": [0.01, 0.02],
+            "train_feature": [1.0, 2.0],
+            "diagnostic_feature": [3.0, 4.0],
+        }
+    )
+    features.to_parquet(source_dir / "northstar_features.parquet", index=False)
+    pd.DataFrame({"date": pd.to_datetime(["2026-01-02", "2026-01-09"]), "regime": ["R1", "R1"]}).to_parquet(
+        source_dir / "northstar_regime_labels.parquet", index=False
+    )
+    pd.DataFrame({"date": pd.to_datetime(["2026-01-02", "2026-01-09"]), "ticker": ["AAA.NS", "AAA.NS"]}).to_parquet(
+        source_dir / "northstar_metadata.parquet", index=False
+    )
+    (source_dir / "northstar_walk_forward_splits.json").write_text(
+        '[{"window_id": 1, "train_start": "2026-01-02", "train_end": "2026-01-02", "test_start": "2026-01-09", "test_end": "2026-01-09"}]',
+        encoding="utf-8",
+    )
+
+    output_dir = tmp_path / "subset"
+    subset_feature_export(
+        source_dir=source_dir,
+        output_dir=output_dir,
+        selected_features=["train_feature", "diagnostic_feature"],
+        model_feature_names=["train_feature"],
+    )
+
+    manifest = json.loads((output_dir / MODEL_FEATURE_MANIFEST).read_text(encoding="utf-8"))
+    assert manifest == ["train_feature"]

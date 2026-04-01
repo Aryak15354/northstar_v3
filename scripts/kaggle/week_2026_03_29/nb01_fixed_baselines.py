@@ -61,8 +61,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--profile", choices=["smoke", "full"], default="full")
     parser.add_argument("--max-splits", type=int, default=None)
     parser.add_argument("--catboost-depth", type=int, default=4)
-    parser.add_argument("--catboost-min-leaf", type=int, default=35)
-    parser.add_argument("--catboost-l2", type=float, default=12.0)
+    parser.add_argument("--catboost-min-leaf", type=int, default=40)
+    parser.add_argument("--catboost-l2", type=float, default=15.0)
     parser.add_argument("--catboost-iterations", type=int, default=800)
     parser.add_argument("--xgboost-mode", choices=["ranking", "regression"], default="regression")
     parser.add_argument("--dead-feature-null-threshold", type=float, default=0.80)
@@ -110,6 +110,34 @@ def _load_feature_health_table(nb00_report: Path | None) -> pd.DataFrame:
             return pd.read_parquet(candidate)
         return pd.read_csv(candidate)
     return pd.DataFrame()
+
+
+def _diagnostic_feature_extras(full_features: pd.DataFrame) -> list[str]:
+    tokens = (
+        "fii",
+        "dii",
+        "pledge",
+        "bulk",
+        "earnings_quality",
+        "power",
+        "piotroski",
+        "bab",
+        "amihud",
+        "max_ret_20d",
+        "eps_sue",
+        "rev_sue",
+        "combined_sue",
+    )
+    extras: list[str] = []
+    for column in full_features.columns:
+        name = str(column)
+        if name in {"date", "ticker", "target_weekly_return", "forward_return_5d"}:
+            continue
+        if not pd.api.types.is_numeric_dtype(full_features[name]):
+            continue
+        if any(token in name.lower() for token in tokens):
+            extras.append(name)
+    return list(dict.fromkeys(extras))
 
 
 def _prune_dead_features(
@@ -183,11 +211,13 @@ def main() -> int:
     write_json(output_dir / "feature_coverage_audit.json", coverage_audit.to_dict(orient="records"))
     coverage_audit.to_csv(output_dir / "feature_coverage_audit.csv", index=False)
 
+    diagnostic_extras = [feature for feature in _diagnostic_feature_extras(full_features) if feature not in set(filtered_selected)]
     filtered_export_dir = output_dir / "tier12_export"
     subset_feature_export(
         source_dir=export_artifacts.export_dir,
         output_dir=filtered_export_dir,
-        selected_features=filtered_selected if filtered_selected else None,
+        selected_features=[*filtered_selected, *diagnostic_extras] if filtered_selected else None,
+        model_feature_names=filtered_selected,
     )
 
     config = TrackARunConfig(
@@ -243,6 +273,8 @@ def main() -> int:
         "dead_features": dead_features,
         "protected_dead_feature_count": len(protected_dead_features),
         "protected_dead_features": protected_dead_features,
+        "diagnostic_extra_count": len(diagnostic_extras),
+        "diagnostic_extras": diagnostic_extras,
         "models": rows,
     }
     write_json(output_dir / "baseline_results.json", payload)

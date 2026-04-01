@@ -237,3 +237,14 @@ def test_sprint_data_loader_merges_metadata_without_expanding_model_feature_set(
     assert "broad_sector" not in feature_names
     assert "fii_pct" not in feature_names
     assert "power_yoy_growth" not in feature_names
+
+
+def test_sprint_data_loader_honors_model_feature_manifest(tmp_path):
+    data_dir = _build_synthetic_export(tmp_path / "export")
+    (data_dir / "northstar_model_feature_names.json").write_text('["earnings_quality_signal","pledge_signal"]', encoding="utf-8")
+
+    loader = SprintDataLoader()
+    features_df, _, _ = loader.load(data_dir)
+    feature_names = loader.get_feature_names(features_df)
+
+    assert feature_names == ["earnings_quality_signal", "pledge_signal"]

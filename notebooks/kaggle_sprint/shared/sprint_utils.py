@@ -23,6 +23,7 @@ FEATURE_EXPORT_CANDIDATES = (
     "northstar_features.parquet",
     "northstar_features_v2.parquet",
 )
+MODEL_FEATURE_MANIFEST = "northstar_model_feature_names.json"
 
 REQUIRED_EXPORT_FILES = (
     "northstar_walk_forward_splits.json",
@@ -682,7 +683,18 @@ class SprintDataLoader:
         features_df["date"] = pd.to_datetime(features_df["date"], errors="coerce")
         features_df["ticker"] = features_df["ticker"].astype("string")
         features_df = features_df.sort_values(["date", "ticker"], kind="mergesort").reset_index(drop=True)
-        self._model_feature_names = self._infer_model_feature_names(features_df)
+        manifest_path = resolved_dir / MODEL_FEATURE_MANIFEST
+        if manifest_path.exists():
+            try:
+                requested = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                requested = []
+            requested_set = {str(value) for value in requested}
+            self._model_feature_names = [
+                column for column in features_df.columns if column in requested_set
+            ]
+        else:
+            self._model_feature_names = self._infer_model_feature_names(features_df)
 
         metadata_path = resolved_dir / "northstar_metadata.parquet"
         if metadata_path.exists():

@@ -30,6 +30,7 @@ FEATURE_EXPORT_FILES = (
     "northstar_regime_labels.parquet",
     "northstar_metadata.parquet",
 )
+MODEL_FEATURE_MANIFEST = "northstar_model_feature_names.json"
 FULL_SEEDS = [42, 123, 456, 789, 1337]
 SMOKE_SEEDS = [42, 123]
 PLAN_REGIME_LABELS = {
@@ -873,6 +874,7 @@ def subset_feature_export(
     source_dir: str | Path,
     output_dir: str | Path,
     selected_features: Sequence[str] | None = None,
+    model_feature_names: Sequence[str] | None = None,
     ticker_mask: Sequence[str] | None = None,
     date_min: str | None = None,
     date_max: str | None = None,
@@ -907,6 +909,11 @@ def subset_feature_export(
     metadata.to_parquet(output_root / "northstar_metadata.parquet", index=False)
     regimes.to_parquet(output_root / "northstar_regime_labels.parquet", index=False)
     write_json(output_root / "northstar_walk_forward_splits.json", splits)
+    if model_feature_names is not None:
+        write_json(
+            output_root / MODEL_FEATURE_MANIFEST,
+            [str(feature) for feature in model_feature_names if str(feature) in features.columns],
+        )
 
     return ExportArtifacts(
         export_dir=output_root,
