@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SHARED_DIR = PROJECT_ROOT / "notebooks" / "kaggle_sprint" / "shared"
 os.environ.setdefault("MPLCONFIGDIR", str((PROJECT_ROOT / "tmp" / ".mplconfig").resolve()))
@@ -62,9 +64,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--catboost-min-leaf", type=int, default=35)
     parser.add_argument("--catboost-l2", type=float, default=12.0)
     parser.add_argument("--catboost-iterations", type=int, default=800)
-    parser.add_argument("--dead-feature-null-threshold", type=float, default=0.50)
+    parser.add_argument("--xgboost-mode", choices=["ranking", "regression"], default="regression")
+    parser.add_argument("--dead-feature-null-threshold", type=float, default=0.80)
     parser.add_argument("--dead-feature-min-unique", type=int, default=1)
     parser.add_argument("--dead-feature-min-cs-std", type=float, default=1e-8)
+    parser.add_argument("--dead-feature-min-abs-ic", type=float, default=0.002)
+    parser.add_argument("--dead-feature-min-abs-tstat", type=float, default=1.5)
     parser.add_argument("--disable-dead-feature-filter", action="store_true")
     return parser.parse_args()
 
@@ -91,6 +96,65 @@ def _decision(summary: dict[str, Any]) -> str:
     return "REJECT"
 
 
+def _load_feature_health_table(nb00_report: Path | None) -> pd.DataFrame:
+    if nb00_report is None:
+        return pd.DataFrame()
+    nb00_dir = nb00_report.parent
+    for candidate in [
+        nb00_dir / "feature_health_table.parquet",
+        nb00_dir / "feature_health_table.csv",
+    ]:
+        if not candidate.exists():
+            continue
+        if candidate.suffix == ".parquet":
+            return pd.read_parquet(candidate)
+        return pd.read_csv(candidate)
+    return pd.DataFrame()
+
+
+def _prune_dead_features(
+    candidate_features: list[str],
+    coverage_audit: pd.DataFrame,
+    feature_health: pd.DataFrame,
+    *,
+    disable_filter: bool,
+    min_abs_ic: float,
+    min_abs_tstat: float,
+) -> tuple[list[str], list[str], list[str]]:
+    if disable_filter:
+        return list(candidate_features), [], []
+
+    audit_lookup = coverage_audit.set_index("feature").to_dict(orient="index") if not coverage_audit.empty else {}
+    health_lookup = feature_health.set_index("feature").to_dict(orient="index") if not feature_health.empty else {}
+    kept: list[str] = []
+    removed: list[str] = []
+    protected: list[str] = []
+
+    for feature in candidate_features:
+        audit_row = audit_lookup.get(feature, {})
+        likely_dead = bool(audit_row.get("likely_dead", False))
+        if not likely_dead:
+            kept.append(feature)
+            continue
+
+        health_row = health_lookup.get(feature, {})
+        mean_ic = abs(float(health_row.get("mean_ic", 0.0) or 0.0))
+        ic_tstat = abs(float(health_row.get("ic_tstat", 0.0) or 0.0))
+        tier = str(health_row.get("tier", ""))
+        has_statistical_support = bool(
+            mean_ic >= float(min_abs_ic)
+            or ic_tstat >= float(min_abs_tstat)
+            or tier in {"TIER_1", "TIER_2"}
+        )
+        if has_statistical_support:
+            kept.append(feature)
+            protected.append(feature)
+        else:
+            removed.append(feature)
+
+    return kept, removed, protected
+
+
 def main() -> int:
     args = parse_args()
     export_artifacts = resolve_export_dir(args.export_dir)
@@ -107,12 +171,15 @@ def main() -> int:
         min_unique=args.dead_feature_min_unique,
         min_cross_sectional_std=args.dead_feature_min_cs_std,
     )
-    dead_features = (
-        []
-        if args.disable_dead_feature_filter
-        else coverage_audit.loc[coverage_audit["likely_dead"], "feature"].astype(str).tolist()
+    feature_health = _load_feature_health_table(args.nb00_report)
+    filtered_selected, dead_features, protected_dead_features = _prune_dead_features(
+        candidate_features,
+        coverage_audit,
+        feature_health,
+        disable_filter=args.disable_dead_feature_filter,
+        min_abs_ic=args.dead_feature_min_abs_ic,
+        min_abs_tstat=args.dead_feature_min_abs_tstat,
     )
-    filtered_selected = [feature for feature in candidate_features if feature not in set(dead_features)]
     write_json(output_dir / "feature_coverage_audit.json", coverage_audit.to_dict(orient="records"))
     coverage_audit.to_csv(output_dir / "feature_coverage_audit.csv", index=False)
 
@@ -139,6 +206,7 @@ def main() -> int:
         catboost_min_data_in_leaf=args.catboost_min_leaf,
         catboost_l2_leaf_reg=args.catboost_l2,
         catboost_iterations=args.catboost_iterations,
+        xgboost_mode=args.xgboost_mode,
     )
     state = run_track_a_notebook(config)
 
@@ -173,6 +241,8 @@ def main() -> int:
         "candidate_feature_count": len(candidate_features),
         "dead_feature_count": len(dead_features),
         "dead_features": dead_features,
+        "protected_dead_feature_count": len(protected_dead_features),
+        "protected_dead_features": protected_dead_features,
         "models": rows,
     }
     write_json(output_dir / "baseline_results.json", payload)

@@ -10,6 +10,7 @@ from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _effectiv
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _profile_overrides
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _dataset_runtime_config
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _validate_raw_bundle_support_artifacts
+from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _prune_dead_features
 from scripts.kaggle.week_2026_03_29.common import (
     build_feature_coverage_audit,
     build_feature_unit_registry,
@@ -197,3 +198,33 @@ def test_build_feature_coverage_audit_flags_dead_features():
     assert "low_unique_values" in str(audit.loc["dead_feature", "dead_reason"])
     assert bool(audit.loc["mostly_null_feature", "likely_dead"]) is True
     assert "high_null_rate" in str(audit.loc["mostly_null_feature", "dead_reason"])
+
+
+def test_prune_dead_features_keeps_sparse_feature_with_real_ic_signal():
+    coverage = pd.DataFrame(
+        [
+            {"feature": "eps_sue_decay_cs_z", "likely_dead": True},
+            {"feature": "truly_dead_feature", "likely_dead": True},
+            {"feature": "alive_feature", "likely_dead": False},
+        ]
+    )
+    health = pd.DataFrame(
+        [
+            {"feature": "eps_sue_decay_cs_z", "mean_ic": 0.0047, "ic_tstat": 3.35, "tier": "TIER_2"},
+            {"feature": "truly_dead_feature", "mean_ic": 0.0001, "ic_tstat": 0.2, "tier": "NOISE"},
+        ]
+    )
+
+    kept, removed, protected = _prune_dead_features(
+        ["eps_sue_decay_cs_z", "truly_dead_feature", "alive_feature"],
+        coverage,
+        health,
+        disable_filter=False,
+        min_abs_ic=0.002,
+        min_abs_tstat=1.5,
+    )
+
+    assert "eps_sue_decay_cs_z" in kept
+    assert "eps_sue_decay_cs_z" in protected
+    assert "truly_dead_feature" in removed
+    assert "alive_feature" in kept

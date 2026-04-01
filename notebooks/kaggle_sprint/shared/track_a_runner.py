@@ -140,6 +140,7 @@ class TrackARunConfig:
     feature_exclude_regex: str | None = DEFAULT_REDUCED_EXCLUDE_REGEX
     normalize_raw_financials: bool = False
     require_group_ranking: bool = True
+    xgboost_mode: str = "ranking"
     catboost_depth: int = 4
     catboost_min_data_in_leaf: int = 35
     catboost_l2_leaf_reg: float = 12.0
@@ -175,6 +176,7 @@ class TrackARunConfig:
             feature_exclude_regex=feature_exclude_regex or None,
             normalize_raw_financials=_parse_bool(os.environ.get("TRACK_A_NORMALIZE_RAW_FINANCIALS"), False),
             require_group_ranking=_parse_bool(os.environ.get("TRACK_A_REQUIRE_GROUP_RANKING"), True),
+            xgboost_mode=os.environ.get("TRACK_A_XGBOOST_MODE", "ranking").strip().lower() or "ranking",
             catboost_depth=int(os.environ.get("TRACK_A_CATBOOST_DEPTH", "4")),
             catboost_min_data_in_leaf=int(os.environ.get("TRACK_A_CATBOOST_MIN_LEAF", "35")),
             catboost_l2_leaf_reg=float(os.environ.get("TRACK_A_CATBOOST_L2", "12.0")),
@@ -323,6 +325,27 @@ class TrackARunner:
             raise ValueError(
                 f"Constructed relevance labels with max {int(labels.max())}, expected <= {max_relevance}"
             )
+        return labels
+
+    @staticmethod
+    def _to_group_rank_percentiles(y_values: np.ndarray, group_sizes: list[int]) -> np.ndarray:
+        y_arr = np.asarray(y_values, dtype=float).reshape(-1)
+        labels = np.zeros(len(y_arr), dtype=np.float32)
+        cursor = 0
+        for group_size in group_sizes:
+            size = int(group_size)
+            if size <= 0:
+                continue
+            window = y_arr[cursor : cursor + size]
+            if size == 1:
+                labels[cursor] = 0.5
+                cursor += size
+                continue
+            order = np.argsort(np.argsort(window, kind="mergesort"), kind="mergesort")
+            labels[cursor : cursor + size] = (order.astype(np.float32) / float(size - 1)).astype(np.float32)
+            cursor += size
+        if cursor != len(y_arr):
+            raise ValueError(f"Constructed regression rank targets for {cursor} rows, expected {len(y_arr)}")
         return labels
 
     def run(self) -> dict[str, Any]:
@@ -517,6 +540,7 @@ class TrackARunner:
         xgb_config = {
             **feature_prep,
             "model_type": "xgboost",
+            "xgboost_mode": self.config.xgboost_mode,
             "n_estimators": xgb_estimators,
             "max_depth": 4,
             "min_child_weight": 20,
@@ -524,9 +548,9 @@ class TrackARunner:
             "subsample": 0.7,
             "colsample_bytree": 0.6,
             "reg_alpha": 0.1,
-            "reg_lambda": 2.0,
-            "objective": "rank:pairwise",
-            "eval_metric": "ndcg@10",
+            "reg_lambda": 3.0 if self.config.xgboost_mode == "regression" else 2.0,
+            "objective": "reg:squarederror" if self.config.xgboost_mode == "regression" else "rank:pairwise",
+            "eval_metric": "rmse" if self.config.xgboost_mode == "regression" else "ndcg@10",
             "early_stopping_rounds": 30,
             "random_state": 42,
             "n_jobs": -1,
@@ -745,6 +769,18 @@ class TrackARunner:
 
     def _run_day2(self) -> None:
         xgb_config, lightgbm_config, catboost_config = self._tree_configs()
+        print("Tree configuration summary:")
+        print(
+            f"  XGBoost mode={xgb_config.get('xgboost_mode')} objective={xgb_config['objective']} "
+            f"max_depth={xgb_config['max_depth']} min_child_weight={xgb_config['min_child_weight']} "
+            f"reg_lambda={xgb_config['reg_lambda']}",
+            flush=True,
+        )
+        print(
+            f"  CatBoost depth={catboost_config['depth']} min_leaf={catboost_config['min_data_in_leaf']} "
+            f"l2={catboost_config['l2_leaf_reg']} iterations={catboost_config['iterations']}",
+            flush=True,
+        )
 
         def xgb_factory(X_train, y_train, X_test, feature_names, config):
             X_train_sel, X_test_sel, selected_indices, _ = self._prepare_model_features(
@@ -764,30 +800,55 @@ class TrackARunner:
                 y_train,
                 train_groups,
             )
-            y_fit_rank = self._to_group_relevance_labels(y_fit, fit_groups)
-            y_val_rank = self._to_group_relevance_labels(y_val, val_groups) if len(y_val) else y_val
-            model = xgb.XGBRanker(
-                n_estimators=config["n_estimators"],
-                max_depth=config["max_depth"],
-                min_child_weight=config["min_child_weight"],
-                learning_rate=config["learning_rate"],
-                subsample=config["subsample"],
-                colsample_bytree=config["colsample_bytree"],
-                reg_alpha=config["reg_alpha"],
-                reg_lambda=config["reg_lambda"],
-                objective=config["objective"],
-                eval_metric=config["eval_metric"],
-                early_stopping_rounds=config["early_stopping_rounds"],
-                random_state=config["random_state"],
-                n_jobs=config["n_jobs"],
-                device=config.get("device", "cpu"),
-                verbosity=0,
-            )
-            fit_kwargs: dict[str, Any] = {"group": fit_groups, "verbose": False}
-            if len(y_val):
-                fit_kwargs["eval_set"] = [(X_val, y_val_rank)]
-                fit_kwargs["eval_group"] = [val_groups]
-            model.fit(X_fit, y_fit_rank, **fit_kwargs)
+            if config.get("xgboost_mode") == "regression":
+                y_fit_target = self._to_group_rank_percentiles(y_fit, fit_groups)
+                y_val_target = self._to_group_rank_percentiles(y_val, val_groups) if len(y_val) else y_val
+                model = xgb.XGBRegressor(
+                    n_estimators=config["n_estimators"],
+                    max_depth=config["max_depth"],
+                    min_child_weight=config["min_child_weight"],
+                    learning_rate=config["learning_rate"],
+                    subsample=config["subsample"],
+                    colsample_bytree=config["colsample_bytree"],
+                    reg_alpha=config["reg_alpha"],
+                    reg_lambda=config["reg_lambda"],
+                    objective=config["objective"],
+                    eval_metric=config["eval_metric"],
+                    early_stopping_rounds=config["early_stopping_rounds"],
+                    random_state=config["random_state"],
+                    n_jobs=config["n_jobs"],
+                    device=config.get("device", "cpu"),
+                    verbosity=0,
+                )
+                fit_kwargs = {"verbose": False}
+                if len(y_val):
+                    fit_kwargs["eval_set"] = [(X_val, y_val_target)]
+                model.fit(X_fit, y_fit_target, **fit_kwargs)
+            else:
+                y_fit_rank = self._to_group_relevance_labels(y_fit, fit_groups)
+                y_val_rank = self._to_group_relevance_labels(y_val, val_groups) if len(y_val) else y_val
+                model = xgb.XGBRanker(
+                    n_estimators=config["n_estimators"],
+                    max_depth=config["max_depth"],
+                    min_child_weight=config["min_child_weight"],
+                    learning_rate=config["learning_rate"],
+                    subsample=config["subsample"],
+                    colsample_bytree=config["colsample_bytree"],
+                    reg_alpha=config["reg_alpha"],
+                    reg_lambda=config["reg_lambda"],
+                    objective=config["objective"],
+                    eval_metric=config["eval_metric"],
+                    early_stopping_rounds=config["early_stopping_rounds"],
+                    random_state=config["random_state"],
+                    n_jobs=config["n_jobs"],
+                    device=config.get("device", "cpu"),
+                    verbosity=0,
+                )
+                fit_kwargs = {"group": fit_groups, "verbose": False}
+                if len(y_val):
+                    fit_kwargs["eval_set"] = [(X_val, y_val_rank)]
+                    fit_kwargs["eval_group"] = [val_groups]
+                model.fit(X_fit, y_fit_rank, **fit_kwargs)
             train_preds = model.predict(X_train_sel)
             test_preds = model.predict(X_test_sel)
             importance = expand_feature_importance(
@@ -888,6 +949,12 @@ class TrackARunner:
                 od_type="Iter",
                 od_wait=config["od_wait"],
             )
+            if int(config.get("window_id", 0) or 0) == 1:
+                print(
+                    f"CatBoost confirm params: depth={config['depth']} min_leaf={config['min_data_in_leaf']} "
+                    f"l2={config['l2_leaf_reg']} iterations={config['iterations']}",
+                    flush=True,
+                )
             train_pool = Pool(X_fit, y_fit_rank, group_id=fit_group_id)
             fit_kwargs: dict[str, Any] = {}
             if len(y_val):
@@ -1755,20 +1822,28 @@ class TrackARunner:
         ranked_models = self.state.get("ranked_models") or self._rank_models()
         best_model = ranked_models[0] if ranked_models else None
         deployment_simulation = []
+        regime_caps = {
+            "R7|Rate-Event": 0.05,
+            "R8|Election/Binary": 0.05,
+            "default": 0.40,
+        }
         if best_model is not None:
             for window in self.state["all_model_results"][best_model]["windows"]:
                 if "error" in window:
                     continue
                 test_ic = window.get("test_ic", 0)
+                regime_name = str(window.get("regime", "unknown"))
                 if test_ic > 0.015:
                     simulated_exposure = 0.40
                 elif test_ic > 0.005:
                     simulated_exposure = 0.20
                 else:
                     simulated_exposure = 0.05
+                simulated_exposure = min(simulated_exposure, float(regime_caps.get(regime_name, regime_caps["default"])))
                 deployment_simulation.append(
                     {
                         "window_id": window["window_id"],
+                        "regime": regime_name,
                         "test_ic": test_ic,
                         "simulated_exposure": simulated_exposure,
                     }

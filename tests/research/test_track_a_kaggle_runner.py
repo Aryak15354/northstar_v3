@@ -156,6 +156,15 @@ def test_group_relevance_labels_clip_to_lgbm_safe_range():
     assert int(labels.max()) <= 30
 
 
+def test_group_rank_percentiles_stay_in_unit_interval():
+    labels = TrackARunner._to_group_rank_percentiles(np.linspace(-1.0, 1.0, 6), [3, 3])
+
+    assert labels.dtype == np.float32
+    assert float(labels.min()) >= 0.0
+    assert float(labels.max()) <= 1.0
+    assert labels.tolist() == [0.0, 0.5, 1.0, 0.0, 0.5, 1.0]
+
+
 def test_decay_check_ignores_dead_zero_ic_features():
     dates = pd.to_datetime(
         ["2022-12-16"] * 10
