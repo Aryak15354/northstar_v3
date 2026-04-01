@@ -19,6 +19,7 @@ from scripts.load_screener_to_pipeline import build_pipeline_files  # noqa: E402
 
 from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
     attach_universe_annotations,
+    build_regime_window_audit,
     build_feature_unit_registry,
     build_market_cap_fields,
     build_plan_regime_labels,
@@ -373,6 +374,9 @@ def main() -> int:
         step_weeks=int(split_config["step_weeks"]),
         target_windows=int(split_config["target_windows"]),
     )
+    regime_window_audit = build_regime_window_audit(regimes_df, splits)
+    for warning in regime_window_audit.get("warnings", []):
+        print(f"[build_export] regime audit warning: {warning}", flush=True)
 
     features_path = export_dir / "northstar_features.parquet"
     metadata_path = export_dir / "northstar_metadata.parquet"
@@ -383,6 +387,7 @@ def main() -> int:
     metadata_df.to_parquet(metadata_path, index=False)
     regimes_df.to_parquet(regimes_path, index=False)
     write_json(splits_path, splits)
+    write_json(export_dir / "regime_window_audit.json", regime_window_audit)
     write_json(export_dir / "feature_unit_registry.json", build_feature_unit_registry(features_df))
     write_json(
         export_dir / "feature_pit_registry_summary.json",
@@ -418,6 +423,7 @@ def main() -> int:
         "model_safe_feature_count": int(len(feature_cols)),
         "screener_rebuild": screener_rebuild,
         "dataset_metadata": json_ready(dataset_meta),
+        "regime_window_audit": regime_window_audit,
         "files": {
             "features": str(features_path),
             "metadata": str(metadata_path),
@@ -438,10 +444,13 @@ def main() -> int:
                     "ticker_count": int(features_df["ticker"].nunique()),
                     "target_non_null_pct": round(float(features_df["target_weekly_return"].notna().mean()), 6),
                     "n_windows": int(len(splits)),
+                    "restricted_regime_windows": int(regime_window_audit.get("restricted_window_count", 0) or 0),
+                    "restricted_regime_window_limit": int(regime_window_audit.get("restricted_window_limit", 0) or 0),
                     "screener_rebuild_enabled": bool(screener_rebuild.get("enabled")),
                     "feature_pit_missing_count": int(dataset_meta.get("feature_pit_registry_missing_count", 0) or 0),
                     "feature_pit_coverage_pct": round(float(dataset_meta.get("feature_pit_registry_coverage_pct", 0.0) or 0.0), 3),
                     "split_config_adjusted": bool(split_config["adjusted"]),
+                    "regime_window_warnings": list(regime_window_audit.get("warnings") or []),
                 }
             ),
             indent=2,

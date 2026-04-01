@@ -42,6 +42,7 @@ TrackARunConfig = _track_a_runner.TrackARunConfig
 run_track_a_notebook = _track_a_runner.run_track_a_notebook
 
 from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
+    build_regime_window_audit,
     build_feature_coverage_audit,
     json_ready,
     load_export_artifacts,
@@ -49,6 +50,7 @@ from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
     read_json,
     resolve_export_dir,
     select_feature_columns,
+    stabilize_sparse_event_features,
     subset_feature_export,
     write_json,
 )
@@ -305,8 +307,10 @@ def main() -> int:
 
     resolved_nb00_report = _ensure_nb00_report(export_artifacts.export_dir, args.nb00_report, output_dir)
     selected = _selected_features(export_artifacts.export_dir, resolved_nb00_report)
-    full_features, _, _, _ = load_export_artifacts(export_artifacts.export_dir)
+    full_features, splits, regimes_df, _ = load_export_artifacts(export_artifacts.export_dir)
     full_features, derived_training_features = _augment_training_features(full_features)
+    full_features, sparse_event_feature_flags, sparse_event_audit = stabilize_sparse_event_features(full_features)
+    derived_training_features = list(dict.fromkeys([*derived_training_features, *sparse_event_feature_flags]))
     candidate_features = selected if selected else select_feature_columns(full_features)
     coverage_audit = build_feature_coverage_audit(
         full_features,
@@ -326,8 +330,15 @@ def main() -> int:
     )
     filtered_selected, dropped_redundant_variants = _drop_redundant_momentum_variants(filtered_selected)
     filtered_selected, forced_training_features = _force_include_training_features(filtered_selected, full_features)
+    forced_derived_features = [feature for feature in derived_training_features if feature in full_features.columns]
+    filtered_selected = list(dict.fromkeys([*filtered_selected, *forced_derived_features]))
+    forced_training_features = list(dict.fromkeys([*forced_training_features, *forced_derived_features]))
     write_json(output_dir / "feature_coverage_audit.json", coverage_audit.to_dict(orient="records"))
     coverage_audit.to_csv(output_dir / "feature_coverage_audit.csv", index=False)
+    regime_window_audit = build_regime_window_audit(regimes_df, splits)
+    write_json(output_dir / "regime_window_audit.json", regime_window_audit)
+    for warning in regime_window_audit.get("warnings", []):
+        print(f"[nb01] regime audit warning: {warning}")
 
     diagnostic_extras = [feature for feature in _diagnostic_feature_extras(full_features) if feature not in set(filtered_selected)]
     filtered_export_dir = output_dir / "tier12_export"
@@ -399,6 +410,8 @@ def main() -> int:
         "force_included_features": forced_training_features,
         "derived_training_feature_count": len(derived_training_features),
         "derived_training_features": derived_training_features,
+        "sparse_event_feature_audit": sparse_event_audit,
+        "regime_window_audit": regime_window_audit,
         "diagnostic_extra_count": len(diagnostic_extras),
         "diagnostic_extras": diagnostic_extras,
         "models": rows,

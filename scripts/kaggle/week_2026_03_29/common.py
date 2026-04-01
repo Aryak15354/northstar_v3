@@ -46,6 +46,17 @@ PLAN_REGIME_LABELS = {
 }
 PLAN_BULL_REGIMES = {"R1", "R2", "R5"}
 PLAN_CRASH_REGIMES = {"R4", "R9"}
+EVENT_OVERLAY_MAX_SPAN_DAYS = {
+    "R7": 35,
+    "R8": 28,
+}
+SPARSE_EVENT_FEATURES = (
+    "eps_sue_decay",
+    "eps_sue",
+    "rev_sue_decay",
+    "rev_sue",
+    "combined_sue",
+)
 NON_FEATURE_COLUMNS = {
     "date",
     "ticker",
@@ -210,6 +221,48 @@ def read_json(path: Path) -> Any:
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(json_ready(payload), indent=2), encoding="utf-8")
+
+
+def stabilize_sparse_event_features(
+    features_df: pd.DataFrame,
+    feature_candidates: Sequence[str] | None = None,
+) -> tuple[pd.DataFrame, list[str], list[dict[str, Any]]]:
+    candidates = [str(name) for name in (feature_candidates or SPARSE_EVENT_FEATURES)]
+    present = [feature for feature in candidates if feature in features_df.columns]
+    if not present:
+        return features_df.copy(), [], []
+
+    work = features_df.copy()
+    work["date"] = pd.to_datetime(work["date"], errors="coerce").dt.normalize()
+    work["ticker"] = work["ticker"].astype("string")
+    work["_row_id"] = np.arange(len(work), dtype=np.int64)
+    work = work.sort_values(["ticker", "date", "_row_id"], kind="mergesort")
+
+    derived_features: list[str] = []
+    audit_rows: list[dict[str, Any]] = []
+    ticker_groups = work["ticker"]
+
+    for feature in present:
+        numeric = pd.to_numeric(work[feature], errors="coerce")
+        raw_flag_name = f"{feature}_raw_available"
+        raw_available = numeric.notna()
+        stabilized = numeric.groupby(ticker_groups, sort=False).ffill()
+        work[feature] = stabilized.astype("float32")
+        work[raw_flag_name] = raw_available.astype("float32")
+        derived_features.append(raw_flag_name)
+        audit_rows.append(
+            {
+                "feature": feature,
+                "availability_flag": raw_flag_name,
+                "non_null_before": int(raw_available.sum()),
+                "non_null_after": int(pd.to_numeric(work[feature], errors="coerce").notna().sum()),
+                "coverage_before": float(raw_available.mean()),
+                "coverage_after": float(pd.to_numeric(work[feature], errors="coerce").notna().mean()),
+            }
+        )
+
+    work = work.sort_values("_row_id", kind="mergesort").drop(columns="_row_id")
+    return work, derived_features, audit_rows
 
 
 def is_kaggle() -> bool:
@@ -906,6 +959,12 @@ def load_export_artifacts(export_dir: str | Path | None = None) -> tuple[pd.Data
     splits = read_json(artifacts.splits_path)
     regimes = pd.read_parquet(artifacts.regimes_path)
     regimes["date"] = pd.to_datetime(regimes["date"], errors="coerce").dt.normalize()
+    try:
+        refreshed_regimes = build_plan_regime_labels(features, resolve_raw_bundle_from_export(artifacts.export_dir))
+    except Exception:
+        refreshed_regimes = pd.DataFrame()
+    if not refreshed_regimes.empty:
+        regimes = refreshed_regimes
     metadata = pd.read_parquet(artifacts.metadata_path)
     metadata["date"] = pd.to_datetime(metadata["date"], errors="coerce").dt.normalize()
     metadata["ticker"] = metadata["ticker"].astype("string")
@@ -957,6 +1016,21 @@ def subset_feature_export(
     metadata.to_parquet(output_root / "northstar_metadata.parquet", index=False)
     regimes.to_parquet(output_root / "northstar_regime_labels.parquet", index=False)
     write_json(output_root / "northstar_walk_forward_splits.json", splits)
+    source_manifest = Path(artifacts.export_dir) / "weekly_export_manifest.json"
+    if source_manifest.exists():
+        manifest_payload = dict(read_json(source_manifest) or {})
+        manifest_payload["source_export_dir"] = str(artifacts.export_dir)
+        manifest_payload["files"] = {
+            **dict(manifest_payload.get("files") or {}),
+            "features": str(output_root / "northstar_features.parquet"),
+            "metadata": str(output_root / "northstar_metadata.parquet"),
+            "splits": str(output_root / "northstar_walk_forward_splits.json"),
+            "regimes": str(output_root / "northstar_regime_labels.parquet"),
+        }
+        write_json(output_root / "weekly_export_manifest.json", manifest_payload)
+    source_regime_audit = Path(artifacts.export_dir) / "regime_window_audit.json"
+    if source_regime_audit.exists():
+        write_json(output_root / "regime_window_audit.json", read_json(source_regime_audit))
     if model_feature_names is not None:
         write_json(
             output_root / MODEL_FEATURE_MANIFEST,
@@ -1091,6 +1165,131 @@ def mean_ic_summary(values: Sequence[float]) -> dict[str, float]:
     }
 
 
+def _narrow_event_overlay_window(
+    start_date: Any,
+    end_date: Any,
+    bucket: str,
+    text: str,
+) -> tuple[pd.Timestamp, pd.Timestamp]:
+    start = pd.Timestamp(start_date).normalize()
+    end = pd.Timestamp(end_date).normalize()
+    if pd.isna(start) or pd.isna(end):
+        return start, end
+    if end < start:
+        start, end = end, start
+
+    max_span = EVENT_OVERLAY_MAX_SPAN_DAYS.get(str(bucket))
+    if max_span is None:
+        return start, end
+
+    duration_days = int((end - start).days) + 1
+    if duration_days <= int(max_span):
+        return start, end
+
+    lower = _clean_text(text).lower()
+    span = pd.Timedelta(days=int(max_span) - 1)
+
+    if bucket == "R8":
+        if any(token in lower for token in ["pre-election", "pre election", "pre_election"]):
+            return max(start, end - span), end
+        if any(token in lower for token in ["post-election", "post election", "coalition", "recovery"]):
+            return start, min(end, start + span)
+        if any(token in lower for token in ["shock", "demonetization", "volatility", "binary"]):
+            return start, min(end, start + span)
+        return max(start, end - span), end
+
+    if bucket == "R7":
+        if any(token in lower for token in ["pre-rate", "pre rate", "pre-hike", "pre hike", "topping"]):
+            return max(start, end - span), end
+        return start, min(end, start + span)
+
+    return start, end
+
+
+def build_regime_window_audit(
+    regimes_df: pd.DataFrame,
+    splits: Sequence[dict[str, Any]],
+    *,
+    restricted_regimes: Sequence[str] = ("R7", "R8"),
+) -> dict[str, Any]:
+    work = regimes_df.copy()
+    work["date"] = pd.to_datetime(work["date"], errors="coerce").dt.normalize()
+    restricted = {str(regime) for regime in restricted_regimes}
+    rows: list[dict[str, Any]] = []
+
+    for index, raw_split in enumerate(splits, start=1):
+        split = dict(raw_split)
+        window_id = int(split.get("window_id", index))
+        start = pd.Timestamp(split["test_start"]).normalize()
+        end = pd.Timestamp(split["test_end"]).normalize()
+        subset = work[work["date"].between(start, end)].copy()
+
+        if subset.empty:
+            rows.append(
+                {
+                    "window_id": window_id,
+                    "test_start": start.date().isoformat(),
+                    "test_end": end.date().isoformat(),
+                    "dominant_regime_id": "unknown",
+                    "dominant_regime": "unknown",
+                    "dominant_share": float("nan"),
+                    "n_dates": 0,
+                }
+            )
+            continue
+
+        if "regime" in subset.columns:
+            regime_counts = subset["regime"].astype(str).value_counts()
+            dominant_regime = str(regime_counts.index[0]) if not regime_counts.empty else "unknown"
+            dominant_share = float(regime_counts.iloc[0] / regime_counts.sum()) if not regime_counts.empty else float("nan")
+        else:
+            dominant_regime = "unknown"
+            dominant_share = float("nan")
+
+        if "plan_regime_id" in subset.columns:
+            id_counts = subset["plan_regime_id"].astype(str).value_counts()
+            dominant_regime_id = str(id_counts.index[0]) if not id_counts.empty else "unknown"
+        else:
+            dominant_regime_id = dominant_regime.split("|", 1)[0] if "|" in dominant_regime else dominant_regime
+
+        rows.append(
+            {
+                "window_id": window_id,
+                "test_start": start.date().isoformat(),
+                "test_end": end.date().isoformat(),
+                "dominant_regime_id": dominant_regime_id,
+                "dominant_regime": dominant_regime,
+                "dominant_share": dominant_share,
+                "n_dates": int(len(subset)),
+            }
+        )
+
+    frame = pd.DataFrame(rows)
+    regime_counts = (
+        frame["dominant_regime_id"].astype(str).value_counts().sort_index().to_dict()
+        if not frame.empty
+        else {}
+    )
+    restricted_window_count = int(frame["dominant_regime_id"].isin(restricted).sum()) if not frame.empty else 0
+    restricted_window_limit = max(2, int(math.ceil(len(frame) * 0.25))) if len(frame) else 0
+    warnings: list[str] = []
+    if restricted_window_limit and restricted_window_count > restricted_window_limit:
+        warnings.append(
+            "restricted_regime_window_concentration:"
+            f"{restricted_window_count}>{restricted_window_limit} "
+            f"for {sorted(restricted)}"
+        )
+
+    return {
+        "window_rows": frame.to_dict(orient="records"),
+        "regime_counts": regime_counts,
+        "restricted_regimes": sorted(restricted),
+        "restricted_window_count": restricted_window_count,
+        "restricted_window_limit": restricted_window_limit,
+        "warnings": warnings,
+    }
+
+
 def build_plan_regime_labels(weekly_panel: pd.DataFrame, raw_bundle_dir: Path) -> pd.DataFrame:
     panel = weekly_panel.copy()
     panel["date"] = pd.to_datetime(panel["date"], errors="coerce").dt.normalize()
@@ -1166,10 +1365,17 @@ def build_plan_regime_labels(weekly_panel: pd.DataFrame, raw_bundle_dir: Path) -
         subtle["start_date"] = pd.to_datetime(subtle["start_date"], errors="coerce").dt.normalize()
         subtle["end_date"] = pd.to_datetime(subtle["end_date"], errors="coerce").dt.normalize()
         for _, row in subtle.iterrows():
-            bucket = _bucket_from_text(f"{row.get('subtle_type', '')} {row.get('period_name', '')}")
+            overlay_text = f"{row.get('subtle_type', '')} {row.get('period_name', '')}"
+            bucket = _bucket_from_text(overlay_text)
             if bucket is None:
                 continue
-            mask = market["date"].between(row["start_date"], row["end_date"])
+            overlay_start, overlay_end = _narrow_event_overlay_window(
+                row["start_date"],
+                row["end_date"],
+                bucket,
+                overlay_text,
+            )
+            mask = market["date"].between(overlay_start, overlay_end)
             market.loc[mask, "plan_regime_id"] = bucket
             market.loc[mask, "plan_regime_label"] = PLAN_REGIME_LABELS[bucket]
             market.loc[mask, "source_layer"] = "subtle_period_overlay"
@@ -1180,13 +1386,30 @@ def build_plan_regime_labels(weekly_panel: pd.DataFrame, raw_bundle_dir: Path) -
         major["start_date"] = pd.to_datetime(major["start_date"], errors="coerce").dt.normalize()
         major["end_date"] = pd.to_datetime(major["end_date"], errors="coerce").dt.normalize()
         for _, row in major.iterrows():
+            overlay_text = f"{row.get('regime_type', '')} {row.get('event_name', '')}"
+            overlay_lower = _clean_text(overlay_text).lower()
             bucket = _bucket_from_text(
-                f"{row.get('regime_type', '')} {row.get('event_name', '')}",
+                overlay_text,
                 row.get("severity_score_1_10"),
             )
             if bucket is None:
                 continue
-            mask = market["date"].between(row["start_date"], row["end_date"])
+            duration_days = int((row["end_date"] - row["start_date"]).days) + 1 if pd.notna(row["start_date"]) and pd.notna(row["end_date"]) else 0
+            if bucket == "R8" and duration_days > 120 and any(
+                token in overlay_lower for token in ["bull", "strong_bull", "re-rating", "euphoria"]
+            ):
+                continue
+            if bucket == "R7" and duration_days > 120 and any(
+                token in overlay_lower for token in ["bear market", "macro_bear", "macro bear"]
+            ):
+                continue
+            overlay_start, overlay_end = _narrow_event_overlay_window(
+                row["start_date"],
+                row["end_date"],
+                bucket,
+                overlay_text,
+            )
+            mask = market["date"].between(overlay_start, overlay_end)
             market.loc[mask, "plan_regime_id"] = bucket
             market.loc[mask, "plan_regime_label"] = PLAN_REGIME_LABELS[bucket]
             market.loc[mask, "source_layer"] = "major_event_overlay"
