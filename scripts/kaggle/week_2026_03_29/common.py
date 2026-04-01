@@ -326,7 +326,10 @@ def _ensure_tree_user_writable(path: Path) -> None:
         return
     targets = [path]
     if path.is_dir():
-        targets.extend(Path(root) for root, _, _ in os.walk(path))
+        for root, dirs, files in os.walk(path):
+            targets.append(Path(root))
+            targets.extend(Path(root) / name for name in dirs)
+            targets.extend(Path(root) / name for name in files)
     for target in targets:
         try:
             mode = target.stat().st_mode
@@ -335,29 +338,44 @@ def _ensure_tree_user_writable(path: Path) -> None:
             continue
 
 
-def symlink_or_copy(src: Path, dest: Path) -> None:
+def symlink_or_copy(src: Path, dest: Path, *, prefer_copy: bool = False) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     _remove_path(dest)
-    try:
+    if not prefer_copy:
         if src.is_dir():
-            os.symlink(src, dest, target_is_directory=True)
+            try:
+                os.symlink(src, dest, target_is_directory=True)
+                return
+            except OSError:
+                pass
         else:
-            os.symlink(src, dest)
-    except OSError:
-        if src.is_dir():
-            shutil.copytree(src, dest)
-            _ensure_tree_user_writable(dest)
-        else:
-            shutil.copy2(src, dest)
+            try:
+                os.symlink(src, dest)
+                return
+            except OSError:
+                pass
+    if src.is_dir():
+        shutil.copytree(src, dest)
+        _ensure_tree_user_writable(dest)
+    else:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+        _ensure_tree_user_writable(dest)
+
+
+def _should_copy_runtime_tree(raw_bundle_dir: Path) -> bool:
+    raw_text = str(raw_bundle_dir.expanduser().resolve())
+    return is_kaggle() or raw_text == "/kaggle/input" or raw_text.startswith("/kaggle/input/")
 
 
 def prepare_runtime_project(raw_bundle_dir: Path, runtime_root: Path) -> Path:
     runtime_root = runtime_root.expanduser().resolve()
     runtime_root.mkdir(parents=True, exist_ok=True)
+    prefer_copy = _should_copy_runtime_tree(raw_bundle_dir)
     for rel in ["data", "universe", "config"]:
         src = raw_bundle_dir / rel
         if src.exists():
-            symlink_or_copy(src, runtime_root / rel)
+            symlink_or_copy(src, runtime_root / rel, prefer_copy=prefer_copy)
     (runtime_root / "reports").mkdir(parents=True, exist_ok=True)
     return runtime_root
 

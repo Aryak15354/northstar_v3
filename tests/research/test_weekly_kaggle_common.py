@@ -14,6 +14,7 @@ from scripts.kaggle.week_2026_03_29.common import (
     build_feature_unit_registry,
     derive_size_rank,
     infer_feature_unit_kind,
+    prepare_runtime_project,
     select_feature_columns,
 )
 
@@ -156,3 +157,22 @@ def test_kaggle_safe_relative_path_sanitizes_unsafe_raw_filenames():
         str(kaggle_safe_relative_path(Path("data/raw/vendors/screener/financials/M&M_annual_pl.csv")))
         == "data/raw/vendors/screener/financials/M_x26_M_annual_pl.csv"
     )
+
+
+def test_prepare_runtime_project_copies_writable_tree_on_kaggle(tmp_path: Path, monkeypatch):
+    raw_bundle = tmp_path / "bundle"
+    source_file = raw_bundle / "data" / "canonical" / "fundamentals" / "fundamentals_annual_panel.csv"
+    source_file.parent.mkdir(parents=True, exist_ok=True)
+    source_file.write_text("ticker,value\nAAA.NS,1\n", encoding="utf-8")
+    (raw_bundle / "universe").mkdir(parents=True, exist_ok=True)
+    (raw_bundle / "config").mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setattr("scripts.kaggle.week_2026_03_29.common.is_kaggle", lambda: True)
+
+    runtime_root = prepare_runtime_project(raw_bundle, tmp_path / "runtime")
+    staged_file = runtime_root / "data" / "canonical" / "fundamentals" / "fundamentals_annual_panel.csv"
+
+    assert staged_file.exists()
+    assert not (runtime_root / "data").is_symlink()
+    staged_file.write_text("ticker,value\nAAA.NS,2\n", encoding="utf-8")
+    assert "2" in staged_file.read_text(encoding="utf-8")
