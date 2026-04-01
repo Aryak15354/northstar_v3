@@ -24,6 +24,7 @@ wheels/
 venv/
 ENV/
 env/
+.venv/
 
 # IDE
 .vscode/
@@ -39,9 +40,15 @@ Thumbs.db
 # Logs
 logs/
 *.log
+nohup.out
+*.pid
 
 # Data
 data/
+!src/data/
+!src/data/__init__.py
+!src/data/loaders.py
+!src/data/query_engine.py
 *.parquet
 *.csv
 *.h5
@@ -50,6 +57,26 @@ data/
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb
+
+# Test and tooling caches
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+tests/**/.hypothesis/
+
+# Generated workspace noise
+snapshots/
+reports/workspace_analysis.md
+reports/cleanup_plan.md
+reports/script_catalog.md
+reports/daily/
+reports/weekly/
 
 # Options Trading System - CRITICAL
 .env.options
@@ -63,3 +90,4 @@ logs/options_*.log
 *.pem
 *.secret
 credentials.json
+_cold_archive/
