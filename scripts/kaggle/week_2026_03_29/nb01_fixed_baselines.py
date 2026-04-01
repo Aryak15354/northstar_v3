@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -126,6 +127,44 @@ def _load_feature_health_table(nb00_report: Path | None) -> pd.DataFrame:
             return pd.read_parquet(candidate)
         return pd.read_csv(candidate)
     return pd.DataFrame()
+
+
+def _ensure_nb00_report(export_dir: Path, nb00_report: Path | None, output_dir: Path) -> Path | None:
+    candidates: list[Path] = []
+    if nb00_report is not None:
+        candidates.append(nb00_report.expanduser().resolve())
+    candidates.extend(
+        [
+            export_dir / "feature_health_report.json",
+            export_dir.parent / "01_nb00" / "feature_health_report.json",
+            output_dir.parent / "01_nb00" / "feature_health_report.json",
+            output_dir.parent / "01_nb00_autogen" / "feature_health_report.json",
+        ]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    autogen_dir = (output_dir.parent / "01_nb00_autogen").resolve()
+    script_path = PROJECT_ROOT / "scripts" / "kaggle" / "week_2026_03_29" / "nb00_feature_health.py"
+    cmd = [
+        sys.executable,
+        str(script_path),
+        "--export-dir",
+        str(export_dir),
+        "--output-dir",
+        str(autogen_dir),
+    ]
+    print(f"[nb01] feature health report missing; generating via: {' '.join(cmd)}")
+    try:
+        subprocess.run(cmd, cwd=str(PROJECT_ROOT), check=True)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            f"failed_to_generate_nb00_report:{autogen_dir} from export {export_dir}"
+        ) from exc
+
+    generated = autogen_dir / "feature_health_report.json"
+    return generated if generated.exists() else None
 
 
 def _diagnostic_feature_extras(full_features: pd.DataFrame) -> list[str]:
@@ -264,7 +303,8 @@ def main() -> int:
     output_dir = args.output_dir.expanduser().resolve() if args.output_dir else make_run_dir(None, "nb01_fixed_baselines")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    selected = _selected_features(export_artifacts.export_dir, args.nb00_report)
+    resolved_nb00_report = _ensure_nb00_report(export_artifacts.export_dir, args.nb00_report, output_dir)
+    selected = _selected_features(export_artifacts.export_dir, resolved_nb00_report)
     full_features, _, _, _ = load_export_artifacts(export_artifacts.export_dir)
     full_features, derived_training_features = _augment_training_features(full_features)
     candidate_features = selected if selected else select_feature_columns(full_features)
@@ -275,7 +315,7 @@ def main() -> int:
         min_unique=args.dead_feature_min_unique,
         min_cross_sectional_std=args.dead_feature_min_cs_std,
     )
-    feature_health = _load_feature_health_table(args.nb00_report)
+    feature_health = _load_feature_health_table(resolved_nb00_report)
     filtered_selected, dead_features, protected_dead_features = _prune_dead_features(
         candidate_features,
         coverage_audit,
@@ -348,6 +388,7 @@ def main() -> int:
         "selected_feature_count": len(filtered_selected),
         "selected_features": filtered_selected,
         "candidate_feature_count": len(candidate_features),
+        "nb00_report": None if resolved_nb00_report is None else str(resolved_nb00_report),
         "dead_feature_count": len(dead_features),
         "dead_features": dead_features,
         "protected_dead_feature_count": len(protected_dead_features),

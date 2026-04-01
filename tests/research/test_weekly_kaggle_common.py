@@ -12,9 +12,11 @@ from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _effectiv
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _profile_overrides
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _dataset_runtime_config
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _validate_raw_bundle_support_artifacts
+import scripts.kaggle.week_2026_03_29.nb01_fixed_baselines as nb01_module
 from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import parse_args as parse_nb01_args
 from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _augment_training_features
 from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _drop_redundant_momentum_variants
+from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _ensure_nb00_report
 from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _force_include_training_features
 from scripts.kaggle.week_2026_03_29.nb01_fixed_baselines import _prune_dead_features
 from scripts.kaggle.week_2026_03_29.common import (
@@ -306,6 +308,25 @@ def test_augment_training_features_derives_fii_interaction_from_raw_inputs():
 
     assert derived == ["fii_interaction"]
     assert float(augmented.loc[0, "fii_interaction"]) == pytest.approx(2.0)
+
+
+def test_ensure_nb00_report_autogenerates_when_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    export_dir = tmp_path / "00_export"
+    export_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = tmp_path / "02_nb01"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    def fake_run(cmd, cwd=None, check=None):
+        autogen_dir = output_dir.parent / "01_nb00_autogen"
+        autogen_dir.mkdir(parents=True, exist_ok=True)
+        (autogen_dir / "feature_health_report.json").write_text('{"tier_lists":{"TIER_1":[],"TIER_2":[]}}', encoding="utf-8")
+        return None
+
+    monkeypatch.setattr(nb01_module.subprocess, "run", fake_run)
+
+    report = _ensure_nb00_report(export_dir, output_dir / "missing.json", output_dir)
+
+    assert report == (output_dir.parent / "01_nb00_autogen" / "feature_health_report.json").resolve()
 
 
 def test_subset_feature_export_writes_model_feature_manifest(tmp_path: Path):
