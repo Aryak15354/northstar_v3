@@ -7,6 +7,7 @@ import json
 import math
 import os
 import re
+import stat
 import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -320,6 +321,20 @@ def _remove_path(path: Path) -> None:
     shutil.rmtree(path)
 
 
+def _ensure_tree_user_writable(path: Path) -> None:
+    if not path.exists() or path.is_symlink():
+        return
+    targets = [path]
+    if path.is_dir():
+        targets.extend(Path(root) for root, _, _ in os.walk(path))
+    for target in targets:
+        try:
+            mode = target.stat().st_mode
+            target.chmod(mode | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        except Exception:
+            continue
+
+
 def symlink_or_copy(src: Path, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     _remove_path(dest)
@@ -331,6 +346,7 @@ def symlink_or_copy(src: Path, dest: Path) -> None:
     except OSError:
         if src.is_dir():
             shutil.copytree(src, dest)
+            _ensure_tree_user_writable(dest)
         else:
             shutil.copy2(src, dest)
 
