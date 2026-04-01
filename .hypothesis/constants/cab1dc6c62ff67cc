@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/adaptive_capital_engine.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-08, 1e-06, 0.0001, 0.05, 0.1, 0.12, 0.2, 0.3, 0.35, 0.4, 0.5, 0.6, 0.95, 1.0, 1.01, 1.25, 1.5, 2.0, 3.0, 5.0, 50.0, 'drift_z_score', 'final_multiplier', 'inertia_applied', 'kelly_alpha', 'liquidity_factor', 'liquidity_multiplier', 'neutral', 'portfolio_volatility', 'realized_volatility', 'regime_multiplier', 'scaled_down', 'scaled_up', 'spread_bps', 'status', 'survival_multiplier']

@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/state_io.py
-# hypothesis_version: 6.150.2
-
-[0.05, 1.0, 10.0, 30.0, 4096, '.tmp', 'WAL cleared', 'a', 'a+', 'acquired_at', 'checksum_after', 'checksum_before', 'committed', 'entries', 'eod_snapshots', 'error', 'failed', 'hostname', 'op_id', 'options_engine.lock', 'pid', 'prepared', 'r', 'rb', 'recovered_on_startup', 'stage', 'target_path', 'timestamp', 'trade_ledger.parquet', 'utf-8', 'w', 'write_journal.log']

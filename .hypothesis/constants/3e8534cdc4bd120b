@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/meta/manifold_diversity_engine.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-06, 0.75, 1.0, 'durability_score', 'family', 'family_density', 'fragility', 'global_density', 'longevity', 'mc_survival', 'metrics', 'n_points', 'phase6_longevity', 'surface_fragility', 'survival_probability', 'test_sharpe', 'unknown', 'wf_sharpe']

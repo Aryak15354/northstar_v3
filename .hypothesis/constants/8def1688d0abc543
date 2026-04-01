@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/certification_gate.py
-# hypothesis_version: 6.150.2
-
-['config_hash', 'created_at', 'data_revision_hash', 'drift_guard_version', 'feature_drift_breach', 'feature_hash', 'model_hash', 'param_hash', 'v1', 'valid_until']

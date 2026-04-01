@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/macro_impact_engine/rolling_beta.py
-# hypothesis_version: 6.150.2
-
-[1e-06, 156, 260, 'ignore', 'insufficient_data', 'max_beta', 'mean_beta', 'min_beta', 'reason', 'rolling_beta', 'sign_changes', 'stability', 'std_beta']

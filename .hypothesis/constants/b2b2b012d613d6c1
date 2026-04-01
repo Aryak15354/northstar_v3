@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/volatility/iv_surface.py
-# hypothesis_version: 6.150.2
-
-[-2.0, -0.999, 0.0, 1e-06, 0.0001, 0.001, 0.05, 0.1, 0.2, 0.3, 0.5, 0.8, 0.999, 1.0, 1.2, 2.0, 20.0, 365.0, 'FLAT', 'L-BFGS-B', 'SABR', 'SLSQP', 'STICKY_STRIKE', 'SVI', 'fitted_model', 'fun', 'ineq', 'last_fit_time', 'num_quotes', 'quality_score', 'risk_free_rate', 'spot_price', 'type', 'underlying']

@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/cleanup/import_updater.py
-# hypothesis_version: 6.150.2
-
-['*.py', '.', '.py', '/', 'All imports valid!', '__init__.py', '__main__', '__pycache__', 'venv']

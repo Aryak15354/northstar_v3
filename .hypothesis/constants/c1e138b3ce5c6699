@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/meta/alpha_experience_memory.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.3, 0.35, 0.5, 1.0, 2.0, 5000, 'count', 'durability_mean', 'durability_score', 'durability_std', 'experiment_id', 'family', 'fragility', 'fragility_mean', 'longevity', 'mc_survival', 'metrics', 'metrics_json', 'parameter_json', 'parameter_vector', 'params', 'phase6_longevity', 'regime', 'regime_features', 'regime_json', 'surface_fragility', 'survival_probability', 'test_sharpe', 'timestamp_utc', 'unknown', 'wf_sharpe', '{}']

@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/storage.py
-# hypothesis_version: 6.150.2
-
-[0.0, 86400.0, 384, 448, 'ACTIVE', 'ORDER_FILLED', 'ORDER_PARTIAL', 'POSITION_ADJUSTED', 'a+', 'acquired_at', 'bootstrap', 'breach_count', 'c', 'close', 'created_at', 'denial_reason', 'derived_view_hash', 'details', 'escalated_freeze', 'event_id', 'fill_price', 'filled_qty', 'id', 'incident_id', 'is_frozen', 'lifecycle_action', 'live', 'live_state_hash', 'lock_file', 'mx', 'name', 'open', 'operator_id', 'payload', 'payload_json', 'pid', 'pnl_impact', 'portfolio_events', 'position_key', 'price', 'proposal_json', 'quantity', 'realized_pnl', 'reason', 'risk_metric', 'runtime', 'runtime_scope', 'runtime_writer', 'scenario_id', 'shadow_state_hash', 'side', 'state', 'status', 'symbol', 'timestamp_utc', 'updated_at', 'updated_by', 'utf-8', 'value_json', 'writer_name', '{}']

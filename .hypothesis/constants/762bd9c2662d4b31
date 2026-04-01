@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/risk/survival_core_mode.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-12, 0.12, 0.15, 0.4, 0.5, 0.6, 0.75, 1.0, 'activated_at', 'active', 'active_cycles', 'carry', 'conditions', 'convexity_score', 'crisis_probability', 'cvar_only', 'directives', 'drawdown', 'entropy', 'gross_after', 'gross_clamped', 'gross_multiplier', 'gross_scale', 'gross_target_cap', 'income', 'iron_butterfly', 'iron_condor', 'is_short_convexity', 'lock_new_risk', 'reason_codes', 'short', 'strangle', 'trigger_count']

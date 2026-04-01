@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/confidence_system.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 1.0, 2.0, 2.5, 24.0, 60.0, '__main__', 'allocation_decisions', 'confidence_level', 'confidence_score', 'current_confidences', 'data/intelligence', 'data/test_confidence', 'data_freshness_hours', 'high', 'late_expansion', 'low', 'medium', 'no_edge_state', 'output_type', 'output_value', 'overall_confidence', 'regime_detection', 'regime_similarity', 'stability', 'strategy_tailwinds', 'timestamp', 'uncertainty_factors', 'very_high', 'very_low']

@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/stress_test_engine.py
-# hypothesis_version: 6.150.2
-
-[-0.02, -0.01, 0.0, 0.0001, 0.0002, 0.001, 0.02, 0.05, 0.3, 0.6, 0.7, 0.8, 1.0, 2008, 2009, 2020, 2022, '2008_CRISIS', '2022 Bear Market', '2022_BEAR', '=', 'ASIANPAINT.NS', 'AXISBANK.NS', 'BHARTIARTL.NS', 'COVID Crash', 'COVID_CRASH', 'Close', 'Date', 'HDFCBANK.NS', 'HINDUNILVR.NS', 'ICICIBANK.NS', 'INFY.NS', 'ITC.NS', 'KOTAKBANK.NS', 'LT.NS', 'MARUTI.NS', 'RELIANCE.NS', 'SBIN.NS', 'SUNPHARMA.NS', 'TCS.NS', '__main__', 'advantage', 'all_scenarios_passed', 'data/processed', 'data/risk', 'date', 'description', 'drawdown_protection', 'end_date', 'exposure', 'ignore', 'market_return', 'name', 'nifty_return', 'northstar_return', 'return', 'scenario_performance', 'start_date', 'success', 'success_rate', 'successful_scenarios', 'total_scenarios', 'transaction_cost', 'turnover', '✅ PASS', '❌ FAIL']

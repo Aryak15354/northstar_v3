@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/position_manager.py
-# hypothesis_version: 6.150.2
-
-[-0.85, 0.0, 0.45, 1.0, 2.0, '; ', 'BUY', 'SELL', 'ask', 'bear_put_spread', 'bid', 'calendar_spread', 'date', 'delta', 'gamma', 'gamma_escalation', 'greek_violation', 'instrument_key', 'iron_butterfly', 'iron_condor', 'iv', 'long_straddle', 'long_strangle', 'ltp', 'manual', 'open_positions_count', 'option_type', 'portfolio_greeks', 'premium', 'profit_target', 'regime_flip', 'short_strangle', 'spike_multiplier', 'stop_loss', 'strike', 'theta', 'time_decay', 'total_open_risk', 'total_realized_pnl', 'total_unrealized_pnl', 'value', 'vega']

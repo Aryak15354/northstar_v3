@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/risk_budget_enforcer.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 1.0, '=', 'Auto', 'Banks', 'DRREDDY', 'Energy', 'FMCG', 'HDFCBANK', 'HINDALCO', 'ICICIBANK', 'INFY', 'IT', 'Media', 'Metals', 'Pharma', 'Realty', 'SBIN', 'SUNPHARMA', 'TATASTEEL', 'TCS', 'Telecom', '__main__', 'data/risk', 'ignore', 'original_weight', 'risk_scaled', 'scale_factor', 'sector', 'weight']

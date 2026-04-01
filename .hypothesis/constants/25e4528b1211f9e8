@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/operation/operation_config_manager.py
-# hypothesis_version: 6.150.2
-
-[-2.0, 0.0, 0.25, 0.3, 0.5, 0.55, 0.7, 0.9, 0.98, 1.0, 3.0, 5.0, 50.0, 100.0, 200.0, 1000.0, 300, 5000, 100000, '${', '._-', '.json', '2007-10-01', '2009-03-31', 'alert_settings', 'alpha_validation', 'bear_market', 'bull_market', 'characteristics', 'config.yaml', 'config/operation', 'crisis_periods', 'crisis_validation', 'description', 'end_date', 'extreme', 'live_operation', 'market_regimes', 'max', 'max_latency_ms', 'max_length', 'max_position_size', 'max_var_breaches', 'medium', 'min', 'min_data_quality', 'min_hit_rate', 'min_length', 'min_sharpe_ratio', 'min_signal_quality', 'monitoring_interval', 'name', 'r', 'reporting_config', 'risk_limit', 'severity', 'sideways_market', 'start_date', 'stress_testing', 'system_validation', 'timeout_hours', 'type', 'utf-8', 'w', '}']

@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/capacity_analysis_engine.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.006, 0.009, 0.012, 0.12, 0.18, 0.35, 0.7, 0.8, 0.95, 1.0, 1.1, 1.15, 1.2, 1.6, 2.5, 8.0, 18.0, 25000000.0, 50000000.0, 75000000.0, 100000000.0, 150000000.0, 200000000.0, 300000000.0, 400000000.0, 500000000.0, 650000000.0, 800000000.0, 1000000000.0, 'aum', 'capacity_curves', 'crowding_drag', 'curve_csv', 'impact_drag', 'metrics', 'report_json', 'reports/capacity', 'turnover_penalty']

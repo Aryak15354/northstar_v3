@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/train_regime_hmm.py
-# hypothesis_version: 6.150.2
-
-[1e-10, 0.02, 0.2, 0.6, -200, 260, '+00:00', '--force', 'Z', '__main__', 'age_days', 'all', 'alpha_os', 'bfill', 'both', 'coerce', 'correlation_index', 'empty_feature_frame', 'feature_names', 'feature_source', 'ffill', 'hmm_min_samples', 'hmm_model_path', 'iv_percentile', 'iv_rank', 'min_interval_days', 'model updated', 'none', 'ok', 'pulse_intensity', 'rb', 'realized_vol_accel', 'risk_on_probability', 'rows', 'skew', 'skipped', 'store_true', 'stress_score', 'trained', 'transition_matrix', 'vol_of_vol', 'volatility_20d', 'volatility_5d', 'wb']

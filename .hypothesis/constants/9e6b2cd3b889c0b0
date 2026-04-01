@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/regime_conditional_trainer.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.03, 0.9, 1.0, 300, 500, '-', '_', '__', 'backend', 'coerce', 'fallback_base', 'fallbacks', 'feature_cols', 'feature_importance', 'feature_importances_', 'min_obs_per_regime', 'model', 'model_dir', 'model_path', 'models', 'models/regime_models', 'n_jobs', 'n_obs', 'oos_ic', 'random_state', 'rb', 'regime', 'requested_regime', 'resolved_regime', 'sk_learning_rate', 'sk_max_depth', 'sk_n_estimators', 'spearman', 'train_ic', 'trained_on_regime', 'unknown', 'wb', 'xgb_colsample_bytree', 'xgb_learning_rate', 'xgb_max_depth', 'xgb_n_estimators', 'xgb_reg_alpha', 'xgb_reg_lambda', 'xgb_subsample', 'xgboost', '|']

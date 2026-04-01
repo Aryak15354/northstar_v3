@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/flow_analysis_engine.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-12, 1e-08, 0.15, 0.2, 0.3, 0.35, 0.5, 1.0, 'coerce', 'crowding_score', 'dealer_gamma_proxy', 'gamma', 'oi', 'oi_concentration', 'open_interest', 'skew_position_bias']

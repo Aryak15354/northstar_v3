@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/macro/__init__.py
-# hypothesis_version: 6.150.2
-
-['CEA_REGION_TO_STATES', 'GST_TO_SECTOR_MAP', 'MacroRegimeBuilder', 'SectorMapper']

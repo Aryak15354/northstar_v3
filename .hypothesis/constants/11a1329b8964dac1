@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/vol_surface_intelligence.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-08, 0.5, 1.0, 2.0, -252, 'coerce', 'expiry', 'iv', 'iv_percentile_252d', 'skew_curvature', 'strike', 'term_structure_slope', 'underlying_price', 'vol_of_vol_proxy']

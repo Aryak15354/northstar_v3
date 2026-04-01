@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/alpha_lab/robustness_tester.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-09, 0.1, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 'avg_max_drawdown', 'avg_sharpe', 'avg_turnover', 'mean_utility', 'robustness_score', 'std_utility']

@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/splits.py
-# hypothesis_version: 6.150.2
-
-[126, 756, 'coerce', 'date', 'datetime64[ns]', 'test_end', 'test_mask', 'test_start', 'ticker', 'train_end', 'train_mask', 'train_start', 'valid_mask']

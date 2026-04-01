@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/dispersion_engine.py
-# hypothesis_version: 6.150.2
-
-[-1.0, -0.08, 0.0, 1e-12, 1e-08, 0.08, 1.0, 2.0, 'dispersion_spread', 'long_index_vol', 'neutral', 'stance']

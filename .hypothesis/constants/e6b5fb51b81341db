@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/strategic/system_regret_aggregator.py
-# hypothesis_version: 6.150.2
-
-[-2.0, 0.0, 1e-08, 0.15, 0.2, 0.35, 0.45, 0.5, 1.0, 2.0, 5.0, 'alpha_regret', 'durability_collapse', 'eigen_spike', 'exploration_gap', 'p_maxdd_breach', 'portfolio_regret', 'research_regret', 'system_regret']

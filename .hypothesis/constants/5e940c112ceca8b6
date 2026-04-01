@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/portfolio/strategies.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-12, 1e-09, 1e-06, 0.005, 0.08, 0.15, 0.5, 1.0, 3.0, 126, 252, '.NS', '=', 'Close', 'Date', 'Industry', 'Industry Name', 'Symbol', 'Unknown', 'Volume', '__main__', '_u', 'boom', 'current_time', 'dollar_volume', 'dual_momentum', 'equal_weight_top', 'error', 'expansion', 'ignore', 'industry', 'industry_name', 'late-expansion', 'left', 'liquidity_weighted', 'low_vol', 'macro_regime', 'max_names', 'max_weight_per_name', 'min_weight', 'mom_12m', 'mom_3m_6m_12m', 'mom_6m', 'mom_vol_adj', 'neutral', 'northstar', 'northstar_score', 'quality_score', 'quality_tilt', 'quality_value_combo', 'qv_combo', 'realized_vol', 'regime_conditional', 'risk_parity_vol', 'sector_neutral_eq', 'sector_tilt_mom', 'target_vol', 'temporal_signals', 'ticker', 'value_score', 'value_tilt', 'vol_target_ovr', 'weight']

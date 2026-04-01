@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/cleanup/cleanup_executor.py
-# hypothesis_version: 6.150.2
-
-['%Y%m%d_%H%M%S', '--dry-run', '.kiro', 'README.md', 'Rollback complete', '__main__', 'backups', 'config', 'docs', 'reports', 'requirements.txt', 'scripts', 'src', 'tests']

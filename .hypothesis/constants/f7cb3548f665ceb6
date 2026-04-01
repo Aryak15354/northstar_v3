@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/kill_switch_system.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.05, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 1.0, 252, '=', 'DAILY_LOSS_BRAKE', 'DRAWDOWN_BRAKE', 'VOLATILITY_BRAKE', '__main__', 'data/risk', 'date', 'exposure', 'ignore', 'net_return', 'northstar_return']

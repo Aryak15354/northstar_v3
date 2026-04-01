@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/order_announcements.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1.0, 100.0, 180, ',', '.', '.NS', 'ACQUISITION', 'CAPACITY EXPANSION', 'INSIDER TRADING', 'MERGER', 'ORDER WIN', '_', '_rev', 'acquisition', 'acquisition_event', 'acquisition_flag', 'announcement_date', 'announcement_text', 'annual_revenue', 'availability_date', 'backward', 'capacity_expansion', 'capex_announced_flag', 'capex_event', 'capex_flag', 'cat_norm', 'category', 'coerce', 'date', 'full_text', 'headline', 'ignore', 'insider_buy_event', 'insider_buy_flag', 'insider_buy_flag_30d', 'insider_event', 'insider_sell_event', 'insider_sell_flag', 'insider_trading', 'lac', 'lakh', 'left', 'max', 'merger', 'mergesort', 'nse_ticker', 'order_value_90d', 'order_value_crore', 'order_win', 'order_win_count', 'order_win_count_90d', 'order_win_event', 'order_win_flag', 'order_win_flag_30d', 'revenue', 'sum', 'ticker']

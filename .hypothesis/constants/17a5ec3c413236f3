@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/manifold/alpha_manifold_builder.py
-# hypothesis_version: 6.150.2
-
-[-0.99, 0.0, 1e-10, 0.99, 1.0, -256, 256, 'alpha_ids', 'cluster_map', 'distance_matrix', 'diversity_score', 'features', 'local_density', 'overcrowding_flag', 'redundancy_scores']

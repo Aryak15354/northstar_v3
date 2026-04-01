@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/truth_drift_monitor.py
-# hypothesis_version: 6.150.2
-
-['.json', 'derived_state_hash', 'derived_view_hash', 'live_shadow_mismatch', 'live_state_hash', 'shadow_state_hash', 'utf-8']

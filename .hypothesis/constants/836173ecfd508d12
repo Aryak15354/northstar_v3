@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/adv_database.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.1, 0.2, 0.3, 0.5, 0.8, 1.0, 126, 150, 500, 1400, 1600, 2026, 2500, 3500, 50000, 1000000, 2000000, 3000000, 4000000, 5000000, 10000000, 25000000, 50000000, 250000000, 500000000, '1.0', '2025-01-01', '2026-01-03', '=', 'ADV Database', 'D', 'HDFCBANK', 'INFY', 'RELIANCE', 'SMALLCAP', 'TCS', '__main__', 'adv_126d', 'adv_21d', 'adv_63d', 'cache_size', 'close', 'data_freshness_rate', 'date', 'dollar_volume', 'ignore', 'large_cap', 'last_update_count', 'left', 'micro_cap', 'mid_cap', 'small_cap', 'tier_distribution', 'total_symbols', 'volume']

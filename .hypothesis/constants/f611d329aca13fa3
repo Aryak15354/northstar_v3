@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/state_validator.py
-# hypothesis_version: 6.150.2
-
-[0.1, 3600, '.json', '.parquet', '.parquet.corrupt', '__main__', 'actual_exposure', 'allowed_exposure', 'attempted', 'correlation', 'data/state', 'date', 'datetime', 'datetime64[ns]', 'early-contraction', 'early-expansion', 'exposure', 'failed', 'float32', 'float64', 'int32', 'int64', 'late-contraction', 'late-expansion', 'market_state.parquet', 'object', 'r', 'regime', 'risk_on', 'risk_scaled_exposure', 'risk_state.parquet', 'stress_score', 'string', 'successful', 'symbol', 'unknown', 'var', 'volatility', 'weight']

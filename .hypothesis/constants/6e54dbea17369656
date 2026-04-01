@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/core/clock.py
-# hypothesis_version: 6.150.2
-
-[-500, -100, 500, 1000, 3600, '+00:00', '=', 'US/Eastern', 'Z', '__main__', 'after_hours', 'after_hours_end', 'close', 'closed', 'current_phase', 'data', 'event', 'event_history', 'event_listeners', 'heartbeat', 'ignore', 'intraday', 'is_trading_day', 'last_event', 'market', 'market_alive', 'market_clock', 'market_close', 'market_day', 'market_day_counter', 'market_hours', 'market_open', 'market_phase', 'market_status', 'market_time', 'monthly_review', 'next_event', 'open', 'overnight', 'phase', 'pre_market', 'pre_market_start', 'pre_open', 'recent_events', 'system_status', 'time', 'time_event', 'time_to_next_event', 'timestamp', 'w', 'weekly_rebalance']

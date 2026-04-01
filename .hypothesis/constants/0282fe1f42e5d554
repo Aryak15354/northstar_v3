@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/meta_allocator.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-12, 1e-06, 0.1, 0.15, 0.2, 0.25, 0.5, 0.65, 0.7, 0.8, 1.0, 'confidence', 'confidence_ewma', 'credibility', 'hysteresis_active', 'max_delta_applied', 'reason_codes', 'regret', 'regret_ewma']

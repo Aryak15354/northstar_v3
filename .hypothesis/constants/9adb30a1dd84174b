@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/research_evolution_engine.py
-# hypothesis_version: 6.150.2
-
-[-0.02, 0.0, 0.01, 0.12, 0.6, 'action', 'apply_shadow_only', 'avg_edge_decay', 'avg_err', 'avg_stability', 'coerce', 'crisis_lock', 'drawdown_ratio', 'edge_decay', 'hold', 'parameter_mutation', 'reason', 'shock_detected', 'stability_score']

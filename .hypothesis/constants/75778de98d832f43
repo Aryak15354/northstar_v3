@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/stress_test_scenarios.py
-# hypothesis_version: 6.150.2
-
-[0.5, 0.7, 0.8, 1.0, 1.1, 10.0, 40.0, 500000.0, 2024, '=', 'NIFTY', '__main__', 'actual', 'analysis', 'ask', 'avg_days_held', 'bid', 'calendar_exits', 'consecutive_losses', 'criteria_checks', 'date', 'description', 'error', 'expected', 'expected_behavior', 'expiry', 'iv', 'ltp', 'max_drawdown_pct', 'passed', 'regime_changes', 'results', 'scenario', 'success', 'summary', 'trauma_activations', 'vol_expansion', '✓', '✓ SCENARIO PASSED', '✗', '✗ SCENARIO FAILED']

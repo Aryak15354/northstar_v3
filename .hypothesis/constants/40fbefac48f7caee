@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/regime_drift_monitor.py
-# hypothesis_version: 6.150.2
-
-[-1000000.0, -0.5, 0.0, 1e-12, 1e-08, 1e-06, 0.001, 0.2, 0.25, 0.35, 1.0, 1.2, 2.0, 4.0, 600, 'baseline', 'dominant_states', 'drift_detected', 'elevated', 'emission_covs', 'emission_distance', 'emission_mean', 'emission_means', 'emission_shift', 'entropy', 'entropy_latest', 'entropy_mean', 'entropy_rise', 'entropy_roll', 'flags', 'high', 'last_payload', 'll_mean', 'll_std', 'log_likelihood', 'log_likelihood_decay', 'log_likelihood_roll', 'metrics', 'nan', 'normal', 'recommended_actions', 'severity', 'timestamp', 'transition_kl', 'transition_matrix', 'updated_at', 'watch']

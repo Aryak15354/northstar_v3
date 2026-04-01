@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/rebalance_trigger.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.08, 0.15, 0.2, 0.25, 0.4, 1.0, 'correlation_spike', 'drawdown', 'drawdown_ratio', 'drawdown_threshold', 'market', 'portfolio', 'regime_delta', 'risk', 'risk_budget_ratio', 'rule.drawdown_breach', 'rule.regime_shift', 'rules_version', 'signal_entropy', 'v1', 'vol_jump', 'vol_percentile_jump']

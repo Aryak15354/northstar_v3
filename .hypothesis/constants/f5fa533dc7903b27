@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/alpha_lab/store.py
-# hypothesis_version: 6.150.2
-
-[0.0, 'curvature', 'drift', 'fold_id', 'gradient_norm', 'max_dd', 'neighbor_collapse', 'neighbor_stability', 'payload_json', 'perturbation_drop', 'plateau_width', 'regime_tag', 'regime_variance', 'reject_reason', 'robustness_score', 'shrunk_train_sharpe', 'stability_score', 'status', 'stress_drag', 'test_sharpe', 'train_sharpe', 'turnover', 'unknown', '{}']

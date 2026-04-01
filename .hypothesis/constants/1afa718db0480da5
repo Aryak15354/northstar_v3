@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/macro_impact_engine/granger_tests.py
-# hypothesis_version: 6.150.2
-
-[0.05, 'all_lags', 'best_lag', 'best_p_value', 'f_statistic', 'granger_causes', 'ignore', 'insufficient_data', 'lag', 'macro_variable', 'p_value', 'reason', 'ssr_ftest', 'success', 'ticker', 'x', 'y']

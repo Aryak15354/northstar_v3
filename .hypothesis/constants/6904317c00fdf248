@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/governance_system.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.6, 1.0, '%Y%m%d_%H%M%S', '=', 'CRITICAL', 'HIGH', '__main__', 'approved', 'approved_by', 'cio', 'compliance_officer', 'current_state', 'data/governance', 'data/test_governance', 'datetime', 'datetime64[ns]', 'emergency_pause', 'executed', 'execution_time', 'exposure_cap_change', 'governance', 'governance_system', 'high_momentum', 'ignore', 'last_update', 'manual_intervention', 'new_cap', 'object', 'override', 'override_id', 'override_type', 'parameters', 'pending', 'portfolio_manager', 'previous_cap', 'previous_deactivated', 'previous_state', 'r', 'reason', 'reversion', 'revert_time', 'reverted', 'risk_manager', 'status', 'strategy_name', 'string', 'system_admin', 'timestamp', 'total_overrides', 'w']

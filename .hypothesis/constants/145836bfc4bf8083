@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/no_edge_detector.py
-# hypothesis_version: 6.150.2
-
-[0.2, 0.3, 0.45, 0.55, 0.6, 0.7, 0.8, 1.2, 1.5, 3.0, -100, '3.0', '; ', '=', 'NORMAL', 'NO_EDGE', 'None', 'Regime', '__main__', '_scaled', 'coerce', 'combined_score', 'confidence', 'confidence_threshold', 'date', 'edge_strength', 'exposure_cap', 'ignore', 'last_trigger', 'lookback_periods', 'market_state', 'n_reasons', 'new_state', 'no_edge_exposure_cap', 'no_edge_log', 'no_edge_state', 'normal_exposure_cap', 'old_state', 'r', 'reasons', 'records', 'regime_memory', 'regime_tailwind', 'state', 'state_changed', 'strategy_tailwinds', 'timestamp', 'w']

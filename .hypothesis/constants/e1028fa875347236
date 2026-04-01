@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/state.py
-# hypothesis_version: 6.150.2
-
-[-1.0, 0.0, 1e-12, 1.0, -10000, 'PortfolioState', 'action_type', 'avg_price', 'beta', 'buy', 'cash', 'cash_adjustment', 'delta', 'dividend', 'dividend_per_share', 'equity', 'fill_price', 'filled_qty', 'gamma', 'greek_delta_per_unit', 'greek_gamma_per_unit', 'greek_rho_per_unit', 'greek_theta_per_unit', 'greek_vega_per_unit', 'gross_exposure', 'hedging_state', 'holdings', 'instrument_type', 'last_price', 'mark_price', 'net_delta', 'net_exposure', 'net_gamma', 'net_rho', 'net_theta', 'net_vega', 'new_symbol', 'notional', 'option', 'options', 'origin', 'price', 'price_map', 'quantity', 'realized_pnl', 'rebalance_reason', 'regime_context', 'rho', 'sector', 'sector_allocation', 'sell', 'side', 'source_event_id', 'split', 'split_ratio', 'strategy_id', 'symbol', 'symbol_change', 'theta', 'timestamp_utc', 'transaction_history', 'unrealized_pnl', 'vega']

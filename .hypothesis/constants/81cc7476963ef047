@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/strategy_edge_engine.py
-# hypothesis_version: 6.150.2
-
-[-2.0, 0.0, 1e-12, 1e-08, 0.01, 0.1, 0.5, 0.97, 1.0, 2.0, 'adjusted_sharpe', 'convexity_penalty', 'credibility', 'crowding_penalty', 'observations', 'posterior_mean', 'posterior_variance', 'volatility']

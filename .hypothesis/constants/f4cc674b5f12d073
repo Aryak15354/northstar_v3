@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/execution/market_impact_model.py
-# hypothesis_version: 6.150.2
-
-[-1.0, 0.0, 1e-06, 0.1, 0.15, 0.2, 0.3, 1.0, 2.0, 'ADV must be positive', 'buy', 'crisis', 'hostile', 'normal', 'panic']

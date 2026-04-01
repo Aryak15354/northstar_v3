@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/temporal_guard.py
-# hypothesis_version: 6.150.2
-
-[1e-10, 0.1, -100, 100, 2023, '-', '2020-01-01', '2025-01-01', '=', 'CRITICAL', 'D', 'Date', 'DateTime', 'FUTURE_DATA_ACCESS', 'TemporalGuard', 'Timestamp', '__main__', 'as_of_date', 'created_at', 'current_time_context', 'date', 'datetime', 'get_data_as_of', 'ignore', 'is_valid', 'name', 'original_result', 'price', 'protected_sources', 'results_identical', 'scramble_test', 'scramble_tests_run', 'scrambled_result', 'test_market_data', 'test_name', 'test_timestamp', 'time', 'time_context_valid', 'timestamp', 'timestamp_columns', 'total_rows', 'total_validations', 'total_violations', 'trade_date', 'unknown_source', 'updated_at', 'value', 'violation_rate', 'violations', 'w', 'warning', 'wrapped_sources', '✅ Time context valid']

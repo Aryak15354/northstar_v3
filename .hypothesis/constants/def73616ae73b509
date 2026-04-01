@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/signal_loader.py
-# hypothesis_version: 6.150.2
-
-['.', '.NS', '.parquet', '.pq', 'announcement_date', 'announcements', 'availability_date', 'backward', 'bulk_buy_count_5d', 'bulk_buy_volume_5d', 'bulk_deal_flag', 'bulk_deals', 'bulk_deals_all.csv', 'bulk_net_volume_5d', 'bulk_sell_volume_5d', 'capex_announced_flag', 'close', 'coerce', 'date', 'days_since_earnings', 'earnings', 'earnings_gap_days', 'ignore', 'insider_buy_flag_30d', 'market_cap', 'mergesort', 'nse_ticker', 'order_win_count_90d', 'order_win_flag_30d', 'pledge', 'pledge_change_1q', 'pledge_change_4q', 'pledge_high_flag', 'pledge_pct', 'rating_change_1y', 'rating_momentum_1y', 'rating_numeric', 'ratings', 'recent_upgrade_flag', 'revenue', 'shares_outstanding', 'ticker', 'watch_negative_flag']

@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/cohesion/exposure_history_tracker.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.05, 1.0, 365, 'No history available', 'actual_exposure', 'allowed_exposure', 'correlation', 'count', 'date', 'divergence', 'error', 'lookback_days', 'max_divergence', 'mean', 'mean_actual', 'mean_allowed', 'mean_divergence', 'record_count', 'regime', 'risk_scaled_exposure', 'std', 'stress_score']

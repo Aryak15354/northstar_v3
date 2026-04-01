@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/research/meta/research_evolution_engine_v2.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.01, 0.02, 0.05, 0.2, 0.35, 0.5, 0.9, 1.0, 2.0, 5000, 'allocation', 'cluster_density', 'count', 'diagnostics', 'diversity', 'durability_mean', 'expected_durability', 'exploration_rate', 'family', 'family_stats', 'fragility_mean', 'history_count', 'inserted', 'min_history_to_adapt', 'no_data', 'parameter_bounds', 'parameter_vector', 'params', 'resolution_map', 'status', 'unknown', 'updated']

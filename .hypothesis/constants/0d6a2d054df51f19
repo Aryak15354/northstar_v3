@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/redundancy_monitor.py
-# hypothesis_version: 6.150.2
-
-[-1.0, 0.0, 0.015, 0.02, 0.05, 0.1, 0.15, 0.2, 0.3, 0.7, 0.85, 0.9, 1.0, 100, 180, 365, '2023-01-01', '=', 'W', '_', '__main__', 'alert_months', 'alert_summary', 'correlation', 'correlation_current', 'correlation_methods', 'correlation_window', 'critical', 'current_correlation', 'data/intelligence', 'date', 'description', 'high', 'high_redundancies', 'history_length', 'ignore', 'insufficient_data', 'last_updated', 'level', 'low', 'method', 'min_observations', 'moderate', 'observations', 'p_value', 'pair_details', 'pairs_with_alerts', 'pearson', 'recommendations', 'redundancy_level', 'redundancy_records', 'redundancy_threshold', 'significance_level', 'spearman', 'status', 'strategies_analyzed', 'strategy_a', 'strategy_b', 'strategy_redundancy', 'success', 'timestamp', 'top_redundant_pairs', 'total_strategy_pairs']

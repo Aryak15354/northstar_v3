@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/credit_ratings.py
-# hypothesis_version: 6.150.2
-
-[-1.0, 0.0, 1.0, 365, '.', '.NS', 'A', 'A+', 'A-', 'AA', 'AA+', 'AA-', 'AAA', 'B', 'BB', 'BBB', 'BBB+', 'BBB-', 'C', 'D', 'DOWNGRADE', 'UPGRADE', 'WATCH_NEGATIVE', '\\([^)]*\\)', 'action_date', 'action_type', 'availability_date', 'backward', 'coerce', 'date', 'lag_date', 'mergesort', 'new_rating', 'nse_ticker', 'outlook', 'rating_1y_ago', 'rating_change_1y', 'rating_momentum_1y', 'rating_numeric', 'recent_upgrade_flag', 'ticker', 'watch_negative_flag']

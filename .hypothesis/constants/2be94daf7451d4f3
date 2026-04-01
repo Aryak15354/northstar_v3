@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/validation/capacity_stress_tester.py
-# hypothesis_version: 6.150.2
-
-[0.12, 0.18, 0.35, 0.4, 0.45, 0.5, 1.0, 1.6, 1.8, 2.0, 2.2, 2.4, 'adv_haircut', 'generated_at', 'historical', 'historical_2008', 'historical_2020', 'historical_2022', 'liquidity_haircut', 'name', 'reports/capacity', 'scenario_results', 'stress_multiplier', 'type']

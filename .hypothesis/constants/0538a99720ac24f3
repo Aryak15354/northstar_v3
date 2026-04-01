@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/github_repo/src/risk/kill_switch.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.001, 0.02, 0.05, 0.1, 0.2, 0.5, 0.95, 1.0, 2.5, 5.0, 100.0, -1000, -500, 'AAPL', 'ALREADY_TRIGGERED', 'CONCENTRATED_STOCK', 'CRITICAL', 'EXECUTED', 'EXECUTION_FAILED', 'GOOGL', 'HIGH', 'INFO', 'MARKET', 'MSFT', 'NVDA', 'TSLA', 'active', 'completed', 'concentration_risk', 'current_drawdown', 'disabled', 'drawdown_limit', 'enabled', 'executing', 'failed', 'last_event', 'liquidity_crisis', 'manual', 'manual_override', 'market_conditions', 'monitoring_active', 'operational_risk', 'portfolio_liquidity', 'portfolio_var', 'severity', 'status', 'system', 'system_failure', 'threshold', 'total_events', 'total_executed', 'total_impact', 'total_liquidations', 'triggered', 'triggers_enabled', 'var_breach']

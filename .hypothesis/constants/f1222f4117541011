@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/utils/rbi_data_handler.py
-# hypothesis_version: 6.150.2
-
-[0.1, 0.3, 0.5, 0.7, 100, '%Y', '%Y-%m', '%Y-%m-%d', '%b-%Y', '%d %b %Y', '%d-%b-%Y', '%d-%m-%Y', '%d/%m/%Y', ',', '-', '1.0', 'None', 'Period', 'RBI Data Handler', 'W', 'coerce', 'columns', 'daily_other', 'date', 'date_range', 'datetime64[ns]', 'fortnightly_core', 'ignore', 'index', 'indicators', 'macro-economic', 'missing_data_pct', 'monthly_core', 'monthly_other', 'nan', 'numeric_columns', 'period', 'quarterly_core', 'quarterly_other', 'rbi_daily_other.csv', 'rbi_monthly_core.csv', 'rbi_weekly_core.csv', 'rbi_weekly_other.csv', 'reporting', 'reporting date', 'shape', 'values', 'weekly_core', 'weekly_other']

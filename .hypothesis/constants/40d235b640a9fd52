@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/intelligence/temporal_guard.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-10, 0.5, 2.0, 5.0, 15.0, 100, 2024, '-', '2024-01-01', '2024-01-20', '=', 'Close', 'D', 'Date', 'DebtToEquity', 'InterestCoverage', 'PB', 'PE', 'RELIANCE.NS', 'ROE', 'TEST.NS', '__main__', 'access_time', 'balance', 'balance_Total Debt', 'cashflow', 'coerce', 'completed', 'confidence', 'current_time', 'data', 'data_type', 'date', 'error', 'function_error', 'fundamentals', 'growth', 'ignore', 'income', 'income_EBIT', 'inflation', 'iterations', 'macro/growth.csv', 'macro/inflation.csv', 'macro/yields.csv', 'max_timestamp', 'neutral', 'no_data', 'original_result', 'outer', 'passed', 'pb_ratio', 'pe_ratio', 'prices', 'raw/prices_daily', 'regime', 'scramble_error', 'scramble_results', 'status', 'strict_mode', 'symbol', 'timestamp', 'total_accesses', 'total_violations', 'violation_rate', 'violation_seconds', 'violations', 'yields']

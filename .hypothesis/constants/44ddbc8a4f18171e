@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/manifold/alpha_feature_encoder.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-12, 1e-10, 1e-08, 0.02, 0.2, 0.5, 1.0, -512, 512, ':', 'alpha_id', 'avg_err', 'capacity', 'edge_decay', 'expected_edge', 'factor_loading_norm', 'family', 'features', 'max_drawdown', 'mc_survival', 'phase6_decay_lambda', 'regime_sensitivity', 'regime_variance', 'surface_curvature', 'surface_svr', 'tail_skew', 'turnover', 'volatility_profile', 'wf_sharpe']

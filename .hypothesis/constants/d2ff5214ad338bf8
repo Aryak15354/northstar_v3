@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/portfolio/portfolio_mc_simulator.py
-# hypothesis_version: 6.150.2
-
-[-1.0, -0.99, -0.25, 0.0, 1e-12, 1e-10, 1e-08, 0.05, 0.15, 0.3, 0.35, 0.4, 0.5, 0.6, 0.95, 0.99, 0.999, 1.0, 100, 600, 'cvar_95', 'expected_drawdown', 'n_paths', 'p_maxdd_breach', 'p_sharpe_negative', 'phase4_portfolio_mc', 'recovery_days_p95', 'reject', 'stability_multiplier', 'stable', 'status', 'utf-8']

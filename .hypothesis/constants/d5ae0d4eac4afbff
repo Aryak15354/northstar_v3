@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/volatility/performance_monitor.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.01, 0.05, 0.5, 1.0, 100, 252, 1000, 'HIGH', 'LOW', 'MEDIUM', 'alpha', 'average_return', 'avg_pnl', 'avg_return', 'beta', 'delta_pnl', 'gamma_pnl', 'greeks_pnl', 'max_return', 'min_return', 'num_observations', 'regime', 'sharpe_ratio', 'theta_pnl', 'total_pnl', 'total_return', 'unknown', 'vega_pnl', 'volatility', 'win_rate']

@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/models/regime_probability_engine.py
-# hypothesis_version: 6.150.2
-
-[-1000000.0, -0.5, 0.0, 1e-12, 1e-08, 1e-06, 0.0001, 0.001, 0.02, 0.25, 0.5, 0.9, 1.0, 1000000.0, 'CRISIS', 'FrozenRegimeHMM', 'HIGH_VOL', 'LOW_VOL', 'TRANSITION', 'confidence', 'converged', 'emission_covs', 'emission_means', 'fallback_uniform', 'feature_dim', 'feature_names', 'final_log_likelihood', 'frozen_hmm_runtime', 'initial_probs', 'iterations', 'log_likelihood_path', 'max_iter', 'metadata', 'model_path', 'model_version', 'probabilities', 'rb', 'reason_codes', 'smoothing', 'source', 'stale', 'states', 'timestamp', 'tol', 'trained_at', 'training_rows', 'transition_matrix', 'unavailable', 'unknown', 'v4-hmm-em-1']

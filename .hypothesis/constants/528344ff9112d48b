@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/macro/macro_regime.py
-# hypothesis_version: 6.150.2
-
-[-5.0, -1.0, 0.0, 1e-12, 1.0, 5.0, 100.0, '-01', 'MARKET', 'availability_date', 'bills', 'category', 'coerce', 'contraction', 'date', 'deficit_pct', 'energy_met_mu', 'eway_bills_generated', 'expansion', 'gst_3m_trend', 'gst_mom_growth', 'gst_total_bills', 'gst_value_growth', 'gst_yoy_growth', 'industry', 'macro_regime_label', 'max', 'mean', 'mergesort', 'month_end', 'neutral', 'outer', 'peak_met_gw', 'power_3m_trend', 'power_deficit_pct', 'power_energy_met_mu', 'power_mom_growth', 'power_yoy_growth', 'records', 'sector', 'sector_bills', 'sector_gst_3m_trend', 'sector_gst_mom', 'sector_gst_yoy', 'sum', 'ticker', 'value_crore', 'year_month']

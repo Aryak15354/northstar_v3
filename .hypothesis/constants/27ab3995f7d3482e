@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/signals/bulk_deals.py
-# hypothesis_version: 6.150.2
-
-[0.0, 100.0, '.', '.NS', 'BUY', 'FII', 'FPI', 'FUND', 'INSURANCE', 'MF', 'MUTUAL FUND', 'PENSION', 'SELL', '[^a-z0-9]+', 'action', 'any_deal', 'availability_date', 'bulk_buy_count_5d', 'bulk_buy_volume_5d', 'bulk_deal_flag', 'bulk_deal_value_5d', 'bulk_net_volume_5d', 'bulk_sell_volume_5d', 'buy_count', 'buy_qty', 'buyer_name', 'client', 'client_name', 'close', 'coerce', 'date', 'deal_date', 'deal_price', 'deal_qty', 'deal_type', 'deal_value', 'ignore', 'institutional_buy', 'left', 'market_cap', 'max', 'mergesort', 'nse_ticker', 'price', 'qty', 'quantity', 'security', 'sell_qty', 'shares_outstanding', 'side', 'sum', 'symbol', 'ticker', 'trade_date', 'value', '|']

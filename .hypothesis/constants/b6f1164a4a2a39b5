@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/options/capital_scaling_engine.py
-# hypothesis_version: 6.150.2
-
-[0.0, 1e-09, 0.03, 0.05, 0.08, 0.2, 0.25, 0.5, 0.95, 1.0, 1.08, 1.5, 100.0, 500000.0, 10000, 500000, 'Initial state', '__main__', 'base_capital', 'base_risk_pct', 'can_scale', 'capital', 'capital_scaling', 'current_equity', 'current_risk_pct', 'drawdown_descaling_1', 'drawdown_descaling_2', 'drawdown_pct', 'drawdown_threshold_1', 'drawdown_threshold_2', 'in_drawdown', 'max_risk_pct', 'min_risk_pct', 'profit_milestone_pct', 'weeks_live']

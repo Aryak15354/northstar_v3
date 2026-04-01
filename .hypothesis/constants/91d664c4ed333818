@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/core/organs.py
-# hypothesis_version: 6.150.2
-
-[0.0, 0.3, 0.4, 0.6, 0.8, 500, 1000, '=', 'Data is stale', '__main__', 'beliefs', 'components_healthy', 'confidence', 'critical_issues', 'data_fresh', 'data_freshness_hours', 'data_pipeline_organ', 'error', 'example_organ', 'failed', 'health', 'health_monitor', 'ignore', 'inactive', 'intelligence_active', 'issues', 'lock_reason', 'maintain', 'market_stress', 'mock_success', 'overall_health', 'overall_score', 'portfolio_active', 'portfolio_exposure', 'reason', 'recommendation', 'recommendations', 'records_updated', 'reduce_exposure', 'regime', 'risk_assessment', 'risk_on_probability', 'skipped', 'status', 'success', 'system_locked', 'timestamp', 'total_components', 'unified_conviction']

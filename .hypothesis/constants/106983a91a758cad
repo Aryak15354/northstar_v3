@@ -1,4 +1,0 @@
-# file: /Users/aryakghoshal/Downloads/northstar/northstar_v3/src/runtime/materializer.py
-# hypothesis_version: 6.150.2
-
-[0.0, 'cash', 'event_id', 'event_type', 'gross_exposure', 'hedging_state', 'hedging_state_json', 'holdings', 'net_delta', 'net_exposure', 'net_gamma', 'net_rho', 'net_theta', 'net_vega', 'payload_json', 'pnl_impact', 'proposal_id', 'regime_context', 'regime_context_json', 'risk_metric', 'scenario_id', 'sector_allocation', 'state_hash', 'symbol', 'timestamp_utc', 'transaction_history', 'utf-8', '{}']
