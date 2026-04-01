@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import json
 
 import pandas as pd
 
@@ -126,3 +127,67 @@ def test_financial_normalizer_pit_compliance(tmp_path):
     june = normalizer.load("TEST.NS", datetime(2024, 6, 15), "annual")
     assert not june.empty
     assert june["period_end"].max() == pd.Timestamp("2024-03-31")
+
+
+def test_financial_normalizer_supports_kaggle_safe_screener_filenames(tmp_path):
+    raw_dir = tmp_path / "financials"
+    meta_dir = tmp_path / "metadata"
+    ticker = "M&M.NS"
+
+    annual_pl = _rows(
+        ticker,
+        "Mar 2024",
+        {
+            "Sales": 1100,
+            "Net Profit": 120,
+            "Operating Profit": 170,
+            "Interest": 12,
+            "Depreciation": 24,
+            "Tax %": 26,
+        },
+    )
+    annual_bs = _rows(
+        ticker,
+        "Mar 2024",
+        {
+            "Equity Capital": 10,
+            "Reserves": 450,
+            "Borrowings": 140,
+            "Other Liabilities": 220,
+            "Fixed Assets": 320,
+            "CWIP": 30,
+            "Investments": 45,
+            "Other Assets": 205,
+            "Total Assets": 600,
+            "Total Liabilities": 600,
+        },
+    )
+    annual_cf = _rows(
+        ticker,
+        "Mar 2024",
+        {
+            "Cash from Operating Activity": 150,
+            "Cash from Investing Activity": -80,
+            "Cash from Financing Activity": -25,
+            "Net Cash Flow": 45,
+        },
+    )
+
+    _write_long_csv(raw_dir / "M_x26_M_annual_pl.csv", annual_pl)
+    _write_long_csv(raw_dir / "M_x26_M_annual_bs.csv", annual_bs)
+    _write_long_csv(raw_dir / "M_x26_M_annual_cf.csv", annual_cf)
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    (meta_dir / "M_x26_M_key_ratios.json").write_text(json.dumps({"Current Price": 100.0}), encoding="utf-8")
+
+    normalizer = FinancialNormalizer(
+        {
+            "screener_data_path": str(raw_dir),
+            "screener_metadata_path": str(meta_dir),
+            "reporting_lag_days": 75,
+        }
+    )
+
+    loaded = normalizer.load("M&M.NS", datetime(2024, 6, 15), "annual")
+
+    assert not loaded.empty
+    assert loaded["ticker"].iloc[0] == "M&M.NS"

@@ -350,10 +350,34 @@ class FinancialNormalizer:
         base = self._normalize_ticker(ticker).replace(".NS", "")
         return re.sub(r"[^A-Z0-9_&-]+", "", base.upper())
 
+    @staticmethod
+    def _kaggle_safe_component(value: str) -> str:
+        out: list[str] = []
+        for ch in str(value):
+            if re.fullmatch(r"[A-Za-z0-9._-]", ch):
+                out.append(ch)
+            else:
+                out.append(f"_x{ord(ch):02x}_")
+        return "".join(out)
+
+    def _ticker_slug_candidates(self, ticker: str) -> list[str]:
+        raw_slug = self._ticker_slug(ticker)
+        safe_slug = self._kaggle_safe_component(raw_slug)
+        candidates = [raw_slug]
+        if safe_slug != raw_slug:
+            candidates.append(safe_slug)
+        return candidates
+
     def _statement_paths(self, ticker: str, frequency: str) -> list[Path]:
-        slug = self._ticker_slug(ticker)
-        pattern = f"{slug}_{str(frequency).strip().lower()}_*.csv"
-        return sorted(self.data_path.glob(pattern))
+        paths: list[Path] = []
+        seen: set[Path] = set()
+        for slug in self._ticker_slug_candidates(ticker):
+            pattern = f"{slug}_{str(frequency).strip().lower()}_*.csv"
+            for path in sorted(self.data_path.glob(pattern)):
+                if path not in seen:
+                    seen.add(path)
+                    paths.append(path)
+        return paths
 
     def get_source_paths(self, ticker: str, frequency: str = "annual") -> list[Path]:
         return self._statement_paths(ticker, frequency)
@@ -389,9 +413,13 @@ class FinancialNormalizer:
         return preferred.drop(columns=["_statement_coverage"], errors="ignore")
 
     def _load_metadata_key_ratios(self, ticker: str) -> dict[str, float]:
-        slug = self._ticker_slug(ticker)
-        path = self.metadata_path / f"{slug}_key_ratios.json"
-        if not path.exists():
+        path = None
+        for slug in self._ticker_slug_candidates(ticker):
+            candidate = self.metadata_path / f"{slug}_key_ratios.json"
+            if candidate.exists():
+                path = candidate
+                break
+        if path is None:
             return {}
         try:
             import json

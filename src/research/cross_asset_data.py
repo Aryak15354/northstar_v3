@@ -57,11 +57,24 @@ def load_history(path: Path) -> pd.DataFrame:
     return frame.reset_index(drop=True)
 
 
+def _symbol_from_frame(frame: pd.DataFrame, fallback: str) -> str:
+    if "Symbol" in frame.columns:
+        symbols = frame["Symbol"].astype("string").dropna().astype(str).str.strip()
+        symbols = symbols[symbols != ""]
+        if not symbols.empty:
+            return str(symbols.iloc[0])
+    return str(fallback)
+
+
 def discover_symbols(raw_root: Path, asset_classes: Iterable[str]) -> dict[str, list[str]]:
     discovered: dict[str, list[str]] = {}
     for asset_class in asset_classes:
         asset_dir = raw_root / asset_class
-        discovered[asset_class] = sorted(path.stem for path in asset_dir.glob("*.csv"))
+        symbols: list[str] = []
+        for path in sorted(asset_dir.glob("*.csv")):
+            frame = load_history(path)
+            symbols.append(_symbol_from_frame(frame, path.stem))
+        discovered[asset_class] = sorted(dict.fromkeys(symbols))
     return discovered
 
 
@@ -180,7 +193,7 @@ def build_coverage_manifest(raw_root: Path, *, as_of: pd.Timestamp | None = None
             assets.append(
                 {
                     "asset_class": asset_class,
-                    "symbol": path.stem,
+                    "symbol": _symbol_from_frame(frame, path.stem),
                     "path": str(path),
                     "rows": int(len(frame)),
                     "date_min": None if dates.empty else str(dates.min().date()),
