@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sqlite3
 import sys
@@ -21,7 +22,24 @@ if str(PROJECT_ROOT) not in sys.path:
 if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
-from sprint_utils import EnsembleBuilder  # noqa: E402
+def _load_shared_module(module_name: str):
+    try:
+        return __import__(module_name)
+    except ModuleNotFoundError:
+        module_path = SHARED_DIR / f"{module_name}.py"
+        if not module_path.exists():
+            raise FileNotFoundError(f"missing_shared_kaggle_module:{module_path}")
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"unable_to_load_shared_kaggle_module:{module_path}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
+
+
+_sprint_utils = _load_shared_module("sprint_utils")
+EnsembleBuilder = _sprint_utils.EnsembleBuilder
 
 from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
     load_export_artifacts,

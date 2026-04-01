@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import math
 import os
@@ -22,8 +23,28 @@ if str(PROJECT_ROOT) not in sys.path:
 if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
-from track_a_runner import TrackARunConfig, TrackARunner  # noqa: E402
-from track_b_runner import TrackBRunConfig, TrackBRunner  # noqa: E402
+def _load_shared_module(module_name: str):
+    try:
+        return __import__(module_name)
+    except ModuleNotFoundError:
+        module_path = SHARED_DIR / f"{module_name}.py"
+        if not module_path.exists():
+            raise FileNotFoundError(f"missing_shared_kaggle_module:{module_path}")
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"unable_to_load_shared_kaggle_module:{module_path}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
+
+
+_track_a_runner = _load_shared_module("track_a_runner")
+_track_b_runner = _load_shared_module("track_b_runner")
+TrackARunConfig = _track_a_runner.TrackARunConfig
+TrackARunner = _track_a_runner.TrackARunner
+TrackBRunConfig = _track_b_runner.TrackBRunConfig
+TrackBRunner = _track_b_runner.TrackBRunner
 
 from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
     derive_size_rank,
