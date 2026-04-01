@@ -56,6 +56,14 @@ def _build_synthetic_export(root: Path) -> Path:
     features_df = pd.DataFrame(rows)
     features_df.to_parquet(root / "northstar_features.parquet", index=False)
 
+    metadata_df = features_df[["date", "ticker", "target_weekly_return"]].copy()
+    metadata_df["broad_sector"] = metadata_df["ticker"].map(
+        lambda ticker: "BANKS" if str(ticker).endswith(("00", "01", "02", "03")) else "TECH"
+    )
+    metadata_df["fii_pct"] = np.linspace(5.0, 15.0, len(metadata_df))
+    metadata_df["power_yoy_growth"] = np.linspace(0.1, 0.9, len(metadata_df))
+    metadata_df.to_parquet(root / "northstar_metadata.parquet", index=False)
+
     splits = []
     for offset, window_id in enumerate((1, 2, 3), start=0):
         splits.append(
@@ -206,3 +214,17 @@ def test_sector_ic_analyzer_falls_back_to_broad_sector():
 
     assert not sector_df.empty
     assert set(sector_df["sector"]) == {"BANKS", "TECH"}
+
+
+def test_sprint_data_loader_merges_metadata_without_expanding_model_feature_set(tmp_path):
+    data_dir = _build_synthetic_export(tmp_path / "export")
+    loader = SprintDataLoader()
+    features_df, _, _ = loader.load(data_dir)
+    feature_names = loader.get_feature_names(features_df)
+
+    assert "broad_sector" in features_df.columns
+    assert "fii_pct" in features_df.columns
+    assert "power_yoy_growth" in features_df.columns
+    assert "broad_sector" not in feature_names
+    assert "fii_pct" not in feature_names
+    assert "power_yoy_growth" not in feature_names

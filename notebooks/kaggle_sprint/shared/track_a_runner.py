@@ -140,6 +140,10 @@ class TrackARunConfig:
     feature_exclude_regex: str | None = DEFAULT_REDUCED_EXCLUDE_REGEX
     normalize_raw_financials: bool = False
     require_group_ranking: bool = True
+    catboost_depth: int = 4
+    catboost_min_data_in_leaf: int = 35
+    catboost_l2_leaf_reg: float = 12.0
+    catboost_iterations: int = 800
 
     @classmethod
     def from_env(cls) -> "TrackARunConfig":
@@ -171,6 +175,10 @@ class TrackARunConfig:
             feature_exclude_regex=feature_exclude_regex or None,
             normalize_raw_financials=_parse_bool(os.environ.get("TRACK_A_NORMALIZE_RAW_FINANCIALS"), False),
             require_group_ranking=_parse_bool(os.environ.get("TRACK_A_REQUIRE_GROUP_RANKING"), True),
+            catboost_depth=int(os.environ.get("TRACK_A_CATBOOST_DEPTH", "4")),
+            catboost_min_data_in_leaf=int(os.environ.get("TRACK_A_CATBOOST_MIN_LEAF", "35")),
+            catboost_l2_leaf_reg=float(os.environ.get("TRACK_A_CATBOOST_L2", "12.0")),
+            catboost_iterations=int(os.environ.get("TRACK_A_CATBOOST_ITERATIONS", "800")),
         )
 
 
@@ -499,11 +507,11 @@ class TrackARunner:
     def _tree_configs(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         xgb_estimators = 300
         lgbm_estimators = 500
-        catboost_iterations = 400
+        catboost_iterations = max(1, int(self.config.catboost_iterations))
         if self.config.run_profile == "smoke":
             xgb_estimators = 16
             lgbm_estimators = 20
-            catboost_iterations = 24
+            catboost_iterations = min(catboost_iterations, 24)
 
         feature_prep = self._feature_prep_config()
         xgb_config = {
@@ -553,10 +561,10 @@ class TrackARunner:
             **feature_prep,
             "model_type": "catboost",
             "iterations": catboost_iterations,
-            "depth": 5,
+            "depth": max(2, int(self.config.catboost_depth)),
             "learning_rate": 0.02,
-            "l2_leaf_reg": 5.0,
-            "min_data_in_leaf": 15,
+            "l2_leaf_reg": float(self.config.catboost_l2_leaf_reg),
+            "min_data_in_leaf": max(1, int(self.config.catboost_min_data_in_leaf)),
             "loss_function": "YetiRank",
             "eval_metric": "NDCG",
             "boosting_type": "Ordered",
@@ -1539,6 +1547,42 @@ class TrackARunner:
         print("\nRegime-conditional IC:")
         print(regime_table.round(4).to_string() if not regime_table.empty else "No regime table available.")
 
+        regime_exclusions: dict[str, Any] = {}
+        excluded_regimes = {"R7|Rate-Event", "R8|Election/Binary"}
+        for model_name in top2:
+            model_windows = [
+                window
+                for window in self.state["all_model_results"].get(model_name, {}).get("windows", [])
+                if "error" not in window
+            ]
+            clean_windows = [window for window in model_windows if window.get("regime") not in excluded_regimes]
+            if not clean_windows:
+                continue
+            test_ics = np.asarray([float(window.get("test_ic", np.nan)) for window in clean_windows], dtype=float)
+            hit_rates = np.asarray([float(window.get("hit_rate", np.nan)) for window in clean_windows], dtype=float)
+            mean_ic = float(np.nanmean(test_ics)) if len(test_ics) else float("nan")
+            std_ic = float(np.nanstd(test_ics, ddof=1)) if len(test_ics) > 1 else float("nan")
+            ic_ir = float(mean_ic / std_ic) if np.isfinite(std_ic) and abs(std_ic) > 1e-12 else float("nan")
+            mean_hit = float(np.nanmean(hit_rates)) if len(hit_rates) else float("nan")
+            regime_exclusions[model_name] = {
+                "excluded_regimes": sorted(excluded_regimes),
+                "windows_kept": int(len(clean_windows)),
+                "mean_test_ic": mean_ic,
+                "ic_ir": ic_ir,
+                "mean_hit_rate": mean_hit,
+            }
+
+        if regime_exclusions:
+            print("\nRegime-excluded performance (excluding R7/R8):")
+            for model_name, summary in regime_exclusions.items():
+                print(
+                    f"  {model_name}: "
+                    f"mean_ic={summary['mean_test_ic']:.4f} "
+                    f"ic_ir={summary['ic_ir']:.4f} "
+                    f"hit_rate={summary['mean_hit_rate']:.4f} "
+                    f"windows={summary['windows_kept']}"
+                )
+
         for model_name in top2:
             print(f"\nSector IC - {model_name}:")
             sector_df = sector_analyzer.compute(self.state["features_df"], self.state["feature_names"])
@@ -1563,6 +1607,7 @@ class TrackARunner:
                 "day4_regime_sector": {
                     "top2_models": top2,
                     "regime_table": regime_table.reset_index().to_dict(orient="records") if not regime_table.empty else [],
+                    "regime_exclusions": regime_exclusions,
                     "regime_top_features": {
                         name: list(series.abs().nlargest(5).index)
                         for name, series in regime_ic.items()
@@ -1575,9 +1620,16 @@ class TrackARunner:
         analyzer = self.state["analyzer"]
         feature_names = self.state["feature_names"]
         features_df = self.state["features_df"]
+        diagnostic_cols = [
+            column
+            for column in features_df.columns
+            if column not in {"date", "ticker", "target_weekly_return", "forward_return_5d"}
+            and pd.api.types.is_numeric_dtype(features_df[column])
+        ]
+        diagnostic_pool = list(dict.fromkeys([*feature_names, *diagnostic_cols]))
 
-        pledge_cols = [column for column in feature_names if "pledge" in column.lower()]
-        bulk_cols = [column for column in feature_names if "bulk" in column.lower()]
+        pledge_cols = [column for column in diagnostic_pool if "pledge" in column.lower()]
+        bulk_cols = [column for column in diagnostic_pool if "bulk" in column.lower()]
         print(f"Pledge features: {pledge_cols}")
         print(f"Bulk features: {bulk_cols}")
         india_results: dict[str, Any] = {}
@@ -1594,7 +1646,7 @@ class TrackARunner:
         else:
             print("Pledge or bulk features not available - skipping 5A")
 
-        eq_cols = [column for column in feature_names if "earnings_quality" in column.lower()]
+        eq_cols = [column for column in diagnostic_pool if "earnings_quality" in column.lower()]
         print(f"\nEarnings quality features: {eq_cols}")
         if eq_cols:
             eq_ic = analyzer.compute_ic_table(features_df, eq_cols)
@@ -1611,8 +1663,13 @@ class TrackARunner:
             winning_sign = "POSITIVE" if eq_ic["mean_ic"].iloc[0] > 0 else "NEGATIVE"
             print(f"\nIndia earnings quality sign: {winning_sign}")
 
-        fii_cols = [column for column in feature_names if "fii" in column.lower()]
+        fii_cols = [column for column in diagnostic_pool if "fii" in column.lower()]
         print(f"\nFII features: {fii_cols}")
+        if fii_cols:
+            fii_ic = analyzer.compute_ic_table(features_df, fii_cols)
+            india_results["fii_features"] = fii_ic.to_dict(orient="records")
+            print("\nFII standalone features:")
+            print(fii_ic[["feature", "mean_ic", "ic_tstat"]].to_string(index=False))
         if len(fii_cols) >= 2:
             test_df3 = features_df.copy()
             test_df3["fii_interaction"] = test_df3[fii_cols[0]] * test_df3[fii_cols[1]]
@@ -1623,7 +1680,7 @@ class TrackARunner:
 
         sue_cols = [
             column
-            for column in feature_names
+            for column in diagnostic_pool
             if "sue" in column.lower() or "eps" in column.lower() or "surprise" in column.lower()
         ]
         print(f"\nEarnings surprise features: {sue_cols}")
@@ -1632,7 +1689,7 @@ class TrackARunner:
             india_results["earnings_revision_proxy"] = sue_ic.to_dict(orient="records")
             print(sue_ic[["feature", "mean_ic", "ic_tstat"]].to_string(index=False))
 
-        power_cols = [column for column in feature_names if "power" in column.lower()]
+        power_cols = [column for column in diagnostic_pool if "power" in column.lower()]
         print(f"\nPower features: {power_cols}")
         if power_cols:
             power_ic = analyzer.compute_ic_table(features_df, power_cols)

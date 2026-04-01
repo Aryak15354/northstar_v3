@@ -39,10 +39,13 @@ TrackARunConfig = _track_a_runner.TrackARunConfig
 run_track_a_notebook = _track_a_runner.run_track_a_notebook
 
 from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
+    build_feature_coverage_audit,
     json_ready,
+    load_export_artifacts,
     make_run_dir,
     read_json,
     resolve_export_dir,
+    select_feature_columns,
     subset_feature_export,
     write_json,
 )
@@ -55,6 +58,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--profile", choices=["smoke", "full"], default="full")
     parser.add_argument("--max-splits", type=int, default=None)
+    parser.add_argument("--catboost-depth", type=int, default=4)
+    parser.add_argument("--catboost-min-leaf", type=int, default=35)
+    parser.add_argument("--catboost-l2", type=float, default=12.0)
+    parser.add_argument("--catboost-iterations", type=int, default=800)
+    parser.add_argument("--dead-feature-null-threshold", type=float, default=0.50)
+    parser.add_argument("--dead-feature-min-unique", type=int, default=1)
+    parser.add_argument("--dead-feature-min-cs-std", type=float, default=1e-8)
+    parser.add_argument("--disable-dead-feature-filter", action="store_true")
     return parser.parse_args()
 
 
@@ -87,11 +98,29 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     selected = _selected_features(export_artifacts.export_dir, args.nb00_report)
+    full_features, _, _, _ = load_export_artifacts(export_artifacts.export_dir)
+    candidate_features = selected if selected else select_feature_columns(full_features)
+    coverage_audit = build_feature_coverage_audit(
+        full_features,
+        candidate_features,
+        null_threshold=args.dead_feature_null_threshold,
+        min_unique=args.dead_feature_min_unique,
+        min_cross_sectional_std=args.dead_feature_min_cs_std,
+    )
+    dead_features = (
+        []
+        if args.disable_dead_feature_filter
+        else coverage_audit.loc[coverage_audit["likely_dead"], "feature"].astype(str).tolist()
+    )
+    filtered_selected = [feature for feature in candidate_features if feature not in set(dead_features)]
+    write_json(output_dir / "feature_coverage_audit.json", coverage_audit.to_dict(orient="records"))
+    coverage_audit.to_csv(output_dir / "feature_coverage_audit.csv", index=False)
+
     filtered_export_dir = output_dir / "tier12_export"
     subset_feature_export(
         source_dir=export_artifacts.export_dir,
         output_dir=filtered_export_dir,
-        selected_features=selected if selected else None,
+        selected_features=filtered_selected if filtered_selected else None,
     )
 
     config = TrackARunConfig(
@@ -106,6 +135,10 @@ def main() -> int:
         feature_mode="full",
         normalize_raw_financials=True,
         require_group_ranking=True,
+        catboost_depth=args.catboost_depth,
+        catboost_min_data_in_leaf=args.catboost_min_leaf,
+        catboost_l2_leaf_reg=args.catboost_l2,
+        catboost_iterations=args.catboost_iterations,
     )
     state = run_track_a_notebook(config)
 
@@ -135,8 +168,11 @@ def main() -> int:
         "generated_at": state.get("run_started_at") if isinstance(state, dict) else None,
         "source_export_dir": str(export_artifacts.export_dir),
         "filtered_export_dir": str(filtered_export_dir),
-        "selected_feature_count": len(selected),
-        "selected_features": selected,
+        "selected_feature_count": len(filtered_selected),
+        "selected_features": filtered_selected,
+        "candidate_feature_count": len(candidate_features),
+        "dead_feature_count": len(dead_features),
+        "dead_features": dead_features,
         "models": rows,
     }
     write_json(output_dir / "baseline_results.json", payload)

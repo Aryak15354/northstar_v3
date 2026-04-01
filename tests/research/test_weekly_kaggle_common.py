@@ -11,6 +11,7 @@ from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _profile_
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _dataset_runtime_config
 from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import _validate_raw_bundle_support_artifacts
 from scripts.kaggle.week_2026_03_29.common import (
+    build_feature_coverage_audit,
     build_feature_unit_registry,
     derive_size_rank,
     infer_feature_unit_kind,
@@ -176,3 +177,23 @@ def test_prepare_runtime_project_copies_writable_tree_on_kaggle(tmp_path: Path, 
     assert not (runtime_root / "data").is_symlink()
     staged_file.write_text("ticker,value\nAAA.NS,2\n", encoding="utf-8")
     assert "2" in staged_file.read_text(encoding="utf-8")
+
+
+def test_build_feature_coverage_audit_flags_dead_features():
+    frame = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2026-01-02"] * 3 + ["2026-01-09"] * 3),
+            "ticker": ["AAA.NS", "BBB.NS", "CCC.NS"] * 2,
+            "alive_feature": [1.0, 2.0, 3.0, 1.5, 2.5, 3.5],
+            "dead_feature": [1.0] * 6,
+            "mostly_null_feature": [1.0, None, None, None, None, None],
+        }
+    )
+
+    audit = build_feature_coverage_audit(frame, ["alive_feature", "dead_feature", "mostly_null_feature"]).set_index("feature")
+
+    assert bool(audit.loc["alive_feature", "likely_dead"]) is False
+    assert bool(audit.loc["dead_feature", "likely_dead"]) is True
+    assert "low_unique_values" in str(audit.loc["dead_feature", "dead_reason"])
+    assert bool(audit.loc["mostly_null_feature", "likely_dead"]) is True
+    assert "high_null_rate" in str(audit.loc["mostly_null_feature", "dead_reason"])

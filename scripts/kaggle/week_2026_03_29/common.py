@@ -917,6 +917,65 @@ def subset_feature_export(
     )
 
 
+def build_feature_coverage_audit(
+    features_df: pd.DataFrame,
+    feature_cols: Sequence[str],
+    *,
+    null_threshold: float = 0.50,
+    min_unique: int = 1,
+    min_cross_sectional_std: float = 1e-8,
+) -> pd.DataFrame:
+    rows: list[dict[str, Any]] = []
+    work = features_df.copy()
+    work["date"] = pd.to_datetime(work["date"], errors="coerce").dt.normalize()
+    for feature in feature_cols:
+        if feature not in work.columns:
+            rows.append(
+                {
+                    "feature": feature,
+                    "present": False,
+                    "null_rate": 1.0,
+                    "n_unique": 0,
+                    "median_cs_std": float("nan"),
+                    "likely_dead": True,
+                    "dead_reason": "missing_from_export",
+                }
+            )
+            continue
+        series = pd.to_numeric(work[feature], errors="coerce")
+        cs_std = work.assign(_audit_value=series).groupby("date", sort=False)["_audit_value"].std()
+        null_rate = float(series.isna().mean())
+        n_unique = int(series.nunique(dropna=True))
+        finite_cs_std = cs_std[np.isfinite(cs_std.to_numpy(dtype=float))]
+        median_cs_std = float(finite_cs_std.median(skipna=True)) if len(finite_cs_std) else float("nan")
+
+        reasons: list[str] = []
+        if null_rate > float(null_threshold):
+            reasons.append("high_null_rate")
+        if n_unique <= int(min_unique):
+            reasons.append("low_unique_values")
+        if not np.isfinite(median_cs_std) or median_cs_std < float(min_cross_sectional_std):
+            reasons.append("low_cross_sectional_dispersion")
+
+        rows.append(
+            {
+                "feature": feature,
+                "present": True,
+                "null_rate": null_rate,
+                "n_unique": n_unique,
+                "median_cs_std": median_cs_std,
+                "likely_dead": bool(reasons),
+                "dead_reason": "|".join(reasons),
+            }
+        )
+
+    return pd.DataFrame(rows).sort_values(
+        ["likely_dead", "null_rate", "median_cs_std", "feature"],
+        ascending=[False, False, True, True],
+        na_position="last",
+    ).reset_index(drop=True)
+
+
 def compute_window_feature_ic(
     features_df: pd.DataFrame,
     splits: Sequence[dict[str, Any]],

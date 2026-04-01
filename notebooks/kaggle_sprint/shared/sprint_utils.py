@@ -664,6 +664,7 @@ class SprintDataLoader:
     def __init__(self):
         self.last_window_context: dict[str, Any] = {}
         self._features_df: pd.DataFrame | None = None
+        self._model_feature_names: list[str] = []
 
     def load(self, data_dir: Path | None) -> tuple[pd.DataFrame, list[dict], pd.DataFrame]:
         """
@@ -681,6 +682,25 @@ class SprintDataLoader:
         features_df["date"] = pd.to_datetime(features_df["date"], errors="coerce")
         features_df["ticker"] = features_df["ticker"].astype("string")
         features_df = features_df.sort_values(["date", "ticker"], kind="mergesort").reset_index(drop=True)
+        self._model_feature_names = self._infer_model_feature_names(features_df)
+
+        metadata_path = resolved_dir / "northstar_metadata.parquet"
+        if metadata_path.exists():
+            metadata_df = pd.read_parquet(metadata_path)
+            metadata_df["date"] = pd.to_datetime(metadata_df["date"], errors="coerce")
+            metadata_df["ticker"] = metadata_df["ticker"].astype("string")
+            metadata_cols = [col for col in metadata_df.columns if col not in {"date", "ticker"}]
+            if metadata_cols:
+                features_df = features_df.merge(
+                    metadata_df[["date", "ticker"] + metadata_cols],
+                    on=["date", "ticker"],
+                    how="left",
+                    suffixes=("", "__meta"),
+                )
+                duplicate_meta_cols = [col for col in features_df.columns if col.endswith("__meta")]
+                if duplicate_meta_cols:
+                    features_df = features_df.drop(columns=duplicate_meta_cols)
+        features_df.attrs["model_feature_names"] = list(self._model_feature_names)
 
         with (resolved_dir / "northstar_walk_forward_splits.json").open("r", encoding="utf-8") as handle:
             splits = json.load(handle)
@@ -813,6 +833,13 @@ class SprintDataLoader:
         any column ending in __realized
         """
 
+        stored = list(features_df.attrs.get("model_feature_names") or [])
+        if stored:
+            return stored
+        return self._infer_model_feature_names(features_df)
+
+    @staticmethod
+    def _infer_model_feature_names(features_df) -> list[str]:
         exclude = {"date", "ticker", "target_weekly_return", "forward_return_5d"}
         numeric = set(features_df.select_dtypes(include=[np.number]).columns)
         return [
