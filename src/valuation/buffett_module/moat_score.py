@@ -8,6 +8,8 @@ import numpy as np
 from typing import Dict, Optional
 from dataclasses import dataclass
 
+from src.valuation.core.normalized_financials import FinancialNormalizer
+
 
 @dataclass
 class MoatAssessment:
@@ -34,10 +36,73 @@ class MoatScorer:
     5. Market share stability
     """
     
-    def __init__(self):
+    def __init__(self, config: Optional[dict] = None):
+        self._config = dict(config or {})
         self.min_roic_threshold = 0.15  # 15% ROIC minimum
         self.wacc_proxy = 0.10  # 10% WACC proxy
         self.moat_years_required = 7  # Years of high ROIC needed
+        self._normalizer = FinancialNormalizer(self._config)
+
+    def score(
+        self,
+        ticker: str,
+        as_of_date: Optional[pd.Timestamp] = None,
+        fin: Optional[dict] = None,
+        fin_history: Optional[list[dict]] = None,
+    ) -> dict:
+        """Score a ticker using Screener-backed normalized financial history."""
+        as_of_ts = pd.Timestamp(as_of_date or pd.Timestamp.utcnow()).to_pydatetime()
+        current = dict(fin or self._normalizer.load_latest(ticker, as_of_ts, "annual"))
+        history = list(fin_history or self._normalizer.load_history(ticker, as_of_ts, n_periods=10, frequency="annual"))
+        if not current:
+            return {"moat_score": np.nan, "moat_width": "unknown", "confidence": 0.0}
+
+        roic_values = []
+        margin_values = []
+        growth_values = []
+        for row in history:
+            roce = pd.to_numeric(row.get("roce_pct"), errors="coerce")
+            if pd.notna(roce):
+                roic_values.append(float(roce) / 100.0)
+            else:
+                op = pd.to_numeric(row.get("operating_profit"), errors="coerce")
+                equity = pd.to_numeric(row.get("equity_capital"), errors="coerce")
+                reserves = pd.to_numeric(row.get("reserves"), errors="coerce")
+                debt = pd.to_numeric(row.get("total_borrowings"), errors="coerce")
+                capital = (0.0 if pd.isna(equity) else float(equity)) + (0.0 if pd.isna(reserves) else float(reserves)) + (0.0 if pd.isna(debt) else float(debt))
+                if pd.notna(op) and capital > 0:
+                    roic_values.append(float(op) / capital)
+
+            revenue = pd.to_numeric(row.get("revenue", row.get("sales")), errors="coerce")
+            expenses = pd.to_numeric(row.get("total_expenses"), errors="coerce")
+            opm = pd.to_numeric(row.get("opm_pct"), errors="coerce")
+            if pd.notna(opm):
+                margin_values.append(float(opm) / 100.0)
+            elif pd.notna(revenue) and pd.notna(expenses) and float(revenue) > 0:
+                margin_values.append((float(revenue) - float(expenses)) / float(revenue))
+            if pd.notna(revenue):
+                growth_values.append(float(revenue))
+
+        roic_history = pd.Series(roic_values if roic_values else [0.10], dtype=float)
+        gross_margin_history = pd.Series(margin_values if margin_values else [0.20], dtype=float)
+        revenue_growth_history = pd.Series(growth_values, dtype=float).pct_change(fill_method=None).dropna()
+        if revenue_growth_history.empty:
+            revenue_growth_history = pd.Series([0.03], dtype=float)
+
+        assessment = self.assess_moat(
+            roic_history=roic_history,
+            gross_margin_history=gross_margin_history,
+            revenue_growth_history=revenue_growth_history,
+        )
+        confidence = float(np.clip(min(len(history), 10) / 10.0, 0.1, 1.0))
+        return {
+            "moat_score": float(assessment.overall_score / 10.0),
+            "moat_width": assessment.moat_width,
+            "confidence": confidence,
+            "pricing_power": float(assessment.pricing_power / 10.0),
+            "cost_advantage": float(assessment.cost_advantage / 10.0),
+            "roic_consistency": float(assessment.roic_consistency / 10.0),
+        }
     
     def calculate_roic_consistency(
         self,

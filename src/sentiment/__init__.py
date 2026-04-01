@@ -1,16 +1,28 @@
-"""Shared sentiment utilities for NS-USO artifact integration."""
+"""
+Sentiment & News Intelligence System for Northstar V3
 
-from .context_loader import (
-    NEGATIVE_SENTIMENT_LABELS,
-    POSITIVE_SENTIMENT_LABELS,
-    load_company_sentiment_scores,
-    load_sentiment_context,
+This module provides sentiment analysis integration for the Intelligence Stack,
+converting raw news sentiment scores into actionable regime classifications,
+features, and confidence signals.
+
+Key components:
+- SentimentState: Formal state representation in UnifiedState
+- SentimentRegimeClassifier: Converts scores to regime labels (PANIC, FEAR, etc.)
+- SentimentFeatureBlock: Feature engineering for models
+- SentimentPipelineRunner: Daily pipeline orchestration
+- NarrativeSentimentBridge: Integration with narrative engine
+"""
+
+from .sentiment_state import (
+    SentimentState,
+    SentimentRegime,
+    SentimentTrend,
+    compute_sentiment_state
 )
 
 __all__ = [
-    "POSITIVE_SENTIMENT_LABELS",
-    "NEGATIVE_SENTIMENT_LABELS",
-    "load_sentiment_context",
-    "load_company_sentiment_scores",
+    'SentimentState',
+    'SentimentRegime',
+    'SentimentTrend',
+    'compute_sentiment_state',
 ]
-

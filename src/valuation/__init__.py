@@ -14,6 +14,7 @@ from .intrinsic_value.owner_earnings import OwnerEarningsCalculator
 from .intrinsic_value.dcf_engine import DCFEngine
 
 from .buffett_module.moat_score import MoatScorer
+from .valuation_feature_block import ValuationFeatureBlock
 
 from .families import (
     CreditFamilyEngine,
@@ -35,6 +36,7 @@ __all__ = [
     'OwnerEarningsCalculator',
     'DCFEngine',
     'MoatScorer',
+    'ValuationFeatureBlock',
     'IntrinsicFamilyEngine',
     'ResidualIncomeFamilyEngine',
     'TransactionFamilyEngine',

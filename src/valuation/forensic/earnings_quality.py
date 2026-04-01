@@ -3,10 +3,26 @@ Earnings Quality Analyzer
 Detects earnings manipulation and assesses cash flow quality
 """
 
+from datetime import datetime
 import pandas as pd
 import numpy as np
 from typing import Dict, Optional
 from dataclasses import dataclass
+
+from src.valuation.core.normalized_financials import FinancialNormalizer
+
+
+# Per Sehgal, Srivastava & Sharma (2012), higher accruals are a positive
+# expected-return signal in India, unlike the canonical US interpretation.
+INDIA_ACCRUAL_SIGN_POSITIVE = True
+
+
+def _compute_accrual_quality_score(accrual_ratio: float) -> float:
+    """Map accrual ratio to 0-100 quality score using the configured sign convention."""
+    ratio = float(accrual_ratio or 0.0)
+    if INDIA_ACCRUAL_SIGN_POSITIVE:
+        return float(np.clip(50.0 + ratio * 500.0, 0.0, 100.0))
+    return float(max(0.0, 100.0 - abs(ratio) * 500.0))
 
 
 @dataclass
@@ -32,8 +48,10 @@ class EarningsQualityAnalyzer:
     5. Beneish M-Score components
     """
     
-    def __init__(self):
+    def __init__(self, config: Optional[dict] = None):
+        self._config = dict(config or {})
         self.red_flag_threshold = 3  # Number of red flags before downgrade
+        self._normalizer = FinancialNormalizer(self._config)
     
     def calculate_accrual_ratio(
         self,
@@ -46,8 +64,15 @@ class EarningsQualityAnalyzer:
         
         Accruals = (Net Income - Operating Cash Flow) / Total Assets
         
-        High accruals indicate potential earnings manipulation
-        Threshold: > 0.10 is concerning
+        CRITICAL FOR INDIAN MARKET:
+        High accruals indicate potential earnings manipulation in US markets,
+        but in Indian markets, high accruals predict HIGHER returns.
+        
+        DO NOT invert the sign of this calculation for Indian market.
+        
+        Threshold: > 0.10 is concerning in US, but positive signal in India
+        
+        Reference: Northstar V3 Signal Engineering Plan, Requirement 19
         """
         if total_assets <= 0:
             return 0.0
@@ -216,7 +241,7 @@ class EarningsQualityAnalyzer:
         red_flags = []
         
         # High accruals
-        if abs(accrual_ratio) > 0.10:
+        if (not INDIA_ACCRUAL_SIGN_POSITIVE) and abs(accrual_ratio) > 0.10:
             red_flags.append(f"High accruals: {accrual_ratio:.2%}")
         
         # Poor cash conversion
@@ -255,7 +280,7 @@ class EarningsQualityAnalyzer:
         Returns: (score, grade)
         """
         # Component scores (0-100)
-        accrual_score = max(0, 100 - abs(accrual_ratio) * 500)  # Penalty for high accruals
+        accrual_score = _compute_accrual_quality_score(accrual_ratio)
         conversion_score = min(100, cash_conversion * 100)  # 1.0 = 100
         stability_score = earnings_stability * 100
         
@@ -362,9 +387,102 @@ class EarningsQualityAnalyzer:
         
         return EarningsQualityScore(
             overall_score=score,
-            accrual_quality=100 - abs(accrual_ratio) * 500,
+            accrual_quality=_compute_accrual_quality_score(accrual_ratio),
             cash_conversion=cash_conv['avg_conversion'] * 100,
             earnings_stability=stability['margin_stability'] * 100,
             red_flags=red_flags,
             quality_grade=grade
         )
+
+    def analyze(
+        self,
+        ticker: str,
+        as_of_date: Optional[datetime] = None,
+        fin: Optional[dict] = None,
+        fin_history: Optional[list[dict]] = None,
+    ) -> dict:
+        """
+        Analyze earnings quality using PIT-safe Screener-backed financials.
+        """
+        as_of_ts = pd.Timestamp(as_of_date or pd.Timestamp.utcnow()).to_pydatetime()
+        current = dict(fin or self._normalizer.load_latest(ticker, as_of_ts, "annual"))
+        history = list(
+            fin_history or self._normalizer.load_history(ticker, as_of_ts, n_periods=10, frequency="annual")
+        )
+        if not current:
+            return {
+                "quality_score": np.nan,
+                "quality_grade": "NA",
+                "accrual_quality": np.nan,
+                "cash_conversion": np.nan,
+                "earnings_stability": np.nan,
+                "red_flags": [],
+                "has_real_cashflow": False,
+            }
+
+        prior = history[-2] if len(history) >= 2 else {}
+        revenue = pd.to_numeric(current.get("revenue", current.get("sales")), errors="coerce")
+        total_expenses = pd.to_numeric(current.get("total_expenses"), errors="coerce")
+        gross_profit = (
+            float(revenue) - float(total_expenses)
+            if pd.notna(revenue) and pd.notna(total_expenses)
+            else float(revenue) * (1.0 - float(pd.to_numeric(current.get("opm_pct"), errors="coerce")) / 100.0)
+            if pd.notna(revenue) and pd.notna(pd.to_numeric(current.get("opm_pct"), errors="coerce"))
+            else 0.0
+        )
+
+        earnings_history = pd.Series(
+            [pd.to_numeric(row.get("net_profit"), errors="coerce") for row in history],
+            dtype=float,
+        ).dropna()
+        ocf_history = pd.Series(
+            [pd.to_numeric(row.get("cash_from_operations"), errors="coerce") for row in history],
+            dtype=float,
+        ).dropna()
+        revenue_history = pd.Series(
+            [pd.to_numeric(row.get("revenue", row.get("sales")), errors="coerce") for row in history],
+            dtype=float,
+        ).dropna()
+
+        assessment = self.analyze_earnings_quality(
+            net_income=float(pd.to_numeric(current.get("net_profit"), errors="coerce") or 0.0),
+            operating_cash_flow=float(pd.to_numeric(current.get("cash_from_operations"), errors="coerce") or 0.0),
+            total_assets=float(pd.to_numeric(current.get("total_assets"), errors="coerce") or 0.0),
+            receivables=float(pd.to_numeric(current.get("receivables"), errors="coerce") or 0.0),
+            revenue=float(revenue or 0.0),
+            gross_profit=float(gross_profit or 0.0),
+            ppe=float(pd.to_numeric(current.get("fixed_assets"), errors="coerce") or 0.0),
+            depreciation=float(pd.to_numeric(current.get("depreciation"), errors="coerce") or 0.0),
+            sga=float(pd.to_numeric(current.get("other_liabilities"), errors="coerce") or 0.0),
+            receivables_prior=float(pd.to_numeric(prior.get("receivables"), errors="coerce") or 0.0),
+            revenue_prior=float(pd.to_numeric(prior.get("revenue", prior.get("sales")), errors="coerce") or 0.0),
+            gross_profit_prior=float(
+                (
+                    pd.to_numeric(prior.get("revenue", prior.get("sales")), errors="coerce")
+                    - pd.to_numeric(prior.get("total_expenses"), errors="coerce")
+                )
+                if pd.notna(pd.to_numeric(prior.get("revenue", prior.get("sales")), errors="coerce"))
+                and pd.notna(pd.to_numeric(prior.get("total_expenses"), errors="coerce"))
+                else 0.0
+            ),
+            total_assets_prior=float(pd.to_numeric(prior.get("total_assets"), errors="coerce") or 0.0),
+            ppe_prior=float(pd.to_numeric(prior.get("fixed_assets"), errors="coerce") or 0.0),
+            depreciation_prior=float(pd.to_numeric(prior.get("depreciation"), errors="coerce") or 0.0),
+            sga_prior=float(pd.to_numeric(prior.get("other_liabilities"), errors="coerce") or 0.0),
+            earnings_history=earnings_history if not earnings_history.empty else None,
+            ocf_history=ocf_history if not ocf_history.empty else None,
+            revenue_history=revenue_history if not revenue_history.empty else None,
+        )
+
+        return {
+            "quality_score": float(assessment.overall_score),
+            "quality_grade": assessment.quality_grade,
+            "accrual_quality": float(assessment.accrual_quality),
+            "cash_conversion": float(assessment.cash_conversion),
+            "earnings_stability": float(assessment.earnings_stability),
+            "red_flags": list(assessment.red_flags),
+            "has_real_cashflow": bool(
+                current.get("cash_from_operations") is not None
+                and not pd.isna(current.get("cash_from_operations"))
+            ),
+        }
