@@ -17,3 +17,9 @@ webdriver-manager
 openpyxl
 xlrd
 pytest
+hypothesis
+PyYAML
+rapidfuzz
+transformers
+sentence-transformers
+torch
