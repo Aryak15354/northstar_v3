@@ -7,8 +7,11 @@ This is NOT an automated test - it requires live API access.
 
 import sys
 import logging
+import os
 from datetime import date, timedelta
 from pathlib import Path
+
+import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -23,6 +26,11 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+pytestmark = pytest.mark.skipif(
+    str(os.getenv("RUN_MANUAL_UPSTOX_TESTS", "")).strip().lower() not in {"1", "true", "yes", "on"},
+    reason="Manual live Upstox verification is excluded from the automated pytest suite.",
+)
 
 
 def test_config_loading():

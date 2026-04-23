@@ -60,11 +60,13 @@ regime_detection:
 
 eligibility:
   max_bid_ask_spread_pct: 0.08        # 8% of mid premium
-  min_liquidity_depth_multiplier: 1.0 # require at least 1x displayed depth for execution side
+  min_liquidity_depth_multiplier: 2.0 # require at least 2x displayed bid depth for execution
   min_days_to_expiry: 5               # No trades < 5 days
   event_buffer_days: 2                # Block short-vol 2 days before events
   late_cycle_days: 10                 # LOW_VOL_SELL duration threshold
   late_cycle_size_reduction: 0.5      # 50% size reduction
+  max_expected_slippage_bps: 120.0    # Reject trades with extreme expected execution slippage
+  max_transaction_cost_pct_of_max_loss: 0.20  # Costs + slippage cannot consume >20% of max loss
 
 capital_scaling:
   profit_milestone_pct: 0.08          # 8% net profit milestone
@@ -96,6 +98,9 @@ exit_rules:
   profit_target_pct: 0.55             # 55% of max profit
   stop_loss_pct: 0.40                 # 40% of max loss
   days_before_expiry: 2               # Exit 2 days before expiry
+  regime_flip_min_hold_minutes: 30    # Avoid open-close churn on the first intraday flip
+  regime_flip_confirmation_cycles: 2  # Require consecutive mismatch cycles before exiting
+  regime_flip_market_open_grace_minutes: 30  # Suppress regime-flip exits during the noisy open
   
   # Exit rule precedence (highest to lowest)
   precedence:
@@ -220,7 +225,7 @@ alpha_os:
   enabled: true
   shadow_mode: false
   enforce_mode: true
-  write_legacy_artifacts: true
+  write_legacy_artifacts: false
   canonical_state_max_age_seconds: 2700
   hmm_model_path: "data/models/regime_hmm_latest.pkl"
   hmm_retrain_interval_days: 30

@@ -26,8 +26,6 @@ IST = pytz.timezone('Asia/Kolkata')
 # and tiny accounting drift while still blocking real liquidity stress.
 TAX_LIQUIDITY_TOLERANCE_INR = 1.0
 TAX_LIQUIDITY_TOLERANCE_PCT = 0.005
-PORTFOLIO_RISK_TOLERANCE_INR = 50.0
-PORTFOLIO_RISK_TOLERANCE_PCT = 0.0025
 
 
 class KillSwitchType(Enum):
@@ -383,26 +381,15 @@ class SurvivalRulesEngine:
             if portfolio_risk_cap_value is not None
             else self.base_capital * self.config.portfolio_risk_cap_pct
         )
-        tolerance = max(
-            PORTFOLIO_RISK_TOLERANCE_INR,
-            abs(risk_cap) * PORTFOLIO_RISK_TOLERANCE_PCT,
-        )
-
-        if total_risk > risk_cap + tolerance:
+        if total_risk > risk_cap:
             reason = (
                 f"Portfolio risk cap exceeded: Total risk ₹{total_risk:,.0f} "
-                f"(cap: ₹{risk_cap:,.0f}, tolerance: ₹{tolerance:,.0f}). "
+                f"(cap: ₹{risk_cap:,.0f}). "
                 f"Current open risk: ₹{current_risk:,.0f}, "
                 f"Proposed trade risk: ₹{proposed_trade.max_loss:,.0f}"
             )
             logger.warning(reason)
             return True, reason
-
-        if total_risk > risk_cap:
-            logger.warning(
-                "Portfolio risk is above hard cap but within tolerance: "
-                f"total=₹{total_risk:,.0f}, cap=₹{risk_cap:,.0f}, tolerance=₹{tolerance:,.0f}"
-            )
         
         return False, ""
     
@@ -722,8 +709,8 @@ class SurvivalRulesEngine:
             "weekly_trade_count": weekly_trade_count,
             "weekly_trade_limit": self.config.max_trades_per_week,
             "portfolio_risk": portfolio_risk,
-            "portfolio_risk_cap": float(performance.current_equity) * self.config.portfolio_risk_cap_pct,
-            "portfolio_risk_pct": (portfolio_risk / float(performance.current_equity)) if float(performance.current_equity) > 0 else 0,
+            "portfolio_risk_cap": self.base_capital * self.config.portfolio_risk_cap_pct,
+            "portfolio_risk_pct": (portfolio_risk / self.base_capital) if self.base_capital > 0 else 0,
             "trauma_cooldown_active": self.trauma_cooldown_until is not None and current_time < self._to_ist(self.trauma_cooldown_until),
             "trauma_cooldown_until": self.trauma_cooldown_until,
             "tax_liability": performance.ytd_tax_liability,

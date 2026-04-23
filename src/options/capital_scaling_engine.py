@@ -133,37 +133,35 @@ class CapitalScalingEngine:
         )
         scaling = SimpleNamespace(
             profit_milestone_pct=float(params.get("profit_milestone_pct", 0.08)),
-            profit_scaling_increment=self._normalize_percent_points(
-                float(params.get("profit_scaling_increment", 0.25))
-            ),
+            profit_scaling_increment=float(params.get("profit_scaling_increment", 0.25)),
             drawdown_threshold_1=self._normalize_threshold_decimal(
                 float(params.get("drawdown_threshold_1", 0.03))
             ),
             drawdown_threshold_2=self._normalize_threshold_decimal(
                 float(params.get("drawdown_threshold_2", 0.05))
             ),
-            drawdown_descaling_1=self._normalize_percent_points(
-                float(params.get("drawdown_descaling_1", 0.25))
-            ),
-            drawdown_descaling_2=self._normalize_percent_points(
-                float(params.get("drawdown_descaling_2", 0.50))
-            ),
+            drawdown_descaling_1=float(params.get("drawdown_descaling_1", 0.25)),
+            drawdown_descaling_2=float(params.get("drawdown_descaling_2", 0.50)),
             min_weeks_before_scaling=int(params.get("min_weeks_before_scaling", 8)),
             recovery_profitable_trades=int(params.get("recovery_profitable_trades", 2)),
         )
         return SimpleNamespace(capital=capital, capital_scaling=scaling)
 
     @staticmethod
-    def _normalize_percent_points(value: float) -> float:
+    def _normalize_risk_value(value: float, *, reference: float) -> float:
         """
-        Normalize risk deltas expressed either as:
-        - percent-points (0.25 means 0.25%)
-        - decimal fraction (0.0025 means 0.25%)
+        Normalize absolute or delta risk values to the same representation as
+        `reference`.
+
+        Supported inputs:
+        - percent-points (1.5 means 1.5%)
+        - decimal fractions (0.015 means 1.5%)
         """
         v = float(value)
-        if 0.0 < abs(v) < 0.05:
-            return v * 100.0
-        return v
+        reference_value = float(reference)
+        if abs(reference_value) >= 0.2:
+            return v * 100.0 if 0.0 < abs(v) < 0.2 else v
+        return v / 100.0 if abs(v) >= 0.2 else v
 
     @staticmethod
     def _normalize_threshold_decimal(value: float) -> float:
@@ -295,7 +293,13 @@ class CapitalScalingEngine:
             self._check_recovery(state, last_trade_profitable)
         
         # Enforce risk ceiling
-        state.current_risk_pct = min(state.current_risk_pct, float(capital_cfg.max_risk_pct))
+        state.current_risk_pct = min(
+            state.current_risk_pct,
+            self._normalize_risk_value(
+                float(capital_cfg.max_risk_pct),
+                reference=float(capital_cfg.base_risk_pct),
+            ),
+        )
         
         state.last_updated = datetime.utcnow()
         self.state = state
@@ -377,13 +381,17 @@ class CapitalScalingEngine:
         scaling_cfg = self._scaling_cfg()
         capital_cfg = self._capital_cfg()
         milestone_pct = float(getattr(scaling_cfg, "profit_milestone_pct", 0.08))
-        scaling_increment = self._normalize_percent_points(
-            float(getattr(scaling_cfg, "profit_scaling_increment", 0.25))
+        scaling_increment = self._normalize_risk_value(
+            float(getattr(scaling_cfg, "profit_scaling_increment", 0.25)),
+            reference=float(capital_cfg.base_risk_pct),
         )
         
         # Apply one or more milestone steps if equity has moved enough in a
         # single update (legacy tests expect this behavior for large jumps).
-        max_risk = float(capital_cfg.max_risk_pct)
+        max_risk = self._normalize_risk_value(
+            float(capital_cfg.max_risk_pct),
+            reference=float(capital_cfg.base_risk_pct),
+        )
         while state.last_milestone_equity > 0:
             profit_since_milestone = (
                 state.current_equity - state.last_milestone_equity
@@ -431,18 +439,28 @@ class CapitalScalingEngine:
         threshold_2 = self._normalize_threshold_decimal(
             float(getattr(scaling_cfg, "drawdown_threshold_2", 0.05))
         )
-        descaling_1 = self._normalize_percent_points(
-            float(getattr(scaling_cfg, "drawdown_descaling_1", 0.25))
+        descaling_1 = self._normalize_risk_value(
+            float(getattr(scaling_cfg, "drawdown_descaling_1", 0.25)),
+            reference=float(capital_cfg.base_risk_pct),
         )
-        descaling_2 = self._normalize_percent_points(
-            float(getattr(scaling_cfg, "drawdown_descaling_2", 0.50))
+        descaling_2 = self._normalize_risk_value(
+            float(getattr(scaling_cfg, "drawdown_descaling_2", 0.50)),
+            reference=float(capital_cfg.base_risk_pct),
+        )
+        base_risk = self._normalize_risk_value(
+            float(capital_cfg.base_risk_pct),
+            reference=float(capital_cfg.base_risk_pct),
+        )
+        min_risk = self._normalize_risk_value(
+            float(capital_cfg.min_risk_pct),
+            reference=float(capital_cfg.base_risk_pct),
         )
         
         # Check 5% drawdown (more severe)
         if state.current_drawdown_pct >= threshold_2 and state.drawdown_level < 2:
             old_risk = state.current_risk_pct
-            state.current_risk_pct = float(capital_cfg.base_risk_pct) - descaling_2
-            state.current_risk_pct = max(state.current_risk_pct, float(capital_cfg.min_risk_pct))
+            state.current_risk_pct = base_risk - descaling_2
+            state.current_risk_pct = max(state.current_risk_pct, min_risk)
             
             state.in_drawdown = True
             state.drawdown_level = 2
@@ -460,8 +478,8 @@ class CapitalScalingEngine:
         # Check 3% drawdown (less severe)
         elif state.current_drawdown_pct >= threshold_1 and state.drawdown_level < 1:
             old_risk = state.current_risk_pct
-            state.current_risk_pct = float(capital_cfg.base_risk_pct) - descaling_1
-            state.current_risk_pct = max(state.current_risk_pct, float(capital_cfg.min_risk_pct))
+            state.current_risk_pct = base_risk - descaling_1
+            state.current_risk_pct = max(state.current_risk_pct, min_risk)
             
             state.in_drawdown = True
             state.drawdown_level = 1
@@ -500,7 +518,10 @@ class CapitalScalingEngine:
         if equity_recovered and trades_recovered:
             # Recovery complete!
             old_risk = state.current_risk_pct
-            state.current_risk_pct = float(capital_cfg.base_risk_pct)
+            state.current_risk_pct = self._normalize_risk_value(
+                float(capital_cfg.base_risk_pct),
+                reference=float(capital_cfg.base_risk_pct),
+            )
             
             state.in_drawdown = False
             state.drawdown_level = 0

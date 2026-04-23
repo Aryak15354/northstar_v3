@@ -63,6 +63,8 @@ class EligibilityConfig:
     event_buffer_days: int
     late_cycle_days: int
     late_cycle_size_reduction: float
+    max_expected_slippage_bps: float = 120.0
+    max_transaction_cost_pct_of_max_loss: float = 0.20
 
 
 @dataclass
@@ -97,6 +99,9 @@ class ExitRulesConfig:
     stop_loss_pct: float
     days_before_expiry: int
     precedence: list
+    regime_flip_min_hold_minutes: int = 30
+    regime_flip_confirmation_cycles: int = 2
+    regime_flip_market_open_grace_minutes: int = 30
 
 
 @dataclass
@@ -250,19 +255,31 @@ class ConfigLoader:
         return self._config
     
     def _load_env_file(self) -> None:
-        """Load environment variables from .env.options file"""
+        """Load environment variables from .env.options file without clobbering live overrides."""
         if not os.path.exists(self.env_path):
             logger.warning(f"Environment file {self.env_path} not found, using system environment")
             return
-        
+
+        loaded = 0
+        preserved = 0
         with open(self.env_path, 'r') as f:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith('#'):
                     key, value = line.split('=', 1)
-                    os.environ[key.strip()] = value.strip()
-        
-        logger.info(f"Environment variables loaded from {self.env_path}")
+                    key = key.strip()
+                    if key in os.environ:
+                        preserved += 1
+                        continue
+                    os.environ[key] = value.strip()
+                    loaded += 1
+
+        logger.info(
+            "Environment variables loaded from %s (loaded=%d preserved_existing=%d)",
+            self.env_path,
+            loaded,
+            preserved,
+        )
     
     def _load_yaml(self) -> Dict[str, Any]:
         """Load YAML configuration file"""
@@ -295,7 +312,7 @@ class ConfigLoader:
             "enabled": False,
             "shadow_mode": True,
             "enforce_mode": False,
-            "write_legacy_artifacts": True,
+            "write_legacy_artifacts": False,
             "canonical_state_max_age_seconds": 2700,
             "hmm_model_path": "data/models/regime_hmm_latest.pkl",
             "hmm_retrain_interval_days": 30,

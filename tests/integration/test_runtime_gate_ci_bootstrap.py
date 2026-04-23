@@ -208,7 +208,9 @@ def test_ci_gate_quick_stage_plan_is_deterministic(monkeypatch):
 def test_bootstrap_runtime_db_supports_alpha_diagnostics_smoke(tmp_path):
     bootstrap = _load_bootstrap_module()
     diagnostics = _load_module(Path("src/diagnostics/alpha_diagnostics_engine.py"), "alpha_diagnostics_engine")
-    from src.runtime import PortfolioRuntimeService
+    from src.runtime import PortfolioRuntimeService, RuntimeEventStore
+
+    assert RuntimeEventStore is not None
 
     scripts_dir = tmp_path / "scripts"
     scripts_dir.mkdir(parents=True, exist_ok=True)

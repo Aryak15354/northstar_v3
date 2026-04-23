@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Tuple
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-DASHBOARD_FILE = PROJECT_ROOT / "src/dashboard/app.py"
+DASHBOARD_FILE = PROJECT_ROOT / "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py"
 RUN_COMPLETE = PROJECT_ROOT / "scripts/run_complete_v3_system.py"
 FREEZE_STATE_FILE = PROJECT_ROOT / "data/processed/model_freeze_state.json"
 MASTER_LEDGER_FILE = PROJECT_ROOT / "data/pnl/master_ledger.parquet"

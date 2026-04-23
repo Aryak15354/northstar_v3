@@ -20,10 +20,13 @@ ALWAYS_ACTIVE = [
     ROOT / "src/execution/execution_gateway.py",
     ROOT / "src/dashboard/chart_registry.py",
     ROOT / "src/dashboard/view_model_loader.py",
+    ROOT / "scripts/ci/bootstrap_runtime_gate_state.py",
     ROOT / "scripts/ci/check_dashboard_chart_registry.py",
+    ROOT / "scripts/ci/check_no_direct_runtime_mutation_imports.py",
     ROOT / "scripts/ci/strict_data_ingestion_check.py",
     ROOT / "scripts/ci/strict_options_runtime_check.py",
     ROOT / "scripts/ci/strict_system_update_check.py",
+    ROOT / "scripts/run_alpha_diagnostics.py",
     ROOT / "scripts/runners/build_dashboard_view_model.py",
     ROOT / "scripts/runners/generate_dashboard_emission_roadmap.py",
 ]

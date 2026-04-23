@@ -13,6 +13,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
+from enum import Enum
 
 from src.options.survival_rules_engine import (
     SurvivalRulesEngine,
@@ -59,7 +60,7 @@ if not V3_RISK_AVAILABLE:
     class RiskLevel:
         SYSTEM = "system"
     
-    class RiskDecision:
+    class RiskDecision(Enum):
         APPROVED = "approved"
         REJECTED = "rejected"
         CONDITIONAL = "conditional"
@@ -147,6 +148,11 @@ class OptionsRiskValidator(RiskValidator):
             ytd_tax_liability=0.0,
             cash_buffer=0.0
         )
+        if not V3_RISK_AVAILABLE:
+            logger.warning(
+                "OptionsRiskValidator running without external V3 RiskCoordinator interfaces; "
+                "fallback compatibility classes are active."
+            )
         
         logger.info(f"OptionsRiskValidator initialized with base capital: ₹{base_capital:,.0f}")
     
@@ -229,7 +235,7 @@ class OptionsRiskValidator(RiskValidator):
                 threshold=0.02,
                 severity='ERROR',
                 timestamp=current_time,
-                description=f"Options portfolio risk ₹{total_risk:,.0f} exceeds 2% cap (₹{risk_cap:,.0f})"
+                description=f"Options portfolio risk cap breached: ₹{total_risk:,.0f} exceeds 2% cap (₹{risk_cap:,.0f})"
             ))
             
             logger.warning(f"Options trade REJECTED: Portfolio risk cap exceeded")

@@ -83,6 +83,15 @@ CHART_REGISTRY: Dict[str, ChartContract] = {
         degraded_mode="warn",
         description="Recent allocation heatmap",
     ),
+    "portfolio_expression_exposure": ChartContract(
+        chart_id="portfolio_expression_exposure",
+        required_data_keys=("allocation_history",),
+        required_any_keys=(),
+        required_columns={"allocation_history": ("date",)},
+        freshness_sla_hours=48.0,
+        degraded_mode="warn",
+        description="Portfolio total exposure over time",
+    ),
     "portfolio_edge_health": ChartContract(
         chart_id="portfolio_edge_health",
         required_data_keys=("edge_half_life",),

@@ -16,7 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.runtime.storage import RuntimeEventStore
+from src.runtime import RuntimeEventStore
 
 LIVE_DIR = PROJECT_ROOT / "data/options/live"
 BASELINE_PATH = LIVE_DIR / "gate_code_freeze_baseline.json"

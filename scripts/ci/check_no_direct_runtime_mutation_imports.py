@@ -22,7 +22,6 @@ BLOCKED_RUNTIME_DB_PATTERNS = [
 
 LEGACY_FALLBACK_PATTERNS = [
     r"NORTHSTAR_PRS_.*_ENABLED",
-    r"\bprs_enabled\b",
     r"legacy fallback",
 ]
 

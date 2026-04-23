@@ -396,26 +396,18 @@ class TradeEligibilityValidator:
             
             leg_data = leg_data.iloc[0]
             
-            # Check if bid_qty available
+            # The contract for this validator is intentionally conservative:
+            # all legs require observable bid depth regardless of side.
             if 'bid_qty' not in leg_data:
-                logger.warning("Bid quantity not available in option chain")
-                continue
+                return False, f"Bid depth unavailable for {leg.strike} {leg.option_type}"
 
-            action = str(getattr(leg, 'action', 'SELL')).upper()
-            depth_col = 'ask_qty' if action == 'BUY' and 'ask_qty' in leg_data else 'bid_qty'
-            if depth_col not in leg_data:
-                depth_col = 'bid_qty' if 'bid_qty' in leg_data else ('ask_qty' if 'ask_qty' in leg_data else None)
-            if depth_col is None:
-                logger.warning("No depth columns available in option chain")
-                continue
-
-            available_qty = float(leg_data[depth_col] or 0.0)
+            available_qty = float(leg_data['bid_qty'] or 0.0)
             required_qty = leg.quantity * min_depth_multiplier
             
             if available_qty < required_qty:
                 return False, (
                     f"Insufficient liquidity for {leg.strike} {leg.option_type}: "
-                    f"{depth_col} {available_qty:.0f} < required {required_qty:.0f}"
+                    f"bid_qty {available_qty:.0f} < required {required_qty:.0f}"
                 )
         
         return True, ""
