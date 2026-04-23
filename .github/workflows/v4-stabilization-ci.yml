@@ -29,10 +29,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Clean runtime state
         run: bash scripts/ci/clean_ci_runtime_state.sh
 
@@ -46,10 +43,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Parse active python files
         run: |
           python - <<'PY'
@@ -121,10 +115,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Risk boundary epsilon checks
         run: python scripts/ci/check_risk_float_boundaries.py
       - name: Deterministic replay check
@@ -148,7 +139,7 @@ jobs:
               raise SystemExit(1)
           PY
       - name: Options/risk test subset
-        run: pytest -q tests/options --maxfail=1
+        run: python -m pytest -q tests/options --maxfail=1
 
   gate_runtime_integrity:
     runs-on: ubuntu-latest
@@ -160,10 +151,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Run strict 3-command runtime gate
         run: bash scripts/ci/run_runtime_gate.sh
 
@@ -177,10 +165,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Policy immutability and anti-bypass recheck
         run: |
           python scripts/ci/check_policy_immutability.py
@@ -196,10 +181,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: ADE smoke and ALDH import contract
         run: |
           python scripts/run_alpha_diagnostics.py --runtime-db data/runtime/portfolio_runtime.db --diagnostics-db data/diagnostics/alpha_diagnostics.db
@@ -221,10 +203,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Scan for hardcoded risk drift literals
         run: python scripts/ci/check_risk_drift_literals.py
 
@@ -238,10 +217,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Reachability regression guard
         run: python scripts/ci/check_reachability_regression.py
 
@@ -255,10 +231,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Archive import isolation
         run: python scripts/ci/check_archive_import_isolation.py
 

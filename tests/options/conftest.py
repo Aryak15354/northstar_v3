@@ -5,13 +5,17 @@ Provides properly configured instances of all options system components
 for use in property-based testing.
 """
 
-import pytest
-from datetime import datetime, date, timedelta
+from pathlib import Path
+import sys
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-# Import config loader
-from src.options.config_loader import ConfigLoader
+import pytest
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 
 # Mock config classes for testing
@@ -160,7 +164,7 @@ def survival_engine(survival_config, base_capital):
 @pytest.fixture
 def regime_detector(regime_config):
     """Provide configured regime detector"""
-    from src.options.regime_detector import RegimeDetector
+    from src.options.options_regime_detector import RegimeDetector
     return RegimeDetector(config=regime_config)
 
 

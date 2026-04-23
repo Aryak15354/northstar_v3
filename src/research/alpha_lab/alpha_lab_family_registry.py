@@ -6,13 +6,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping
 
-import yaml
-
 
 def _to_str(value: Any) -> str:
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _yaml_module():
+    import yaml
+
+    return yaml
 
 
 def _str_list(value: Any) -> List[str]:
@@ -125,7 +129,7 @@ class AlphaFamilyRegistry:
     def from_yaml(cls, path: str | Path | None = None) -> "AlphaFamilyRegistry":
         p = Path(path) if path is not None else cls.DEFAULT_PATH
         with p.open("r", encoding="utf-8") as f:
-            payload = yaml.safe_load(f) or {}
+            payload = _yaml_module().safe_load(f) or {}
         if not isinstance(payload, Mapping):
             raise ValueError(f"invalid alpha family registry yaml at {p}")
         return cls.from_dict(payload)

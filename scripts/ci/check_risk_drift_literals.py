@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from datetime import datetime, timezone
@@ -53,13 +54,16 @@ def _collect_violations() -> list[dict]:
         for lineno, line in enumerate(text.splitlines(), start=1):
             for name, pattern in PATTERNS.items():
                 if pattern.search(line):
+                    source = line.strip()
+                    stable_digest = hashlib.sha256(f"{rel}\0{name}\0{source}".encode("utf-8")).hexdigest()[:16]
                     violations.append(
                         {
-                            "id": f"{rel}:{lineno}:{name}",
+                            "id": f"{rel}:{name}:{stable_digest}",
+                            "legacy_id": f"{rel}:{lineno}:{name}",
                             "file": rel,
                             "line": lineno,
                             "pattern": name,
-                            "source": line.strip(),
+                            "source": source,
                         }
                     )
     return violations
@@ -70,6 +74,7 @@ def _write_baseline(path: Path, violations: list[dict]) -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "allowlist": sorted(v["id"] for v in violations),
         "count": len(violations),
+        "id_scheme": "stable_source_hash_v1",
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -95,7 +100,10 @@ def main() -> int:
 
     baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
     allow = set(baseline.get("allowlist", []))
-    new_violations = [v for v in violations if v["id"] not in allow]
+    new_violations = [
+        v for v in violations
+        if v["id"] not in allow and v.get("legacy_id") not in allow
+    ]
 
     print(json.dumps({
         "check": "risk_drift_literals",

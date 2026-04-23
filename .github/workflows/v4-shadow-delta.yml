@@ -28,14 +28,26 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest ruff packaging
+        run: bash scripts/ci/install_ci_dependencies.sh
       - name: Clean runtime state
         run: bash scripts/ci/clean_ci_runtime_state.sh
       - name: Run strict runtime gate before delta
         run: bash scripts/ci/run_runtime_gate.sh
+      - name: Print runtime gate logs on failure
+        if: failure()
+        run: |
+          echo "== runtime gate logs =="
+          for file in logs/ci/*.log; do
+            if [ -f "$file" ]; then
+              echo "--- $file ---"
+              tail -n 200 "$file"
+            fi
+          done
+          echo "== latest complete system report =="
+          latest_report=$(find reports/system -maxdepth 1 -type f -name 'complete_system_run_*.json' | sort | tail -n 1 || true)
+          if [ -n "${latest_report}" ] && [ -f "${latest_report}" ]; then
+            cat "${latest_report}"
+          fi
       - name: Build shadow delta report
         run: |
           python - <<'PY'
@@ -110,6 +122,7 @@ jobs:
               raise SystemExit(1)
           PY
       - name: Upload shadow delta artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: v4-shadow-delta
@@ -117,3 +130,4 @@ jobs:
             audit/V3_vs_V4_RUNTIME_DELTA.md
             logs/ci/*.log
             reports/system/*.json
+          if-no-files-found: warn

@@ -26,6 +26,7 @@ ALWAYS_ACTIVE = [
     ROOT / "scripts/ci/strict_data_ingestion_check.py",
     ROOT / "scripts/ci/strict_options_runtime_check.py",
     ROOT / "scripts/ci/strict_system_update_check.py",
+    ROOT / "scripts/run_integrated_options_paper_engine.py",
     ROOT / "scripts/run_alpha_diagnostics.py",
     ROOT / "scripts/runners/build_dashboard_view_model.py",
     ROOT / "scripts/runners/generate_dashboard_emission_roadmap.py",
