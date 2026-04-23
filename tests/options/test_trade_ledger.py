@@ -12,7 +12,7 @@ import pandas as pd
 
 from src.options.trade_ledger import TradeLedger, LedgerEntry
 from src.options.position_manager import Position, PositionLeg, Greeks
-from src.options.regime_detector import Regime
+from src.options.options_regime_detector import Regime
 from src.options.tax_aware_pnl_tracker import TradePnL, TradeCosts
 
 
@@ -109,7 +109,8 @@ def test_ledger_initialization(temp_ledger_path):
     assert len(df) == 0
     assert list(df.columns) == [
         'trade_id', 'timestamp', 'action', 'strategy_type', 'regime_at_entry',
-        'underlying', 'expiry', 'legs', 'entry_credit_debit', 'exit_value',
+        'underlying', 'expiry', 'legs', 'entry_credit_debit', 'max_loss',
+        'max_profit', 'exit_value',
         'gross_pnl', 'costs', 'tax', 'net_pnl', 'days_held', 'exit_reason',
         'greeks_at_entry', 'greeks_at_exit'
     ]

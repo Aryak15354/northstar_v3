@@ -16,10 +16,11 @@ from datetime import datetime, date, timedelta
 import pandas as pd
 import tempfile
 import os
+import shutil
 
 from src.options.position_manager import PositionManager, Position
 from src.options.strategy_generator import OptionStrategy, OptionLeg, Greeks, StrategyType
-from src.options.regime_detector import Regime
+from src.options.options_regime_detector import Regime
 from src.options.config_loader import ExitRulesConfig, GreekSafetyBandsConfig
 from src.options.tax_aware_pnl_tracker import TaxAwarePnLTracker, TradeCosts
 from src.options.trade_ledger import TradeLedger
@@ -34,7 +35,7 @@ def temp_ledger_path():
     # Cleanup
     if os.path.exists(ledger_path):
         os.remove(ledger_path)
-    os.rmdir(temp_dir)
+    shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 @pytest.fixture

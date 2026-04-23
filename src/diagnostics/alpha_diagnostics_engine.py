@@ -30,6 +30,7 @@ class AlphaDiagnosticsEngine:
         Path(self.paths.diagnostics_db).parent.mkdir(parents=True, exist_ok=True)
         Path(self.paths.alpha_metrics_parquet).parent.mkdir(parents=True, exist_ok=True)
         runtime_db = Path(self.paths.runtime_db)
+        runtime_db.parent.mkdir(parents=True, exist_ok=True)
         if runtime_db.exists():
             uri = f"file:{runtime_db}?mode=ro"
             self.runtime_conn = sqlite3.connect(uri, uri=True)

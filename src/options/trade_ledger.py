@@ -98,7 +98,7 @@ class TradeLedger:
             ledger_path: Path to parquet file
         """
         self.ledger_path = Path(ledger_path)
-        self._wal = WriteAheadLog(self.ledger_path.parent / "live" / "write_journal.log")
+        self._wal = WriteAheadLog(self._default_wal_path())
         self._live_options_dir = self.ledger_path.parent / "live"
         self._instrument_underlying_cache: Dict[str, str] = {}
         self._cache_refreshed_at: Optional[datetime] = None
@@ -113,6 +113,15 @@ class TradeLedger:
             logger.info(f"Initialized empty trade ledger at {self.ledger_path}")
         else:
             logger.info(f"Using existing trade ledger at {self.ledger_path}")
+
+    def _default_wal_path(self) -> Path:
+        """
+        Keep the ledger WAL in a shared runtime area rather than next to ad hoc
+        ledger paths so temporary/test ledgers do not leave sidecar directories
+        behind after cleanup.
+        """
+        runtime_dir = Path.cwd() / "data" / "runtime" / "options_trade_ledger"
+        return runtime_dir / f"{self.ledger_path.stem}_write_journal.log"
 
     @staticmethod
     def _normalize_underlying(value: Any) -> str:
@@ -310,6 +319,20 @@ class TradeLedger:
         }
         return json.dumps(greeks_dict)
 
+    def _serialize_runtime_legs(self, legs: List[Dict[str, Any]]) -> str:
+        return json.dumps([dict(leg or {}) for leg in legs])
+
+    def _serialize_runtime_greeks(self, greeks: Optional[Dict[str, Any]]) -> Optional[str]:
+        if not isinstance(greeks, dict):
+            return None
+        payload = {
+            "delta": greeks.get("delta"),
+            "gamma": greeks.get("gamma"),
+            "theta": greeks.get("theta"),
+            "vega": greeks.get("vega"),
+        }
+        return json.dumps(payload)
+
     @staticmethod
     def _infer_timestamp_from_trade_id(trade_id: Any) -> Optional[datetime]:
         text = str(trade_id or "").strip().upper()
@@ -350,6 +373,16 @@ class TradeLedger:
             trade_id,
         )
         return datetime.now()
+
+    def _entry_exists(self, trade_id: str, action: str) -> bool:
+        try:
+            df = self.read_by_trade_id(trade_id)
+        except Exception:
+            return False
+        if df.empty or "action" not in df.columns:
+            return False
+        actions = df["action"].astype(str).str.lower()
+        return bool((actions == str(action or "").strip().lower()).any())
     
     def write_position_open(self, position: Position) -> None:
         """
@@ -358,6 +391,10 @@ class TradeLedger:
         Args:
             position: Newly opened position
         """
+        if self._entry_exists(str(position.position_id), "open"):
+            logger.debug("Skipping duplicate open ledger entry for %s", position.position_id)
+            return
+
         # Create ledger entry
         underlying = self._canonical_underlying(getattr(position, "underlying", ""), position.legs)
         entry_ts = self._safe_timestamp(getattr(position, "entry_time", None), str(position.position_id), "entry")
@@ -404,6 +441,9 @@ class TradeLedger:
         """
         if position.is_open():
             raise ValueError(f"Cannot write close record for open position {position.position_id}")
+        if self._entry_exists(str(position.position_id), "close"):
+            logger.debug("Skipping duplicate close ledger entry for %s", position.position_id)
+            return
         
         # Create ledger entry
         underlying = self._canonical_underlying(getattr(position, "underlying", ""), position.legs)
@@ -439,6 +479,90 @@ class TradeLedger:
             f"Wrote position close to ledger: {position.position_id}, "
             f"Net P&L: ₹{trade_pnl.net_pnl:,.0f}"
         )
+
+    def sync_runtime_state(self, runtime_state: Dict[str, Any]) -> Dict[str, int]:
+        """
+        Recovery helper: backfill immutable ledger entries from the canonical
+        options runtime snapshot when a prior cycle mutated runtime state before
+        the ledger write completed.
+        """
+        payload = dict(runtime_state or {})
+        backfilled = {"open_entries": 0, "close_entries": 0}
+
+        open_positions = payload.get("open_positions", [])
+        if isinstance(open_positions, list):
+            for row in open_positions:
+                if not isinstance(row, dict):
+                    continue
+                trade_id = str(row.get("position_id") or "").strip()
+                if not trade_id or self._entry_exists(trade_id, "open"):
+                    continue
+                legs = list(row.get("legs") or [])
+                entry = LedgerEntry(
+                    trade_id=trade_id,
+                    timestamp=self._safe_timestamp(row.get("entry_time"), trade_id, "entry"),
+                    action="open",
+                    strategy_type=str(row.get("strategy_type") or "unknown"),
+                    regime_at_entry=str(row.get("regime_at_entry") or "unknown"),
+                    underlying=self._canonical_underlying(row.get("underlying"), []),
+                    expiry=pd.Timestamp(pd.to_datetime(row.get("expiry"), errors="coerce")),
+                    legs=self._serialize_runtime_legs(legs),
+                    entry_credit_debit=float(row.get("entry_credit_debit", 0.0) or 0.0),
+                    max_loss=float(row.get("max_loss", 0.0) or 0.0) if row.get("max_loss") is not None else None,
+                    max_profit=float(row.get("max_profit", 0.0) or 0.0) if row.get("max_profit") is not None else None,
+                    exit_value=None,
+                    gross_pnl=None,
+                    costs=None,
+                    tax=None,
+                    net_pnl=None,
+                    days_held=int(row.get("days_held", 0) or 0),
+                    exit_reason=None,
+                    greeks_at_entry=self._serialize_runtime_greeks(row.get("entry_greeks")),
+                    greeks_at_exit=None,
+                )
+                self._append_entry(entry)
+                backfilled["open_entries"] += 1
+
+        closed_positions = payload.get("closed_positions", [])
+        if isinstance(closed_positions, list):
+            for row in closed_positions:
+                if not isinstance(row, dict):
+                    continue
+                trade_id = str(row.get("position_id") or "").strip()
+                if not trade_id or self._entry_exists(trade_id, "close"):
+                    continue
+                exit_time = row.get("exit_time")
+                if not exit_time:
+                    continue
+                realized = row.get("realized_pnl")
+                net_pnl = float(realized or 0.0)
+                legs = list(row.get("legs") or [])
+                entry = LedgerEntry(
+                    trade_id=trade_id,
+                    timestamp=self._safe_timestamp(exit_time, trade_id, "exit"),
+                    action="close",
+                    strategy_type=str(row.get("strategy_type") or "unknown"),
+                    regime_at_entry=str(row.get("regime_at_entry") or "unknown"),
+                    underlying=self._canonical_underlying(row.get("underlying"), []),
+                    expiry=pd.Timestamp(pd.to_datetime(row.get("expiry"), errors="coerce")),
+                    legs=self._serialize_runtime_legs(legs),
+                    entry_credit_debit=float(row.get("entry_credit_debit", 0.0) or 0.0),
+                    max_loss=float(row.get("max_loss", 0.0) or 0.0) if row.get("max_loss") is not None else None,
+                    max_profit=float(row.get("max_profit", 0.0) or 0.0) if row.get("max_profit") is not None else None,
+                    exit_value=float(row.get("current_value", 0.0) or 0.0),
+                    gross_pnl=net_pnl,
+                    costs=0.0,
+                    tax=0.0,
+                    net_pnl=net_pnl,
+                    days_held=int(row.get("days_held", 0) or 0),
+                    exit_reason=str(row.get("exit_reason") or ""),
+                    greeks_at_entry=self._serialize_runtime_greeks(row.get("entry_greeks")),
+                    greeks_at_exit=self._serialize_runtime_greeks(row.get("greeks")),
+                )
+                self._append_entry(entry)
+                backfilled["close_entries"] += 1
+
+        return backfilled
     
     def _append_entry(self, entry: LedgerEntry) -> None:
         """
@@ -464,11 +588,15 @@ class TradeLedger:
 
         try:
             # Read existing ledger
-            existing_df = pd.read_parquet(self.ledger_path)
+            existing_df = self._ensure_schema_dataframe(pd.read_parquet(self.ledger_path))
+            entry_df = self._ensure_schema_dataframe(entry_df)
 
             # Append new entry
-            updated_df = pd.concat([existing_df, entry_df], ignore_index=True)
-            updated_df = self._ensure_schema_dataframe(updated_df)
+            if existing_df.empty:
+                updated_df = entry_df.copy()
+            else:
+                updated_df = existing_df.copy()
+                updated_df.loc[len(updated_df)] = entry_df.iloc[0]
 
             # Write new ledger file to temp then atomically replace.
             table = pa.Table.from_pandas(updated_df, schema=self.SCHEMA)

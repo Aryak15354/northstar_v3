@@ -29,6 +29,7 @@ DAEMON_STATUS_PATH = LIVE_DIR / "northstar_daemon_status.json"
 WAL_PATH = LIVE_DIR / "write_journal.log"
 MARKET_DATA_PATH = LIVE_DIR / "market_data_latest.json"
 TRADE_LEDGER_PATH = PROJECT_ROOT / "data/options/trade_ledger.parquet"
+MASTER_LEDGER_PATH = PROJECT_ROOT / "data/pnl/master_ledger.parquet"
 RUNTIME_DB_PATH = PROJECT_ROOT / "data/runtime/portfolio_runtime.db"
 TEST_COUNT_BASELINE_PATH = PROJECT_ROOT / "data/processed/test_count_baseline.json"
 
@@ -191,6 +192,25 @@ def _bootstrap_runtime_fixtures(now: datetime) -> dict:
     TRADE_LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
     trade_ledger.to_parquet(TRADE_LEDGER_PATH, index=False)
 
+    master_ledger = pd.DataFrame(
+        [
+            {
+                "entry_id": "CI_BOOTSTRAP_CASH_IN",
+                "entry_type": "CASH_IN",
+                "amount": 1_000_000.0,
+                "notional": 1_000_000.0,
+                "transaction_cost": 0.0,
+                "trade_date": now.date().isoformat(),
+                "settlement_date": now.date().isoformat(),
+                "recorded_at": now_iso,
+                "description": "CI runtime gate bootstrap capital seed",
+                "source": "scripts/ci/bootstrap_runtime_gate_state.py",
+            }
+        ]
+    )
+    MASTER_LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    master_ledger.to_parquet(MASTER_LEDGER_PATH, index=False)
+
     RUNTIME_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     store = RuntimeEventStore(str(RUNTIME_DB_PATH), writer_name="runtime_gate_bootstrap")
     store.close()
@@ -215,6 +235,7 @@ def _bootstrap_runtime_fixtures(now: datetime) -> dict:
             "daemon_status": str(DAEMON_STATUS_PATH),
             "wal": str(WAL_PATH),
             "trade_ledger": str(TRADE_LEDGER_PATH),
+            "master_ledger": str(MASTER_LEDGER_PATH),
             "runtime_db": str(RUNTIME_DB_PATH),
             "test_count_baseline": str(TEST_COUNT_BASELINE_PATH),
         },

@@ -310,3 +310,33 @@ def test_ade_handles_sparse_runtime_db(tmp_path):
     assert isinstance(trade_df, pd.DataFrame)
     assert isinstance(strategy_df, pd.DataFrame)
     assert len(portfolio_df) == 1
+
+
+def test_ade_bootstraps_missing_runtime_db_parent(tmp_path):
+    runtime_db = tmp_path / "data/runtime/portfolio_runtime.db"
+    diagnostics_db = tmp_path / "data/diagnostics/alpha_diagnostics.db"
+    alpha_parquet = tmp_path / "data/diagnostics/alpha_metrics.parquet"
+    strategy_parquet = tmp_path / "data/diagnostics/strategy_metrics.parquet"
+    policy_json = tmp_path / "data/diagnostics/policy_recommendations.json"
+
+    engine = AlphaDiagnosticsEngine(
+        DiagnosticsPaths(
+            runtime_db=str(runtime_db),
+            diagnostics_db=str(diagnostics_db),
+            alpha_metrics_parquet=str(alpha_parquet),
+            strategy_metrics_parquet=str(strategy_parquet),
+            policy_recommendations_json=str(policy_json),
+        )
+    )
+    try:
+        trade_df = engine.compute_trade_diagnostics()
+        strategy_df = engine.compute_strategy_diagnostics()
+        portfolio_df = engine.compute_portfolio_diagnostics()
+    finally:
+        engine.close()
+
+    assert runtime_db.exists()
+    assert diagnostics_db.exists()
+    assert isinstance(trade_df, pd.DataFrame)
+    assert isinstance(strategy_df, pd.DataFrame)
+    assert len(portfolio_df) == 1

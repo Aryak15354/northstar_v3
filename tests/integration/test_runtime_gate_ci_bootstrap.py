@@ -44,6 +44,7 @@ def test_bootstrap_runtime_gate_state_write_and_verify(tmp_path):
     module.WAL_PATH = live_dir / "write_journal.log"
     module.MARKET_DATA_PATH = live_dir / "market_data_latest.json"
     module.TRADE_LEDGER_PATH = tmp_path / "data/options/trade_ledger.parquet"
+    module.MASTER_LEDGER_PATH = tmp_path / "data/pnl/master_ledger.parquet"
     module.RUNTIME_DB_PATH = tmp_path / "data/runtime/portfolio_runtime.db"
     module.TEST_COUNT_BASELINE_PATH = tmp_path / "data/processed/test_count_baseline.json"
     module.CODE_FREEZE_DIRS = [scripts_dir]
@@ -56,6 +57,7 @@ def test_bootstrap_runtime_gate_state_write_and_verify(tmp_path):
     assert (live_dir / "options_dashboard_state.json").exists()
     assert (live_dir / "governance_events.parquet").exists()
     assert (tmp_path / "data/options/trade_ledger.parquet").exists()
+    assert (tmp_path / "data/pnl/master_ledger.parquet").exists()
     assert (tmp_path / "data/runtime/portfolio_runtime.db").exists()
     assert (tmp_path / "data/processed/test_count_baseline.json").exists()
 
@@ -91,6 +93,7 @@ def test_bootstrap_runtime_gate_state_satisfies_gate_triage_contract(tmp_path):
     bootstrap.WAL_PATH = bootstrap.LIVE_DIR / "write_journal.log"
     bootstrap.MARKET_DATA_PATH = bootstrap.LIVE_DIR / "market_data_latest.json"
     bootstrap.TRADE_LEDGER_PATH = tmp_path / "data/options/trade_ledger.parquet"
+    bootstrap.MASTER_LEDGER_PATH = tmp_path / "data/pnl/master_ledger.parquet"
     bootstrap.RUNTIME_DB_PATH = tmp_path / "data/runtime/portfolio_runtime.db"
     bootstrap.TEST_COUNT_BASELINE_PATH = tmp_path / "data/processed/test_count_baseline.json"
     bootstrap.CODE_FREEZE_DIRS = [scripts_dir]
@@ -139,28 +142,18 @@ def test_ci_health_checks_accept_bootstrap_without_live_broker_secret(tmp_path, 
     bootstrap.WAL_PATH = bootstrap.LIVE_DIR / "write_journal.log"
     bootstrap.MARKET_DATA_PATH = bootstrap.LIVE_DIR / "market_data_latest.json"
     bootstrap.TRADE_LEDGER_PATH = tmp_path / "data/options/trade_ledger.parquet"
+    bootstrap.MASTER_LEDGER_PATH = tmp_path / "data/pnl/master_ledger.parquet"
     bootstrap.RUNTIME_DB_PATH = tmp_path / "data/runtime/portfolio_runtime.db"
     bootstrap.TEST_COUNT_BASELINE_PATH = tmp_path / "data/processed/test_count_baseline.json"
     bootstrap.CODE_FREEZE_DIRS = [scripts_dir]
     bootstrap.write_baseline()
-
-    ledger_path = tmp_path / "data/pnl/master_ledger.parquet"
-    ledger_path.parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(
-        [
-            {
-                "entry_type": "CASH_IN",
-                "amount": 1_000_000.0,
-            }
-        ]
-    ).to_parquet(ledger_path, index=False)
 
     guide_path = tmp_path / "docs/operations/WORKSPACE_GUIDE.md"
     guide_path.parent.mkdir(parents=True, exist_ok=True)
     guide_path.write_text("CI runtime gate guide\n", encoding="utf-8")
 
     run_module.PROJECT_ROOT = tmp_path
-    run_module.MASTER_LEDGER_FILE = ledger_path
+    run_module.MASTER_LEDGER_FILE = bootstrap.MASTER_LEDGER_PATH
     run_module.WORKSPACE_GUIDE_FILE = guide_path
     run_module.TEST_COUNT_BASELINE_FILE = bootstrap.TEST_COUNT_BASELINE_PATH
     run_module.CI_BOOTSTRAP_MANIFEST_FILE = bootstrap.BOOTSTRAP_MANIFEST_PATH
@@ -228,6 +221,7 @@ def test_bootstrap_runtime_db_supports_alpha_diagnostics_smoke(tmp_path):
     bootstrap.WAL_PATH = bootstrap.LIVE_DIR / "write_journal.log"
     bootstrap.MARKET_DATA_PATH = bootstrap.LIVE_DIR / "market_data_latest.json"
     bootstrap.TRADE_LEDGER_PATH = tmp_path / "data/options/trade_ledger.parquet"
+    bootstrap.MASTER_LEDGER_PATH = tmp_path / "data/pnl/master_ledger.parquet"
     bootstrap.RUNTIME_DB_PATH = tmp_path / "data/runtime/portfolio_runtime.db"
     bootstrap.TEST_COUNT_BASELINE_PATH = tmp_path / "data/processed/test_count_baseline.json"
     bootstrap.CODE_FREEZE_DIRS = [scripts_dir]
