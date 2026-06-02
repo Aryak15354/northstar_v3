@@ -1,0 +1,14 @@
+# Run 009 - Config-driven Kaggle iteration after architecture hardening
+
+experiment:
+  run_id: "v3_run_009_20260403"
+  description: "Config-driven Kaggle rerun after architecture hardening. Start from run_008 and tune in YAML only."
+  based_on: "run_008"
+  hypothesis: "With the runtime path, logging, and regime config now aligned, the next Kaggle iteration should be reproducible and tunable without touching Python source."
+  falsification: "If the run still shows unstable train/test behavior or deployment artifacts with the same data inputs, the remaining issue is execution/runtime behavior rather than config management."
+
+preprocessing:
+  eps_sue_decay_ffill: true
+  eps_sue_decay_availability_flag: true
+
+regime_config_version: "v2_tight_boundaries"

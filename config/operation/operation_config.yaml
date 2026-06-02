@@ -48,6 +48,7 @@ min_sharpe_ratio: 0.5
 monitoring_interval_seconds: 30
 operation_timeout_hours: 24
 performance_thresholds:
+  max_drawdown_threshold: 0.15
   max_drawdown: 0.15
   max_latency_ms: 100.0
   max_var_breaches: 5.0
@@ -68,3 +69,58 @@ reporting_config:
   - json
 restricted_symbols: []
 validation_scenarios: []
+system:
+  max_concurrent_operations: 3
+  operation_timeout_hours: 24
+  data_retention_days: 365
+  enable_real_time_monitoring: true
+alerts:
+  email_recipients:
+  - operations@northstar.com
+  - risk@northstar.com
+  slack_webhook: null
+  alert_thresholds:
+    critical_drawdown: 0.2
+    critical_var_breaches: 10
+    critical_latency_ms: 500
+    critical_data_quality: 0.8
+  escalation_rules:
+    critical_alert_delay_minutes: 5
+    emergency_alert_delay_minutes: 1
+reporting:
+  output_directory: reports/operation
+  report_formats:
+  - html
+  - json
+  - pdf
+  include_charts: true
+  chart_style: professional
+  auto_email: false
+  email_recipients:
+  - management@northstar.com
+  - investors@northstar.com
+backtesting:
+  default_initial_capital: 1000000.0
+  default_rebalance_frequency: weekly
+  default_benchmark: NIFTY50
+  transaction_cost_bps: 10.0
+  market_impact_model: linear
+  max_position_size: 0.05
+  max_sector_exposure: 0.2
+  var_confidence: 0.95
+walk_forward:
+  training_window_months: 24
+  testing_window_months: 6
+  step_size_months: 3
+  optimization_metric: sharpe_ratio
+  reoptimization_frequency: quarterly
+  minimum_observations: 252
+  max_iterations: 100
+  convergence_tolerance: 1.0e-06
+logging:
+  log_level: INFO
+  log_directory: logs/operation
+  max_log_size_mb: 10
+  backup_count: 5
+  enable_performance_logging: true
+  enable_alert_logging: true

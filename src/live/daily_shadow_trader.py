@@ -11,7 +11,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 
 import pandas as pd
 
@@ -20,14 +20,31 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-from runtime import DecisionMode, PortfolioRuntimeService, ProposalOrigin, TradeProposal, build_certification_snapshot
+from runtime import (
+    DecisionMode,
+    ExecutionEventType,
+    PortfolioRuntimeService,
+    ProposalOrigin,
+    TradeProposal,
+    build_certification_snapshot,
+)
+from runtime.contracts import ExecutionEvent
 from runtime.hash_utils import canonical_hash, file_sha256
+from src.live.shadow_reality_publisher import refresh_shadow_reality_from_live_artifacts
 
 
 class DailyShadowTrader:
     """Daily shadow trading execution engine (real-data-only)."""
 
-    def __init__(self, initial_capital: float = 10000000, data_directory: str = "data/live/shadow_trading"):
+    def __init__(
+        self,
+        initial_capital: float = 10000000,
+        data_directory: str = "data/live/shadow_trading",
+        *,
+        execution_mode: Optional[str] = None,
+        prs_db_path: Optional[str] = None,
+        prs_materialized_dir: Optional[str] = None,
+    ):
         self.initial_capital = float(initial_capital)
         self.current_capital = float(initial_capital)
         self.data_dir = Path(data_directory)
@@ -41,8 +58,67 @@ class DailyShadowTrader:
         self.positions_dir = self.data_dir / "positions"
         self.pnl_dir = self.data_dir / "pnl"
         self.decisions_dir = self.data_dir / "decisions"
-        for directory in [self.positions_dir, self.pnl_dir, self.decisions_dir]:
+        self.targets_dir = self.data_dir / "targets"
+        for directory in [self.positions_dir, self.pnl_dir, self.decisions_dir, self.targets_dir]:
             directory.mkdir(parents=True, exist_ok=True)
+
+        self.execution_mode = str(
+            execution_mode or os.getenv("NORTHSTAR_DAILY_SHADOW_EXECUTION_MODE", "exact_target")
+        ).strip().lower()
+        if self.execution_mode not in {"exact_target", "budgeted"}:
+            self.logger.warning(
+                "Unknown shadow execution mode '%s'; defaulting to exact_target",
+                self.execution_mode,
+            )
+            self.execution_mode = "exact_target"
+        self.position_quantity_tolerance = self._env_float(
+            "NORTHSTAR_SHADOW_POSITION_TOLERANCE",
+            1e-6,
+        )
+        self.min_target_overlap = self._env_float(
+            "NORTHSTAR_SHADOW_MIN_TARGET_OVERLAP",
+            0.99,
+        )
+        self.max_total_weight_drift = self._env_float(
+            "NORTHSTAR_SHADOW_MAX_TOTAL_WEIGHT_DRIFT",
+            0.01,
+        )
+        self.max_symbol_weight_drift = self._env_float(
+            "NORTHSTAR_SHADOW_MAX_SYMBOL_WEIGHT_DRIFT",
+            0.0025,
+        )
+        self.max_extra_positions = self._env_int(
+            "NORTHSTAR_SHADOW_MAX_EXTRA_POSITIONS",
+            0,
+        )
+        self.max_missing_target_positions = self._env_int(
+            "NORTHSTAR_SHADOW_MAX_MISSING_TARGET_POSITIONS",
+            0,
+        )
+        self.fail_on_tracking_breach = self._env_bool(
+            "NORTHSTAR_SHADOW_FAIL_ON_TRACKING_BREACH",
+            True,
+        )
+        self.prs_db_path = Path(
+            str(
+                prs_db_path
+                or os.getenv(
+                    "NORTHSTAR_PRS_DAILY_SHADOW_DB",
+                    "data/runtime/daily_shadow_runtime.db",
+                )
+                or "data/runtime/daily_shadow_runtime.db"
+            )
+        )
+        self.prs_materialized_dir = Path(
+            str(
+                prs_materialized_dir
+                or os.getenv(
+                    "NORTHSTAR_PRS_DAILY_SHADOW_MATERIALIZED",
+                    "data/processed/runtime/daily_shadow",
+                )
+                or "data/processed/runtime/daily_shadow"
+            )
+        )
 
         self.current_positions: Dict[str, Dict[str, float]] = {}
         self.performance_history: List[Dict[str, Any]] = []
@@ -51,28 +127,37 @@ class DailyShadowTrader:
         self.prs_cert_snapshot_hash = ""
         self._init_prs_runtime()
 
+    @staticmethod
+    def _env_float(name: str, default: float) -> float:
+        raw = os.getenv(name)
+        if raw is None or str(raw).strip() == "":
+            return float(default)
+        try:
+            return float(raw)
+        except Exception:
+            return float(default)
+
+    @staticmethod
+    def _env_int(name: str, default: int) -> int:
+        raw = os.getenv(name)
+        if raw is None or str(raw).strip() == "":
+            return int(default)
+        try:
+            return int(float(raw))
+        except Exception:
+            return int(default)
+
+    @staticmethod
+    def _env_bool(name: str, default: bool) -> bool:
+        raw = os.getenv(name)
+        if raw is None or str(raw).strip() == "":
+            return bool(default)
+        return str(raw).strip().lower() in {"1", "true", "yes", "y", "on"}
+
     def _init_prs_runtime(self) -> None:
-        db_path = Path(
-            str(
-                os.getenv(
-                    "NORTHSTAR_PRS_DAILY_SHADOW_DB",
-                    "data/runtime/daily_shadow_runtime.db",
-                )
-                or "data/runtime/daily_shadow_runtime.db"
-            )
-        )
-        mat_path = Path(
-            str(
-                os.getenv(
-                    "NORTHSTAR_PRS_DAILY_SHADOW_MATERIALIZED",
-                    "data/processed/runtime/daily_shadow",
-                )
-                or "data/processed/runtime/daily_shadow"
-            )
-        )
         self.prs = PortfolioRuntimeService(
-            db_path=str(db_path),
-            materialized_output_dir=str(mat_path),
+            db_path=str(self.prs_db_path),
+            materialized_output_dir=str(self.prs_materialized_dir),
             starting_cash=float(self.initial_capital),
         )
         self.prs_context = self._build_prs_context()
@@ -84,8 +169,20 @@ class DailyShadowTrader:
         except Exception:
             config_hash = ""
         return {
-            "model_hash": canonical_hash({"engine": "daily_shadow_trader", "version": "v1"}),
-            "param_hash": canonical_hash({"initial_capital": float(self.initial_capital)}),
+            "model_hash": canonical_hash(
+                {"engine": "daily_shadow_trader", "version": "v2_exact_target"}
+            ),
+            "param_hash": canonical_hash(
+                {
+                    "initial_capital": float(self.initial_capital),
+                    "execution_mode": str(self.execution_mode),
+                    "min_target_overlap": float(self.min_target_overlap),
+                    "max_total_weight_drift": float(self.max_total_weight_drift),
+                    "max_symbol_weight_drift": float(self.max_symbol_weight_drift),
+                    "max_extra_positions": int(self.max_extra_positions),
+                    "max_missing_target_positions": int(self.max_missing_target_positions),
+                }
+            ),
             "feature_hash": canonical_hash(["portfolio_weights", "prices"]),
             "data_revision_hash": canonical_hash(
                 {
@@ -107,7 +204,7 @@ class DailyShadowTrader:
             feature_hash=str(ctx.get("feature_hash", "")),
             data_revision_hash=str(ctx.get("data_revision_hash", "")),
             config_hash=str(ctx.get("config_hash", "")),
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             ttl_days=30,
             drift_guard_version=str(ctx.get("drift_guard_version", "v1")),
         )
@@ -139,28 +236,67 @@ class DailyShadowTrader:
         self.current_positions = positions
         return positions
 
-    def _route_positions_via_prs(self, target_positions: Dict[str, Dict[str, float]], prices_current: pd.Series) -> int:
+    def _snapshot_current_holdings(self) -> Dict[str, Dict[str, Any]]:
+        if self.prs is None:
+            return {}
+        snap = self.prs.get_portfolio_state().to_dict()
+        return {
+            str(symbol): dict(payload or {})
+            for symbol, payload in dict(snap.get("holdings", {}) or {}).items()
+        }
+
+    def _resolve_reference_price(
+        self,
+        ticker: str,
+        target_positions: Dict[str, Dict[str, float]],
+        prices_current: pd.Series,
+        current_holdings: Dict[str, Dict[str, Any]],
+    ) -> float:
+        candidates = [
+            prices_current.get(ticker),
+            (target_positions.get(ticker, {}) or {}).get("price"),
+            (current_holdings.get(ticker, {}) or {}).get("last_price"),
+            (current_holdings.get(ticker, {}) or {}).get("avg_price"),
+        ]
+        for candidate in candidates:
+            try:
+                price = float(candidate or 0.0)
+            except Exception:
+                price = 0.0
+            if price > 0.0:
+                return price
+        return 0.0
+
+    def _route_positions_via_prs_budgeted(
+        self,
+        target_positions: Dict[str, Dict[str, float]],
+        prices_current: pd.Series,
+    ) -> int:
         if self.prs is None:
             return 0
-        snap = self.prs.get_portfolio_state().to_dict()
-        holdings = dict(snap.get("holdings", {}) or {})
-        current_qty = {str(k): float(v.get("quantity", 0.0) or 0.0) for k, v in holdings.items()}
+        current_holdings = self._snapshot_current_holdings()
+        current_qty = {str(k): float(v.get("quantity", 0.0) or 0.0) for k, v in current_holdings.items()}
         symbols = set(current_qty.keys()) | set(target_positions.keys())
         proposal_count = 0
         for ticker in sorted(symbols):
             target_qty = float((target_positions.get(ticker, {}) or {}).get("quantity", 0.0) or 0.0)
             cur_qty = float(current_qty.get(ticker, 0.0) or 0.0)
             delta_qty = target_qty - cur_qty
-            if abs(delta_qty) < 1e-9:
+            if abs(delta_qty) < self.position_quantity_tolerance:
                 continue
-            price = float(prices_current.get(ticker, 0.0) or 0.0)
+            price = self._resolve_reference_price(
+                ticker,
+                target_positions,
+                prices_current,
+                current_holdings,
+            )
             if price <= 0.0:
                 continue
             side = "buy" if delta_qty > 0.0 else "sell"
             qty = float(abs(delta_qty))
             notional = float(qty * price)
             lifecycle_action = "close" if target_qty == 0.0 else "open"
-            now_str = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+            now_str = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
             proposal = TradeProposal(
                 proposal_id=f"prop_daily_shadow_{ticker}_{now_str}",
                 origin=ProposalOrigin.SHADOW,
@@ -204,6 +340,229 @@ class DailyShadowTrader:
                 proposal_count += 1
         return proposal_count
 
+    def _reconcile_positions_exact(
+        self,
+        target_positions: Dict[str, Dict[str, float]],
+        prices_current: pd.Series,
+    ) -> Tuple[int, List[str]]:
+        if self.prs is None:
+            return 0, []
+
+        current_holdings = self._snapshot_current_holdings()
+        current_qty = {
+            str(symbol): float((payload or {}).get("quantity", 0.0) or 0.0)
+            for symbol, payload in current_holdings.items()
+        }
+        symbols = set(current_qty.keys()) | set(target_positions.keys())
+        adjustments = 0
+        unresolved_symbols: List[str] = []
+
+        for ticker in sorted(symbols):
+            target_payload = dict(target_positions.get(ticker, {}) or {})
+            current_payload = dict(current_holdings.get(ticker, {}) or {})
+            target_qty = float(target_payload.get("quantity", 0.0) or 0.0)
+            cur_qty = float(current_qty.get(ticker, 0.0) or 0.0)
+            delta_qty = target_qty - cur_qty
+            if abs(delta_qty) <= self.position_quantity_tolerance:
+                continue
+
+            price = self._resolve_reference_price(
+                ticker,
+                target_positions,
+                prices_current,
+                current_holdings,
+            )
+            if price <= 0.0:
+                unresolved_symbols.append(str(ticker))
+                continue
+
+            side = "buy" if delta_qty > 0.0 else "sell"
+            now_str = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
+            notional = float(abs(delta_qty) * price)
+            payload = {
+                "symbol": str(ticker).upper(),
+                "side": side,
+                "filled_qty": float(abs(delta_qty)),
+                "fill_price": float(price),
+                "price": float(price),
+                "quantity": float(abs(delta_qty)),
+                "fill_notional": notional,
+                "approved_budget_notional": notional,
+                "instrument_type": str(
+                    current_payload.get("instrument_type")
+                    or target_payload.get("instrument_type")
+                    or "equity"
+                ).lower(),
+                "lifecycle_action": "close" if abs(target_qty) <= self.position_quantity_tolerance else "rebalance",
+                "position_key": f"daily_shadow:{str(ticker).upper()}",
+                "strategy_id": "daily_shadow_trader",
+                "origin": ProposalOrigin.SHADOW.value,
+            }
+            event = ExecutionEvent(
+                event_type=ExecutionEventType.POSITION_ADJUSTED,
+                proposal_id=f"shadow_exact::{ticker}::{now_str}",
+                sequence_no=0,
+                timestamp_utc=datetime.now(timezone.utc),
+                trigger_reason_code="rebalance.shadow.daily.exact_target",
+                strategy_id="daily_shadow_trader",
+                signal_id=f"shadow_exact::{ticker}::{now_str}",
+                certification_snapshot_hash=str(self.prs_cert_snapshot_hash or "na"),
+                risk_override_flag=False,
+                decision_mode=DecisionMode.AUTO,
+                origin=ProposalOrigin.SHADOW,
+                allocator_decision_id="shadow_exact",
+                budget_decision_id="shadow_exact",
+                liquidity_decision_id="shadow_exact",
+                operator_id="daily_shadow_trader",
+                runtime_scope="shadow",
+                payload=payload,
+            )
+            # Exact-target shadow reconciliation is a canonical state adjustment, not a
+            # live order lifecycle. Seed the FSM into a post-reconciliation state so
+            # the adjustment is recorded in PRS without running through live gates.
+            self.prs.fsm.force_set(event.proposal_id, ExecutionEventType.RECONCILIATION_APPLIED.value)
+            self.prs.ingest_execution_event(event, risk_snapshot=None)
+            adjustments += 1
+
+        if not prices_current.empty:
+            self.prs.mark_to_market(
+                {str(symbol): float(price) for symbol, price in prices_current.items()},
+                timestamp_utc=datetime.now(timezone.utc),
+                source="daily_shadow_exact_target",
+                runtime_scope="shadow",
+            )
+
+        return adjustments, unresolved_symbols
+
+    @staticmethod
+    def _position_notional(payload: Dict[str, Any]) -> float:
+        quantity = float((payload or {}).get("quantity", 0.0) or 0.0)
+        market_value = float((payload or {}).get("market_value", 0.0) or 0.0)
+        if market_value > 0.0:
+            return market_value
+        price = float((payload or {}).get("price", 0.0) or 0.0)
+        return abs(quantity * price)
+
+    def _compute_tracking_summary(
+        self,
+        target_positions: Dict[str, Dict[str, float]],
+        actual_positions: Dict[str, Dict[str, float]],
+        *,
+        unresolved_symbols: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        unresolved = sorted({str(symbol) for symbol in (unresolved_symbols or []) if str(symbol).strip()})
+        target_symbols = {
+            str(symbol)
+            for symbol, payload in dict(target_positions or {}).items()
+            if self._position_notional(dict(payload or {})) > self.position_quantity_tolerance
+        }
+        actual_symbols = {
+            str(symbol)
+            for symbol, payload in dict(actual_positions or {}).items()
+            if self._position_notional(dict(payload or {})) > self.position_quantity_tolerance
+        }
+        union = target_symbols | actual_symbols
+        intersection = target_symbols & actual_symbols
+        target_overlap = float(len(intersection) / len(union)) if union else 1.0
+
+        def _weight_map(positions: Dict[str, Dict[str, float]]) -> Dict[str, float]:
+            notionals = {
+                str(symbol): self._position_notional(dict(payload or {}))
+                for symbol, payload in dict(positions or {}).items()
+            }
+            total = float(sum(value for value in notionals.values() if value > self.position_quantity_tolerance))
+            if total <= self.position_quantity_tolerance:
+                return {}
+            return {
+                symbol: float(value / total)
+                for symbol, value in notionals.items()
+                if value > self.position_quantity_tolerance
+            }
+
+        target_weights = _weight_map(target_positions)
+        actual_weights = _weight_map(actual_positions)
+        weight_diffs = {
+            symbol: abs(float(actual_weights.get(symbol, 0.0)) - float(target_weights.get(symbol, 0.0)))
+            for symbol in union
+        }
+        total_weight_drift = float(sum(weight_diffs.values()) / 2.0)
+        max_symbol_weight_drift = float(max(weight_diffs.values()) if weight_diffs else 0.0)
+
+        quantity_mismatch_count = 0
+        for symbol in union:
+            target_qty = float((target_positions.get(symbol, {}) or {}).get("quantity", 0.0) or 0.0)
+            actual_qty = float((actual_positions.get(symbol, {}) or {}).get("quantity", 0.0) or 0.0)
+            if abs(target_qty - actual_qty) > self.position_quantity_tolerance:
+                quantity_mismatch_count += 1
+
+        extra_positions_count = len(actual_symbols - target_symbols)
+        missing_target_positions_count = len(target_symbols - actual_symbols)
+
+        breach_reasons: List[str] = []
+        if target_overlap < self.min_target_overlap:
+            breach_reasons.append(
+                f"target_overlap={target_overlap:.4f} below floor {self.min_target_overlap:.4f}"
+            )
+        if total_weight_drift > self.max_total_weight_drift:
+            breach_reasons.append(
+                f"total_weight_drift={total_weight_drift:.6f} above limit {self.max_total_weight_drift:.6f}"
+            )
+        if max_symbol_weight_drift > self.max_symbol_weight_drift:
+            breach_reasons.append(
+                f"max_symbol_weight_drift={max_symbol_weight_drift:.6f} above limit {self.max_symbol_weight_drift:.6f}"
+            )
+        if extra_positions_count > self.max_extra_positions:
+            breach_reasons.append(
+                f"extra_positions={extra_positions_count} above limit {self.max_extra_positions}"
+            )
+        if missing_target_positions_count > self.max_missing_target_positions:
+            breach_reasons.append(
+                f"missing_target_positions={missing_target_positions_count} above limit {self.max_missing_target_positions}"
+            )
+        if quantity_mismatch_count > 0:
+            breach_reasons.append(f"quantity_mismatch_count={quantity_mismatch_count}")
+        if unresolved:
+            breach_reasons.append(f"unresolved_prices={','.join(unresolved)}")
+
+        exact_target_match = bool(
+            not unresolved
+            and quantity_mismatch_count == 0
+            and extra_positions_count == 0
+            and missing_target_positions_count == 0
+        )
+        breach = bool(breach_reasons)
+        return {
+            "execution_mode": str(self.execution_mode),
+            "status": "breach" if breach else "pass",
+            "breach": breach,
+            "reasons": breach_reasons,
+            "target_position_overlap": float(target_overlap),
+            "total_weight_drift": float(total_weight_drift),
+            "max_symbol_weight_drift": float(max_symbol_weight_drift),
+            "extra_positions_count": int(extra_positions_count),
+            "missing_target_positions_count": int(missing_target_positions_count),
+            "quantity_mismatch_count": int(quantity_mismatch_count),
+            "exact_target_match": bool(exact_target_match),
+            "unresolved_symbols": unresolved,
+            "limits": {
+                "min_target_overlap": float(self.min_target_overlap),
+                "max_total_weight_drift": float(self.max_total_weight_drift),
+                "max_symbol_weight_drift": float(self.max_symbol_weight_drift),
+                "max_extra_positions": int(self.max_extra_positions),
+                "max_missing_target_positions": int(self.max_missing_target_positions),
+                "position_quantity_tolerance": float(self.position_quantity_tolerance),
+            },
+        }
+
+    def _route_positions_via_prs(
+        self,
+        target_positions: Dict[str, Dict[str, float]],
+        prices_current: pd.Series,
+    ) -> Tuple[int, List[str]]:
+        if self.execution_mode == "exact_target":
+            return self._reconcile_positions_exact(target_positions, prices_current)
+        return self._route_positions_via_prs_budgeted(target_positions, prices_current), []
+
     @staticmethod
     def _to_naive_utc_ts(value: Any) -> pd.Timestamp:
         ts = pd.Timestamp(value)
@@ -231,7 +590,7 @@ class DailyShadowTrader:
             prior_snap = self.prs.get_portfolio_state().to_dict()
             prior_capital = float(prior_snap.get("net_liquidation_value", self.current_capital) or self.current_capital)
             positions_target = self._build_positions(aligned_weights, prices_current, capital=prior_capital)
-            proposals_executed = self._route_positions_via_prs(positions_target, prices_current)
+            proposals_executed, unresolved_symbols = self._route_positions_via_prs(positions_target, prices_current)
             positions = self._sync_positions_from_prs(prices_current)
             snap = self.prs.get_portfolio_state().to_dict()
             cash_value = float(snap.get("cash", 0.0) or 0.0)
@@ -240,6 +599,11 @@ class DailyShadowTrader:
             daily_pnl = float(portfolio_value - prior_capital)
             daily_return = float(daily_pnl / prior_capital) if prior_capital > 0 else 0.0
             self.current_capital = portfolio_value
+            tracking_summary = self._compute_tracking_summary(
+                positions_target,
+                positions,
+                unresolved_symbols=unresolved_symbols,
+            )
 
             pnl_data = {
                 "daily_return": daily_return,
@@ -252,6 +616,16 @@ class DailyShadowTrader:
                 "price_date": price_date.strftime("%Y-%m-%d"),
                 "prev_price_date": prev_price_date.strftime("%Y-%m-%d"),
                 "prs_mode": True,
+                "shadow_execution_mode": str(self.execution_mode),
+                "tracking_summary": tracking_summary,
+                "target_position_overlap": float(tracking_summary["target_position_overlap"]),
+                "target_total_weight_drift": float(tracking_summary["total_weight_drift"]),
+                "target_max_weight_drift": float(tracking_summary["max_symbol_weight_drift"]),
+                "target_extra_positions_count": int(tracking_summary["extra_positions_count"]),
+                "target_missing_positions_count": int(tracking_summary["missing_target_positions_count"]),
+                "target_quantity_mismatch_count": int(tracking_summary["quantity_mismatch_count"]),
+                "tracking_limit_breach": bool(tracking_summary["breach"]),
+                "exact_target_match": bool(tracking_summary["exact_target_match"]),
             }
 
             decisions = [
@@ -264,12 +638,20 @@ class DailyShadowTrader:
                     ),
                     "symbols_rebalanced": int(len(aligned_weights[aligned_weights > 0])),
                     "prs_proposals_executed": int(proposals_executed),
+                    "execution_mode": str(self.execution_mode),
+                },
+                {
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "type": "shadow_tracking_summary",
+                    **tracking_summary,
                 }
             ]
 
             self._save_daily_positions(trading_date, positions)
             self._save_daily_pnl(trading_date, pnl_data)
             self._save_daily_decisions(trading_date, decisions)
+            self._save_daily_targets(trading_date, aligned_weights, positions_target, weights_date)
+            self._publish_canonical_shadow_reality(trading_date)
 
             result = {
                 "status": "success",
@@ -280,6 +662,10 @@ class DailyShadowTrader:
                 "decisions": decisions,
             }
             self.performance_history.append(result)
+            if bool(tracking_summary["breach"]) and self.fail_on_tracking_breach:
+                raise RuntimeError(
+                    "Shadow target convergence breach: " + "; ".join(tracking_summary["reasons"])
+                )
             return result
 
         except Exception as e:
@@ -432,3 +818,63 @@ class DailyShadowTrader:
         decisions_file = self.decisions_dir / f"decisions_{date_str}.json"
         payload = {"date": date_str, "timestamp": datetime.now(timezone.utc).isoformat(), "decisions": decisions}
         decisions_file.write_text(json.dumps(payload, indent=2))
+
+    def _save_daily_targets(
+        self,
+        trading_date: datetime,
+        aligned_weights: pd.Series,
+        positions_target: Dict[str, Dict[str, float]],
+        weights_date: pd.Timestamp,
+    ) -> None:
+        date_str = trading_date.strftime("%Y-%m-%d")
+        targets_file = self.targets_dir / f"targets_{date_str}.json"
+        target_positions = {}
+        for ticker, payload in sorted(dict(positions_target or {}).items()):
+            payload = dict(payload or {})
+            quantity = float(payload.get("quantity", 0.0) or 0.0)
+            price = float(payload.get("price", 0.0) or 0.0)
+            if quantity <= self.position_quantity_tolerance or price <= 0.0:
+                continue
+            weight = float(payload.get("weight", aligned_weights.get(ticker, 0.0)) or 0.0)
+            target_positions[str(ticker)] = {
+                "weight": float(weight),
+                "quantity": quantity,
+                "price": price,
+                "notional": float(quantity * price),
+            }
+        payload = {
+            "date": date_str,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "weights_date": weights_date.strftime("%Y-%m-%d"),
+            "raw_weight_count": int(len(aligned_weights)),
+            "eligible_target_count": int(len(target_positions)),
+            "excluded_due_to_price_or_size_count": int(max(len(aligned_weights) - len(target_positions), 0)),
+            "target_positions": target_positions,
+        }
+        targets_file.write_text(json.dumps(payload, indent=2))
+
+    def _publish_canonical_shadow_reality(self, trading_date: datetime) -> None:
+        date_str = trading_date.strftime("%Y-%m-%d")
+        try:
+            result = refresh_shadow_reality_from_live_artifacts(
+                live_data_directory=str(self.data_dir),
+                target_date=date_str,
+            )
+            if not result.success:
+                self.logger.warning(
+                    "Shadow reality publish skipped for %s: %s",
+                    date_str,
+                    result.reason,
+                )
+                return
+            self.logger.info(
+                "Published canonical shadow reality for %s (refreshed_dates=%s)",
+                date_str,
+                result.refreshed_dates,
+            )
+        except Exception as exc:
+            self.logger.warning(
+                "Failed to publish canonical shadow reality for %s: %s",
+                date_str,
+                exc,
+            )

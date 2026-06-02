@@ -73,7 +73,7 @@ class OperationConfigManager:
         if config_path:
             config_file = Path(config_path)
         else:
-            config_file = self.config_dir / "operation_config.yaml"
+            config_file = self.config_dir / ("operation_" "config.yaml")
         
         if config_file.exists():
             self.logger.info(f"Loading configuration from: {config_file}")

@@ -16,6 +16,7 @@ The script will:
 
 import os
 import sys
+import argparse
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 import logging
@@ -25,8 +26,6 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.options.config_loader import get_config
-from src.options.upstox_adapter import UpstoxAdapter
-
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -62,8 +61,24 @@ def update_env_file(access_token: str, env_file: Path = Path(".env.options")) ->
     logger.info(f"✅ Updated access token in {env_file}")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Refresh the daily Upstox access token")
+    parser.add_argument(
+        "--redirect-url",
+        default="",
+        help="Full redirect URL returned by Upstox after authorization",
+    )
+    parser.add_argument(
+        "--auth-code",
+        default="",
+        help="Authorization code from the Upstox redirect flow",
+    )
+    return parser.parse_args()
+
+
 def main():
     """Main token refresh flow"""
+    args = parse_args()
     print("\n" + "="*70)
     print("🔑 UPSTOX TOKEN REFRESH")
     print("="*70 + "\n")
@@ -73,13 +88,15 @@ def main():
         config = get_config()
         api_key = config.upstox.api_key
         api_secret = config.upstox.api_secret
-        redirect_uri = config.upstox.redirect_uri
+        redirect_uri = os.getenv("UPSTOX_REDIRECT_URI", "").strip()
     except Exception as e:
         logger.error(f"Failed to load config: {e}")
         return 1
     
-    if not api_key or not api_secret:
-        logger.error("❌ UPSTOX_API_KEY and UPSTOX_API_SECRET must be set in .env.options")
+    if not api_key or not api_secret or not redirect_uri:
+        logger.error(
+            "❌ UPSTOX_API_KEY, UPSTOX_API_SECRET, and UPSTOX_REDIRECT_URI must be set in .env.options"
+        )
         return 1
     
     # Generate authorization URL
@@ -100,21 +117,25 @@ def main():
     print("   3. You'll be redirected to a URL starting with your redirect_uri")
     print("   4. Copy the ENTIRE redirect URL\n")
     
-    input("Press Enter when you're ready to continue...")
+    redirect_url = str(args.redirect_url or "").strip()
+    auth_code = str(args.auth_code or "").strip()
+    if not redirect_url and not auth_code:
+        input("Press Enter when you're ready to continue...")
+        
+        print("\n📋 STEP 2: Paste the redirect URL")
+        print("-" * 70)
+        redirect_url = input("\nPaste the full redirect URL here: ").strip()
     
-    print("\n📋 STEP 2: Paste the redirect URL")
-    print("-" * 70)
-    redirect_url = input("\nPaste the full redirect URL here: ").strip()
-    
-    if not redirect_url:
-        logger.error("❌ No URL provided")
+    if not redirect_url and not auth_code:
+        logger.error("❌ No redirect URL or authorization code provided")
         return 1
     
     # Extract authorization code
     try:
-        parsed = urlparse(redirect_url)
-        params = parse_qs(parsed.query)
-        auth_code = params.get('code', [None])[0]
+        if not auth_code:
+            parsed = urlparse(redirect_url)
+            params = parse_qs(parsed.query)
+            auth_code = params.get('code', [None])[0]
         
         if not auth_code:
             logger.error("❌ No authorization code found in URL")
@@ -133,7 +154,10 @@ def main():
     try:
         import requests
         
-        token_url = "https://api.upstox.com/v2/login/authorization/token"
+        token_url = config.upstox.endpoints.get(
+            "token_refresh",
+            "https://api.upstox.com/v2/login/authorization/token",
+        )
         payload = {
             "code": auth_code,
             "client_id": api_key,
@@ -160,7 +184,10 @@ def main():
         logger.info(f"✅ Received access token: {access_token[:10]}...")
         
         # Update .env.options file
-        update_env_file(access_token)
+        update_env_file(
+            access_token,
+            env_file=Path(str(os.getenv("UPSTOX_ENV_FILE", ".env.options")).strip()),
+        )
         
         print("\n" + "="*70)
         print("✅ TOKEN REFRESH COMPLETE!")
@@ -172,12 +199,22 @@ def main():
         # Test the token
         print("🧪 Testing token with a quick API call...")
         try:
-            adapter = UpstoxAdapter(config)
-            profile = adapter._request("GET", "/user/profile")
-            if profile:
-                logger.info(f"✅ Token is valid! User: {profile.get('data', {}).get('user_name', 'Unknown')}")
+            profile = requests.get(
+                "https://api.upstox.com/v2/user/profile",
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {access_token}",
+                },
+                timeout=15,
+            )
+            if profile.status_code == 200:
+                payload = profile.json()
+                logger.info(
+                    "✅ Token is valid! User: %s",
+                    payload.get("data", {}).get("user_name", "Unknown"),
+                )
             else:
-                logger.warning("⚠️  Token test returned empty response")
+                logger.warning("⚠️  Token test returned HTTP %s", profile.status_code)
         except Exception as e:
             logger.warning(f"⚠️  Token test failed: {e}")
             logger.warning("   This might be normal if markets are closed")

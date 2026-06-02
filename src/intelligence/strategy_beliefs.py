@@ -25,6 +25,23 @@ from scipy.stats import beta
 import warnings
 warnings.filterwarnings('ignore')
 
+try:
+    from src.intelligence.strategy_surface_policy import (
+        is_archived_strategy,
+        is_feature_only_strategy,
+        overlay_config,
+        strategy_overlay_parent,
+        strategy_overlay_weight,
+    )
+except Exception:
+    from strategy_surface_policy import (  # type: ignore
+        is_archived_strategy,
+        is_feature_only_strategy,
+        overlay_config,
+        strategy_overlay_parent,
+        strategy_overlay_weight,
+    )
+
 class StrategyBeliefs:
     """
     Bayesian Strategy Belief Engine
@@ -45,8 +62,10 @@ class StrategyBeliefs:
             'beliefs': 'data/processed/strategy_beliefs.parquet',
             'backtests': 'data/processed/backtests',
             'market_state': 'data/processed/market_state.parquet',
-            'capital_allocations': 'data/processed/capital_allocations.json'
+            'capital_allocations': 'data/processed/capital_allocations.json',
+            'feature_overlays': 'data/processed/strategy_feature_overlays.json'
         }
+        self._latest_feature_overlays = {}
         
         # Belief parameters (production-ready thresholds)
         self.params = {
@@ -94,6 +113,25 @@ class StrategyBeliefs:
                 'mom_6m': 0.7, 'dual_momentum': 0.8
             }
         }
+        self.family_regime_fitness = {
+            'crisis': {'sentiment': 0.90, 'alternative': 0.92, 'ownership': 0.95},
+            'boom': {'sentiment': 1.10, 'alternative': 1.12, 'ownership': 1.05},
+            'expansion': {'sentiment': 1.12, 'alternative': 1.08, 'ownership': 1.08},
+            'late-expansion': {'sentiment': 1.02, 'alternative': 1.10, 'ownership': 1.12},
+            'slowdown': {'sentiment': 0.96, 'alternative': 1.05, 'ownership': 1.08},
+            'tightening': {'sentiment': 0.94, 'alternative': 1.00, 'ownership': 1.06},
+        }
+
+    @staticmethod
+    def _strategy_family(strategy: str) -> str:
+        s = str(strategy or "").strip().lower()
+        if any(token in s for token in ('ownership', 'shareholding', 'promoter')):
+            return 'ownership'
+        if any(token in s for token in ('sentiment', 'news')):
+            return 'sentiment'
+        if any(token in s for token in ('alternative', 'announcement', 'bulk', 'credit', 'pledge')):
+            return 'alternative'
+        return ''
 
     def _normalize_existing_beliefs_df(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -174,7 +212,95 @@ class StrategyBeliefs:
             )
             norm['status'] = norm['status'].where(norm['status'].notna(), status_default)
 
+        if 'strategy' in norm.columns:
+            strategy_series = norm['strategy'].astype(str)
+            keep_mask = ~strategy_series.map(
+                lambda s: is_feature_only_strategy(s) or is_archived_strategy(s)
+            )
+            norm = norm.loc[keep_mask].copy()
+
         return norm
+
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        try:
+            parsed = float(value)
+        except Exception:
+            return float(default)
+        if not np.isfinite(parsed):
+            return float(default)
+        return float(parsed)
+
+    def _feature_overlay_signal(self, metrics):
+        sharpe = self._safe_float(metrics.get('sharpe', 0.0), 0.0)
+        annualized = self._safe_float(metrics.get('mean_return', 0.0), 0.0) * 252.0
+        total_return = self._safe_float(metrics.get('total_return', 0.0), 0.0)
+        signal = (
+            0.55 * np.tanh(sharpe / 3.0) +
+            0.30 * np.tanh(annualized / 0.20) +
+            0.15 * np.tanh(total_return / 0.20)
+        )
+        cap = self._safe_float(overlay_config().get('signal_cap', 1.0), 1.0)
+        cap = max(0.1, cap)
+        return float(np.clip(signal, -cap, cap))
+
+    def _build_feature_overlays(self, feature_metrics):
+        overlays_by_parent = {}
+        max_impact = self._safe_float(overlay_config().get('max_abs_score_impact', 0.12), 0.12)
+
+        for strategy, metrics in feature_metrics.items():
+            parent = strategy_overlay_parent(strategy)
+            weight = strategy_overlay_weight(strategy)
+            signal = self._feature_overlay_signal(metrics)
+            overlays_by_parent.setdefault(parent, []).append({
+                'strategy': strategy,
+                'weight': weight,
+                'signal': signal,
+                'family': self._strategy_family(strategy) or 'legacy_feature',
+                'sharpe': self._safe_float(metrics.get('sharpe', 0.0), 0.0),
+                'mean_return': self._safe_float(metrics.get('mean_return', 0.0), 0.0),
+                'total_return': self._safe_float(metrics.get('total_return', 0.0), 0.0),
+                'observations': int(self._safe_float(metrics.get('observations', 0), 0)),
+            })
+
+        payload = {
+            'timestamp': datetime.now().isoformat(),
+            'source': 'strategy_beliefs',
+            'overlays': {},
+        }
+
+        for parent, rows in overlays_by_parent.items():
+            total_weight = sum(max(0.0, self._safe_float(row.get('weight', 0.0), 0.0)) for row in rows)
+            if total_weight <= 0:
+                continue
+            raw_signal = sum(
+                self._safe_float(row.get('weight', 0.0), 0.0) * self._safe_float(row.get('signal', 0.0), 0.0)
+                for row in rows
+            ) / total_weight
+            overlay_score = float(np.clip(raw_signal * max_impact, -max_impact, max_impact))
+            positive_share = sum(
+                self._safe_float(row.get('weight', 0.0), 0.0)
+                for row in rows
+                if self._safe_float(row.get('signal', 0.0), 0.0) > 0
+            ) / total_weight
+            payload['overlays'][parent] = {
+                'parent_strategy': parent,
+                'component_count': len(rows),
+                'overlay_score': overlay_score,
+                'raw_signal': float(np.clip(raw_signal, -1.0, 1.0)),
+                'positive_share': float(np.clip(positive_share, 0.0, 1.0)),
+                'components': rows,
+            }
+
+        return payload
+
+    def _save_feature_overlays(self, payload):
+        path = self.paths.get('feature_overlays')
+        if not path:
+            return
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump(payload, f, indent=2, default=str)
     
     def load_existing_beliefs(self):
         """Load existing beliefs or initialize"""
@@ -199,11 +325,14 @@ class StrategyBeliefs:
         print("📊 Loading strategy performance for belief updates...")
         
         strategy_data = {}
+        feature_metrics = {}
         
         if os.path.exists(self.paths['backtests']):
             for file in os.listdir(self.paths['backtests']):
                 if file.endswith('.parquet'):
                     strategy_name = file.replace('.parquet', '')
+                    if is_archived_strategy(strategy_name):
+                        continue
                     try:
                         df = pd.read_parquet(os.path.join(self.paths['backtests'], file))
                         if not df.empty and len(df) > self.params['min_observations']:
@@ -223,7 +352,7 @@ class StrategyBeliefs:
                             wins = (returns > 0).sum()
                             losses = (returns <= 0).sum()
                             
-                            strategy_data[strategy_name] = {
+                            payload = {
                                 'returns': returns.tolist(),
                                 'mean_return': mean_return,
                                 'volatility': volatility,
@@ -233,10 +362,20 @@ class StrategyBeliefs:
                                 'losses': losses,
                                 'observations': len(returns)
                             }
+                            if is_feature_only_strategy(strategy_name):
+                                feature_metrics[strategy_name] = payload
+                            else:
+                                strategy_data[strategy_name] = payload
                     except Exception as e:
                         print(f"   ⚠️ Error loading {strategy_name}: {e}")
-        
-        print(f"   ✅ Loaded performance for {len(strategy_data)} strategies")
+
+        overlay_payload = self._build_feature_overlays(feature_metrics)
+        self._latest_feature_overlays = dict(overlay_payload.get('overlays', {}) or {})
+        self._save_feature_overlays(overlay_payload)
+
+        print(f"   ✅ Loaded performance for {len(strategy_data)} standalone strategies")
+        if feature_metrics:
+            print(f"   🔗 Folded {len(feature_metrics)} legacy sleeves into bounded overlays")
         return strategy_data
     
     def get_current_regime(self):
@@ -257,7 +396,10 @@ class StrategyBeliefs:
         """Calculate how well strategy fits current regime"""
         
         regime_map = self.regime_fitness.get(regime, {})
-        base_fitness = regime_map.get(strategy, 1.0)
+        base_fitness = regime_map.get(strategy)
+        if base_fitness is None:
+            family = self._strategy_family(strategy)
+            base_fitness = self.family_regime_fitness.get(regime, {}).get(family, 1.0)
 
         # Real-data-only deterministic fitness: no stochastic perturbation.
         return float(np.clip(base_fitness, 0.5, 2.0))

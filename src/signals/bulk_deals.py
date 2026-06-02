@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Iterable
 
 import numpy as np
@@ -10,15 +11,16 @@ import pandas as pd
 from pandas.tseries.offsets import BDay
 
 
-INSTITUTIONAL_KEYWORDS = (
-    "MF",
-    "MUTUAL FUND",
-    "FII",
-    "FPI",
-    "INSURANCE",
-    "PENSION",
-    "FUND",
-)
+BUYER_CATEGORIES = {
+    "FII": ["FII", "FPI", "FOREIGN", "OVERSEAS", "OFFSHORE"],
+    "DII": ["MUTUAL FUND", "MF", "INSURANCE", "PENSION", "BANK", "TRUST", "AMC", "ASSET MGMT"],
+    "PROMOTER": ["PROMOTER", "PROMOTERS", "PROMOTER GROUP"],
+    "INSTITUTIONAL": ["CAPITAL", "INVEST", "FUND", "VENTURE", "PARTNERS", "HOLDINGS"],
+    "RETAIL": ["RETAIL", "INDIVIDUAL", "HUF"],
+}
+
+BUYER_LOOKUP_PATH = Path("data/processed/alternative/bulk_deals_buyer_lookup.csv")
+FUZZY_THRESHOLD = 0.85
 
 
 def _normalize_ticker(value: object) -> str:
@@ -41,6 +43,87 @@ def _find_col(columns: Iterable[str], aliases: Iterable[str]) -> str | None:
     return None
 
 
+def _series_from_frame(frame: pd.DataFrame, column: str | None, default: object = np.nan) -> pd.Series:
+    if column and column in frame.columns:
+        return frame[column]
+    return pd.Series([default] * len(frame), index=frame.index)
+
+
+def _normalize_name(value: object) -> str:
+    s = str(value or "").strip().upper()
+    s = re.sub(r"[^A-Z0-9 ]+", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _levenshtein_distance(a: str, b: str) -> int:
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+    m, n = len(a), len(b)
+    prev = list(range(n + 1))
+    for i in range(1, m + 1):
+        curr = [i] + [0] * n
+        for j in range(1, n + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            curr[j] = min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
+        prev = curr
+    return prev[n]
+
+
+def _levenshtein_ratio(a: str, b: str) -> float:
+    if not a and not b:
+        return 1.0
+    dist = _levenshtein_distance(a, b)
+    denom = max(len(a), len(b), 1)
+    return 1.0 - float(dist) / float(denom)
+
+
+def _load_buyer_lookup() -> dict[str, str]:
+    if not BUYER_LOOKUP_PATH.exists():
+        return {}
+    try:
+        df = pd.read_csv(BUYER_LOOKUP_PATH)
+    except Exception:
+        return {}
+    if df.empty or "pattern" not in df.columns or "category" not in df.columns:
+        return {}
+    out: dict[str, str] = {}
+    for _, row in df.iterrows():
+        pat = _normalize_name(row.get("pattern"))
+        cat = str(row.get("category") or "").strip().upper()
+        if pat and cat:
+            out[pat] = cat
+    return out
+
+
+def _classify_buyer(name: str, lookup: dict[str, str]) -> str:
+    norm = _normalize_name(name)
+    if not norm:
+        return "UNKNOWN"
+    for pat, cat in lookup.items():
+        if pat in norm or norm == pat:
+            return cat
+
+    best_cat = "UNKNOWN"
+    best_score = 0.0
+    for cat, patterns in BUYER_CATEGORIES.items():
+        for pat in patterns:
+            p = _normalize_name(pat)
+            if not p:
+                continue
+            score = _levenshtein_ratio(norm, p)
+            if score > best_score:
+                best_score = score
+                best_cat = cat
+    if best_score >= FUZZY_THRESHOLD:
+        return best_cat
+    return "UNKNOWN"
+
+
 def _empty_output(prices_df: pd.DataFrame) -> pd.DataFrame:
     if prices_df is None or prices_df.empty:
         return pd.DataFrame(
@@ -51,10 +134,22 @@ def _empty_output(prices_df: pd.DataFrame) -> pd.DataFrame:
                 "bulk_buy_volume_5d",
                 "bulk_sell_volume_5d",
                 "bulk_net_volume_5d",
+                "bulk_buy_volume_21d",
+                "bulk_sell_volume_21d",
+                "bulk_net_volume_21d",
                 "bulk_buy_count_5d",
                 "bulk_deal_flag",
                 "bulk_deal_value_pct_mcap",
                 "institutional_buy_flag",
+                "bulk_net_pressure_5d",
+                "bulk_net_pressure_21d",
+                "bulk_net_pressure_float_21d",
+                "bulk_net_fii_21d",
+                "bulk_net_dii_21d",
+                "bulk_net_promoter_21d",
+                "bulk_net_institutional_21d",
+                "bulk_net_retail_21d",
+                "bulk_net_unknown_21d",
             ]
         )
     out = prices_df[["date", "ticker"]].copy()
@@ -63,10 +158,22 @@ def _empty_output(prices_df: pd.DataFrame) -> pd.DataFrame:
         "bulk_buy_volume_5d",
         "bulk_sell_volume_5d",
         "bulk_net_volume_5d",
+        "bulk_buy_volume_21d",
+        "bulk_sell_volume_21d",
+        "bulk_net_volume_21d",
         "bulk_buy_count_5d",
         "bulk_deal_flag",
         "bulk_deal_value_pct_mcap",
         "institutional_buy_flag",
+        "bulk_net_pressure_5d",
+        "bulk_net_pressure_21d",
+        "bulk_net_pressure_float_21d",
+        "bulk_net_fii_21d",
+        "bulk_net_dii_21d",
+        "bulk_net_promoter_21d",
+        "bulk_net_institutional_21d",
+        "bulk_net_retail_21d",
+        "bulk_net_unknown_21d",
     ]:
         out[c] = np.nan
     return out
@@ -84,8 +191,8 @@ def compute_bulk_deal_features(df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.
         return _empty_output(pd.DataFrame())
 
     prices = prices_df.copy()
-    prices["date"] = pd.to_datetime(prices.get("date"), errors="coerce")
-    prices["ticker"] = prices.get("ticker", "").map(_normalize_ticker)
+    prices["date"] = pd.to_datetime(_series_from_frame(prices, "date"), errors="coerce")
+    prices["ticker"] = _series_from_frame(prices, "ticker", "").map(_normalize_ticker)
     prices = prices.dropna(subset=["date", "ticker"])
     prices = prices.sort_values(["ticker", "date"], kind="mergesort")
     if prices.empty:
@@ -121,33 +228,85 @@ def compute_bulk_deal_features(df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.
     # PIT safety: bulk deal on D appears from D+1 business day.
     deals["availability_date"] = pd.to_datetime(deals["date"], errors="coerce") + BDay(1)
 
-    names = deals[col_client].astype(str).str.upper().fillna("") if col_client else pd.Series("", index=deals.index)
-    inst_pat = "|".join(re.escape(k) for k in INSTITUTIONAL_KEYWORDS)
-    deals["institutional_buy"] = (
-        deals["deal_type"].eq("BUY") & names.str.contains(inst_pat, regex=True, na=False)
-    ).astype(float)
+    # Survivorship filter: drop deals after delisting date.
+    delist_path = Path("data/universe/delisting_database.parquet")
+    if delist_path.exists():
+        try:
+            delist = pd.read_parquet(delist_path)
+        except Exception:
+            delist = pd.DataFrame()
+        if not delist.empty and "symbol" in delist.columns:
+            delist = delist.copy()
+            delist["ticker"] = delist["symbol"].map(_normalize_ticker)
+            delist["delisting_date"] = pd.to_datetime(delist.get("delisting_date"), errors="coerce")
+            delist = delist.dropna(subset=["ticker", "delisting_date"])[["ticker", "delisting_date"]]
+            if not delist.empty:
+                deals = deals.merge(delist, on="ticker", how="left")
+                deals = deals.loc[
+                    ~(
+                        deals["delisting_date"].notna()
+                        & (pd.to_datetime(deals["date"], errors="coerce") > deals["delisting_date"])
+                    )
+                ].copy()
+                deals = deals.drop(columns=["delisting_date"], errors="ignore")
 
-    daily = (
-        deals.groupby(["ticker", "availability_date"], as_index=False)
-        .agg(
-            buy_qty=("quantity", lambda x: pd.to_numeric(x, errors="coerce")[deals.loc[x.index, "deal_type"].eq("BUY")].sum()),
-            sell_qty=("quantity", lambda x: pd.to_numeric(x, errors="coerce")[deals.loc[x.index, "deal_type"].eq("SELL")].sum()),
-            buy_count=("deal_type", lambda x: float((x == "BUY").sum())),
-            any_deal=("deal_type", lambda x: float(len(x) > 0)),
-            deal_value=("value", "sum"),
-            institutional_buy_flag=("institutional_buy", "max"),
+    lookup = _load_buyer_lookup()
+    names = deals[col_client].astype(str) if col_client else pd.Series("", index=deals.index)
+    deals["buyer_category"] = names.map(lambda x: _classify_buyer(x, lookup))
+
+    categories = ["FII", "DII", "PROMOTER", "INSTITUTIONAL", "RETAIL", "UNKNOWN"]
+    for cat in categories:
+        deals[f"buy_{cat}"] = np.where(
+            (deals["deal_type"].eq("BUY") & deals["buyer_category"].eq(cat)),
+            deals["quantity"],
+            0.0,
         )
+        deals[f"sell_{cat}"] = np.where(
+            (deals["deal_type"].eq("SELL") & deals["buyer_category"].eq(cat)),
+            deals["quantity"],
+            0.0,
+        )
+
+    daily = deals.groupby(["ticker", "availability_date"], as_index=False).agg(
+        buy_qty=("quantity", lambda x: pd.to_numeric(x, errors="coerce")[deals.loc[x.index, "deal_type"].eq("BUY")].sum()),
+        sell_qty=("quantity", lambda x: pd.to_numeric(x, errors="coerce")[deals.loc[x.index, "deal_type"].eq("SELL")].sum()),
+        buy_count=("deal_type", lambda x: float((x == "BUY").sum())),
+        any_deal=("deal_type", lambda x: float(len(x) > 0)),
+        deal_value=("value", "sum"),
+        **{f"buy_{cat}": (f"buy_{cat}", "sum") for cat in categories},
+        **{f"sell_{cat}": (f"sell_{cat}", "sum") for cat in categories},
     )
 
-    base = prices[["date", "ticker"]].copy()
-    if "market_cap" in prices.columns:
-        base["market_cap"] = pd.to_numeric(prices["market_cap"], errors="coerce")
-    elif {"close", "shares_outstanding"}.issubset(set(prices.columns)):
-        base["market_cap"] = pd.to_numeric(prices["close"], errors="coerce") * pd.to_numeric(
-            prices["shares_outstanding"], errors="coerce"
+    inst_cats = {"FII", "DII", "INSTITUTIONAL", "PROMOTER"}
+    daily["institutional_buy_flag"] = daily[[f"buy_{cat}" for cat in inst_cats]].sum(axis=1).gt(0.0).astype(float)
+
+    base_cols = [
+        c
+        for c in [
+            "date",
+            "ticker",
+            "close",
+            "volume",
+            "market_cap",
+            "shares_outstanding",
+            "screener_free_float_pct",
+            "free_float_pct",
+        ]
+        if c in prices.columns
+    ]
+    base = prices[base_cols].copy() if base_cols else prices[["date", "ticker"]].copy()
+    base["market_cap"] = pd.to_numeric(_series_from_frame(base, "market_cap"), errors="coerce")
+    if base["market_cap"].isna().all() and {"close", "shares_outstanding"}.issubset(set(base.columns)):
+        base["market_cap"] = pd.to_numeric(base["close"], errors="coerce") * pd.to_numeric(
+            base["shares_outstanding"], errors="coerce"
         )
-    else:
-        base["market_cap"] = np.nan
+    base["volume"] = pd.to_numeric(_series_from_frame(base, "volume"), errors="coerce")
+    base["shares_outstanding"] = pd.to_numeric(_series_from_frame(base, "shares_outstanding"), errors="coerce")
+    free_float_pct = pd.to_numeric(_series_from_frame(base, "free_float_pct"), errors="coerce")
+    if free_float_pct.isna().all():
+        free_float_pct = pd.to_numeric(_series_from_frame(base, "screener_free_float_pct"), errors="coerce")
+    base["free_float_pct"] = free_float_pct
+    base["free_float_shares"] = base["shares_outstanding"] * (base["free_float_pct"] / 100.0)
 
     out_frames: list[pd.DataFrame] = []
     for ticker, grp in base.groupby("ticker", sort=False):
@@ -156,6 +315,9 @@ def compute_bulk_deal_features(df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.
         if d.empty:
             for c in ["buy_qty", "sell_qty", "buy_count", "any_deal", "deal_value", "institutional_buy_flag"]:
                 g[c] = 0.0
+            for cat in ["FII", "DII", "PROMOTER", "INSTITUTIONAL", "RETAIL", "UNKNOWN"]:
+                g[f"buy_{cat}"] = 0.0
+                g[f"sell_{cat}"] = 0.0
         else:
             m = g.merge(
                 d.drop(columns=["ticker"], errors="ignore"),
@@ -165,12 +327,22 @@ def compute_bulk_deal_features(df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.
             )
             for c in ["buy_qty", "sell_qty", "buy_count", "any_deal", "deal_value", "institutional_buy_flag"]:
                 m[c] = pd.to_numeric(m[c], errors="coerce").fillna(0.0)
+            for cat in ["FII", "DII", "PROMOTER", "INSTITUTIONAL", "RETAIL", "UNKNOWN"]:
+                for side in ["buy", "sell"]:
+                    col = f"{side}_{cat}"
+                    if col in m.columns:
+                        m[col] = pd.to_numeric(m[col], errors="coerce").fillna(0.0)
+                    else:
+                        m[col] = 0.0
             g = m
 
         g = g.sort_values("date", kind="mergesort")
         g["bulk_buy_volume_5d"] = g["buy_qty"].rolling(5, min_periods=1).sum()
         g["bulk_sell_volume_5d"] = g["sell_qty"].rolling(5, min_periods=1).sum()
         g["bulk_net_volume_5d"] = g["bulk_buy_volume_5d"] - g["bulk_sell_volume_5d"]
+        g["bulk_buy_volume_21d"] = g["buy_qty"].rolling(21, min_periods=5).sum()
+        g["bulk_sell_volume_21d"] = g["sell_qty"].rolling(21, min_periods=5).sum()
+        g["bulk_net_volume_21d"] = g["bulk_buy_volume_21d"] - g["bulk_sell_volume_21d"]
         g["bulk_buy_count_5d"] = g["buy_count"].rolling(5, min_periods=1).sum()
         g["bulk_deal_flag"] = g["any_deal"].rolling(5, min_periods=1).max().astype(float)
         g["institutional_buy_flag"] = g["institutional_buy_flag"].rolling(5, min_periods=1).max().astype(float)
@@ -180,6 +352,18 @@ def compute_bulk_deal_features(df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.
             * pd.to_numeric(g["bulk_deal_value_5d"], errors="coerce")
             / pd.to_numeric(g["market_cap"], errors="coerce").replace(0.0, np.nan)
         )
+        adv_21d = pd.to_numeric(g["volume"], errors="coerce").rolling(21, min_periods=10).mean()
+        g["bulk_net_pressure_5d"] = g["bulk_net_volume_5d"] / adv_21d.replace(0.0, np.nan)
+        g["bulk_net_pressure_21d"] = g["bulk_net_volume_21d"] / adv_21d.replace(0.0, np.nan)
+
+        free_float = pd.to_numeric(g["free_float_shares"], errors="coerce")
+        g["bulk_net_pressure_float_21d"] = g["bulk_net_volume_21d"] / free_float.replace(0.0, np.nan)
+
+        for cat in ["FII", "DII", "PROMOTER", "INSTITUTIONAL", "RETAIL", "UNKNOWN"]:
+            buy_col = f"buy_{cat}"
+            sell_col = f"sell_{cat}"
+            net = (g[buy_col] - g[sell_col]).rolling(21, min_periods=5).sum()
+            g[f"bulk_net_{cat.lower()}_21d"] = net / free_float.replace(0.0, np.nan)
         out_frames.append(g)
 
     out = pd.concat(out_frames, ignore_index=True) if out_frames else _empty_output(prices)
@@ -191,10 +375,22 @@ def compute_bulk_deal_features(df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.
         "bulk_buy_volume_5d",
         "bulk_sell_volume_5d",
         "bulk_net_volume_5d",
+        "bulk_buy_volume_21d",
+        "bulk_sell_volume_21d",
+        "bulk_net_volume_21d",
         "bulk_buy_count_5d",
         "bulk_deal_flag",
         "bulk_deal_value_pct_mcap",
         "institutional_buy_flag",
+        "bulk_net_pressure_5d",
+        "bulk_net_pressure_21d",
+        "bulk_net_pressure_float_21d",
+        "bulk_net_fii_21d",
+        "bulk_net_dii_21d",
+        "bulk_net_promoter_21d",
+        "bulk_net_institutional_21d",
+        "bulk_net_retail_21d",
+        "bulk_net_unknown_21d",
     ]
     for c in keep:
         if c not in out.columns:

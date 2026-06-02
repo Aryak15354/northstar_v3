@@ -103,8 +103,8 @@ class TestRiskManagementProperties:
     
     def setup_method(self):
         """Set up test fixtures"""
-        self.config_manager = ConfigurationManager("test_config")
-        self.audit_logger = AuditLogger("data/test_audit")
+        self.config_manager = ConfigurationManager("tests/fixtures/test_config")
+        self.audit_logger = AuditLogger("data/testing/audit")
         self.state_manager = UnifiedStateManager()
         
         # Initialize state manager with a test state

@@ -16,6 +16,7 @@ from datetime import datetime
 import pandas as pd
 import logging
 from src.options.runtime_guard import write_runtime_signature, verify_runtime_signature
+from src.options.dashboard_state_contract import normalize_dashboard_state
 
 logger = logging.getLogger(__name__)
 
@@ -375,7 +376,15 @@ class StateIOManager:
     
     def write_dashboard_state(self, data: Dict[str, Any]) -> bool:
         """Write dashboard state atomically"""
-        return self.writer.write_json(self.base_path / "options_dashboard_state.json", data)
+        runtime_path = self.base_path / "options_runtime_state.json"
+        runtime_payload: Dict[str, Any] = {}
+        try:
+            if runtime_path.exists():
+                runtime_payload = json.loads(runtime_path.read_text(encoding="utf-8"))
+        except Exception:
+            runtime_payload = {}
+        normalized = normalize_dashboard_state(data, runtime_payload)
+        return self.writer.write_json(self.base_path / "options_dashboard_state.json", normalized)
 
     def verify_runtime_state_signature(self) -> Dict[str, Any]:
         """Verify runtime checksum sidecar status."""

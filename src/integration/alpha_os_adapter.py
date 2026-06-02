@@ -477,14 +477,73 @@ class AlphaOSAdapter:
             risk_pct,
         ]
 
+    @staticmethod
+    def _closed_position_duration_minutes(row: Mapping[str, Any]) -> Optional[float]:
+        for key in ("hold_duration_minutes", "holding_period_minutes"):
+            raw = row.get(key)
+            if raw not in (None, "", "None"):
+                try:
+                    value = float(raw)
+                except Exception:
+                    value = np.nan
+                if np.isfinite(value):
+                    return float(value)
+
+        entry_ts = _parse_ts(str(row.get("entry_time") or ""))
+        exit_ts = _parse_ts(str(row.get("exit_time") or ""))
+        if entry_ts is not None and exit_ts is not None and exit_ts >= entry_ts:
+            return float((exit_ts - entry_ts).total_seconds() / 60.0)
+
+        raw_days = row.get("hold_duration_days")
+        if raw_days not in (None, "", "None"):
+            try:
+                days = float(raw_days)
+            except Exception:
+                days = np.nan
+            if np.isfinite(days):
+                return float(days * 24.0 * 60.0)
+        return None
+
+    def _strategy_evidence_is_usable(self, row: Mapping[str, Any]) -> bool:
+        min_hold_minutes = max(
+            0.0,
+            float(getattr(self.config, "strategy_evidence_min_hold_minutes", 30.0) or 30.0),
+        )
+        duration_minutes = self._closed_position_duration_minutes(row)
+        if duration_minutes is not None and duration_minutes < min_hold_minutes:
+            return False
+
+        exit_reason = str(row.get("exit_reason", "") or "").strip().lower()
+        system_exit_tokens = (
+            "regime_flip",
+            "state_recovery",
+            "runtime_sync",
+            "engine_restart",
+            "state_reset",
+            "manual_reset",
+        )
+        if any(token in exit_reason for token in system_exit_tokens):
+            return False
+        return True
+
     def _returns_by_strategy(self, closed_positions: Iterable[Mapping[str, Any]]) -> Dict[str, List[float]]:
         out: Dict[str, List[float]] = {}
         for row in closed_positions or []:
             if not isinstance(row, Mapping):
                 continue
+            if not self._strategy_evidence_is_usable(row):
+                continue
             strategy = str(row.get("strategy_type", "unknown") or "unknown")
-            pnl = float(row.get("realized_pnl", 0.0) or 0.0)
-            scale = max(1.0, abs(float(row.get("max_loss", 1.0) or 1.0)))
+            try:
+                pnl = float(row.get("realized_pnl", 0.0) or 0.0)
+            except Exception:
+                continue
+            try:
+                scale = max(1.0, abs(float(row.get("max_loss", 1.0) or 1.0)))
+            except Exception:
+                scale = 1.0
+            if not np.isfinite(pnl) or not np.isfinite(scale) or scale <= 0.0:
+                continue
             ret = pnl / scale
             out.setdefault(strategy, []).append(float(ret))
         return out

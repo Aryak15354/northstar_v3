@@ -66,6 +66,8 @@ def compute_pledge_features(df: pd.DataFrame) -> pd.DataFrame:
 
     out["pledge_change_1q"] = out.groupby("ticker", sort=False)["pledge_pct"].diff(1)
     out["pledge_change_4q"] = out.groupby("ticker", sort=False)["pledge_pct"].diff(4)
+    out["pledge_change_1q"] = out["pledge_change_1q"].fillna(0.0)
+    out["pledge_change_4q"] = out["pledge_change_4q"].fillna(0.0)
     out["pledge_high_flag"] = (pd.to_numeric(out["pledge_pct"], errors="coerce") > 30.0).astype(float)
 
     d = out.groupby("ticker", sort=False)["pledge_pct"].diff(1)

@@ -28,11 +28,11 @@ class AlternativeDataLoader:
     """
 
     FAMILY_PATHS = {
-        "bulk_deals": "bulk_deals_all.csv",
-        "pledge": "promoter_pledge_all.csv",
-        "earnings": "earnings_dates_all.csv",
-        "ratings": "credit_ratings_all.csv",
-        "announcements": "announcements_all.csv",
+        "bulk_deals": ("bulk_deals_nse_all.parquet", "bulk_deals_nse_all.csv", "bulk_deals_all.csv"),
+        "pledge": ("promoter_pledge_all.parquet", "promoter_pledge_all.csv"),
+        "earnings": ("earnings_dates_all.csv",),
+        "ratings": ("credit_ratings_nse_all.parquet", "credit_ratings_nse_all.csv", "credit_ratings_all.csv"),
+        "announcements": ("announcements_all.parquet", "announcements_all.csv"),
     }
 
     FAMILY_COLUMNS = {
@@ -40,10 +40,22 @@ class AlternativeDataLoader:
             "bulk_buy_volume_5d",
             "bulk_sell_volume_5d",
             "bulk_net_volume_5d",
+            "bulk_buy_volume_21d",
+            "bulk_sell_volume_21d",
+            "bulk_net_volume_21d",
             "bulk_buy_count_5d",
             "bulk_deal_flag",
             "bulk_deal_value_pct_mcap",
             "institutional_buy_flag",
+            "bulk_net_pressure_5d",
+            "bulk_net_pressure_21d",
+            "bulk_net_pressure_float_21d",
+            "bulk_net_fii_21d",
+            "bulk_net_dii_21d",
+            "bulk_net_promoter_21d",
+            "bulk_net_institutional_21d",
+            "bulk_net_retail_21d",
+            "bulk_net_unknown_21d",
         ],
         "pledge": [
             "pledge_pct",
@@ -108,6 +120,17 @@ class AlternativeDataLoader:
         cols = ["ticker", "availability_date"] + list(self.FAMILY_COLUMNS.get(family, []))
         return pd.DataFrame(columns=cols)
 
+    def _resolve_family_path(self, family: str) -> Path:
+        candidates = self.FAMILY_PATHS.get(family, ())
+        if isinstance(candidates, (str, Path)):
+            candidates = (str(candidates),)
+        for candidate in candidates:
+            path = self.base_path / str(candidate)
+            if path.exists():
+                return path
+        first = next(iter(candidates), f"{family}.csv")
+        return self.base_path / str(first)
+
     def _is_family_enabled(self, family: str) -> bool:
         if not isinstance(self.feature_availability, dict) or not self.feature_availability:
             return True
@@ -131,6 +154,14 @@ class AlternativeDataLoader:
             return pd.DataFrame()
 
         out = df.copy()
+        if family == "ratings":
+            rename_map = {}
+            if "rating" in out.columns and "new_rating" not in out.columns:
+                rename_map["rating"] = "new_rating"
+            if "rating_action" in out.columns and "action_type" not in out.columns:
+                rename_map["rating_action"] = "action_type"
+            if rename_map:
+                out = out.rename(columns=rename_map)
         ticker_col = "ticker" if "ticker" in out.columns else ("nse_ticker" if "nse_ticker" in out.columns else None)
         if ticker_col is not None:
             out["ticker"] = out[ticker_col].map(self._normalize_ticker)
@@ -153,7 +184,7 @@ class AlternativeDataLoader:
             if not self._is_family_enabled(family):
                 self.frames[family] = pd.DataFrame()
                 continue
-            path = self.base_path / fname
+            path = self._resolve_family_path(family)
             self.frames[family] = self._load_one(family, path)
 
     def _standardize_feature_frame(self, family: str, frame: pd.DataFrame) -> pd.DataFrame:
@@ -281,7 +312,20 @@ class AlternativeDataLoader:
             return pd.DataFrame(index=frame.index)
 
         # Minimal columns used by family-specific feature builders.
-        price_like = [c for c in ["date", "ticker", "close", "market_cap", "shares_outstanding"] if c in base.columns]
+        price_like = [
+            c
+            for c in [
+                "date",
+                "ticker",
+                "close",
+                "volume",
+                "market_cap",
+                "shares_outstanding",
+                "screener_free_float_pct",
+                "free_float_pct",
+            ]
+            if c in base.columns
+        ]
         base_for_compute = base[price_like].copy() if price_like else base[["date", "ticker"]].copy()
 
         prepared = {fam: self._prepare_family_features(fam, base_for_compute) for fam in self.FAMILY_PATHS}

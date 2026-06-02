@@ -274,7 +274,7 @@ if [ "$MODE" = "continuous" ]; then
         echo ""
         sleep 2
         
-        streamlit run dashboard/volatility_dashboard.py
+        ./launch_dashboard.sh --port 8501
         
         echo ""
         echo "Dashboard stopped"
@@ -284,7 +284,7 @@ if [ "$MODE" = "continuous" ]; then
         echo "Dashboard not started"
         echo ""
         echo "To start dashboard later:"
-        echo "  streamlit run dashboard/volatility_dashboard.py"
+        echo "  ./launch_dashboard.sh --port 8501"
     fi
 fi
 

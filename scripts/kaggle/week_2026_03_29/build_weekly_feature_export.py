@@ -15,6 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.research.dataset_manager import DatasetManager  # noqa: E402
+from src.research.reference_data import resolve_reference_root, validate_reference_bundle  # noqa: E402
 from scripts.load_screener_to_pipeline import build_pipeline_files  # noqa: E402
 
 from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
@@ -47,6 +48,37 @@ REQUIRED_WEEKLY_BUNDLE_PATHS = (
     "data/processed/sector_mapping.csv",
     "data/processed/valuation_posterior.parquet",
 )
+
+
+def _merge_active_with_delisted(
+    active: pd.DataFrame | None,
+    delisted_path: Path,
+    *,
+    key_cols: list[str],
+    sort_cols: list[str],
+) -> pd.DataFrame:
+    active_df = active.copy() if isinstance(active, pd.DataFrame) else pd.DataFrame()
+    delisted_df = pd.read_csv(delisted_path, low_memory=False) if delisted_path.exists() else pd.DataFrame()
+    frames: list[pd.DataFrame] = []
+    if not active_df.empty:
+        active_df["is_delisted"] = False
+        active_df["record_origin"] = "active_screener"
+        frames.append(active_df)
+    if not delisted_df.empty:
+        delisted_df = delisted_df.copy()
+        delisted_df["is_delisted"] = True
+        delisted_df["record_origin"] = "delisted_screener"
+        frames.append(delisted_df)
+    if not frames:
+        return pd.DataFrame()
+    merged = pd.concat(frames, ignore_index=True, sort=False)
+    keep_keys = [col for col in key_cols if col in merged.columns]
+    if keep_keys:
+        merged = merged.drop_duplicates(subset=keep_keys, keep="first")
+    keep_sort = [col for col in sort_cols if col in merged.columns]
+    if keep_sort:
+        merged = merged.sort_values(keep_sort, kind="mergesort")
+    return merged.reset_index(drop=True)
 
 
 def parse_args() -> argparse.Namespace:
@@ -147,12 +179,16 @@ def _effective_split_config(
 def _weekly_feature_pit_lag_rules() -> list[dict[str, object]]:
     return [
         {"pattern": "sector_dummy", "lag": "price"},
-        {"pattern": "re:^(open|high|low|close|adj_close|volume|turnover|vwap|ret_.*|mom_.*|vol_.*|beta.*|bab.*|amihud.*|max_ret_.*|drawdown.*|price_.*|nifty_.*|india_vix.*|size_x_amihud)$", "lag": "price"},
-        {"pattern": "re:^(days_since_earnings|earnings_.*|eps_.*|rev_.*|combined_sue.*)$", "lag": "earnings"},
+        {"pattern": "re:^(open|high|low|close|adj_close|volume|turnover|vwap|ret_.*|mom_.*|res_mom.*|vol_.*|beta.*|bab.*|amihud.*|max_ret_.*|drawdown.*|price_.*|nifty_.*|india_vix.*|size_x_amihud|mom[0-9]+_x_.*)$", "lag": "price"},
+        {"pattern": "re:^(days_since_earnings|days_since_earnings_available|earnings_.*|eps_.*|rev_.*|combined_sue.*)$", "lag": "earnings"},
         {"pattern": "re:^(revenue|sales|gross_profit|operating_cash_flow|free_cash_flow|net_income|equity|total_assets|total_debt|working_capital|shares_outstanding|gross_margin.*|operating_margin.*|ebitda_margin.*|interest_coverage.*|asset_turnover.*|cash_conversion.*|accruals_ratio.*|debt_to_equity.*|roe.*|roa.*|piotroski.*|earnings_quality.*|sector_quality_composite.*)$", "lag": "fundamental"},
-        {"pattern": "re:^(bulk_.*|order_.*|rating_.*|announcement_.*|announcements_.*)$", "lag": "bulk"},
+        {"pattern": "re:^(bulk_.*|order_.*|rating_.*|announcement_.*|announcements_.*|insider_.*)$", "lag": "bulk"},
+        {"pattern": "re:^(screener_.*(promoter|fii|dii|public|govt|institutional|free_float|ownership).*)$", "lag": "shareholding"},
         {"pattern": "re:^(pledge_.*|promoter_.*|fii_.*|dii_.*|public_.*|institutional_.*|free_float.*|ownership.*)$", "lag": "shareholding"},
-        {"pattern": "re:^(cpi_.*|wpi_.*|iip_.*|pmi_.*|repo_.*|macro_.*|fx_.*|rate_.*|policy_.*|credit_.*|oil_.*|gold_.*|copper_.*|steel_.*|inr_.*|dxy_.*|political_.*|india_domestic_.*|gold_consumption_drag.*|oil_sector_impact.*|copper_activity_signal.*|dxy_fii_proxy.*|macro_linkage_score.*)$", "lag": "macro"},
+        {"pattern": "re:^(screener_.*)$", "lag": "fundamental"},
+        {"pattern": "re:^(mkt_sent_.*|macro_sent_.*|sent_.*|event_.*|narrative_.*|topic_.*)$", "lag": "sentiment"},
+        {"pattern": "re:^(cpi_.*|wpi_.*|iip_.*|pmi_.*|repo_.*|macro_.*|fx_.*|rate_.*|policy_.*|credit_.*|oil_.*|gold_.*|copper_.*|steel_.*|coal_.*|crude_.*|inr_.*|inrusd_.*|dxy_.*|vix_.*|rbi_.*|gst_.*|power_.*|us_10y_.*|yield_curve_.*|commodity_basket|fii_proxy|stock_x_.*|political_.*|india_domestic_.*|gold_consumption_drag.*|oil_sector_impact.*|copper_activity_signal.*|dxy_fii_proxy.*|macro_linkage_score.*|regime_.*|.*_x_regime_modifier)$", "lag": "macro"},
+        {"pattern": "re:^(international_revenue_proxy|.*_sensitivity_score|business_cycle_bucket)$", "lag": "market"},
         {"pattern": "re:^(posterior_.*|agreement_score.*|val_.*)$", "lag": "market"},
     ]
 
@@ -176,9 +212,9 @@ def _dataset_runtime_config(
         "fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
         "macro_features_path": "data/canonical/macro/macro_regime_features.parquet",
         "valuation_posterior_path": "data/processed/valuation_posterior.parquet",
-        "screener_fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.csv",
-        "screener_quarterly_path": "data/canonical/fundamentals/fundamentals_quarterly_panel.csv",
-        "screener_shareholding_path": "data/canonical/fundamentals/shareholding_quarterly.csv",
+        "screener_fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
+        "screener_quarterly_path": "data/canonical/fundamentals/fundamentals_quarterly_panel.parquet",
+        "screener_shareholding_path": "data/canonical/fundamentals/shareholding_quarterly.parquet",
         "alternative_data_path": "data/canonical/alternative",
         "announcement_dates_path": "data/processed/alternative/earnings_dates_all.csv",
         "use_sentiment_features": False,
@@ -247,6 +283,7 @@ def _build_dataset_frame(
 def _maybe_rebuild_screener(runtime_root: Path, mode: str) -> dict[str, object]:
     raw_dir = runtime_root / "data" / "raw" / "vendors" / "screener"
     canonical_dir = runtime_root / "data" / "canonical" / "fundamentals"
+    delisted_dir = runtime_root / "data" / "processed" / "screener_delisted"
     canonical_dir.mkdir(parents=True, exist_ok=True)
     scratch_dir = runtime_root / "reports" / "screener_rebuild"
     scratch_dir.mkdir(parents=True, exist_ok=True)
@@ -274,6 +311,26 @@ def _maybe_rebuild_screener(runtime_root: Path, mode: str) -> dict[str, object]:
             prior_stats[filename] = {"rows": 0, "cols": 0}
 
     built = build_pipeline_files(raw_dir=raw_dir, output_dir=scratch_dir)
+    built = {
+        "annual": _merge_active_with_delisted(
+            built.get("annual"),
+            delisted_dir / "screener_fundamentals_annual.csv",
+            key_cols=["ticker", "fiscal_year"],
+            sort_cols=["ticker", "fiscal_year"],
+        ),
+        "quarterly": _merge_active_with_delisted(
+            built.get("quarterly"),
+            delisted_dir / "screener_fundamentals_quarterly.csv",
+            key_cols=["ticker", "quarter"],
+            sort_cols=["ticker", "quarter"],
+        ),
+        "shareholding": _merge_active_with_delisted(
+            built.get("shareholding"),
+            delisted_dir / "screener_shareholding.csv",
+            key_cols=["ticker", "quarter"],
+            sort_cols=["ticker", "quarter"],
+        ),
+    }
     mapping = {
         "annual": canonical_dir / "fundamentals_annual_panel.csv",
         "quarterly": canonical_dir / "fundamentals_quarterly_panel.csv",
@@ -360,6 +417,14 @@ def main() -> int:
     feature_cols = select_feature_columns(weekly_panel)
     features_df = cast_feature_frame(weekly_panel, feature_cols)
     metadata_df = cast_metadata_frame(weekly_panel)
+    reference_root = resolve_reference_root(runtime_root, required=False)
+    reference_audit = validate_reference_bundle(
+        reference_root,
+        features_df=features_df,
+        metadata_df=metadata_df,
+        strict=args.profile != "smoke" and int(effective_max_tickers) == 0,
+        expected_universe_size=500,
+    )
     split_config = _effective_split_config(
         features_df["date"].tolist(),
         train_weeks=int(args.train_weeks),
@@ -423,6 +488,7 @@ def main() -> int:
         "model_safe_feature_count": int(len(feature_cols)),
         "screener_rebuild": screener_rebuild,
         "dataset_metadata": json_ready(dataset_meta),
+        "reference_audit": json_ready(reference_audit),
         "regime_window_audit": regime_window_audit,
         "files": {
             "features": str(features_path),

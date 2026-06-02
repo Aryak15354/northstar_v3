@@ -271,7 +271,8 @@ class OptionsEventPublisher:
         realized_pnl: float,
         net_pnl: float,
         exit_reason: str,
-        hold_duration_days: float
+        hold_duration_days: float,
+        hold_duration_minutes: Optional[float] = None,
     ) -> None:
         """
         Publish position closed event
@@ -283,6 +284,7 @@ class OptionsEventPublisher:
             net_pnl: Net P&L (after costs and tax)
             exit_reason: Reason for exit
             hold_duration_days: Days held
+            hold_duration_minutes: Intraday hold length for evidence filtering
         """
         event = OptionsEvent(
             event_type=OptionsEventType.POSITION_CLOSED,
@@ -293,7 +295,8 @@ class OptionsEventPublisher:
                 'realized_pnl': realized_pnl,
                 'net_pnl': net_pnl,
                 'exit_reason': exit_reason,
-                'hold_duration_days': hold_duration_days
+                'hold_duration_days': hold_duration_days,
+                'hold_duration_minutes': hold_duration_minutes,
             },
             priority='high'
         )

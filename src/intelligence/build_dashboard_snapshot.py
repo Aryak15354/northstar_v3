@@ -12,6 +12,7 @@ import numpy as np
 import json
 import os
 import sys
+import argparse
 from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
@@ -19,9 +20,83 @@ warnings.filterwarnings('ignore')
 # Add src to path
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-def build_unified_snapshot():
+def _build_performance_snapshot(pnl_df: pd.DataFrame) -> dict:
+    """Build a performance payload from real PnL data only."""
+    performance = {
+        'available': False,
+        'reason': 'no_real_pnl_data',
+        'message': 'No real P&L data found. Ledger may not have trades yet.',
+        'equity': None,
+        'recent_return_20d': None,
+        'volatility_20d': None,
+        'current_drawdown': None,
+        'max_drawdown': None,
+    }
+
+    if pnl_df is None or pnl_df.empty:
+        return performance
+
+    equity_col = None
+    for col in ['Equity', 'equity', 'portfolio_value', 'total_value']:
+        if col in pnl_df.columns:
+            equity_col = col
+            break
+
+    if equity_col is None:
+        performance['reason'] = 'missing_equity_column'
+        performance['message'] = 'PnL data is present but no equity column was found.'
+        return performance
+
+    equity_series = pd.to_numeric(pnl_df[equity_col], errors='coerce').dropna()
+    if equity_series.empty:
+        performance['reason'] = 'empty_equity_series'
+        performance['message'] = 'PnL data is present but equity series is empty.'
+        return performance
+
+    is_flat_data = (equity_series.std() < 0.001) or (equity_series == 1.0).all()
+    if is_flat_data:
+        performance['reason'] = 'no_real_pnl_data'
+        performance['message'] = 'PnL data appears normalized or flat, so performance is unavailable.'
+        return performance
+
+    latest_equity = float(equity_series.iloc[-1])
+    if latest_equity < 1000:
+        latest_equity = latest_equity * 1000000
+
+    if len(equity_series) > 20:
+        past_equity = float(equity_series.iloc[-21])
+        recent_return = float(((latest_equity / past_equity) - 1) * 100) if past_equity > 0 else 0.0
+        if 'Return' in pnl_df.columns:
+            returns = pd.to_numeric(pnl_df['Return'], errors='coerce').dropna()
+            volatility = float(returns.tail(20).std() * np.sqrt(252) * 100) if len(returns) > 0 else 0.0
+        else:
+            returns = equity_series.pct_change().dropna()
+            volatility = float(returns.tail(20).std() * np.sqrt(252) * 100) if len(returns) > 0 else 0.0
+        peak = equity_series.expanding().max()
+        drawdowns = (equity_series / peak - 1) * 100
+        current_drawdown = float(drawdowns.iloc[-1])
+        max_drawdown = float(drawdowns.min())
+    else:
+        recent_return = 0.0
+        volatility = 0.0
+        current_drawdown = 0.0
+        max_drawdown = 0.0
+
+    performance.update({
+        'available': True,
+        'reason': None,
+        'message': None,
+        'equity': latest_equity,
+        'recent_return_20d': recent_return,
+        'volatility_20d': volatility,
+        'current_drawdown': current_drawdown,
+        'max_drawdown': max_drawdown,
+    })
+    return performance
+
+def build_unified_snapshot(dry_run: bool = False):
     """
     Build the unified dashboard snapshot
     
@@ -154,122 +229,41 @@ def build_unified_snapshot():
     
     try:
         pnl_df = pd.read_parquet('data/portfolio/pnl_on_paper.parquet')
-        if not pnl_df.empty:
-            # Handle different possible column names
-            equity_col = None
-            for col in ['Equity', 'equity', 'portfolio_value', 'total_value']:
-                if col in pnl_df.columns:
-                    equity_col = col
-                    break
-            
-            if equity_col:
-                latest_equity = float(pnl_df[equity_col].iloc[-1])
-                
-                # Check if data is realistic (not all 1.0 or zeros)
-                equity_series = pnl_df[equity_col]
-                is_flat_data = (equity_series.std() < 0.001) or (equity_series == 1.0).all()
-                
-                if is_flat_data:
-                    print("   ⚠️ PnL data appears to be normalized/flat - generating realistic mock data")
-                    # Generate realistic mock performance data
-                    base_equity = 1250000  # 1.25M base
-                    
-                    # Generate realistic returns series
-                    np.random.seed(42)  # For reproducibility
-                    daily_returns = np.random.normal(0.0008, 0.015, len(pnl_df))  # ~20% annual vol
-                    cumulative_returns = (1 + daily_returns).cumprod()
-                    mock_equity_series = base_equity * cumulative_returns
-                    
-                    latest_equity = float(mock_equity_series[-1])
-                    
-                    # Calculate metrics from mock data
-                    if len(mock_equity_series) > 20:
-                        past_equity = float(mock_equity_series[-21])
-                        recent_return = float(((latest_equity / past_equity) - 1) * 100)
-                        volatility = float(pd.Series(daily_returns).tail(20).std() * np.sqrt(252) * 100)
-                        
-                        # Drawdown calculation
-                        peak = pd.Series(mock_equity_series).expanding().max()
-                        drawdowns = (pd.Series(mock_equity_series) / peak - 1) * 100
-                        current_drawdown = float(drawdowns.iloc[-1])
-                        max_drawdown = float(drawdowns.min())
-                    else:
-                        recent_return = np.random.normal(0.5, 2.0)
-                        volatility = np.random.uniform(12.0, 20.0)
-                        current_drawdown = np.random.uniform(-5.0, 0.0)
-                        max_drawdown = np.random.uniform(-15.0, -5.0)
-                else:
-                    # Use real data
-                    if latest_equity < 1000:  # Likely a ratio, convert to realistic value
-                        latest_equity = latest_equity * 1000000  # Convert to millions
-                    
-                    # Calculate performance metrics from real data
-                    if len(pnl_df) > 20:
-                        past_equity = float(pnl_df[equity_col].iloc[-21])
-                        if past_equity > 0:
-                            recent_return = float(((latest_equity / past_equity) - 1) * 100)
-                        else:
-                            recent_return = 0.0
-                        
-                        # Volatility calculation
-                        if 'Return' in pnl_df.columns:
-                            returns = pnl_df['Return'].dropna()
-                            volatility = float(returns.tail(20).std() * np.sqrt(252) * 100)
-                        else:
-                            returns = pnl_df[equity_col].pct_change().dropna()
-                            if len(returns) > 0:
-                                volatility = float(returns.tail(20).std() * np.sqrt(252) * 100)
-                            else:
-                                volatility = 15.0
-                        
-                        # Drawdown calculation
-                        peak = equity_series.expanding().max()
-                        drawdowns = (equity_series / peak - 1) * 100
-                        current_drawdown = float(drawdowns.iloc[-1])
-                        max_drawdown = float(drawdowns.min())
-                    else:
-                        recent_return = np.random.normal(0.5, 2.0)
-                        volatility = np.random.uniform(12.0, 20.0)
-                        current_drawdown = np.random.uniform(-5.0, 0.0)
-                        max_drawdown = np.random.uniform(-15.0, -5.0)
-                
-                snapshot['portfolio'].update({
-                    'equity': latest_equity,
-                    'recent_return_20d': recent_return,
-                    'volatility_20d': volatility,
-                    'current_drawdown': current_drawdown,
-                    'max_drawdown': max_drawdown
-                })
-                print(f"   ✅ Equity: ₹{latest_equity:.0f}, Return: {recent_return:.1f}%, Vol: {volatility:.1f}%, DD: {current_drawdown:.1f}%")
-            else:
-                print("   ⚠️ No equity column found in PnL data")
-                # Use mock realistic values
-                snapshot['portfolio'].update({
-                    'equity': 1250000,  # 1.25M realistic value
-                    'recent_return_20d': np.random.normal(0.5, 2.0),
-                    'volatility_20d': np.random.uniform(12.0, 20.0),
-                    'current_drawdown': np.random.uniform(-5.0, 0.0),
-                    'max_drawdown': np.random.uniform(-15.0, -5.0)
-                })
+        performance = _build_performance_snapshot(pnl_df)
+        snapshot['portfolio'].update({
+            'equity': performance['equity'],
+            'recent_return_20d': performance['recent_return_20d'],
+            'volatility_20d': performance['volatility_20d'],
+            'current_drawdown': performance['current_drawdown'],
+            'max_drawdown': performance['max_drawdown'],
+            'performance_available': performance['available'],
+            'performance_reason': performance['reason'],
+            'performance_message': performance['message'],
+            'performance': performance,
+        })
+        if performance['available']:
+            print(
+                f"   ✅ Equity: ₹{performance['equity']:.0f}, Return: {performance['recent_return_20d']:.1f}%, "
+                f"Vol: {performance['volatility_20d']:.1f}%, DD: {performance['current_drawdown']:.1f}%"
+            )
         else:
-            print("   ⚠️ PnL data empty - using mock values")
-            # Use mock realistic values
-            snapshot['portfolio'].update({
-                'equity': 1250000,  # 1.25M realistic value
-                'recent_return_20d': np.random.normal(0.5, 2.0),
-                'volatility_20d': np.random.uniform(12.0, 20.0),
-                'current_drawdown': np.random.uniform(-5.0, 0.0),
-                'max_drawdown': np.random.uniform(-15.0, -5.0)
-            })
+            print(f"   ⚠️ Performance unavailable - {performance['reason']}")
     except Exception as e:
         print(f"   ❌ Performance error: {e}")
-        # Use mock realistic values as fallback
         snapshot['portfolio'].update({
-            'equity': 1250000,  # 1.25M realistic value
-            'recent_return_20d': np.random.normal(0.5, 2.0),
-            'volatility_20d': np.random.uniform(12.0, 20.0),
-            'current_drawdown': np.random.uniform(-5.0, 0.0),
-            'max_drawdown': np.random.uniform(-15.0, -5.0)
+            'equity': None,
+            'recent_return_20d': None,
+            'volatility_20d': None,
+            'current_drawdown': None,
+            'max_drawdown': None,
+            'performance_available': False,
+            'performance_reason': str(e),
+            'performance_message': str(e),
+            'performance': {
+                'available': False,
+                'reason': str(e),
+                'message': str(e),
+            },
         })
     
     # =========================== STRATEGY INTELLIGENCE ===========================
@@ -503,33 +497,44 @@ def build_unified_snapshot():
     print(f"   ✅ System health: {health_grade} grade ({overall_health:.1%})")
     
     # =========================== SAVE SNAPSHOT ===========================
+    if dry_run:
+        print("DRY RUN COMPLETE")
+        print("=" * 50)
+        return snapshot
+
     print("💾 Saving unified snapshot...")
-    
+
     # Ensure cache directory exists
     cache_dir = 'data/processed/cache'
     os.makedirs(cache_dir, exist_ok=True)
-    
+
     # Save as both parquet and JSON for flexibility
     snapshot_df = pd.DataFrame([snapshot])
     snapshot_path = os.path.join(cache_dir, 'dashboard_snapshot.parquet')
     snapshot_df.to_parquet(snapshot_path)
-    
+
     # Also save as JSON for debugging
     json_path = os.path.join(cache_dir, 'dashboard_snapshot.json')
     with open(json_path, 'w') as f:
         json.dump(snapshot, f, indent=2, default=str)
-    
+
     print(f"✅ SNAPSHOT BUILT SUCCESSFULLY")
     print(f"   File: {snapshot_path}")
     print(f"   Size: {len(snapshot)} components")
     print(f"   Health: {health_grade} grade")
     print("=" * 50)
-    
+
     return snapshot
 
-def main():
+def main(argv=None):
     """Main function for manual execution"""
-    snapshot = build_unified_snapshot()
+    parser = argparse.ArgumentParser(description="Build Northstar dashboard snapshot")
+    parser.add_argument("--dry-run", action="store_true", help="Build snapshot without writing artifacts")
+    args = parser.parse_args(argv)
+
+    snapshot = build_unified_snapshot(dry_run=args.dry_run)
+    if args.dry_run:
+        pass
     return snapshot
 
 if __name__ == "__main__":

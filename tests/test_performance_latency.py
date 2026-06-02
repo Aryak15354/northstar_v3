@@ -155,7 +155,7 @@ class TestStateUpdateLatency:
         
         Requirement: P95 < 100ms
         """
-        engine = VolatilityStateEngine(persistence_dir="data/test_latency")
+        engine = VolatilityStateEngine(persistence_dir="data/testing/latency")
         
         # Warm-up
         test_greeks = StatePortfolioGreeks(delta=100.0, gamma=5.0, vega=200.0)
@@ -193,7 +193,7 @@ class TestStateUpdateLatency:
         
         Ensures no significant variance in update times.
         """
-        engine = VolatilityStateEngine(persistence_dir="data/test_latency_consistency")
+        engine = VolatilityStateEngine(persistence_dir="data/testing/latency_consistency")
         
         # Warm-up
         test_greeks = StatePortfolioGreeks(delta=100.0, gamma=5.0, vega=200.0)
@@ -296,7 +296,7 @@ class TestEndToEndLatency:
         # Setup
         positions = create_test_positions(100)
         aggregator = GreeksAggregator()
-        engine = VolatilityStateEngine(persistence_dir="data/test_e2e_latency")
+        engine = VolatilityStateEngine(persistence_dir="data/testing/e2e_latency")
         generator = StrategyGenerator()
         
         target = TargetGreeks(

@@ -12,6 +12,7 @@ import yfinance as yf
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EXPECTED_COLUMNS = ["Date", "Open", "High", "Low", "Close", "Adj Close", "Volume", "Symbol"]
+ASSET_CLASSES = ["commodities", "forex", "indices", "rates"]
 
 
 def _utc_today() -> pd.Timestamp:
@@ -149,7 +150,7 @@ def update_symbol_history(
 
 def build_cross_asset_panel(raw_root: Path) -> pd.DataFrame:
     frames: list[pd.DataFrame] = []
-    for asset_class in ["commodities", "forex"]:
+    for asset_class in ASSET_CLASSES:
         asset_dir = raw_root / asset_class
         for path in sorted(asset_dir.glob("*.csv")):
             frame = load_history(path)
@@ -185,7 +186,7 @@ def build_cross_asset_panel(raw_root: Path) -> pd.DataFrame:
 def build_coverage_manifest(raw_root: Path, *, as_of: pd.Timestamp | None = None) -> dict[str, Any]:
     as_of = (as_of or _utc_today()).normalize()
     assets = []
-    for asset_class in ["commodities", "forex"]:
+    for asset_class in ASSET_CLASSES:
         for path in sorted((raw_root / asset_class).glob("*.csv")):
             frame = load_history(path)
             dates = pd.to_datetime(frame["Date"], errors="coerce").dropna()

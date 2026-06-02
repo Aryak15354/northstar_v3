@@ -14,11 +14,13 @@ import logging
 import subprocess
 import sys
 import time
+from dataclasses import fields, is_dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any
 
 import pandas as pd
+import yaml
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +28,16 @@ LOG_PATH = PROJECT_ROOT / "logs" / "ns_uso_sentiment_loop.log"
 STATUS_PATH = PROJECT_ROOT / "data" / "sentiment" / "v3" / "sentiment_loop_status.json"
 RUNNER = PROJECT_ROOT / "ns_uso" / "scripts" / "run_v3_sentiment_cycle.py"
 MARKET_SENTIMENT_PATH = PROJECT_ROOT / "data" / "sentiment" / "v3" / "market_sentiment_india.parquet"
+STATE_PATH = PROJECT_ROOT / "data" / "state" / "unified_state.json"
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.core.state import UnifiedState
+from src.core.state_authority import StateAuthority, StateUpdate, WritePriority
+from src.ingestion import IngestionRegistry
+from src.sentiment.sentiment_regime import SentimentRegimeClassifier
+from src.sentiment.sentiment_state import compute_sentiment_state
 
 
 def _configure_logger() -> logging.Logger:
@@ -46,7 +58,130 @@ def _configure_logger() -> logging.Logger:
 
 def _write_status(payload: Dict[str, Any]) -> None:
     STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATUS_PATH.write_text(json.dumps(payload, indent=2))
+    STATUS_PATH.write_text(json.dumps(payload, indent=2, default=str))
+
+
+def _deep_merge(base: dict, extra: dict) -> dict:
+    merged = dict(base)
+    for key, value in extra.items():
+        if isinstance(merged.get(key), dict) and isinstance(value, dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def _load_config() -> dict:
+    config: dict = {}
+    for path in (
+        PROJECT_ROOT / "config" / "ingestion_config.yaml",
+        PROJECT_ROOT / "config" / "sentiment_config.yaml",
+    ):
+        if not path.exists():
+            continue
+        payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        if isinstance(payload, dict):
+            config = _deep_merge(config, payload)
+    return config
+
+
+def _load_unified_state() -> UnifiedState:
+    state = UnifiedState()
+    if STATE_PATH.exists():
+        try:
+            state.load_snapshot(json.loads(STATE_PATH.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return state
+
+
+def _dataclass_leaf_updates(
+    *,
+    writer_id: str,
+    section: str,
+    obj: Any,
+    reason: str,
+) -> list[StateUpdate]:
+    updates: list[StateUpdate] = []
+    if not is_dataclass(obj):
+        return updates
+    for field in fields(obj):
+        updates.append(
+            StateUpdate(
+                writer_id=writer_id,
+                section=section,
+                field_path=field.name,
+                new_value=getattr(obj, field.name),
+                priority=WritePriority.RESEARCH,
+                source="SYSTEM",
+                reason=reason,
+            )
+        )
+    return updates
+
+
+def _sync_canonical_sentiment_state(finished: datetime) -> Dict[str, Any]:
+    config = _load_config()
+    registry = IngestionRegistry(config)
+    state = _load_unified_state()
+    classifier = SentimentRegimeClassifier(config)
+    sentiment_state = compute_sentiment_state(
+        registry=registry,
+        as_of_date=finished,
+        sentiment_regime_classifier=classifier,
+        market_state=state.market,
+    )
+
+    authority = StateAuthority(
+        state,
+        config={
+            "dev_mode": True,
+            "checkpoint_path": str(STATE_PATH),
+            "state_change_log_path": str(PROJECT_ROOT / "data" / "state" / "state_change_log.jsonl"),
+        },
+    )
+    authority.register_writer(
+        writer_id="ns_uso_sentiment_loop",
+        allowed_sections=["sentiment", "health"],
+        priority=WritePriority.RESEARCH,
+    )
+
+    updates = _dataclass_leaf_updates(
+        writer_id="ns_uso_sentiment_loop",
+        section="sentiment",
+        obj=sentiment_state,
+        reason="NS-USO sentiment loop refresh",
+    )
+    applied = authority.batch_update(updates)
+    if applied != len(updates):
+        raise RuntimeError(f"ns_uso_sentiment_sync_incomplete:{applied}/{len(updates)}")
+
+    authority.batch_update(
+        [
+            StateUpdate(
+                writer_id="ns_uso_sentiment_loop",
+                section="health",
+                field_path="intelligence_active",
+                new_value=bool(sentiment_state.is_fresh),
+                priority=WritePriority.RESEARCH,
+                source="SYSTEM",
+                reason="NS-USO sentiment loop refresh",
+            )
+        ]
+    )
+    authority.checkpoint(force=True)
+
+    return {
+        "market_sentiment_regime": getattr(
+            sentiment_state.market_sentiment_regime,
+            "value",
+            str(sentiment_state.market_sentiment_regime),
+        ),
+        "is_fresh": bool(sentiment_state.is_fresh),
+        "companies_with_coverage": int(sentiment_state.companies_with_coverage),
+        "pipeline_last_run": sentiment_state.pipeline_last_run,
+        "state_path": str(STATE_PATH),
+    }
 
 
 def _sentiment_snapshot() -> Dict[str, Any]:
@@ -80,6 +215,25 @@ def _sentiment_snapshot() -> Dict[str, Any]:
         return {}
 
 
+def _refresh_processed_sentiment(logger: logging.Logger) -> Dict[str, Any]:
+    export_cmd = [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts/export_sentiment_to_v3.py"),
+        "--output-dir",
+        str(PROJECT_ROOT / "data/processed/sentiment"),
+        "--incremental",
+    ]
+    proc = subprocess.run(export_cmd, cwd=str(PROJECT_ROOT), capture_output=True, text=True)
+    output = ((proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")).strip()
+    if output:
+        logger.info("Processed sentiment export output: %s", output[-4000:])
+    return {
+        "return_code": int(proc.returncode),
+        "command": " ".join(export_cmd),
+        "ok": proc.returncode == 0,
+    }
+
+
 def _run_cycle(logger: logging.Logger) -> Dict[str, Any]:
     started = datetime.now().astimezone()
     cmd = [sys.executable, str(RUNNER)]
@@ -103,6 +257,14 @@ def _run_cycle(logger: logging.Logger) -> Dict[str, Any]:
     snapshot = _sentiment_snapshot()
     if snapshot:
         payload["sentiment_snapshot"] = snapshot
+    if proc.returncode == 0:
+        export_result = _refresh_processed_sentiment(logger)
+        payload["processed_export"] = export_result
+        try:
+            payload["canonical_state"] = _sync_canonical_sentiment_state(finished)
+        except Exception as exc:
+            logger.warning("Canonical sentiment sync failed after NS-USO cycle: %s", exc)
+            payload["canonical_state_error"] = str(exc)
     _write_status(payload)
     return payload
 

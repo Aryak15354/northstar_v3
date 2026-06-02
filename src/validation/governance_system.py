@@ -880,7 +880,7 @@ def main():
     print("=" * 60)
     
     # Initialize governance system
-    governance = GovernanceSystem(base_dir="data/test_governance")
+    governance = GovernanceSystem(base_dir="data/testing/governance")
     
     # Demonstrate emergency pause
     print("\n🚨 EMERGENCY PAUSE DEMONSTRATION")

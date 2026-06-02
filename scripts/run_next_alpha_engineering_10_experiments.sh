@@ -11,8 +11,8 @@ if [[ ! -f "${BASE_CONFIG}" ]]; then
 fi
 
 RUN_TS="$(date +%Y%m%d_%H%M%S)"
-OUTDIR="data/research/regime_ic_runs/next_alpha_${RUN_TS}"
-RPTDIR="data/research/reports/next_alpha_${RUN_TS}"
+OUTDIR="data/results/research/regime_ic_runs/next_alpha_${RUN_TS}"
+RPTDIR="data/results/research/reports/regime_ic/next_alpha_${RUN_TS}"
 mkdir -p "${OUTDIR}" "${RPTDIR}"
 
 python3 -m py_compile \
@@ -113,4 +113,3 @@ if [[ ${#FAILED[@]} -gt 0 ]]; then
   echo "FAILED_EXPERIMENTS=${FAILED[*]}"
 fi
 sed -n '1,120p' "${RPTDIR}/regime_ic_experiment_report.md"
-

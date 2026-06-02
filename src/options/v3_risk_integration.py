@@ -71,6 +71,11 @@ class OptionsV3RiskIntegration:
         # V3 components (lazy loaded)
         self._risk_coordinator: Optional[RiskCoordinator] = None
         self._unified_risk_authority: Optional[UnifiedRiskAuthority] = None
+        if not V3_RISK_COORDINATOR_AVAILABLE:
+            logger.warning(
+                "OptionsV3RiskIntegration initialized without a live V3 RiskCoordinator dependency; "
+                "registration will remain standalone until that interface is restored."
+            )
         
         logger.info("OptionsV3RiskIntegration initialized")
     

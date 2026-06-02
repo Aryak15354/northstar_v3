@@ -1,0 +1,574 @@
+{
+  "generated_at": "2026-03-21",
+  "scan_roots": [
+    "src",
+    "scripts",
+    "run.py",
+    "run_daily_v3.py",
+    "run_complete_v3_system.py"
+  ],
+  "total_files_scanned": 1288,
+  "total_calc_functions": 9423,
+  "category_counts": {
+    "root": 20,
+    "scripts": 2612,
+    "alpha_os": 52,
+    "alternative_data": 65,
+    "api": 8,
+    "automation": 27,
+    "backtest": 4,
+    "backtesting": 13,
+    "cohesion": 331,
+    "core": 273,
+    "dashboard": 739,
+    "data": 17,
+    "diagnostics": 48,
+    "execution": 32,
+    "factors": 80,
+    "ingestion": 157,
+    "integration": 41,
+    "intelligence": 848,
+    "intelligence_observer": 177,
+    "live": 24,
+    "macro_impact_engine": 51,
+    "macro_transmission_engine": 42,
+    "manifold": 16,
+    "models": 55,
+    "operation": 288,
+    "options": 385,
+    "orchestrator": 29,
+    "pnl": 67,
+    "portfolio": 175,
+    "preprocessing": 18,
+    "processing": 25,
+    "reporting": 73,
+    "research": 430,
+    "risk": 45,
+    "runtime": 208,
+    "scheduler": 1,
+    "scoring": 42,
+    "sentiment": 54,
+    "signal_engineering": 29,
+    "signals": 95,
+    "state": 57,
+    "strategic": 35,
+    "utils": 18,
+    "validation": 1205,
+    "valuation": 116,
+    "volatility": 296
+  },
+  "stage_counts": {
+    "orchestration": 2632,
+    "misc": 889,
+    "feature_engineering": 323,
+    "state_control": 661,
+    "reporting_validation": 2075,
+    "ingestion": 231,
+    "risk_execution_options": 758,
+    "allocation_runtime": 1266,
+    "scoring_research": 472,
+    "valuation": 116
+  },
+  "top_files": [
+    {
+      "path": "src/dashboard/northstar_v3_ultimate_integrated_dashboard.py",
+      "calc_function_count": 129,
+      "total_function_count": 156
+    },
+    {
+      "path": "scripts/run_integrated_options_paper_engine.py",
+      "calc_function_count": 109,
+      "total_function_count": 124
+    },
+    {
+      "path": "src/dashboard/visual_catalog.py",
+      "calc_function_count": 80,
+      "total_function_count": 100
+    },
+    {
+      "path": "scripts/build_groww_option_universe.py",
+      "calc_function_count": 74,
+      "total_function_count": 96
+    },
+    {
+      "path": "src/dashboard/charts/chart_library.py",
+      "calc_function_count": 73,
+      "total_function_count": 76
+    },
+    {
+      "path": "src/dashboard/observers/options_observer.py",
+      "calc_function_count": 62,
+      "total_function_count": 79
+    },
+    {
+      "path": "src/research/dataset_manager.py",
+      "calc_function_count": 51,
+      "total_function_count": 62
+    },
+    {
+      "path": "src/dashboard/data/data_manager.py",
+      "calc_function_count": 51,
+      "total_function_count": 52
+    },
+    {
+      "path": "src/core/organ_wrappers.py",
+      "calc_function_count": 43,
+      "total_function_count": 58
+    },
+    {
+      "path": "src/dashboard/data_contract.py",
+      "calc_function_count": 40,
+      "total_function_count": 54
+    },
+    {
+      "path": "src/research/feature_factory.py",
+      "calc_function_count": 40,
+      "total_function_count": 45
+    },
+    {
+      "path": "src/research/research_controller.py",
+      "calc_function_count": 39,
+      "total_function_count": 48
+    },
+    {
+      "path": "src/intelligence/economic_causality_validator.py",
+      "calc_function_count": 35,
+      "total_function_count": 46
+    },
+    {
+      "path": "src/portfolio/portfolio_governor.py",
+      "calc_function_count": 35,
+      "total_function_count": 39
+    },
+    {
+      "path": "src/research/model_adapters.py",
+      "calc_function_count": 33,
+      "total_function_count": 52
+    },
+    {
+      "path": "scripts/northstar_daemon.py",
+      "calc_function_count": 33,
+      "total_function_count": 45
+    },
+    {
+      "path": "src/dashboard/v3_data_hub.py",
+      "calc_function_count": 31,
+      "total_function_count": 43
+    },
+    {
+      "path": "src/research/certification.py",
+      "calc_function_count": 31,
+      "total_function_count": 41
+    },
+    {
+      "path": "src/core/state.py",
+      "calc_function_count": 31,
+      "total_function_count": 41
+    },
+    {
+      "path": "src/portfolio/strategies.py",
+      "calc_function_count": 31,
+      "total_function_count": 40
+    },
+    {
+      "path": "src/core/orchestrator.py",
+      "calc_function_count": 30,
+      "total_function_count": 47
+    },
+    {
+      "path": "src/operation/stress_testing_system.py",
+      "calc_function_count": 30,
+      "total_function_count": 38
+    },
+    {
+      "path": "src/intelligence/regime_aware_specialists.py",
+      "calc_function_count": 30,
+      "total_function_count": 37
+    },
+    {
+      "path": "src/intelligence/capital_allocator.py",
+      "calc_function_count": 30,
+      "total_function_count": 37
+    },
+    {
+      "path": "src/validation/phase3_reality_validator.py",
+      "calc_function_count": 30,
+      "total_function_count": 35
+    },
+    {
+      "path": "src/validation/risk_management_validator.py",
+      "calc_function_count": 30,
+      "total_function_count": 30
+    },
+    {
+      "path": "src/cohesion/service_interfaces.py",
+      "calc_function_count": 29,
+      "total_function_count": 64
+    },
+    {
+      "path": "src/runtime/portfolio_runtime_service.py",
+      "calc_function_count": 29,
+      "total_function_count": 53
+    },
+    {
+      "path": "scripts/build_canonical_training_datasets.py",
+      "calc_function_count": 29,
+      "total_function_count": 39
+    },
+    {
+      "path": "src/reporting/common.py",
+      "calc_function_count": 29,
+      "total_function_count": 36
+    },
+    {
+      "path": "scripts/preopen_checks.py",
+      "calc_function_count": 29,
+      "total_function_count": 34
+    },
+    {
+      "path": "src/volatility/risk_authority.py",
+      "calc_function_count": 29,
+      "total_function_count": 33
+    },
+    {
+      "path": "src/validation/simulation_fidelity_monitor.py",
+      "calc_function_count": 29,
+      "total_function_count": 32
+    },
+    {
+      "path": "src/validation/statistical_consistency_checker.py",
+      "calc_function_count": 29,
+      "total_function_count": 30
+    },
+    {
+      "path": "src/intelligence/stress_testing_system.py",
+      "calc_function_count": 28,
+      "total_function_count": 33
+    },
+    {
+      "path": "src/validation/universe_manager.py",
+      "calc_function_count": 28,
+      "total_function_count": 32
+    },
+    {
+      "path": "src/operation/walk_forward_analysis_engine.py",
+      "calc_function_count": 28,
+      "total_function_count": 30
+    },
+    {
+      "path": "scripts/institutional_walk_forward_complete.py",
+      "calc_function_count": 27,
+      "total_function_count": 41
+    },
+    {
+      "path": "src/cohesion/schema_validator.py",
+      "calc_function_count": 27,
+      "total_function_count": 37
+    },
+    {
+      "path": "src/validation/enhanced_portfolio_simulator.py",
+      "calc_function_count": 27,
+      "total_function_count": 32
+    },
+    {
+      "path": "src/validation/enhanced_institutional_report_generator.py",
+      "calc_function_count": 26,
+      "total_function_count": 31
+    },
+    {
+      "path": "src/validation/correlation_breakdown_tester.py",
+      "calc_function_count": 26,
+      "total_function_count": 28
+    },
+    {
+      "path": "src/scoring/daily_scorer.py",
+      "calc_function_count": 26,
+      "total_function_count": 27
+    },
+    {
+      "path": "src/cohesion/cache_manager.py",
+      "calc_function_count": 25,
+      "total_function_count": 39
+    },
+    {
+      "path": "scripts/run_trading_day_orchestrator.py",
+      "calc_function_count": 25,
+      "total_function_count": 34
+    },
+    {
+      "path": "src/state/market_state.py",
+      "calc_function_count": 25,
+      "total_function_count": 33
+    },
+    {
+      "path": "src/intelligence/valuation_engines.py",
+      "calc_function_count": 25,
+      "total_function_count": 32
+    },
+    {
+      "path": "scripts/run_honest_walk_forward.py",
+      "calc_function_count": 25,
+      "total_function_count": 27
+    },
+    {
+      "path": "src/alternative_data/alternative_feature_block.py",
+      "calc_function_count": 25,
+      "total_function_count": 26
+    },
+    {
+      "path": "src/dashboard/snapshot_loader.py",
+      "calc_function_count": 24,
+      "total_function_count": 29
+    },
+    {
+      "path": "src/intelligence/market_brain/weekly_fabric_reader.py",
+      "calc_function_count": 24,
+      "total_function_count": 26
+    },
+    {
+      "path": "src/cohesion/cohesion_health_monitor.py",
+      "calc_function_count": 23,
+      "total_function_count": 33
+    },
+    {
+      "path": "src/signals/news_sentiment.py",
+      "calc_function_count": 23,
+      "total_function_count": 32
+    },
+    {
+      "path": "src/validation/v3_architecture_integration.py",
+      "calc_function_count": 23,
+      "total_function_count": 31
+    },
+    {
+      "path": "src/validation/performance_tracker.py",
+      "calc_function_count": 23,
+      "total_function_count": 30
+    },
+    {
+      "path": "src/options/enhanced_strategy_generator_v3.py",
+      "calc_function_count": 23,
+      "total_function_count": 27
+    },
+    {
+      "path": "src/options/enhanced_strategy_generator.py",
+      "calc_function_count": 23,
+      "total_function_count": 26
+    },
+    {
+      "path": "src/operation/report_manager.py",
+      "calc_function_count": 23,
+      "total_function_count": 26
+    },
+    {
+      "path": "src/operation/integration_testing_framework.py",
+      "calc_function_count": 23,
+      "total_function_count": 25
+    },
+    {
+      "path": "src/core/memory.py",
+      "calc_function_count": 22,
+      "total_function_count": 33
+    },
+    {
+      "path": "src/volatility/iv_surface.py",
+      "calc_function_count": 22,
+      "total_function_count": 29
+    },
+    {
+      "path": "src/dashboard/components/options_panel.py",
+      "calc_function_count": 22,
+      "total_function_count": 28
+    },
+    {
+      "path": "src/portfolio/governor.py",
+      "calc_function_count": 22,
+      "total_function_count": 25
+    },
+    {
+      "path": "src/operation/master_operation_controller.py",
+      "calc_function_count": 22,
+      "total_function_count": 24
+    },
+    {
+      "path": "src/cohesion/configuration_manager.py",
+      "calc_function_count": 22,
+      "total_function_count": 23
+    },
+    {
+      "path": "src/validation/institutional_hardening.py",
+      "calc_function_count": 21,
+      "total_function_count": 34
+    },
+    {
+      "path": "src/runtime/live_book_sync.py",
+      "calc_function_count": 21,
+      "total_function_count": 31
+    },
+    {
+      "path": "scripts/runners/sync_current_positions.py",
+      "calc_function_count": 21,
+      "total_function_count": 31
+    },
+    {
+      "path": "src/intelligence/institutional_alpha_engine.py",
+      "calc_function_count": 21,
+      "total_function_count": 29
+    },
+    {
+      "path": "src/volatility/unified_engine.py",
+      "calc_function_count": 21,
+      "total_function_count": 27
+    },
+    {
+      "path": "src/volatility/strategy_generator.py",
+      "calc_function_count": 21,
+      "total_function_count": 27
+    },
+    {
+      "path": "src/volatility/intelligence_engine.py",
+      "calc_function_count": 21,
+      "total_function_count": 27
+    },
+    {
+      "path": "src/options/trade_ledger.py",
+      "calc_function_count": 21,
+      "total_function_count": 27
+    },
+    {
+      "path": "src/operation/system_validation_suite.py",
+      "calc_function_count": 21,
+      "total_function_count": 25
+    },
+    {
+      "path": "src/validation/final_checkpoint_validation.py",
+      "calc_function_count": 21,
+      "total_function_count": 22
+    },
+    {
+      "path": "src/orchestrator/master_orchestrator.py",
+      "calc_function_count": 21,
+      "total_function_count": 22
+    },
+    {
+      "path": "src/operation/backtest_orchestrator.py",
+      "calc_function_count": 21,
+      "total_function_count": 22
+    },
+    {
+      "path": "src/validation/alpha_genome_tracker.py",
+      "calc_function_count": 21,
+      "total_function_count": 21
+    },
+    {
+      "path": "scripts/run_complete_v3_system.py",
+      "calc_function_count": 20,
+      "total_function_count": 28
+    },
+    {
+      "path": "src/strategic/architecture_optimizer.py",
+      "calc_function_count": 20,
+      "total_function_count": 25
+    },
+    {
+      "path": "src/options/capital_scaling_engine.py",
+      "calc_function_count": 20,
+      "total_function_count": 25
+    },
+    {
+      "path": "scripts/build_regime_labels.py",
+      "calc_function_count": 20,
+      "total_function_count": 24
+    },
+    {
+      "path": "src/intelligence/market_brain/enhanced_brain_orchestrator.py",
+      "calc_function_count": 20,
+      "total_function_count": 23
+    },
+    {
+      "path": "src/intelligence/market_brain/enhanced_regime_memory.py",
+      "calc_function_count": 20,
+      "total_function_count": 22
+    },
+    {
+      "path": "src/operation/alpha_validator.py",
+      "calc_function_count": 20,
+      "total_function_count": 21
+    },
+    {
+      "path": "src/intelligence/no_edge_detector.py",
+      "calc_function_count": 20,
+      "total_function_count": 21
+    },
+    {
+      "path": "scripts/runners/refresh_v3_artifacts.py",
+      "calc_function_count": 19,
+      "total_function_count": 59
+    },
+    {
+      "path": "src/cohesion/unified_state_manager.py",
+      "calc_function_count": 19,
+      "total_function_count": 31
+    },
+    {
+      "path": "src/operation/system_integration_wiring.py",
+      "calc_function_count": 19,
+      "total_function_count": 28
+    },
+    {
+      "path": "scripts/scrape_screener_financials.py",
+      "calc_function_count": 19,
+      "total_function_count": 27
+    },
+    {
+      "path": "src/intelligence/market_brain/weekly_fabric_builder.py",
+      "calc_function_count": 19,
+      "total_function_count": 25
+    },
+    {
+      "path": "src/volatility/state_engine.py",
+      "calc_function_count": 19,
+      "total_function_count": 24
+    },
+    {
+      "path": "src/operation/live_operation_controller.py",
+      "calc_function_count": 19,
+      "total_function_count": 23
+    },
+    {
+      "path": "src/volatility/monte_carlo_engine.py",
+      "calc_function_count": 19,
+      "total_function_count": 22
+    },
+    {
+      "path": "src/validation/extreme_scenario_generator.py",
+      "calc_function_count": 19,
+      "total_function_count": 22
+    },
+    {
+      "path": "src/runtime/capital_allocator.py",
+      "calc_function_count": 19,
+      "total_function_count": 22
+    },
+    {
+      "path": "src/operation/operation_controller.py",
+      "calc_function_count": 19,
+      "total_function_count": 22
+    },
+    {
+      "path": "src/options/upstox_adapter.py",
+      "calc_function_count": 19,
+      "total_function_count": 21
+    },
+    {
+      "path": "scripts/scrape_credit_ratings.py",
+      "calc_function_count": 19,
+      "total_function_count": 21
+    },
+    {
+      "path": "scripts/signal_reality_audit.py",
+      "calc_function_count": 19,
+      "total_function_count": 20
+    }
+  ]
+}

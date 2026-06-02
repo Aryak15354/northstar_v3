@@ -975,6 +975,11 @@ def build_valuation_bundle(
     df["cash_to_debt"] = safe_div(df["cash_and_equivalents"], df["total_debt"]).clip(lower=0, upper=5)
     df["fcf_conversion"] = safe_div(df["free_cash_flow_ttm"], df["net_income_ttm"]).clip(lower=-3, upper=3)
     df["cfo_to_ni"] = safe_div(df["operating_cash_flow_ttm"], df["net_income_ttm"]).clip(lower=-3, upper=3)
+    # CRITICAL: Accruals formula for Indian market
+    # Formula: (Net_Income - Operating_Cash_Flow) / Total_Assets
+    # Indian market behavior: High accruals → HIGHER returns (opposite of US)
+    # DO NOT invert sign - this is correct for Indian market
+    # Reference: Northstar V3 Signal Engineering Plan, Requirement 19
     df["accrual_ratio"] = safe_div(
         pd.to_numeric(df["net_income_ttm"], errors="coerce") - pd.to_numeric(df["operating_cash_flow_ttm"], errors="coerce"),
         df["total_assets"],

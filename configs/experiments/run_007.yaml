@@ -1,0 +1,14 @@
+# Run 007 - prior reference run
+
+experiment:
+  run_id: "v3_run_007_20260331"
+  description: "Reference run before regime tightening and sparse event ffill fix."
+  based_on: "run_006"
+  hypothesis: "Reference baseline used before run_008 fixes."
+  falsification: "Reference-only config."
+
+preprocessing:
+  eps_sue_decay_ffill: false
+  eps_sue_decay_availability_flag: false
+
+regime_config_version: "v1_wide_boundaries"

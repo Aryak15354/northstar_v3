@@ -252,17 +252,17 @@ insights = intel_engine.generate_insights(state)
 
 | Old Component | New Component | Status |
 |---------------|---------------|--------|
-| `src/dashboard/*` (multiple) | `dashboard/volatility_dashboard.py` | Archived |
+| Legacy root dashboard | `src/dashboard/app.py` | Canonical |
 
 **Migration Steps**:
 
 1. Use new unified dashboard:
 ```bash
 # OLD
-streamlit run src/dashboard/options_dashboard.py
+# Legacy root dashboard path is quarantined
 
 # NEW
-streamlit run dashboard/volatility_dashboard.py
+streamlit run src/dashboard/app.py
 ```
 
 2. Dashboard now consumes `VolatilityState` directly:

@@ -22,6 +22,56 @@ mkdir -p snapshots
 echo "✅ Environment check passed"
 echo ""
 
+# Run ingestion layer health check
+echo "Running data health check..."
+python3 -c "
+from src.ingestion import IngestionRegistry
+from datetime import datetime
+import sys
+
+try:
+    registry = IngestionRegistry()
+    health = registry.health_check(datetime.now())
+    
+    critical_sources = ['market_data', 'fundamentals']
+    optional_sources = ['sentiment', 'alternative_data']
+    all_fresh = True
+    
+    for source in critical_sources:
+        if source in health:
+            status = health[source]
+            if not status['is_fresh'] or status['status'] != 'available':
+                print(f'❌ {source}: {status.get(\"warning\", \"not fresh\")}')
+                all_fresh = False
+    
+    # Check optional sources (warn but don't fail)
+    for source in optional_sources:
+        if source in health:
+            status = health[source]
+            if not status['is_fresh'] or status['status'] != 'available':
+                print(f'⚠️  {source}: {status.get(\"warning\", \"not fresh\")} (optional)')
+            else:
+                print(f'✅ {source}: fresh')
+    
+    if not all_fresh:
+        print('\\n❌ Critical data sources are stale. Update data before starting.')
+        print('Run: bash scripts/update_market_and_rbi_data.sh')
+        sys.exit(1)
+    else:
+        print('✅ All critical data sources are fresh')
+except Exception as e:
+    print(f'⚠️  Health check failed: {e}')
+    print('Continuing anyway...')
+"
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "Data health check failed. Exiting."
+    exit 1
+fi
+
+echo ""
+
 # Check if already running
 if [ -f "engine.pid" ]; then
     PID=$(cat engine.pid)
@@ -61,7 +111,7 @@ echo "   Dashboard will open in your browser at http://localhost:8501"
 echo ""
 
 # Start the dashboard (this will block)
-streamlit run dashboard/volatility_dashboard.py
+./launch_dashboard.sh --port 8501
 
 # If we get here, dashboard was stopped
 echo ""

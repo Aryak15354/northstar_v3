@@ -107,14 +107,17 @@ class DatasetManager:
         self.screener_fundamentals_path = str(
             self.config.get(
                 "screener_fundamentals_path",
-                self.config.get("screener_annual_path", "data/canonical/fundamentals/fundamentals_annual_panel.csv"),
+                self.config.get("screener_annual_path", "data/canonical/fundamentals/fundamentals_annual_panel.parquet"),
             )
         )
         self.screener_quarterly_path = str(
-            self.config.get("screener_quarterly_path", "data/canonical/fundamentals/fundamentals_quarterly_panel.csv")
+            self.config.get(
+                "screener_quarterly_path",
+                "data/canonical/fundamentals/fundamentals_quarterly_panel.parquet",
+            )
         )
         self.screener_shareholding_path = str(
-            self.config.get("screener_shareholding_path", "data/canonical/fundamentals/shareholding_quarterly.csv")
+            self.config.get("screener_shareholding_path", "data/canonical/fundamentals/shareholding_quarterly.parquet")
         )
         self.use_alternative_features = bool(self.config.get("use_alternative_features", False))
         self.use_sentiment_features = bool(self.config.get("use_sentiment_features", False))
@@ -1331,9 +1334,12 @@ class DatasetManager:
         if not path.exists():
             return pd.DataFrame()
         try:
-            df = pd.read_csv(path)
+            if path.suffix.lower() in {".parquet", ".pq"}:
+                df = pd.read_parquet(path)
+            else:
+                df = pd.read_csv(path)
         except Exception:
-            logger.exception("Failed loading optional CSV artifact: %s", path)
+            logger.exception("Failed loading optional tabular artifact: %s", path)
             raise
         if df.empty:
             return pd.DataFrame()

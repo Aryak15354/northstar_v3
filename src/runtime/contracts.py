@@ -208,6 +208,10 @@ class PortfolioStateSnapshot:
     def to_dict(self) -> Dict[str, Any]:
         out = asdict(self)
         out["timestamp_utc"] = self.timestamp_utc.isoformat()
+        out["as_of"] = out["timestamp_utc"]
+        out["last_updated"] = out["timestamp_utc"]
+        out["net_liq"] = float(self.net_liquidation_value)
+        out["holdings_count"] = int(len(self.holdings or {}))
         return out
 
 

@@ -28,6 +28,7 @@ warnings.filterwarnings('ignore')
 
 # Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+fixtures_root = os.path.join(project_root, "tests", "fixtures")
 
 
 from src.cohesion.schema_validator import (
@@ -46,7 +47,7 @@ class TestDataQualitySystemLaws:
     
     def setup_method(self):
         """Setup for each test method"""
-        self.schema_registry = SchemaRegistry("test_schemas")
+        self.schema_registry = SchemaRegistry(os.path.join(fixtures_root, "test_schemas"))
         self.validator = SchemaValidator(self.schema_registry)
         
         # Create sample schema for testing
@@ -524,7 +525,7 @@ def test_data_quality_system_integration():
     print("-" * 60)
     
     # Create complete system
-    schema_registry = SchemaRegistry("integration_test_schemas")
+    schema_registry = SchemaRegistry(os.path.join(fixtures_root, "integration_test_schemas"))
     validator = SchemaValidator(schema_registry)
     
     # Register comprehensive schema

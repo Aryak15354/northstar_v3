@@ -106,42 +106,11 @@ class M1SafeRegimeMemoryEngine:
                 print(f"📊 Loaded market tensor: {tensor_data.shape}")
                 return tensor_data
             else:
-                print("⚠️ Market tensor not found, creating synthetic data")
-                return self.create_synthetic_tensor()
+                print("⚠️ Market tensor not found; regime memory cannot be built without real data")
+                return None
         except Exception as e:
             print(f"⚠️ Error loading market tensor: {e}")
-            return self.create_synthetic_tensor()
-    
-    def create_synthetic_tensor(self):
-        """Create synthetic market tensor for testing"""
-        dates = pd.date_range('2020-01-01', periods=200, freq='W')
-        n_features = 30
-        
-        # Create synthetic market data with regime-like patterns
-        data = []
-        for i, date in enumerate(dates):
-            # Create different regimes based on time
-            if i < 50:  # Crisis regime
-                regime_data = np.random.normal(-0.5, 2.0, n_features)
-            elif i < 100:  # Recovery regime
-                regime_data = np.random.normal(0.2, 1.5, n_features)
-            elif i < 150:  # Expansion regime
-                regime_data = np.random.normal(1.0, 1.0, n_features)
-            else:  # Neutral regime
-                regime_data = np.random.normal(0.0, 1.2, n_features)
-            
-            data.append(regime_data)
-        
-        tensor_data = pd.DataFrame(
-            data,
-            index=dates,
-            columns=[f'feature_{i}' for i in range(n_features)]
-        )
-        
-        # Save synthetic data
-        tensor_data.to_parquet(self.paths['market_tensor'])
-        print(f"📊 Created synthetic market tensor: {tensor_data.shape}")
-        return tensor_data
+            return None
     
     def create_temporal_windows(self, tensor_data):
         """Create temporal windows from market tensor"""
@@ -285,6 +254,9 @@ class M1SafeRegimeMemoryEngine:
         try:
             # Load market tensor
             tensor_data = self.load_market_tensor()
+            if tensor_data is None or tensor_data.empty:
+                print("⚠️ Real market tensor unavailable; skipping regime memory build")
+                return None
             
             # Create temporal windows
             windows, window_dates = self.create_temporal_windows(tensor_data)

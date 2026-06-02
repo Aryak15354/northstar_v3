@@ -228,7 +228,7 @@ class HistoricalDataIntegrator:
 
 def main():
     # Paths
-    historical_path = "/Users/aryakghoshal/Documents/projects/northstar_v7/data/historical/equities/daily"
+    historical_path = os.getenv("NORTHSTAR_HISTORICAL_PRICE_PATH", "data/historical/equities/daily")
     current_path = "data/raw/prices_daily"
     output_path = "data/raw/prices_daily_extended"
     

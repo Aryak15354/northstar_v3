@@ -1,0 +1,17 @@
+name: "india_factors"
+description: "India-specific forced-include features and regime-sensitive factors."
+force_include:
+  - "val_earnings_quality_score_zscore"
+  - "eps_sue_decay"
+  - "eps_sue_decay_cs_z"
+  - "screener_fii_pct"
+  - "fii_interaction"
+features:
+  - "promoter_pledge_change_90d"
+  - "bulk_distribution_breadth"
+  - "credit_stress_flag"
+  - "inr_revenue_impact"
+  - "oil_sector_impact"
+  - "currency_exposure_factor"
+  - "power_4w_change"
+  - "sector_capex_sensitivity"

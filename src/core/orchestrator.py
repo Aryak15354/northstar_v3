@@ -589,6 +589,83 @@ class OrganOrchestrator:
         self.isolation_manager = OrganIsolationManager(event_bus)
         self.failure_handler = AdvancedFailureHandler(event_bus, self.isolation_manager)
         
+                # CRITICAL: Initialize State Management (Gap 7)
+        from src.core.state_authority import StateAuthority, StateUpdate, WritePriority
+        from src.core.state_reconciler import StateReconciler
+        from src.core.state_bridges.options_bridge import OptionsStateBridge
+        from src.core.state_bridges.shadow_bridge import ShadowStateBridge
+        from src.core.state_bridges.valuation_bridge import ValuationStateBridge
+        from src.core.state_bridges.runtime_bridge import RuntimeStateBridge
+        
+        # Initialize StateAuthority
+        self.state_authority = StateAuthority(state, config={'dev_mode': True})
+        self._state_update_cls = StateUpdate
+        print("   🏛️ StateAuthority initialized")
+        
+        # Register core state writers
+        self.state_authority.register_writer(
+            'orchestrator',
+            allowed_sections=['portfolio', 'risk', 'health', 'governor_state'],
+            priority=WritePriority.LIVE_TRADING
+        )
+        self.state_authority.register_writer(
+            'options_bridge',
+            allowed_sections=['portfolio', 'risk'],
+            priority=WritePriority.BRIDGE_SYNC
+        )
+        self.state_authority.register_writer(
+            'shadow_bridge',
+            allowed_sections=['shadow_state'],
+            priority=WritePriority.BRIDGE_SYNC
+        )
+        self.state_authority.register_writer(
+            'valuation_bridge',
+            allowed_sections=['valuation_state'],
+            priority=WritePriority.BRIDGE_SYNC
+        )
+        self.state_authority.register_writer(
+            'runtime_bridge',
+            allowed_sections=['portfolio'],
+            priority=WritePriority.BRIDGE_SYNC
+        )
+        
+        # Initialize bridges for canonical state synchronization.
+        self.options_bridge = None
+        self.shadow_bridge = ShadowStateBridge(
+            shadow_state_path='data/shadow_reality/shadow_portfolio_state.parquet',
+            state_authority=self.state_authority,
+        )
+        self.valuation_bridge = ValuationStateBridge(
+            state_authority=self.state_authority,
+        )
+        self.runtime_bridge = RuntimeStateBridge(
+            db_path='data/runtime/portfolio_runtime.db',
+            json_path='data/portfolio/current_positions.json',
+            state_authority=self.state_authority,
+            config={},
+        )
+        
+        self.state_reconciler = StateReconciler(
+            unified_state=state,
+            options_bridge=self.options_bridge,
+            shadow_bridge=self.shadow_bridge,
+            valuation_bridge=self.valuation_bridge,
+            runtime_bridge=self.runtime_bridge,
+            state_authority=self.state_authority,
+            config={},
+        )
+        
+        print("   🔗 State management infrastructure initialized")
+        
+        # CRITICAL: Initialize Portfolio Governor
+        try:
+            from src.portfolio.governor import PortfolioGovernor
+            self.governor = PortfolioGovernor(config={'starting_capital_inr': 10_000_000})
+            print("   🏛️ Portfolio Governor initialized")
+        except Exception as e:
+            print(f"   ⚠️ Portfolio Governor initialization failed: {e}")
+            self.governor = None
+        
         # Legacy failure handling (kept for compatibility)
         self.max_consecutive_failures = 3
         self.recovery_delay = 300  # 5 minutes
@@ -648,6 +725,92 @@ class OrganOrchestrator:
         print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
         print(f"   System Locked: {'🔒 YES' if self.state.locked else '🔓 NO'}")
         print(f"   Active Organs: {len([o for o in self.organs if o.status == OrganStatus.HEALTHY])}")
+        
+                # === CRITICAL: Run State Reconciliation FIRST ===
+        if self.state_reconciler is not None:
+            print(f"\n🔍 Running State Reconciliation...")
+            try:
+                reconciliation_report = self.state_reconciler.run_full_reconciliation(datetime.now())
+                
+                print(f"   Status: {reconciliation_report.overall_status}")
+                print(f"   Can Trade: {reconciliation_report.can_trade}")
+                
+                if not reconciliation_report.can_trade:
+                    print(f"   ⚠️  CRITICAL: State reconciliation failed - trading blocked")
+                    for action in reconciliation_report.action_required:
+                        print(f"      - {action}")
+                    
+                    # Lock system if reconciliation fails
+                    self.state.lock_system(
+                        "State reconciliation failed",
+                        AuthorityLevel.SYSTEM,
+                        "state_reconciler"
+                    )
+                    return {
+                        'cycle_number': self.total_cycles + 1,
+                        'timestamp': datetime.now().isoformat(),
+                        'reconciliation_failed': True,
+                        'can_trade': False
+                    }
+                
+                # Write reconciliation report
+                self.state_reconciler.write_reconciliation_report(reconciliation_report)
+                
+            except Exception as e:
+                print(f"   ⚠️ Reconciliation failed: {e}")
+        
+        # === CRITICAL: Compute Capital Structure FIRST ===
+        if self.governor is not None:
+            print(f"\n🏛️ Computing Capital Structure...")
+            try:
+                capital_structure = self.governor.compute_capital_structure(self.state)
+                
+                print(f"   Regime: {capital_structure.capital_structure_regime}")
+                print(f"   Equity: {capital_structure.equity_fraction*100:.1f}% (₹{capital_structure.equity_budget_inr:,.0f})")
+                print(f"   Options: {capital_structure.options_fraction*100:.1f}% (₹{capital_structure.options_budget_inr:,.0f})")
+                print(f"   Cash: {capital_structure.cash_fraction*100:.1f}% (₹{capital_structure.cash_reserve_inr:,.0f})")
+                
+                # Store in canonical GovernorState so downstream systems read one authority.
+                governor_updates = [
+                    ('capital_structure_regime', capital_structure.capital_structure_regime.value),
+                    ('equity_fraction', capital_structure.equity_fraction),
+                    ('options_fraction', capital_structure.options_fraction),
+                    ('cash_fraction', capital_structure.cash_fraction),
+                    ('equity_budget_inr', capital_structure.equity_budget_inr),
+                    ('options_budget_inr', capital_structure.options_budget_inr),
+                    ('cash_reserve_inr', capital_structure.cash_reserve_inr),
+                    ('total_capital_inr', capital_structure.total_capital_inr),
+                    ('governance_confidence', capital_structure.confidence),
+                    ('caution_score', getattr(self.governor, 'last_caution_score', 0.0)),
+                    ('crisis_probability_at_decision', capital_structure.crisis_probability),
+                    ('primary_rationale', capital_structure.primary_rationale),
+                    ('modifiers_applied', capital_structure.modifiers_applied),
+                    ('overrides_active', capital_structure.overrides_active),
+                    ('last_morning_decision', capital_structure.computed_at),
+                ]
+                self.state_authority.batch_update([
+                    self._state_update_cls(
+                        writer_id='orchestrator',
+                        section='governor_state',
+                        field_path=field_path,
+                        new_value=value,
+                        priority=WritePriority.LIVE_TRADING,
+                        source='LIVE',
+                        reason='Governor capital structure computed',
+                    )
+                    for field_path, value in governor_updates
+                ])
+                self.state.capital_structure = capital_structure
+                
+                # Alert if defensive
+                if capital_structure.capital_structure_regime in ['DEFENSIVE', 'CAPITAL_PRESERVATION']:
+                    print(f"   ⚠️  ALERT: {capital_structure.capital_structure_regime} MODE - Reduced equity exposure")
+                
+            except Exception as e:
+                print(f"   ⚠️ Governor failed: {e}")
+                # Don't store capital_structure if it failed
+                if hasattr(self.state, 'capital_structure'):
+                    delattr(self.state, 'capital_structure')
         
         # Check for isolation expiry before executing organs
         for organ in self.organs:
@@ -1052,6 +1215,40 @@ class OrganOrchestrator:
         with open(state_file, 'w') as f:
             json.dump(orchestrator_state, f, indent=2, default=str)
 
+
+    def run_state_heartbeat(self):
+        """Run periodic state synchronization (every 5 minutes during market hours)"""
+        
+        print(f"\n💓 State Heartbeat")
+        
+        try:
+            # Update options Greeks snapshot
+            if self.options_bridge:
+                self.options_bridge.push_greeks_snapshot()
+                print("   ✓ Options Greeks updated")
+            
+            # Update shadow state
+            if self.shadow_bridge:
+                self.shadow_bridge.sync_shadow_state()
+                print("   ✓ Shadow state synced")
+            
+            # Update valuation state
+            if self.valuation_bridge:
+                self.valuation_bridge.sync_valuation_state()
+                print("   ✓ Valuation state synced")
+            
+            # Update runtime state
+            if self.runtime_bridge:
+                self.runtime_bridge.sync_runtime_state()
+                print("   ✓ Runtime state synced")
+            
+            # Checkpoint state
+            self.state_authority.checkpoint(force=False)
+            print("   ✓ State checkpointed")
+            
+        except Exception as e:
+            print(f"   ⚠️ Heartbeat error: {e}")
+    
 def main():
     """Test Enhanced Organ Orchestrator with Advanced Failure Handling"""
     

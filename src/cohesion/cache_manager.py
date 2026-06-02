@@ -648,3 +648,7 @@ def get_global_cache_manager() -> IntelligentCacheManager:
     if _global_cache_manager is None:
         _global_cache_manager = IntelligentCacheManager()
     return _global_cache_manager
+
+
+# Backward-compatible name used by the dependency bootstrap.
+CacheManager = IntelligentCacheManager

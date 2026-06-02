@@ -1036,7 +1036,7 @@ class IntegrationTestingFramework:
                     }
                     for diag in integration_report.component_diagnostics
                 ],
-                "analysis_results": {
+                "data/results/analysis": {
                     "data_flow_validation": integration_report.data_flow_validation,
                     "timing_analysis": integration_report.timing_analysis,
                     "error_recovery_analysis": integration_report.error_recovery_analysis

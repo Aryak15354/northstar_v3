@@ -1,0 +1,42 @@
+# Alpha OS Configuration
+# Configuration for the Alpha Generation Strategy Operating System
+
+alpha_os:
+  # Promotion Criteria - Formal requirements for promoting strategies to ACTIVE
+  promotion_criteria:
+    min_ic_mean: 0.035               # IC must exceed baseline (currently 0.030)
+    min_icir: 1.2                    # ICIR > 1.2 for reliable signal
+    min_hit_rate: 0.55               # >55% of walk-forward windows with IC > 0
+    min_validation_windows: 6        # At least 6 out-of-sample windows
+    min_validation_months: 12        # At least 12 months of walk-forward history
+    max_turnover_pct: 50             # Strategy can't require >50% monthly turnover
+    leakage_test_must_pass: true     # Must pass PIT leakage check
+    max_correlation_with_active: 0.7 # Must be <0.7 correlated with any existing ACTIVE strategy
+  
+  # Probation Criteria - When to put strategies on probation
+  probation_criteria:
+    probation_trigger_live_ic_below: 0.015   # Put on probation if live IC < 0.015
+    probation_trigger_consecutive_negative: 3 # Or 3 consecutive negative-IC months
+    probation_duration_days: 30              # Probation lasts 30 days
+    probation_weight_factor: 0.4             # Reduce allocation to 40% during probation
+  
+  # Demotion Criteria - When to retire strategies
+  demotion_criteria:
+    retire_if_live_ic_below: 0.005   # Retire if live IC deteriorates to near zero
+    retire_after_probation_days: 30  # Retire if still failing after full probation
+    retire_if_ic_improvement_pct: -30 # Retire if IC degraded >30% from validation IC
+  
+  # Hot Reload - Enable hot-reload of strategies without system restart
+  hot_reload:
+    enabled: true
+    reload_check_interval_seconds: 300  # Check for new promotions every 5 minutes
+  
+  # Auto-promotion - Automatically promote candidates that pass criteria
+  auto_promote: true
+  
+  # Redundancy Detection
+  redundancy:
+    signal_correlation_threshold: 0.70   # Above this = redundant
+    factor_exposure_overlap_threshold: 0.75
+    lookback_days: 90                    # Signal correlation computed over 90 days
+    icir_dominance_margin: 0.20          # New strategy needs ICIR > existing + 0.20 to displace it

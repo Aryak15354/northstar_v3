@@ -8,8 +8,11 @@ import pandas as pd
 import numpy as np
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
+
+OUTPUT_DIR = Path("data/results/analysis/live_trading")
 
 def extract_comprehensive_live_data():
     """Extract comprehensive live trading data from all sources"""
@@ -206,7 +209,7 @@ def extract_comprehensive_live_data():
         print(f"\n💾 Saving individual data sources...")
         
         for i, (df, source) in enumerate(zip(all_live_data, data_sources)):
-            filename = f"live_data_{source}.csv"
+            filename = OUTPUT_DIR / f"live_data_{source}.csv"
             df.to_csv(filename, index=False)
             print(f"   📄 {filename}: {len(df)} records")
         
@@ -231,12 +234,13 @@ def extract_comprehensive_live_data():
         
         # Save summary
         summary_df = pd.DataFrame(summary_data)
-        summary_df.to_csv('live_trading_data_summary.csv', index=False)
+        summary_path = OUTPUT_DIR / 'live_trading_data_summary.csv'
+        summary_df.to_csv(summary_path, index=False)
         
         print(f"\n🎯 Live Trading Data Extraction Complete!")
         print(f"   📊 Total Records: {total_records:,}")
         print(f"   📁 Data Sources: {len(data_sources)}")
-        print(f"   📄 Summary File: live_trading_data_summary.csv")
+        print(f"   📄 Summary File: {summary_path}")
         
         return all_live_data, data_sources
     else:
@@ -313,3 +317,4 @@ if __name__ == "__main__":
         print("📋 Unified report: unified_live_trading_report.json")
     else:
         print("❌ No live trading data available")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

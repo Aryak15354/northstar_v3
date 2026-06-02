@@ -187,7 +187,7 @@ python scripts/start_engine.py --config config/production.yaml
 
 Access real-time dashboard:
 ```bash
-streamlit run dashboard/volatility_dashboard.py
+streamlit run src/dashboard/app.py
 ```
 
 Key metrics to watch:

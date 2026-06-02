@@ -22,12 +22,65 @@ import numpy as np
 from datetime import datetime
 import warnings
 import argparse
+import traceback
 warnings.filterwarnings('ignore')
 
 # Ensure project root is importable when running as a script path.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+
+def log_pipeline_failure(stage: str, message: str) -> None:
+    """Append pipeline failure details to logs/pipeline_failures.log."""
+    try:
+        os.makedirs("logs", exist_ok=True)
+        stamp = datetime.now().isoformat()
+        with open("logs/pipeline_failures.log", "a", encoding="utf-8") as f:
+            f.write(f"{stamp} | stage={stage} | {message}\\n")
+    except Exception:
+        pass
+
+def run_daily_scoring():
+    """Build canonical scores.parquet from DailyScorer."""
+
+    print("\n📈 STEP 2.5: DAILYSCORER SCORING")
+    print("-" * 40)
+
+    score_builder = os.path.join("scripts", "runners", "generate_daily_scorer_scores.py")
+    if not os.path.exists(score_builder):
+        msg = f"missing scorer bridge script: {score_builder}"
+        print(f"❌ {msg}")
+        log_pipeline_failure("daily_scoring", msg)
+        raise RuntimeError(msg)
+
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                score_builder,
+                "--date",
+                "today",
+                "--config",
+                "config/research_policy.yaml",
+                "--output",
+                "data/processed/scores.parquet",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=1200,
+        )
+        if result.returncode != 0:
+            err = (result.stderr or result.stdout or "").strip()
+            print(f"❌ DailyScorer scoring failed: {err[:300]}")
+            log_pipeline_failure("daily_scoring", err[:1000] or "unknown error")
+            raise RuntimeError("daily scoring failed")
+        print("✅ DailyScorer scoring completed")
+        return True
+    except Exception as e:
+        print(f"❌ DailyScorer scoring error: {e}")
+        tb = traceback.format_exc()
+        log_pipeline_failure("daily_scoring", f"{e}\n{tb}")
+        raise
 
 def run_data_ingestion():
     """Run data ingestion pipeline"""
@@ -96,6 +149,8 @@ def run_portfolio_construction():
     
     try:
         print("🎯 Generating basic portfolio weights...")
+
+        run_daily_scoring()
         
         # Prefer real, score-weighted portfolios if scores exist.
         scores_path = "data/processed/scores.parquet"
@@ -133,54 +188,38 @@ def run_portfolio_construction():
             except Exception:
                 pass
 
-        portfolio_weights = None
+        if not os.path.exists(scores_path):
+            raise RuntimeError(f"missing score artifact: {scores_path}")
 
-        if os.path.exists(scores_path):
-            try:
-                scores_df = pd.read_parquet(scores_path)
-                if {"ticker", "score"}.issubset(scores_df.columns):
-                    scores_df = scores_df.copy()
-                    scores_df["score"] = pd.to_numeric(scores_df["score"], errors="coerce")
-                    scores_df = scores_df.dropna(subset=["ticker", "score"])
-                    scores_df = scores_df.sort_values("score", ascending=False)
+        scores_df = pd.read_parquet(scores_path)
+        if not {"ticker", "score"}.issubset(scores_df.columns):
+            raise RuntimeError("scores.parquet missing required columns: ticker, score")
 
-                    top = scores_df.head(50)
-                    if not top.empty and float(top["score"].sum()) > 0:
-                        w = top["score"] / float(top["score"].sum())
-                        w = (w * target_exposure).clip(upper=max_weight)
-                        # Renormalize to target exposure after capping.
-                        total = float(w.sum())
-                        if total > 0:
-                            w = w / total * target_exposure
+        scores_df = scores_df.copy()
+        scores_df["score"] = pd.to_numeric(scores_df["score"], errors="coerce")
+        scores_df = scores_df.dropna(subset=["ticker", "score"])
+        scores_df = scores_df.sort_values("score", ascending=False)
 
-                        portfolio_weights = pd.DataFrame(
-                            {
-                                "symbol": top["ticker"].astype(str).str.replace(".NS", "", regex=False),
-                                "weight": w.values,
-                                "timestamp": [datetime.now().isoformat()] * len(top),
-                            }
-                        )
-                        print(f"✅ Built score-weighted portfolio from {scores_path} ({len(portfolio_weights)} names)")
-            except Exception as e:
-                print(f"⚠️ Could not build score-weighted portfolio: {e}")
+        top = scores_df.head(50)
+        if top.empty or float(top["score"].sum()) <= 0.0:
+            raise RuntimeError("scores.parquet has no positive score mass for portfolio construction")
 
-        # Fallback: universe equal-weight (real but simplistic)
-        if portfolio_weights is None:
-            universe_file = "universe/nifty500.csv"
-            if not os.path.exists(universe_file):
-                print("❌ Universe file not found")
-                return False
+        w = top["score"] / float(top["score"].sum())
+        w = (w * target_exposure).clip(upper=max_weight)
+        # Renormalize to target exposure after capping.
+        total = float(w.sum())
+        if total <= 0.0:
+            raise RuntimeError("score-weight normalization collapsed to zero")
+        w = w / total * target_exposure
 
-            universe_df = pd.read_csv(universe_file)
-            n_stocks = min(50, len(universe_df))  # Top 50 stocks
-            weight = 1.0 / n_stocks
-
-            portfolio_weights = pd.DataFrame({
-                'symbol': universe_df['Symbol'].head(n_stocks),
-                'weight': [weight] * n_stocks,
-                'timestamp': [datetime.now().isoformat()] * n_stocks
-            })
-            print("⚠️ Using equal-weight fallback (scores not available)")
+        portfolio_weights = pd.DataFrame(
+            {
+                "symbol": top["ticker"].astype(str).str.replace(".NS", "", regex=False),
+                "weight": w.values,
+                "timestamp": [datetime.now().isoformat()] * len(top),
+            }
+        )
+        print(f"✅ Built score-weighted portfolio from {scores_path} ({len(portfolio_weights)} names)")
         
         # Save portfolio weights
         portfolio_weights.to_parquet("data/processed/portfolio_weights.parquet", index=False)
@@ -199,7 +238,9 @@ def run_portfolio_construction():
         
     except Exception as e:
         print(f"❌ Portfolio construction error: {e}")
-        return False
+        tb = traceback.format_exc()
+        log_pipeline_failure("portfolio_construction", f"{e}\n{tb}")
+        raise
 
 def run_system_state_update():
     """Update system state files"""
@@ -262,8 +303,12 @@ def main():
             success_count += 1
 
     # Step 3: Portfolio Construction
-    if run_portfolio_construction():
-        success_count += 1
+    try:
+        if run_portfolio_construction():
+            success_count += 1
+    except Exception as e:
+        print(f"❌ HARD STOP: portfolio pipeline halted due to scoring/construction failure: {e}")
+        return 1
     
     # Step 4: System State Update
     if run_system_state_update():

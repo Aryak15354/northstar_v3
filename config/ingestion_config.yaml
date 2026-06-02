@@ -1,0 +1,80 @@
+# Unified Data Ingestion Layer Configuration
+# Add this to your main config.yaml or include it
+
+ingestion:
+  # Cache settings
+  cache_ttl_seconds: 300  # 5 minutes
+  
+  # Staleness thresholds (in hours)
+  staleness_thresholds:
+    market_data_soft_hours: 48    # Warn if prices older than 2 trading days
+    market_data_hard_hours: 120   # Error if prices older than 5 trading days
+    macro_data_soft_hours: 168    # Warn if macro data older than 1 week
+    macro_data_hard_hours: 720    # Error if macro data older than 30 days
+    sentiment_soft_hours: 72      # Warn if sentiment older than 3 days
+    options_soft_hours: 24        # Warn if options data older than 1 day
+  
+  # PIT enforcement
+  pit:
+    enabled: true
+    strict_mode: true  # In strict mode, PITViolationError is raised
+                      # In non-strict mode, it's logged as a warning
+                      # ALWAYS use strict_mode=true in production
+  
+  # Fundamental reporting lags (days)
+  reporting_lags:
+    quarterly_results: 60
+    annual_results: 90
+    shareholding_pattern: 21
+  
+  # Data paths (relative to project root)
+  paths:
+    prices_daily: "data/processed/prices.parquet"
+    screener_financials: "data/raw/vendors/screener/financials"
+    screener_quarterly: "data/processed/screener_fundamentals_quarterly.csv"
+    screener_shareholding: "data/processed/screener_shareholding.csv"
+    macro: "data/macro"
+    gst: "data/processed/gst_monthly.parquet"
+    power: "data/processed/macro/cea_power_daily.parquet"
+    credit_ratings_nse: "data/processed/alternative/credit_ratings_nse_all.csv"
+    credit_ratings_processed: "data/processed/alternative/credit_ratings_nse_all.csv"
+    credit_ratings: "data/processed/alternative/credit_ratings_nse_all.csv"
+    bulk_deals_nse: "data/processed/alternative/bulk_deals_nse_all.csv"
+    bulk_deals: "data/processed/alternative/bulk_deals_nse_all.csv"
+    promoter_pledges_processed: "data/processed/alternative/promoter_pledge_all.csv"
+    promoter_pledges: "data/processed/alternative/promoter_pledge_all.csv"
+    sentiment_v3: "data/sentiment/v3"
+    company_sentiment: "data/canonical/sentiment/company_sentiment_daily.parquet"
+    company_sentiment_path: "data/canonical/sentiment/company_sentiment_daily.parquet"
+    market_sentiment_path: "data/canonical/sentiment/market_sentiment_daily.parquet"
+    options_historical: "data/options/historical"
+    options_eod: "data/options/eod"
+    options_chains_cache: "data/options/chains_cache"
+    universe_snapshots: "data/universe/universe_snapshots.parquet"
+    corporate_actions: "data/universe/corporate_actions.parquet"
+    delisting_database: "data/universe/delisting_database.parquet"
+    symbol_migrations: "data/universe/symbol_migration_map.parquet"
+    release_calendar: "data/integrity/data_release_calendar.parquet"
+    macro_features_path: "data/processed/macro/macro_regime_features.parquet"
+
+# Market data settings
+market_data_lookback_days: 1095  # 3 years default
+
+# Alternative data settings
+high_pledge_threshold: 30.0  # Percentage threshold for high pledge flag
+
+# Financial column mappings (standardize Screener.in columns)
+financial_column_mappings:
+  "Sales": "Revenue"
+  "Net Profit": "NetIncome"
+  "Total Assets": "TotalAssets"
+  "Total Liabilities": "TotalLiabilities"
+  "Shareholders Funds": "Equity"
+  "Total Debt": "TotalDebt"
+  "Operating Profit": "EBIT"
+  "EBITDA": "EBITDA"
+  "Depreciation": "Depreciation"
+  "Interest": "InterestExpense"
+  "Tax": "TaxExpense"
+  "EPS": "EPS"
+  "Book Value": "BookValue"

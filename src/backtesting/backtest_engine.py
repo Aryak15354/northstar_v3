@@ -19,7 +19,7 @@ import os
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Iterable
 import warnings
 
 # =========================== TEMPORAL PROTECTION ENABLED ===========================
@@ -38,6 +38,7 @@ from src.runtime import (
     build_certification_snapshot,
 )
 from src.runtime.hash_utils import canonical_hash, file_sha256
+from src.portfolio.strategies import AVAILABLE_STRATEGIES
 
 warnings.filterwarnings('ignore')
 
@@ -69,12 +70,7 @@ class BacktestEngine:
             os.makedirs(path, exist_ok=True)
         
         # Strategy universe
-        self.strategies = [
-            'northstar', 'mom_6m', 'mom_12m', 'value_tilt', 'quality_tilt',
-            'low_vol', 'equal_weight_top', 'liquidity_weighted', 'mom_vol_adj',
-            'sector_neutral_eq', 'risk_parity_vol', 'regime_conditional',
-            'mom_3m_6m_12m', 'dual_momentum', 'quality_value_combo', 'sector_tilt_mom'
-        ]
+        self.strategies = list(AVAILABLE_STRATEGIES)
         
         # Performance schema
         self.performance_schema = {
@@ -114,6 +110,9 @@ class BacktestEngine:
         self.prs_context = {}
         self.prs_cert_snapshot_hash = ""
         self._active_prs_strategy = ""
+        self._prs_runtime_enabled = str(
+            os.getenv("NORTHSTAR_BACKTEST_ENABLE_PRS", "0")
+        ).strip().lower() in {"1", "true", "yes", "on"}
         self._strict_universe_reconstruction = str(
             os.getenv("NORTHSTAR_STRICT_UNIVERSE_RECONSTRUCTION", "0")
         ).strip().lower() in {"1", "true", "yes", "on"}
@@ -154,6 +153,12 @@ class BacktestEngine:
         }
 
     def _ensure_prs_for_strategy(self, strategy_name: str) -> None:
+        if not self._prs_runtime_enabled:
+            self.prs = None
+            self.prs_context = {}
+            self.prs_cert_snapshot_hash = ""
+            self._active_prs_strategy = ""
+            return
         if self.prs is not None and self._active_prs_strategy == strategy_name:
             return
         self.prs = PortfolioRuntimeService(
@@ -258,15 +263,50 @@ class BacktestEngine:
             raise FileNotFoundError(f"Price data not found: {self.paths['prices']}")
         
         prices_df = pd.read_parquet(self.paths['prices'])
-        
-        # Convert to pivot format
-        if 'ticker' in prices_df.columns and 'Close' in prices_df.columns:
-            date_col = 'Date' if 'Date' in prices_df.columns else 'date'
-            prices_df[date_col] = pd.to_datetime(prices_df[date_col])
-            prices_pivot = prices_df.pivot(index=date_col, columns='ticker', values='Close')
-            prices_pivot = prices_pivot.fillna(method='ffill').dropna(how='all')
+
+        ticker_col = None
+        for candidate in ('ticker', 'Ticker', 'symbol', 'Symbol'):
+            if candidate in prices_df.columns:
+                ticker_col = candidate
+                break
+
+        close_col = None
+        for candidate in ('Close', 'close', 'adj_close', 'Adj Close'):
+            if candidate in prices_df.columns:
+                close_col = candidate
+                break
+
+        date_col = None
+        for candidate in ('Date', 'date', 'Timestamp', 'timestamp'):
+            if candidate in prices_df.columns:
+                date_col = candidate
+                break
+
+        # Convert long-form OHLCV data into the daily price surface expected by the engine.
+        if ticker_col and close_col and date_col:
+            norm = prices_df[[date_col, ticker_col, close_col]].copy()
+            norm[date_col] = pd.to_datetime(norm[date_col], errors='coerce').dt.normalize()
+            norm[ticker_col] = norm[ticker_col].astype(str).str.strip()
+            norm[close_col] = pd.to_numeric(norm[close_col], errors='coerce')
+            norm = norm.dropna(subset=[date_col, ticker_col, close_col])
+            norm = norm.sort_values([date_col, ticker_col])
+            prices_pivot = norm.pivot_table(
+                index=date_col,
+                columns=ticker_col,
+                values=close_col,
+                aggfunc='last',
+            ).sort_index()
+            prices_pivot = prices_pivot.ffill().dropna(how='all')
         else:
-            prices_pivot = prices_df
+            prices_pivot = prices_df.copy()
+            if not isinstance(prices_pivot.index, pd.DatetimeIndex):
+                try:
+                    prices_pivot.index = pd.to_datetime(prices_pivot.index, errors='coerce')
+                except Exception:
+                    pass
+            if isinstance(prices_pivot.index, pd.DatetimeIndex):
+                prices_pivot.index = prices_pivot.index.normalize()
+                prices_pivot = prices_pivot.sort_index()
         
         print(f"   ✅ Loaded {len(prices_pivot)} days × {len(prices_pivot.columns)} assets")
         return prices_pivot
@@ -277,8 +317,28 @@ class BacktestEngine:
         try:
             if os.path.exists(self.paths['market_state']):
                 market_df = pd.read_parquet(self.paths['market_state'])
-                market_df['Date'] = pd.to_datetime(market_df['Date'])
-                market_df = market_df.set_index('Date').sort_index()
+                date_col = None
+                for candidate in ('Date', 'date', 'timestamp', 'Timestamp', 'last_updated'):
+                    if candidate in market_df.columns:
+                        date_col = candidate
+                        break
+
+                if date_col is None:
+                    raise KeyError("No date column found in market_state parquet")
+
+                market_df[date_col] = pd.to_datetime(market_df[date_col], errors='coerce').dt.normalize()
+                market_df = market_df.dropna(subset=[date_col]).sort_values(date_col)
+                market_df = market_df.groupby(date_col, as_index=False).tail(1)
+
+                # Canonicalize field names used across legacy and current components.
+                if 'vol_regime' not in market_df.columns and 'volatility_regime' in market_df.columns:
+                    market_df['vol_regime'] = market_df['volatility_regime']
+                if 'liquidity_regime' not in market_df.columns and 'liquidity_state' in market_df.columns:
+                    market_df['liquidity_regime'] = market_df['liquidity_state']
+                if 'risk_on_probability' not in market_df.columns and 'risk_on_prob' in market_df.columns:
+                    market_df['risk_on_probability'] = market_df['risk_on_prob']
+
+                market_df = market_df.set_index(date_col).sort_index()
                 print(f"   ✅ Loaded market state: {len(market_df)} observations")
                 return market_df
         except Exception as e:
@@ -298,7 +358,7 @@ class BacktestEngine:
             from src.portfolio.strategies import build_strategy_portfolio
             
             # Build portfolio for this strategy
-            portfolio = build_strategy_portfolio(strategy_name)
+            portfolio = build_strategy_portfolio(strategy_name, as_of_date=date)
             
             if portfolio.empty or 'weight' not in portfolio.columns:
                 return pd.Series(dtype=float)
@@ -347,7 +407,7 @@ class BacktestEngine:
         results = []
         previous_weights = pd.Series(dtype=float)
         cumulative_delisted_symbols = set()
-        base_strategy_weights = None
+        current_weights = pd.Series(dtype=float)
 
         # Daily backtest loop
         for date in backtest_prices.index:
@@ -375,9 +435,7 @@ class BacktestEngine:
             
             # Get strategy weights (rebalance weekly)
             if len(results) == 0 or len(results) % 5 == 0:  # Weekly rebalancing
-                if base_strategy_weights is None:
-                    base_strategy_weights = self.generate_strategy_weights(strategy_name, date)
-                current_weights = base_strategy_weights.copy()
+                current_weights = self.generate_strategy_weights(strategy_name, date).copy()
                 
                 # Align with available prices
                 available_tickers = (
@@ -489,8 +547,92 @@ class BacktestEngine:
             results_df['vol_20d'] = returns_series.rolling(20, min_periods=5).std() * np.sqrt(252)
         
         return results_df
+
+    def _summarize_strategy_results(self, strategy: str, results: pd.DataFrame) -> Dict[str, float] | None:
+        if results is None or results.empty:
+            return None
+        final_equity = float(results['equity'].iloc[-1])
+        total_return = final_equity - 1.0
+        returns = pd.to_numeric(results['daily_return'], errors='coerce').fillna(0.0)
+
+        if len(returns) > 1:
+            ann_return = (final_equity ** (252 / len(returns))) - 1
+            volatility = float(returns.std() * np.sqrt(252))
+            sharpe = ann_return / volatility if volatility > 0 else 0.0
+            max_dd = float(pd.to_numeric(results['drawdown'], errors='coerce').fillna(0.0).min())
+        else:
+            ann_return = 0.0
+            volatility = 0.0
+            sharpe = 0.0
+            max_dd = 0.0
+
+        return {
+            'strategy': strategy,
+            'total_return': float(total_return),
+            'ann_return': float(ann_return),
+            'volatility': float(volatility),
+            'sharpe': float(sharpe),
+            'max_drawdown': float(max_dd),
+            'final_equity': float(final_equity),
+            'avg_exposure': float(pd.to_numeric(results['exposure'], errors='coerce').fillna(0.0).mean()),
+            'avg_positions': float(pd.to_numeric(results['n_positions'], errors='coerce').fillna(0.0).mean()),
+            'avg_turnover': float(pd.to_numeric(results['turnover'], errors='coerce').fillna(0.0).mean()),
+        }
+
+    def _write_summary_artifacts(
+        self,
+        strategy_summaries: Dict[str, Dict[str, float]],
+        all_results: Iterable[pd.DataFrame],
+    ) -> None:
+        results_list = [df for df in all_results if isinstance(df, pd.DataFrame) and not df.empty]
+        if results_list:
+            master_results = pd.concat(results_list, ignore_index=True)
+            master_results.to_parquet(self.paths['performance_master'], index=False)
+            print(f"\n✅ Master performance file saved: {len(master_results)} records")
+
+        if strategy_summaries:
+            summary_df = pd.DataFrame(strategy_summaries).T
+            summary_df.index.name = 'strategy'
+            summary_file = os.path.join(self.paths['strategy_performance'], 'summary.parquet')
+            summary_df.to_parquet(summary_file)
+            if 'strategy' in summary_df.columns:
+                flat_summary = summary_df.reset_index(drop=True)
+            else:
+                flat_summary = summary_df.reset_index()
+            flat_summary.to_parquet('data/processed/strategy_performance.parquet', index=False)
+
+            # Also save as JSON for easy loading
+            summary_json = os.path.join(self.paths['strategy_performance'], 'summary.json')
+            with open(summary_json, 'w') as f:
+                json.dump(strategy_summaries, f, indent=2, default=str)
+
+            print(f"✅ Strategy summaries saved: {len(strategy_summaries)} strategies")
+
+    def rebuild_performance_summary(self) -> Dict[str, Dict[str, float]]:
+        """Recompute summary artifacts from backtest parquet files already on disk."""
+        strategy_summaries: Dict[str, Dict[str, float]] = {}
+        all_results = []
+        backtests_dir = Path(self.paths['backtests'])
+        if not backtests_dir.exists():
+            return strategy_summaries
+
+        for path in sorted(backtests_dir.glob("*.parquet")):
+            strategy = path.stem
+            try:
+                results = pd.read_parquet(path)
+            except Exception as e:
+                print(f"   ⚠️ Could not load backtest {strategy}: {e}")
+                continue
+            summary = self._summarize_strategy_results(strategy, results)
+            if summary is None:
+                continue
+            strategy_summaries[strategy] = summary
+            all_results.append(results)
+
+        self._write_summary_artifacts(strategy_summaries, all_results)
+        return strategy_summaries
     
-    def run_all_strategies(self, lookback_days=252):
+    def run_all_strategies(self, lookback_days=252, strategies=None):
         """Run backtests for all strategies"""
         
         print("🧪 RUNNING COMPLETE STRATEGY BACKTESTS")
@@ -505,13 +647,14 @@ class BacktestEngine:
         start_date = prices.index[-lookback_days] if len(prices) > lookback_days else prices.index[0]
         
         print(f"📅 Backtest period: {start_date.date()} to {end_date.date()}")
-        print(f"🎯 Testing {len(self.strategies)} strategies")
+        strategy_list = list(strategies or self.strategies)
+        print(f"🎯 Testing {len(strategy_list)} strategies")
         
         # Run backtests
         all_results = []
         strategy_summaries = {}
         
-        for strategy in self.strategies:
+        for strategy in strategy_list:
             try:
                 results = self.run_backtest(strategy, prices, market_state, start_date, end_date)
                 
@@ -520,61 +663,24 @@ class BacktestEngine:
                     strategy_file = os.path.join(self.paths['backtests'], f"{strategy}.parquet")
                     results.to_parquet(strategy_file, index=False)
                     
-                    # Calculate summary metrics
-                    final_equity = results['equity'].iloc[-1]
-                    total_return = final_equity - 1
-                    returns = results['daily_return']
-                    
-                    if len(returns) > 1:
-                        ann_return = (final_equity ** (252 / len(returns))) - 1
-                        volatility = returns.std() * np.sqrt(252)
-                        sharpe = ann_return / volatility if volatility > 0 else 0
-                        max_dd = results['drawdown'].min()
-                    else:
-                        ann_return = volatility = sharpe = max_dd = 0
-                    
-                    summary = {
-                        'strategy': strategy,
-                        'total_return': total_return,
-                        'ann_return': ann_return,
-                        'volatility': volatility,
-                        'sharpe': sharpe,
-                        'max_drawdown': max_dd,
-                        'final_equity': final_equity,
-                        'avg_exposure': results['exposure'].mean(),
-                        'avg_positions': results['n_positions'].mean(),
-                        'avg_turnover': results['turnover'].mean()
-                    }
-                    
+                    summary = self._summarize_strategy_results(strategy, results)
+                    if summary is None:
+                        continue
                     strategy_summaries[strategy] = summary
                     all_results.append(results)
                     
-                    print(f"   ✅ {strategy}: {ann_return:.1%} return, {sharpe:.2f} Sharpe")
+                    print(f"   ✅ {strategy}: {summary['ann_return']:.1%} return, {summary['sharpe']:.2f} Sharpe")
                 
             except Exception as e:
                 print(f"   ❌ {strategy}: Error - {e}")
         
-        # Combine all results
-        if all_results:
-            master_results = pd.concat(all_results, ignore_index=True)
-            master_results.to_parquet(self.paths['performance_master'], index=False)
-            print(f"\n✅ Master performance file saved: {len(master_results)} records")
-        
-        # Save strategy summaries
-        if strategy_summaries:
-            summary_df = pd.DataFrame(strategy_summaries).T
-            summary_file = os.path.join(self.paths['strategy_performance'], 'summary.parquet')
-            summary_df.to_parquet(summary_file)
-            
-            # Also save as JSON for easy loading
-            summary_json = os.path.join(self.paths['strategy_performance'], 'summary.json')
-            with open(summary_json, 'w') as f:
-                json.dump(strategy_summaries, f, indent=2, default=str)
-            
-            print(f"✅ Strategy summaries saved: {len(strategy_summaries)} strategies")
+        self._write_summary_artifacts(strategy_summaries, all_results)
         
         print(f"\n🎉 BACKTEST COMPLETE!")
-        print(f"   Best Strategy: {max(strategy_summaries.keys(), key=lambda x: strategy_summaries[x]['sharpe'])}")
+        if strategy_summaries:
+            print(f"   Best Strategy: {max(strategy_summaries.keys(), key=lambda x: strategy_summaries[x]['sharpe'])}")
+        else:
+            print("   Best Strategy: none (no successful backtests)")
         print(f"   Results saved in: {self.paths['backtests']}")
         
         return strategy_summaries

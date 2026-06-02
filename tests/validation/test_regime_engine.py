@@ -152,6 +152,7 @@ def test_daily_scorer_output_has_required_columns(tmp_path: Path) -> None:
     out = scorer.score("2025-01-10")
     required = {
         "ticker",
+        "raw_model_score",
         "model_score",
         "regime",
         "sentiment_multiplier",

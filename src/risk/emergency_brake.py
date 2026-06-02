@@ -209,7 +209,7 @@ class EmergencyBrakeEngine:
                     
                     # ABSOLUTE AUTHORITY: Emergency cap overrides market state
                     original_exposure = market_df.loc[latest_idx, 'allowed_exposure']
-                    emergency_cap = current_signals['Emergency_Cap'] * 100  # Convert to percentage
+                    emergency_cap = float(current_signals['Emergency_Cap'])
                     
                     # Take minimum (most conservative)
                     final_exposure = min(original_exposure, emergency_cap)
@@ -222,9 +222,9 @@ class EmergencyBrakeEngine:
                     market_df.to_parquet(self.market_state_file, index=False)
                     
                     print(f"🚨 EMERGENCY AUTHORITY APPLIED:")
-                    print(f"   Original Exposure: {original_exposure:.1f}%")
-                    print(f"   Emergency Cap: {emergency_cap:.1f}%")
-                    print(f"   Final Exposure: {final_exposure:.1f}%")
+                    print(f"   Original Exposure: {original_exposure:.1%}")
+                    print(f"   Emergency Cap: {emergency_cap:.1%}")
+                    print(f"   Final Exposure: {final_exposure:.1%}")
                     print(f"   Emergency Active: {current_signals['Emergency']}")
                     
         except Exception as e:
@@ -310,7 +310,7 @@ class EmergencyBrakeEngine:
                 'timestamp': datetime.now(),
                 'emergency_active': bool(current['Emergency']),
                 'risk_level': float(current['Risk_Level']),
-                'emergency_cap': float(current['Emergency_Cap'] * 100),  # Convert to percentage
+                'emergency_cap': float(current['Emergency_Cap']),
                 'drawdown': float(current['Drawdown']),
                 'volatility': float(current['Volatility']) if not pd.isna(current['Volatility']) else 0.02
             }
@@ -318,7 +318,7 @@ class EmergencyBrakeEngine:
             print(f"\n🚨 CURRENT EMERGENCY STATE:")
             print(f"   Emergency Active: {emergency_state['emergency_active']}")
             print(f"   Risk Level: {emergency_state['risk_level']:.1f}")
-            print(f"   Emergency Cap: {emergency_state['emergency_cap']:.1f}%")
+            print(f"   Emergency Cap: {emergency_state['emergency_cap']:.1%}")
             print(f"   Drawdown: {emergency_state['drawdown']:.2%}")
             
             return emergency_state
@@ -339,7 +339,7 @@ def load_emergency_state():
                 emergency_state = {
                     'emergency_active': bool(current['Emergency']),
                     'risk_level': float(current['Risk_Level']),
-                    'emergency_cap': float(current['Emergency_Cap'] * 100),
+                    'emergency_cap': float(current['Emergency_Cap']),
                     'drawdown': float(current['Drawdown'])
                 }
                 
@@ -353,7 +353,7 @@ def load_emergency_state():
     return {
         'emergency_active': False,
         'risk_level': 0.0,
-        'emergency_cap': 100.0,
+        'emergency_cap': 1.0,
         'drawdown': 0.0
     }
 
@@ -364,7 +364,7 @@ def check_emergency_authority():
     
     if emergency_state['emergency_active']:
         print(f"🚨 EMERGENCY BRAKE ACTIVE - ABSOLUTE AUTHORITY")
-        print(f"   All systems must respect {emergency_state['emergency_cap']:.1f}% exposure cap")
+        print(f"   All systems must respect {emergency_state['emergency_cap']:.1%} exposure cap")
         return True
     else:
         print(f"✅ Emergency brake inactive - normal operations")

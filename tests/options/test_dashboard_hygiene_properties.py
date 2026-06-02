@@ -17,7 +17,7 @@ import os
 from src.options.trade_ledger import TradeLedger
 from src.options.system_hygiene import SystemHygieneRules
 from src.options.strategy_generator import StrategyType
-from src.options.regime_detector import Regime
+from src.options.options_regime_detector import Regime
 
 
 class TestDashboardProperties:

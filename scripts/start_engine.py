@@ -19,7 +19,7 @@ from src.volatility.greeks_aggregator import GreeksAggregator
 from src.volatility.risk_authority import UnifiedRiskAuthority
 from src.volatility.dispersion_module import DispersionModule
 from src.volatility.gamma_scalper import GammaScalper
-from src.volatility.capital_allocator import CapitalAllocator
+from src.volatility.volatility_capital_allocator import CapitalAllocator
 from src.volatility.monte_carlo_engine import MonteCarloEngine
 from src.volatility.regime_detector import RegimeDetector
 from src.volatility.execution_interface import ExecutionInterface

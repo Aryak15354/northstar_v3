@@ -101,7 +101,7 @@ def profile_state_updates(num_updates=20):
     print(f"📊 Profiling State Update Propagation ({num_updates} updates)")
     print(f"{'='*60}")
     
-    engine = VolatilityStateEngine(persistence_dir="data/test_profile_quick")
+    engine = VolatilityStateEngine(persistence_dir="data/testing/profile_quick")
     
     # Warm-up
     test_greeks = StatePortfolioGreeks(delta=100.0, gamma=5.0, vega=200.0)

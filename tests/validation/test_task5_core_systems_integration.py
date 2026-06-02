@@ -29,6 +29,7 @@ warnings.filterwarnings('ignore')
 
 # Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+fixtures_root = os.path.join(project_root, "tests", "fixtures")
 
 
 from src.cohesion.configuration_manager import ConfigurationManager, MarketConfiguration, RiskConfiguration
@@ -52,7 +53,7 @@ class TestCoreSystemsIntegration:
         """Setup for each test method"""
         
         # Initialize all core systems
-        self.config_manager = ConfigurationManager("test_config")
+        self.config_manager = ConfigurationManager(os.path.join(fixtures_root, "test_config"))
         
         # Create default configs for testing
         self.config_manager.create_default_configs()
@@ -61,7 +62,7 @@ class TestCoreSystemsIntegration:
         self.temporal_guard = TemporalGuard("data/logs/test_temporal_violations.json")
         
         # Schema system
-        self.schema_registry = SchemaRegistry("test_integration_schemas")
+        self.schema_registry = SchemaRegistry(os.path.join(fixtures_root, "test_integration_schemas"))
         self.schema_validator = SchemaValidator(self.schema_registry)
         
         # Create test schema

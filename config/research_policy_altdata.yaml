@@ -19,7 +19,7 @@ execution_limits:
   memory_limit_mb: 1024
   cpu_priority: low
 output_management:
-  output_directory: data/research
+  output_directory: data/results/research
   max_output_files: 100
   compress_old_outputs: true
   retention_days: 90
@@ -74,8 +74,8 @@ compliance:
   log_all_research_activities: true
   track_output_usage: true
   maintain_research_lineage: true
-  audit_log_path: data/research/audit_log.parquet
-  research_lineage_path: data/research/research_lineage.json
+  audit_log_path: data/results/research/state/audit_log.parquet
+  research_lineage_path: data/results/research/state/research_lineage.json
 historical_research:
   enabled: true
   random_state: 42
@@ -91,8 +91,8 @@ historical_research:
     prices_path: data/processed/prices.parquet
     fundamentals_path: data/processed/fundamentals.parquet
     valuation_posterior_path: data/processed/valuation_posterior.parquet
-    sentiment_company_path: data/sentiment/v3/company_sentiment_trends.parquet
-    sentiment_market_path: data/sentiment/v3/market_sentiment_india.parquet
+    sentiment_company_path: data/canonical/sentiment/company_sentiment_daily.parquet
+    sentiment_market_path: data/canonical/sentiment/market_sentiment_daily.parquet
     strict_real_data_only: true
     strict_required_artifacts:
     - prices
@@ -142,8 +142,8 @@ historical_research:
       order_announcements: false
     use_sentiment_features: false
     use_sentiment_regime: false
-    sentiment_path: data/processed/sentiment/ticker_sentiment_daily.parquet
-    market_sentiment_path: data/processed/sentiment/market_sentiment_daily.parquet
+    sentiment_path: data/canonical/sentiment/company_sentiment_daily.parquet
+    market_sentiment_path: data/canonical/sentiment/market_sentiment_daily.parquet
     sentiment_duckdb_path: data/sentiment.duckdb
     use_macro_features: false
     lookback_days: 3650
@@ -163,7 +163,7 @@ historical_research:
   ic_diagnostics:
     enabled: false
     prune_features: false
-    output_dir: data/research/ic_diagnostics
+    output_dir: data/results/research/ic_diagnostics
     horizons:
     - 5
     - 10
@@ -194,7 +194,7 @@ historical_research:
     min_peak_ic: 0.05
   alpha_factory:
     enabled: true
-    output_dir: data/research/alpha_factory
+    output_dir: data/results/research/alpha_factory
     max_rows: 120000
     date_col: date
     ticker_col: ticker
@@ -283,8 +283,8 @@ historical_research:
   live_returns_cutover_date: '2026-01-18'
   weekend_only_tasks:
     extended_scenario_sweep: true
-  experiment_path: data/research/experiments.ndjson
-  memory_path: data/research/research_memory.json
+  experiment_path: data/results/research/trackers/experiments.ndjson
+  memory_path: data/results/research/state/research_memory.json
   autonomous_budget:
     max_models_weekday: 7
     max_models_weekend: 7
@@ -319,7 +319,7 @@ historical_research:
   certification:
     enabled: true
     mode: enforce
-    state_path: data/research/certification_state.json
+    state_path: data/results/research/state/certification_state.json
     approved_dependency_change_window: false
     transaction_cost_floor_bps: 5.0
     burn_in_cycles_required: 20

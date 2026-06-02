@@ -16,7 +16,7 @@ from hypothesis import given, strategies as st, settings, assume
 from hypothesis.stateful import RuleBasedStateMachine, rule, invariant
 from unittest.mock import Mock, MagicMock
 
-from src.cohesion.health_monitor import (
+from src.cohesion.cohesion_health_monitor import (
     ComprehensiveHealthMonitor, HealthStatus, AlertSeverity,
     HealthCheckResult, DefaultFailoverHandler, HealthTrendAnalyzer
 )

@@ -40,7 +40,7 @@ from .greeks_adapter import RuntimeGreeksAdapter
 from .rebalance_trigger import RebalanceTriggerEngine
 from .risk_budget import RiskBudgetManager
 from .shock_engine import OptionsShockEngine
-from .state import PortfolioState
+from .state import PortfolioState, compute_state_hash
 from .storage import RuntimeEventStore
 from .truth_drift_monitor import TruthDriftMonitor
 
@@ -1401,8 +1401,33 @@ class PortfolioRuntimeService:
         return self.state.to_snapshot()
 
     def replay(self, from_event_id: int = 0, to_event_id: Optional[int] = None) -> Dict[str, Any]:
-        replay_state = PortfolioState.initialize(self._starting_cash)
-        events = self.store.list_events(since_event_id=from_event_id, to_event_id=to_event_id)
+        latest = self.store.latest_snapshot()
+        latest_hash = ""
+        latest_cash = None
+        compare_event_id = to_event_id
+        if latest is not None:
+            try:
+                latest_payload = json.loads(str(latest.get("state_json", "{}") or "{}"))
+                latest_hash = compute_state_hash(latest_payload)
+                latest_cash = float(latest_payload.get("cash", 0.0) or 0.0)
+                if compare_event_id is None:
+                    compare_event_id = int(latest.get("event_id", 0) or 0) or None
+            except Exception:
+                latest_hash = ""
+                latest_cash = None
+
+        events = self.store.list_events(since_event_id=from_event_id, to_event_id=compare_event_id)
+
+        inferred_starting_cash = float(self._starting_cash)
+        if int(from_event_id or 0) <= 0 and latest_cash is not None and events:
+            zero_base_state = PortfolioState.initialize(0.0)
+            for row in events:
+                event_id = int(row.get("event_id", 0) or 0)
+                ev = self._to_event_obj(row)
+                zero_base_state.apply(ev, event_id)
+            inferred_starting_cash = float(latest_cash - zero_base_state.cash)
+
+        replay_state = PortfolioState.initialize(inferred_starting_cash)
 
         applied = 0
         for row in events:
@@ -1412,17 +1437,11 @@ class PortfolioRuntimeService:
             applied += 1
 
         replay_snapshot = replay_state.to_snapshot().to_dict()
-        latest = self.store.latest_snapshot()
-        latest_hash = ""
-        if latest is not None:
-            try:
-                latest_payload = json.loads(str(latest.get("state_json", "{}") or "{}"))
-                latest_hash = str(latest_payload.get("state_hash", "") or "")
-            except Exception:
-                latest_hash = ""
 
         return {
             "applied_events": int(applied),
+            "replayed_to_event_id": int(compare_event_id or 0),
+            "inferred_starting_cash": float(inferred_starting_cash),
             "replay_state_hash": replay_snapshot.get("state_hash", ""),
             "latest_snapshot_hash": latest_hash,
             "deterministic_match": bool(replay_snapshot.get("state_hash", "") == latest_hash) if latest_hash else True,

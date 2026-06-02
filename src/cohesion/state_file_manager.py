@@ -164,10 +164,8 @@ class StateFileManager:
         if missing_cols:
             errors.append(f"{file_name}: Missing columns: {missing_cols}")
         
-        # Check for extra columns
-        extra_cols = set(df.columns) - set(expected_schema.keys())
-        if extra_cols:
-            warnings.append(f"{file_name}: Extra columns: {extra_cols}")
+        # Extra columns are allowed for forward-compatible state evolution.
+        # The canonical schema acts as a required minimum contract.
         
         # Check column types
         for col, expected_type in expected_schema.items():

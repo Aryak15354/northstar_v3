@@ -446,7 +446,7 @@ class LegacyDashboardCoordinator:
         # Legacy interface properties
         self.paths = {
             'dashboard_snapshot': 'data/processed/cache/dashboard_snapshot.parquet',
-            'unified_state': 'data/processed/unified_state.json',
+            'unified_state': 'data/state/unified_state.json',
             'dashboard_config': 'data/dashboard/unified_config.json',
             'interface_log': 'data/dashboard/interface_coordination_log.json'
         }
@@ -486,7 +486,7 @@ class LegacyDashboardCoordinator:
             'react': {
                 'name': 'React Terminal',
                 'description': 'Modern React-based interface',
-                'file': 'scripts/launchers/launch_northstar_terminal.py',
+                'file': 'src/dashboard/app.py',
                 'priority': 6
             }
         }

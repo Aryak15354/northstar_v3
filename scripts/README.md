@@ -1,82 +1,64 @@
-# 📁 Scripts Directory
+# Scripts
 
-Executable scripts for Northstar V3 system operations.
+The raw `scripts/` tree is large. Do not treat every file here as an equal entrypoint.
 
-## 🚀 Main Entry Point
+## Use This First
 
-### `northstar_v3_unified.py`
-**Primary system launcher** - Single entry point for all Northstar V3 operations.
+- `make help`
+- `make doctor`
+- `make find q=sentiment`
+- `python3 scripts/ns.py`
+- `python3 scripts/ns.py catalog`
+- `python3 scripts/ns.py gaps`
 
-```bash
-# Launch dashboard (default)
-python northstar_v3_unified.py
+Those commands point you to the curated operational surface.
 
-# System update
-python northstar_v3_unified.py --mode update
+## Canonical Entry Points
 
-# Live trading
-python northstar_v3_unified.py --mode live
+These are the main scripts most people should care about:
 
-# Backtesting
-python northstar_v3_unified.py --mode backtest --strategy momentum
-```
+- `scripts/run_complete_v3_system.py`: complete daily Gap 1-7 system run
+- `scripts/northstar_v3_unified.py`: unified launcher
+- `scripts/preopen_checks.py`: pre-market readiness checks
+- `scripts/run_morning_pipeline.py`: morning pipeline
+- `scripts/eod_rebalance_with_pnl.py`: EOD processing on the unified P&L path
+- `scripts/promote_research_model.py`: governed model promotion
+- `scripts/launch_dashboard.sh`: dashboard launch
 
-## 📂 Subdirectories
+Compatibility wrappers:
 
-### `launchers/` - System Launchers
-- `launch_clean_terminal.py` - Clean terminal interface
-- `launch_integrated_northstar.py` - Integrated system launch  
-- `launch_northstar_terminal.py` - Northstar terminal
-- `launch_unified_terminal.py` - Unified terminal
+- `scripts/run_live_engine.py`: wrapper that forwards to `scripts/run_integrated_options_paper_engine.py`
 
-### `runners/` - Component Runners
-- `run_market_brain_production.py` - Production market brain
-- `run_portfolio_governor.py` - Portfolio construction
-- `run_intelligent_market_state.py` - AI market analysis
-- `run_market_brain.py` - Market brain development
+Gap validators:
 
-### `tests/` - Test Scripts
-- `test_dashboard_issues.py` - Dashboard functionality testing
-- `test_market_brain.py` - Market brain validation
-- `test_terminal.py` - Terminal functionality testing
+- `scripts/verify_gap1_fixes.py`
+- `scripts/validate_gap2_complete.py`
+- `scripts/validate_gap3_robust_complete.py`
+- `scripts/test_gap4_robust.py`
+- `scripts/validate_gap5_complete.py`
+- `scripts/validate_gap6_complete.py`
+- `scripts/validate_gap7_complete.py`
 
-### `utilities/` - Utility Scripts
-- `update_all_systems.py` - System-wide updates
-- `validate_market_brain_data.py` - Data validation
-- `eod_options_pipeline.py` - Options data processing
+## Subdirectories
 
-## 🎯 Legacy Scripts (Moved to Root)
+- `scripts/analysis/`: research and audit-style analysis
+- `scripts/ci/`: CI helpers
+- `scripts/cleanup/`: repo and workspace cleanup utilities
+- `scripts/debug/`: debugging helpers
+- `scripts/launchers/`: launcher wrappers
+- `scripts/runners/`: focused component runners
+- `scripts/tests/`: script-specific tests
+- `scripts/utilities/`: shared utilities
 
-The following scripts are now organized in subdirectories:
-- `northstar_*.py` files - Various system interfaces
-- Individual component scripts moved to appropriate folders
+## Working Rule
 
-## 🔧 Usage Patterns
+If you are adding a new script:
 
-### Development Workflow
-```bash
-# 1. Update all systems
-python scripts/utilities/update_all_systems.py
+- put canonical operational entrypoints in `scripts/`
+- put one-off or investigative tools in a subdirectory
+- avoid leaving temporary `fix_*`, `debug_*`, or `demo_*` scripts in the root once the work is done
 
-# 2. Validate data
-python scripts/utilities/validate_market_brain_data.py
+## Further Reading
 
-# 3. Run tests
-python scripts/tests/test_dashboard_issues.py
-
-# 4. Launch system
-python scripts/northstar_v3_unified.py
-```
-
-### Production Workflow
-```bash
-# Launch production system
-python scripts/northstar_v3_unified.py --mode live
-
-# Monitor with dashboard
-python scripts/northstar_v3_unified.py --mode dashboard
-```
-
----
-
-**All scripts maintain backward compatibility with the new organized structure.**
+- [Workspace Guide](../docs/operations/WORKSPACE_GUIDE.md)
+- [Script Catalog](../docs/operations/SCRIPT_CATALOG.md)

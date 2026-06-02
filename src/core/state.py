@@ -17,14 +17,32 @@ Key Features:
 import os
 import sys
 import json
+import logging
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, fields, is_dataclass
+from pathlib import Path
 from typing import Dict, List, Any, Optional, Union
 from enum import Enum
 import warnings
 warnings.filterwarnings('ignore')
+
+logger = logging.getLogger(__name__)
+
+MAX_STATE_AGE_HOURS = 6.0
+
+# Import SentimentState for UnifiedState
+from src.sentiment.sentiment_state import SentimentState, SentimentRegime
+
+# Import AlternativeDataState for UnifiedState
+from src.alternative_data.alternative_state import AlternativeDataState
+
+# Import AlphaOSState for UnifiedState
+from src.alpha_os.alpha_os_state import AlphaOSState
+
+# Import GovernorState for UnifiedState (Gap 6)
+from src.portfolio.governor_state import GovernorState
 
 class RiskStatus(Enum):
     NORMAL = "normal"
@@ -66,6 +84,22 @@ class MarketState:
     pulse_risk_level: str = "low"
     regime_similarity: float = 0.0
     brain_regime: str = "Unknown"
+    coherence_score: float = 1.0
+
+    def __post_init__(self):
+        for field_name in ("allowed_exposure", "risk_on_probability"):
+            value = getattr(self, field_name, None)
+            if value is None:
+                continue
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                continue
+            if numeric > 1.5:
+                raise ValueError(
+                    f"MarketState.{field_name} = {numeric} is out of range. "
+                    "Values must be decimal ratios (0.0-1.0), not percentage points."
+                )
 
 @dataclass
 class MacroState:
@@ -162,9 +196,57 @@ class PortfolioState:
     compliance_violations: int = 0
     last_updated: datetime = None
     
+    # Gap 7: Options system state (synced from OptionsBridge)
+    options_positions: Dict[str, Any] = None
+    options_position_count: int = 0
+    options_net_delta: float = 0.0
+    options_net_gamma: float = 0.0
+    options_net_vega: float = 0.0
+    options_net_theta: float = 0.0
+    options_premium_at_risk: float = 0.0
+    options_notional_deployed: float = 0.0
+    options_unrealized_pnl: float = 0.0
+    options_system_mode: str = "UNKNOWN"
+    
+    # Additional portfolio fields
+    positions: Dict[str, Any] = None
+    target_positions: Dict[str, Any] = None
+    total_value: float = 0.0
+    cash: float = 0.0
+    invested_value: float = 0.0
+    sector_allocation: Dict[str, float] = None
+    target_sector_allocation: Dict[str, float] = None
+    target_sector_exposure: Dict[str, float] = None
+    position_count: int = 0
+    target_position_count: int = 0
+    target_total_positions: int = 0
+    target_total_exposure: float = 0.0
+    target_max_position: float = 0.0
+    target_largest_position_pct: float = 0.0
+    target_long_positions: int = 0
+    target_short_positions: int = 0
+    target_last_updated: datetime = None
+    largest_position_pct: float = 0.0
+    total_pnl: float = 0.0
+    total_return_pct: float = 0.0
+    daily_return_pct: float = 0.0
+    volatility_30d: float = 0.0
+    
     def __post_init__(self):
         if self.sector_exposure is None:
             self.sector_exposure = {}
+        if self.options_positions is None:
+            self.options_positions = {}
+        if self.positions is None:
+            self.positions = {}
+        if self.target_positions is None:
+            self.target_positions = {}
+        if self.sector_allocation is None:
+            self.sector_allocation = {}
+        if self.target_sector_allocation is None:
+            self.target_sector_allocation = {}
+        if self.target_sector_exposure is None:
+            self.target_sector_exposure = {}
 
 @dataclass
 class RiskState:
@@ -179,6 +261,13 @@ class RiskState:
     brake_conditions: int = 0
     kill_switches: Dict[str, bool] = None
     last_updated: datetime = None
+    
+    # Gap 7: Options risk metrics (synced from OptionsBridge)
+    options_delta_exposure_inr: float = 0.0
+    options_vega_exposure_inr: float = 0.0
+    options_margin_utilization: float = 0.0
+    options_max_loss_scenario: float = 0.0
+    options_trading_suspended: bool = False
     
     def __post_init__(self):
         if self.kill_switches is None:
@@ -197,6 +286,18 @@ class HealthState:
     portfolio_active: bool = False
     intelligence_active: bool = False
     last_updated: datetime = None
+    component_status: Dict[str, str] = None
+    status_counts: Dict[str, int] = None
+    active_warnings: List[str] = None
+    source_mode: str = "unknown"
+
+    def __post_init__(self):
+        if self.component_status is None:
+            self.component_status = {}
+        if self.status_counts is None:
+            self.status_counts = {}
+        if self.active_warnings is None:
+            self.active_warnings = []
 
 @dataclass
 class MemoryState:
@@ -209,6 +310,51 @@ class MemoryState:
     oldest_record: datetime = None
     newest_record: datetime = None
     last_updated: datetime = None
+
+@dataclass
+class ShadowState:
+    """Shadow trading system state (Gap 7, synced from ShadowBridge)"""
+    shadow_positions: Dict[str, Any] = None
+    shadow_equity_deployed: float = 0.0
+    shadow_nav: float = 0.0
+    live_shadow_position_overlap: float = 1.0
+    target_shadow_position_overlap: float = 1.0
+    shadow_extra_positions_count: int = 0
+    shadow_missing_target_positions_count: int = 0
+    target_snapshot_date: str = ""
+    live_shadow_nav_divergence_pct: float = 0.0
+    divergence_alert: bool = False
+    comparison_available: bool = False
+    comparison_mode: str = "none"
+    execution_mode: str = "unknown"
+    tracking_status: str = "unknown"
+    tracking_breach: bool = False
+    target_total_weight_drift: float = 0.0
+    target_max_weight_drift: float = 0.0
+    target_quantity_mismatch_count: int = 0
+    exact_target_match: bool = False
+    shadow_snapshot_timestamp: datetime = None
+    shadow_data_stale: bool = False
+    shadow_data_age_days: float = 0.0
+    last_sync: datetime = None
+    
+    def __post_init__(self):
+        if self.shadow_positions is None:
+            self.shadow_positions = {}
+
+@dataclass
+class ValuationState:
+    """Valuation engine state (Gap 7, synced from ValuationBridge)"""
+    portfolio_weighted_pe: float = 0.0
+    portfolio_weighted_pb: float = 0.0
+    portfolio_discount_to_fair_value: float = 0.0
+    valuation_confidence: float = 0.0
+    tickers_with_fair_value: int = 0
+    tickers_in_portfolio: int = 0
+    valuation_coverage_pct: float = 0.0
+    valuation_regime: str = "UNKNOWN"
+    avg_margin_of_safety_pct: float = 0.0
+    last_valuation_run: datetime = None
 
 @dataclass
 class StateEvent:
@@ -238,6 +384,9 @@ class UnifiedState:
     
     def __init__(self):
         self.version = "2.0"  # Living System Version
+        self._state_age_hours: Optional[float] = None
+        self._state_is_stale: bool = False
+        self._state_snapshot_time: Optional[datetime] = None
         
         # Core state components
         self.market = MarketState()
@@ -252,6 +401,21 @@ class UnifiedState:
         self.risk = RiskState()
         self.health = HealthState()
         self.memory = MemoryState()
+        self.sentiment = SentimentState()  # NEW: Sentiment intelligence state
+        self.alternative_data = AlternativeDataState()  # NEW: Alternative data intelligence state
+        self.alpha_os = AlphaOSState()  # NEW: Alpha OS strategy portfolio state
+        self.intelligence_state: Dict[str, Any] = {}  # NEW: News brain market intelligence snapshot
+        
+        # P&L and accounting (Gap 5)
+        from src.pnl.pnl_state import PnLState
+        self.pnl_state = PnLState()  # NEW: Unified P&L accounting state
+        
+        # Portfolio Governor (Gap 6)
+        self.governor_state = GovernorState()  # NEW: Portfolio Governor capital structure state
+        
+        # Gap 7: State consolidation - shadow and valuation states
+        self.shadow_state = ShadowState()  # NEW: Shadow trading system state
+        self.valuation_state = ValuationState()  # NEW: Valuation engine state
         
         # System control
         self.locked = False
@@ -292,7 +456,238 @@ class UnifiedState:
         # Ensure directories exist
         for path in [self.state_file, self.state_parquet, self.state_history_file, self.events_file]:
             os.makedirs(os.path.dirname(path), exist_ok=True)
-    
+
+    @property
+    def market_state(self):
+        return self.market
+
+    @market_state.setter
+    def market_state(self, value):
+        self.market = value
+
+    @property
+    def macro_state(self):
+        return self.macro
+
+    @macro_state.setter
+    def macro_state(self, value):
+        self.macro = value
+
+    @property
+    def portfolio_state(self):
+        return self.portfolio
+
+    @portfolio_state.setter
+    def portfolio_state(self, value):
+        self.portfolio = value
+
+    @property
+    def risk_state(self):
+        return self.risk
+
+    @risk_state.setter
+    def risk_state(self, value):
+        self.risk = value
+
+    @property
+    def health_state(self):
+        return self.health
+
+    @health_state.setter
+    def health_state(self, value):
+        self.health = value
+
+    def _parse_datetime(self, value: Any) -> Any:
+        """Best-effort datetime parser for persisted snapshot hydration."""
+        if value in [None, "", "None", "NaT"]:
+            return None
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            try:
+                return pd.to_datetime(value, utc=False).to_pydatetime()
+            except Exception:
+                return value
+        return value
+
+    def _coerce_state_value(self, current_value: Any, field_name: str, new_value: Any) -> Any:
+        """Coerce persisted JSON values back into the in-memory dataclass shape."""
+        if isinstance(current_value, Enum):
+            try:
+                return type(current_value)(new_value)
+            except Exception:
+                return current_value
+
+        if isinstance(new_value, str):
+            lowered = field_name.lower()
+            if (
+                isinstance(current_value, datetime)
+                or current_value is None
+                and any(
+                    token in lowered
+                    for token in [
+                        "time",
+                        "date",
+                        "updated",
+                        "timestamp",
+                        "expires",
+                        "decision",
+                        "processing",
+                        "check",
+                    ]
+                )
+            ):
+                parsed = self._parse_datetime(new_value)
+                return parsed if isinstance(parsed, datetime) or parsed is None else new_value
+
+        return new_value
+
+    def _hydrate_section(self, target: Any, payload: Dict[str, Any]) -> None:
+        """Recursively hydrate dataclass-backed state from a persisted JSON payload."""
+        if not is_dataclass(target) or not isinstance(payload, dict):
+            return
+
+        for field_meta in fields(target):
+            field_name = field_meta.name
+            if field_name not in payload:
+                continue
+
+            current_value = getattr(target, field_name)
+            new_value = payload[field_name]
+
+            if is_dataclass(current_value) and isinstance(new_value, dict):
+                self._hydrate_section(current_value, new_value)
+                continue
+
+            setattr(
+                target,
+                field_name,
+                self._coerce_state_value(current_value, field_name, new_value),
+            )
+
+    def _extract_snapshot_time(self, snapshot: Dict[str, Any]) -> Optional[datetime]:
+        if not isinstance(snapshot, dict):
+            return None
+
+        candidates = [
+            snapshot.get("checkpoint_time"),
+            snapshot.get("last_updated"),
+            snapshot.get("timestamp"),
+        ]
+        time_payload = snapshot.get("time")
+        if isinstance(time_payload, dict):
+            candidates.append(time_payload.get("timestamp"))
+
+        for raw in candidates:
+            if raw in (None, "", "None", "NaT"):
+                continue
+            parsed = pd.to_datetime(raw, errors="coerce")
+            if pd.isna(parsed):
+                continue
+            if getattr(parsed, "tzinfo", None) is not None:
+                return parsed.tz_convert("UTC").tz_localize(None).to_pydatetime()
+            return parsed.to_pydatetime()
+        return None
+
+    def _update_snapshot_freshness(
+        self,
+        snapshot: Dict[str, Any],
+        *,
+        max_age_hours: float = MAX_STATE_AGE_HOURS,
+    ) -> None:
+        snapshot_time = self._extract_snapshot_time(snapshot)
+        self._state_snapshot_time = snapshot_time
+        self._state_age_hours = None
+        self._state_is_stale = False
+
+        if snapshot_time is None:
+            return
+
+        age_hours = (datetime.now() - snapshot_time).total_seconds() / 3600.0
+        self._state_age_hours = max(age_hours, 0.0)
+        self._state_is_stale = bool(self._state_age_hours > float(max_age_hours))
+
+        if self._state_is_stale:
+            logger.warning(
+                "UnifiedState is %.1f hours old (threshold: %.1fh). "
+                "Decisions made on this state may use stale data. "
+                "Run sync_canonical_state.py to refresh.",
+                self._state_age_hours,
+                float(max_age_hours),
+            )
+
+    @classmethod
+    def load_snapshot_file(
+        cls,
+        path: str | Path,
+        max_age_hours: float = MAX_STATE_AGE_HOURS,
+    ) -> "UnifiedState":
+        state = cls()
+        state.load_snapshot(path, max_age_hours=max_age_hours)
+        return state
+
+    def load_snapshot(
+        self,
+        snapshot: Dict[str, Any] | str | os.PathLike[str],
+        max_age_hours: float = MAX_STATE_AGE_HOURS,
+    ) -> "UnifiedState":
+        """Hydrate the current UnifiedState instance from a snapshot payload or snapshot file."""
+        if isinstance(snapshot, (str, os.PathLike)):
+            snapshot_path = Path(snapshot)
+            if not snapshot_path.exists():
+                raise FileNotFoundError(f"UnifiedState snapshot not found: {snapshot_path}")
+            with snapshot_path.open('r', encoding='utf-8') as handle:
+                snapshot = json.load(handle)
+
+        if not isinstance(snapshot, dict):
+            return self
+
+        self.version = snapshot.get('version', self.version)
+        self.locked = bool(snapshot.get('locked', self.locked))
+        self.lock_reason = snapshot.get('lock_reason', self.lock_reason)
+
+        lock_authority = snapshot.get('lock_authority')
+        if lock_authority:
+            try:
+                self.lock_authority = AuthorityLevel[lock_authority]
+            except Exception:
+                self.lock_authority = self.lock_authority
+
+        time_payload = snapshot.get('time')
+        if isinstance(time_payload, dict):
+            self._hydrate_section(self.time, time_payload)
+
+        for section_name in [
+            'market',
+            'macro',
+            'regime',
+            'pulse',
+            'beliefs',
+            'confidence',
+            'strategies',
+            'capital',
+            'portfolio',
+            'risk',
+            'health',
+            'memory',
+            'sentiment',
+            'alternative_data',
+            'alpha_os',
+            'intelligence_state',
+            'pnl_state',
+            'governor_state',
+            'shadow_state',
+            'valuation_state',
+        ]:
+            payload = snapshot.get(section_name)
+            if section_name == 'intelligence_state' and isinstance(payload, dict):
+                self.intelligence_state = dict(payload)
+                continue
+            if isinstance(payload, dict) and hasattr(self, section_name):
+                self._hydrate_section(getattr(self, section_name), payload)
+        self._update_snapshot_freshness(snapshot, max_age_hours=max_age_hours)
+        return self
+
     def lock_system(self, reason: str, authority: AuthorityLevel, organ: str = "risk"):
         """Lock the system with absolute authority"""
         
@@ -386,6 +781,7 @@ class UnifiedState:
         
         return {
             'timestamp': datetime.now().isoformat(),
+            'checkpoint_time': datetime.now().isoformat(),
             'version': self.version,
             'locked': self.locked,
             'lock_reason': self.lock_reason,
@@ -403,21 +799,131 @@ class UnifiedState:
             'risk': asdict(self.risk),
             'health': asdict(self.health),
             'memory': asdict(self.memory),
+            'sentiment': asdict(self.sentiment),
+            'alternative_data': asdict(self.alternative_data),
+            'alpha_os': asdict(self.alpha_os),
+            'intelligence_state': dict(self.intelligence_state or {}),
+            'pnl_state': self.pnl_state.to_dict(),
+            'governor_state': self.governor_state.to_dict(),
+            'shadow_state': asdict(self.shadow_state),
+            'valuation_state': asdict(self.valuation_state),
             'recent_events': [asdict(event) for event in self.events[-10:]]  # Last 10 events
         }
     
-    def save_state(self):
-        """Save unified state to files"""
+    def _is_meaningful_state_leaf(self, value: Any) -> bool:
+        """Heuristic guard against legacy writers wiping canonical state with defaults."""
+        if value is None:
+            return False
+
+        if isinstance(value, bool):
+            return bool(value)
+
+        if isinstance(value, (int, float, np.integer, np.floating)):
+            if pd.isna(value):
+                return False
+            return float(value) != 0.0
+
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            return lowered not in {
+                "",
+                "unknown",
+                "unavailable",
+                "none",
+                "nan",
+                "nat",
+                "false",
+            }
+
+        if isinstance(value, dict):
+            return any(self._is_meaningful_state_leaf(item) for item in value.values())
+
+        if isinstance(value, list):
+            return any(self._is_meaningful_state_leaf(item) for item in value)
+
+        return True
+
+    def _merge_preserving_existing(self, existing: Any, current: Any) -> Any:
+        """Preserve richer canonical data when legacy callers try to save empty defaults."""
+        if isinstance(existing, dict) and isinstance(current, dict):
+            merged: Dict[str, Any] = {}
+            for key in sorted(set(existing) | set(current)):
+                if key in existing and key in current:
+                    merged[key] = self._merge_preserving_existing(existing[key], current[key])
+                elif key in current:
+                    merged[key] = current[key]
+                else:
+                    merged[key] = existing[key]
+            return merged
+
+        if self._is_meaningful_state_leaf(current) or not self._is_meaningful_state_leaf(existing):
+            return current
+
+        return existing
+
+    def _preserve_existing_sections(self, state_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """Prevent non-authoritative saves from blanking already-populated canonical sections."""
+        if not os.path.exists(self.state_file):
+            return state_dict
+
+        try:
+            with open(self.state_file, 'r', encoding='utf-8') as handle:
+                existing_state = json.load(handle)
+        except Exception as exc:
+            logger.warning("Could not load existing canonical state for merge-preserve guard: %s", exc)
+            return state_dict
+
+        preserved_sections = [
+            'market',
+            'macro',
+            'regime',
+            'pulse',
+            'beliefs',
+            'confidence',
+            'strategies',
+            'capital',
+            'health',
+            'memory',
+            'sentiment',
+            'alternative_data',
+            'alpha_os',
+            'intelligence_state',
+            'pnl_state',
+            'governor_state',
+            'shadow_state',
+            'valuation_state',
+        ]
+
+        merged_state = dict(state_dict)
+        for section_name in preserved_sections:
+            current_section = merged_state.get(section_name)
+            existing_section = existing_state.get(section_name)
+            if isinstance(current_section, dict) and isinstance(existing_section, dict):
+                merged_state[section_name] = self._merge_preserving_existing(existing_section, current_section)
+
+        return merged_state
+
+    def save_state(self, preserve_existing: bool = True):
+        """Save unified state to files.
+
+        Args:
+            preserve_existing: When True, protect populated canonical sections from being
+                overwritten by legacy callers that only hold partial/default state.
+        """
         
         try:
             state_dict = self.get_state_dict()
+            if preserve_existing:
+                state_dict = self._preserve_existing_sections(state_dict)
             
             # Save to JSON (human readable)
-            with open(self.state_file, 'w') as f:
+            with open(self.state_file, 'w', encoding='utf-8') as f:
                 json.dump(state_dict, f, indent=2, default=str)
             
             # Save to Parquet (fast loading)
             state_df = pd.DataFrame([self.flatten_state(state_dict)])
+            for column in state_df.select_dtypes(include=['object']).columns:
+                state_df[column] = state_df[column].astype(str)
             state_df.to_parquet(self.state_parquet, index=False)
             
             # Update history
@@ -485,6 +991,9 @@ class UnifiedState:
                 history_df = pd.concat([history_df, current_state_df], ignore_index=True)
             else:
                 history_df = current_state_df
+
+            for column in history_df.select_dtypes(include=['object']).columns:
+                history_df[column] = history_df[column].astype(str)
             
             # Keep only recent history (last 10000 records)
             history_df = history_df.tail(10000)
@@ -642,7 +1151,8 @@ class UnifiedState:
             'market_state': asdict(self.market),
             'intelligence_state': {
                 'beliefs': asdict(self.beliefs),
-                'confidence': asdict(self.confidence)
+                'confidence': asdict(self.confidence),
+                'market_intelligence': dict(self.intelligence_state or {}),
             },
             'portfolio_state': asdict(self.portfolio),
             'risk_state': asdict(self.risk),

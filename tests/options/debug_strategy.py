@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime, timedelta
 
 from src.options.strategy_generator import StrategyGenerator
-from src.options.regime_detector import Regime
+from src.options.options_regime_detector import Regime
 from src.options.config_loader import get_config
 
 

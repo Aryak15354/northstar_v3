@@ -30,6 +30,10 @@ FEATURE_EXPORT_FILES = (
     "northstar_regime_labels.parquet",
     "northstar_metadata.parquet",
 )
+CORE_FEATURE_EXPORT_FILES = (
+    "northstar_features.parquet",
+    "northstar_metadata.parquet",
+)
 MODEL_FEATURE_MANIFEST = "northstar_model_feature_names.json"
 FULL_SEEDS = [42, 123, 456, 789, 1337]
 SMOKE_SEEDS = [42, 123]
@@ -136,6 +140,10 @@ SCREENER_DAYS_HINTS = (
     "days",
     "cycle",
 )
+QUALITY_PROXY_FALLBACKS = {
+    "earnings_quality_ratio": "val_earnings_quality_score_zscore",
+    "accruals_ratio": "val_accruals_ratio_zscore",
+}
 
 
 @dataclass
@@ -325,18 +333,26 @@ def _is_valid_export_dir(base: Path) -> bool:
     return base.exists() and all((base / name).exists() for name in FEATURE_EXPORT_FILES)
 
 
+def _has_core_export_files(base: Path) -> bool:
+    return base.exists() and all((base / name).exists() for name in CORE_FEATURE_EXPORT_FILES)
+
+
 def _discover_export_dir(search_roots: Sequence[Path]) -> Path | None:
     candidates: dict[Path, tuple[int, float]] = {}
 
     def register(candidate: Path) -> None:
         resolved = candidate.expanduser().resolve()
-        if not _is_valid_export_dir(resolved):
+        if not _has_core_export_files(resolved):
             return
         try:
             mtime = resolved.stat().st_mtime
         except OSError:
             mtime = 0.0
-        score = (1 if resolved.name == "00_export" else 0, mtime)
+        score = (
+            1 if _is_valid_export_dir(resolved) else 0,
+            1 if resolved.name == "00_export" else 0,
+            mtime,
+        )
         previous = candidates.get(resolved)
         if previous is None or score > previous:
             candidates[resolved] = score
@@ -357,7 +373,7 @@ def _discover_export_dir(search_roots: Sequence[Path]) -> Path | None:
 def resolve_export_dir(export_dir: str | Path | None = None) -> ExportArtifacts:
     if export_dir is not None:
         base = Path(export_dir).expanduser().resolve()
-        if _is_valid_export_dir(base):
+        if _has_core_export_files(base):
             return _build_export_artifacts(base)
 
         fallback = _discover_export_dir(
@@ -378,7 +394,7 @@ def resolve_export_dir(export_dir: str | Path | None = None) -> ExportArtifacts:
             raise FileNotFoundError(
                 f"feature_export_missing:{base} (no valid export found in this session; rerun build_weekly_feature_export.py first)"
             )
-        missing = [name for name in FEATURE_EXPORT_FILES if not (base / name).exists()]
+        missing = [name for name in CORE_FEATURE_EXPORT_FILES if not (base / name).exists()]
         raise FileNotFoundError(
             f"feature_export_missing_files:{missing} in {base} (rerun build_weekly_feature_export.py first)"
         )
@@ -507,9 +523,9 @@ def build_runtime_policy_dict(
                 "fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
                 "macro_features_path": "data/canonical/macro/macro_regime_features.parquet",
                 "valuation_posterior_path": "data/processed/valuation_posterior.parquet",
-                "screener_fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.csv",
-                "screener_quarterly_path": "data/canonical/fundamentals/fundamentals_quarterly_panel.csv",
-                "screener_shareholding_path": "data/canonical/fundamentals/shareholding_quarterly.csv",
+                "screener_fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
+                "screener_quarterly_path": "data/canonical/fundamentals/fundamentals_quarterly_panel.parquet",
+                "screener_shareholding_path": "data/canonical/fundamentals/shareholding_quarterly.parquet",
                 "announcement_dates_path": "data/processed/alternative/earnings_dates_all.csv",
                 "alternative_data_path": "data/canonical/alternative",
                 "sentiment_feature_mode": "reduced",
@@ -951,14 +967,268 @@ def build_feature_unit_registry(features_df: pd.DataFrame) -> list[dict[str, Any
     return rows
 
 
+def _group_rank_centered(values: pd.Series, groups: pd.Series) -> pd.Series:
+    numeric = pd.to_numeric(values, errors="coerce")
+    ranked = numeric.groupby(groups, sort=False).rank(method="average", pct=True)
+    return ranked.fillna(0.5).sub(0.5).astype(float)
+
+
+def _group_zscore(values: pd.Series, groups: pd.Series, clip_abs: float = 6.0) -> pd.Series:
+    numeric = pd.to_numeric(values, errors="coerce")
+    mu = numeric.groupby(groups, sort=False).transform("mean")
+    sigma = numeric.groupby(groups, sort=False).transform("std").replace(0.0, np.nan)
+    z = ((numeric - mu) / (sigma + 1e-12)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    return z.clip(lower=-float(clip_abs), upper=float(clip_abs)).astype(float)
+
+
+def _first_available_numeric(df: pd.DataFrame, candidates: Sequence[str]) -> pd.Series:
+    series = pd.Series(np.nan, index=df.index, dtype=float)
+    for col in candidates:
+        if col in df.columns:
+            current = pd.to_numeric(df[col], errors="coerce")
+            series = series.where(series.notna(), current)
+    return series
+
+
+def _mean_of_available(columns: Sequence[pd.Series]) -> pd.Series:
+    if not columns:
+        return pd.Series(dtype=float)
+    return pd.concat(list(columns), axis=1).mean(axis=1, skipna=True)
+
+
+def _sparse_event_projection(
+    series: pd.Series,
+    *,
+    lag_events: int = 4,
+    std_window: int = 8,
+    sign_window: int = 3,
+) -> tuple[pd.Series, pd.Series]:
+    full_index = series.index
+    values = pd.to_numeric(series, errors="coerce").dropna()
+    if values.empty:
+        empty = pd.Series(np.nan, index=full_index, dtype=float)
+        return empty, empty
+
+    is_new_event = values.ne(values.shift())
+    event_values = values.loc[is_new_event].astype(float)
+    if event_values.empty:
+        empty = pd.Series(np.nan, index=full_index, dtype=float)
+        return empty, empty
+
+    lagged = event_values.shift(lag_events)
+    rolling_std = event_values.rolling(std_window, min_periods=4).std()
+    accel_events = (event_values - lagged) / rolling_std.replace(0.0, np.nan)
+    direction_events = event_values.rolling(sign_window, min_periods=sign_window).apply(
+        lambda x: 1.0 if float(np.sum(np.asarray(x) > 0.0)) >= 2.0 else -1.0,
+        raw=True,
+    )
+
+    accel = pd.Series(np.nan, index=full_index, dtype=float)
+    direction = pd.Series(np.nan, index=full_index, dtype=float)
+    accel.loc[event_values.index] = accel_events.to_numpy(dtype=float)
+    direction.loc[event_values.index] = direction_events.to_numpy(dtype=float)
+
+    accel = accel.ffill()
+    direction = direction.ffill()
+
+    valid_mask = series.notna()
+    accel.loc[~valid_mask] = np.nan
+    direction.loc[~valid_mask] = np.nan
+    return accel, direction
+
+
+def _series_is_effectively_dead(series: pd.Series, *, zero_tol: float = 1e-9) -> bool:
+    numeric = pd.to_numeric(series, errors="coerce").replace([np.inf, -np.inf], np.nan)
+    clean = numeric.dropna()
+    if clean.empty:
+        return True
+    if clean.nunique(dropna=True) <= 1:
+        return True
+    spread = float(clean.max() - clean.min())
+    if not np.isfinite(spread) or spread <= float(zero_tol):
+        return True
+    if int((clean.abs() > float(zero_tol)).sum()) == 0:
+        return True
+    return False
+
+
+def repair_dead_quality_factor_families(features_df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    if features_df is None or features_df.empty:
+        return features_df.copy() if features_df is not None else pd.DataFrame(), []
+
+    work = features_df.copy()
+    work["date"] = pd.to_datetime(work["date"], errors="coerce").dt.normalize()
+    repairs: list[dict[str, Any]] = []
+
+    for family_name, proxy_name in QUALITY_PROXY_FALLBACKS.items():
+        if proxy_name not in work.columns:
+            continue
+        proxy = pd.to_numeric(work[proxy_name], errors="coerce").replace([np.inf, -np.inf], np.nan)
+        if proxy.dropna().empty:
+            continue
+
+        raw_col = family_name
+        z_col = f"{family_name}_cs_z"
+        rank_col = f"{family_name}_cs_rank"
+
+        raw_dead = raw_col not in work.columns or _series_is_effectively_dead(work[raw_col])
+        z_dead = z_col not in work.columns or _series_is_effectively_dead(work[z_col])
+        rank_dead = rank_col not in work.columns or _series_is_effectively_dead(work[rank_col], zero_tol=1e-12)
+        if not (raw_dead or z_dead or rank_dead):
+            continue
+
+        if raw_dead:
+            work[raw_col] = proxy.astype("float32")
+        if z_dead:
+            work[z_col] = proxy.astype("float32")
+
+        ranking_source = pd.to_numeric(work[z_col], errors="coerce") if z_col in work.columns else proxy
+        work[rank_col] = _group_rank_centered(ranking_source, work["date"]).astype("float32")
+
+        repairs.append(
+            {
+                "family": family_name,
+                "proxy_source": proxy_name,
+                "repaired_columns": [
+                    column
+                    for column, replaced in [
+                        (raw_col, raw_dead),
+                        (z_col, z_dead),
+                        (rank_col, True),
+                    ]
+                    if replaced
+                ],
+                "proxy_coverage": float(proxy.notna().mean()),
+            }
+        )
+
+    work.attrs["runtime_proxy_repairs"] = repairs
+    return work, repairs
+
+
+def repair_missing_revision_factor_families(features_df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    if features_df is None or features_df.empty:
+        return features_df.copy() if features_df is not None else pd.DataFrame(), []
+
+    work = features_df.copy()
+    work["date"] = pd.to_datetime(work["date"], errors="coerce").dt.normalize()
+    repairs: list[dict[str, Any]] = []
+
+    repair_targets = [
+        "eps_revision_accel",
+        "eps_revision_direction",
+        "combined_revision_score",
+        "combined_revision_score_cs_z",
+        "combined_revision_score_cs_rank",
+    ]
+    dead_map = {
+        col: col not in work.columns or _series_is_effectively_dead(work[col], zero_tol=1e-12 if col.endswith("_rank") else 1e-9)
+        for col in repair_targets
+    }
+    if not any(dead_map.values()):
+        return work, repairs
+
+    eps_signal = _first_available_numeric(work, ["eps_sue", "eps_sue_decay"])
+    rev_signal = _first_available_numeric(work, ["rev_sue", "rev_sue_decay"])
+    if _series_is_effectively_dead(eps_signal) and _series_is_effectively_dead(rev_signal):
+        return work, repairs
+
+    work["_orig_order"] = np.arange(len(work), dtype=int)
+    work = work.sort_values(["ticker", "date", "_orig_order"], kind="mergesort")
+    work["__eps_signal"] = eps_signal.reindex(work.index)
+    work["__rev_signal"] = rev_signal.reindex(work.index)
+
+    work["__eps_revision_accel_raw"] = (
+        work.groupby("ticker", sort=False)["__eps_signal"]
+        .transform(lambda s: _sparse_event_projection(s)[0])
+        .astype(float)
+    )
+    work["eps_revision_direction"] = (
+        work.groupby("ticker", sort=False)["__eps_signal"]
+        .transform(lambda s: _sparse_event_projection(s)[1])
+        .astype(float)
+    )
+    work["__rev_revision_accel_raw"] = (
+        work.groupby("ticker", sort=False)["__rev_signal"]
+        .transform(lambda s: _sparse_event_projection(s)[0])
+        .astype(float)
+    )
+
+    derived_accel = _group_zscore(work["__eps_revision_accel_raw"], work["date"]).astype("float32")
+    eps_revision_composite = _mean_of_available(
+        [
+            work["__eps_revision_accel_raw"],
+            work["eps_revision_direction"],
+            work["__eps_signal"],
+        ]
+    )
+    rev_revision_composite = _mean_of_available(
+        [
+            work["__rev_revision_accel_raw"],
+            work["__rev_signal"],
+        ]
+    )
+    derived_combined = (0.6 * eps_revision_composite + 0.4 * rev_revision_composite).astype("float32")
+    derived_combined_z = _group_zscore(derived_combined, work["date"]).astype("float32")
+    derived_combined_rank = _group_rank_centered(derived_combined, work["date"]).astype("float32")
+
+    derived_map = {
+        "eps_revision_accel": derived_accel,
+        "eps_revision_direction": pd.to_numeric(work["eps_revision_direction"], errors="coerce").astype("float32"),
+        "combined_revision_score": derived_combined,
+        "combined_revision_score_cs_z": derived_combined_z,
+        "combined_revision_score_cs_rank": derived_combined_rank,
+    }
+    for column, derived in derived_map.items():
+        if dead_map[column]:
+            work[column] = derived
+
+    repaired_columns = [column for column, is_dead in dead_map.items() if is_dead]
+    work = work.sort_values("_orig_order", kind="mergesort").drop(
+        columns=["_orig_order", "__eps_signal", "__rev_signal", "__eps_revision_accel_raw", "__rev_revision_accel_raw"],
+        errors="ignore",
+    )
+    repairs.append(
+        {
+            "family": "eps_revision",
+            "proxy_source": "derived_from_eps_sue_rev_sue",
+            "repaired_columns": repaired_columns,
+            "eps_signal_coverage": float(pd.to_numeric(eps_signal, errors="coerce").notna().mean()),
+            "rev_signal_coverage": float(pd.to_numeric(rev_signal, errors="coerce").notna().mean()),
+        }
+    )
+    work.attrs["runtime_proxy_repairs"] = repairs
+    return work, repairs
+
+
+def repair_runtime_factor_families(features_df: pd.DataFrame) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
+    work, repairs = repair_dead_quality_factor_families(features_df)
+    work, revision_repairs = repair_missing_revision_factor_families(work)
+    all_repairs = [*repairs, *revision_repairs]
+    work.attrs["runtime_proxy_repairs"] = all_repairs
+    return work, all_repairs
+
+
 def load_export_artifacts(export_dir: str | Path | None = None) -> tuple[pd.DataFrame, list[dict[str, Any]], pd.DataFrame, pd.DataFrame]:
     artifacts = resolve_export_dir(export_dir)
     features = pd.read_parquet(artifacts.features_path)
     features["date"] = pd.to_datetime(features["date"], errors="coerce").dt.normalize()
     features["ticker"] = features["ticker"].astype("string")
-    splits = read_json(artifacts.splits_path)
-    regimes = pd.read_parquet(artifacts.regimes_path)
-    regimes["date"] = pd.to_datetime(regimes["date"], errors="coerce").dt.normalize()
+    features, runtime_repairs = repair_runtime_factor_families(features)
+    if artifacts.splits_path.exists():
+        splits = read_json(artifacts.splits_path)
+    else:
+        splits = generate_anchored_weekly_splits(
+            sorted(pd.to_datetime(features["date"], errors="coerce").dropna().dt.normalize().unique().tolist())
+        )
+    if artifacts.regimes_path.exists():
+        regimes = pd.read_parquet(artifacts.regimes_path)
+        regimes["date"] = pd.to_datetime(regimes["date"], errors="coerce").dt.normalize()
+    else:
+        try:
+            regimes = build_plan_regime_labels(features, PROJECT_ROOT)
+        except Exception:
+            regimes = pd.DataFrame({"date": sorted(features["date"].dropna().unique().tolist())})
     try:
         refreshed_regimes = build_plan_regime_labels(features, resolve_raw_bundle_from_export(artifacts.export_dir))
     except Exception:
@@ -968,6 +1238,8 @@ def load_export_artifacts(export_dir: str | Path | None = None) -> tuple[pd.Data
     metadata = pd.read_parquet(artifacts.metadata_path)
     metadata["date"] = pd.to_datetime(metadata["date"], errors="coerce").dt.normalize()
     metadata["ticker"] = metadata["ticker"].astype("string")
+    if runtime_repairs:
+        metadata.attrs["runtime_proxy_repairs"] = runtime_repairs
     return features, splits, regimes, metadata
 
 
@@ -978,9 +1250,12 @@ def subset_feature_export(
     selected_features: Sequence[str] | None = None,
     model_feature_names: Sequence[str] | None = None,
     feature_frame: pd.DataFrame | None = None,
+    splits_override: Sequence[dict[str, Any]] | None = None,
+    regime_frame: pd.DataFrame | None = None,
     ticker_mask: Sequence[str] | None = None,
     date_min: str | None = None,
     date_max: str | None = None,
+    manifest_updates: dict[str, Any] | None = None,
 ) -> ExportArtifacts:
     artifacts = resolve_export_dir(source_dir)
     features, splits, regimes, metadata = load_export_artifacts(artifacts.export_dir)
@@ -988,6 +1263,11 @@ def subset_feature_export(
         features = feature_frame.copy()
         features["date"] = pd.to_datetime(features["date"], errors="coerce").dt.normalize()
         features["ticker"] = features["ticker"].astype("string")
+    if splits_override is not None:
+        splits = [dict(split) for split in splits_override]
+    if regime_frame is not None:
+        regimes = regime_frame.copy()
+        regimes["date"] = pd.to_datetime(regimes["date"], errors="coerce").dt.normalize()
 
     tickers = {_normalize_ticker(value) for value in (ticker_mask or []) if _normalize_ticker(value)}
     if tickers:
@@ -1027,6 +1307,7 @@ def subset_feature_export(
             "splits": str(output_root / "northstar_walk_forward_splits.json"),
             "regimes": str(output_root / "northstar_regime_labels.parquet"),
         }
+        manifest_payload.update(json_ready(manifest_updates or {}))
         write_json(output_root / "weekly_export_manifest.json", manifest_payload)
     source_regime_audit = Path(artifacts.export_dir) / "regime_window_audit.json"
     if source_regime_audit.exists():

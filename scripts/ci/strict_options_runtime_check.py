@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
 import pandas as pd
@@ -92,12 +93,60 @@ def _validate_trade_ledger() -> dict:
     return {"rows": int(len(df)), "columns": int(len(df.columns))}
 
 
+def _validate_runtime_consistency() -> dict:
+    runtime_path = ROOT / "data/options/live/options_runtime_state.json"
+    runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
+    runtime_open = int(len(runtime.get("open_positions") or runtime.get("active_positions") or []))
+
+    ledger_path = ROOT / "data/options/trade_ledger.parquet"
+    _require_file(ledger_path)
+    ledger = pd.read_parquet(ledger_path)
+    if ledger.empty:
+        raise RuntimeError("trade_ledger.parquet has zero rows")
+    if not {"trade_id", "action"}.issubset(ledger.columns):
+        raise RuntimeError("trade_ledger missing trade_id/action columns")
+    actions = ledger.copy()
+    actions["action"] = actions["action"].astype(str).str.lower()
+    grouped = actions.groupby("trade_id")["action"].agg(list)
+    ledger_open = int(sum("open" in seq and "close" not in seq for seq in grouped))
+    if runtime_open != ledger_open:
+        raise RuntimeError(
+            f"runtime open positions ({runtime_open}) do not match immutable trade ledger ({ledger_open})"
+        )
+
+    runtime_db = ROOT / "data/runtime/portfolio_runtime.db"
+    if runtime_db.exists():
+        con = sqlite3.connect(runtime_db)
+        try:
+            lifecycle_open = int(
+                pd.read_sql_query(
+                    "SELECT COUNT(*) AS n FROM position_lifecycle_table WHERE close_event_id IS NULL",
+                    con,
+                )["n"].iloc[0]
+            )
+        finally:
+            con.close()
+        if lifecycle_open != ledger_open:
+            raise RuntimeError(
+                f"runtime lifecycle open rows ({lifecycle_open}) do not match immutable trade ledger ({ledger_open})"
+            )
+    else:
+        lifecycle_open = 0
+
+    return {
+        "runtime_open_positions": runtime_open,
+        "ledger_open_positions": ledger_open,
+        "lifecycle_open_positions": lifecycle_open,
+    }
+
+
 def main() -> int:
     report = {
         "check": "strict_options_runtime_check",
         "runtime": _validate_runtime_state(),
         "dashboard": _validate_dashboard_state(),
         "ledger": _validate_trade_ledger(),
+        "consistency": _validate_runtime_consistency(),
     }
     print(json.dumps(report, indent=2))
     return 0

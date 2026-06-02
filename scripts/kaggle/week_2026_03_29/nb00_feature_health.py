@@ -172,7 +172,13 @@ def main() -> int:
     regime_pivot = regime_ic.pivot(index="feature", columns="bucket", values="mean_ic") if not regime_ic.empty else pd.DataFrame()
     mean_ic_lookup = (
         window_ic.groupby("feature", as_index=True)["mean_ic"]
-        .apply(lambda series: float(np.nanmean(pd.to_numeric(series, errors="coerce"))))
+        .apply(
+            lambda series: (
+                float(pd.to_numeric(series, errors="coerce").dropna().mean())
+                if not pd.to_numeric(series, errors="coerce").dropna().empty
+                else float("nan")
+            )
+        )
         .to_dict()
     )
     drop_candidates: dict[str, str] = {}
@@ -197,8 +203,10 @@ def main() -> int:
         ) if feature_windows and mean_sign != 0.0 else float("nan")
         first_half = feature_windows[:8]
         second_half = feature_windows[-8:]
-        first_abs = float(np.nanmean(np.abs(first_half))) if first_half else float("nan")
-        second_abs = float(np.nanmean(np.abs(second_half))) if second_half else float("nan")
+        first_half_clean = [abs(value) for value in first_half if np.isfinite(value)]
+        second_half_clean = [abs(value) for value in second_half if np.isfinite(value)]
+        first_abs = float(np.mean(first_half_clean)) if first_half_clean else float("nan")
+        second_abs = float(np.mean(second_half_clean)) if second_half_clean else float("nan")
         decay_ratio = second_abs / first_abs if np.isfinite(first_abs) and first_abs > 1e-12 else float("nan")
         coverage = float(pd.to_numeric(features_df[feature], errors="coerce").notna().mean())
         size_corr = _mean_size_corr(features_df, metadata_df, feature)

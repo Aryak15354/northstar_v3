@@ -69,12 +69,12 @@ class AutomationSetup:
         
         directories = [
             'logs',
-            'data/clustering',
+            'data/results/analysis/clustering',
             'data/waves',
             'data/dashboard',
             'data/health',
             'data/execution_summaries',
-            'data/failures',
+            'data/runtime/failures',
             'config'
         ]
         

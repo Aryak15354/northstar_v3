@@ -108,10 +108,60 @@ class SimpleTailwindEngine:
                 'growth': 0.6
             }
         }
+        self.family_preferences = {
+            'Crisis': {'sentiment': 0.90, 'alternative': 0.92, 'ownership': 0.95},
+            'Expansion': {'sentiment': 1.10, 'alternative': 1.08, 'ownership': 1.05},
+            'Late-Expansion': {'sentiment': 1.02, 'alternative': 1.10, 'ownership': 1.12},
+            'Slowdown': {'sentiment': 0.96, 'alternative': 1.05, 'ownership': 1.08},
+        }
         
         # Strategy performance tracking
         self.strategy_performance = {}
         self.current_regime = None
+
+    @staticmethod
+    def _normalize_tailwind_frame(tailwinds: pd.DataFrame) -> pd.DataFrame:
+        """Normalize canonical and legacy tailwind schemas into a common layout."""
+        if tailwinds is None or tailwinds.empty:
+            return pd.DataFrame()
+
+        df = tailwinds.copy()
+
+        if "strategy" not in df.columns and "strategy_id" in df.columns:
+            df["strategy"] = df["strategy_id"].astype(str)
+        if "combined_score" not in df.columns and "tailwind_score" in df.columns:
+            df["combined_score"] = pd.to_numeric(df["tailwind_score"], errors="coerce")
+        if "regime_tailwind" not in df.columns and "tailwind_score" in df.columns:
+            df["regime_tailwind"] = pd.to_numeric(df["tailwind_score"], errors="coerce")
+        if "sharpe" not in df.columns and "tailwind_score" in df.columns:
+            df["sharpe"] = pd.to_numeric(df["tailwind_score"], errors="coerce")
+        if "date" not in df.columns and "as_of_date" in df.columns:
+            df["date"] = pd.to_datetime(df["as_of_date"], errors="coerce")
+        elif "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"], errors="coerce")
+
+        if "regime" not in df.columns:
+            df["regime"] = "unknown"
+
+        required = {"strategy", "combined_score", "sharpe", "regime_tailwind", "regime"}
+        if not required.issubset(df.columns):
+            return pd.DataFrame()
+
+        keep = ["strategy", "combined_score", "sharpe", "regime_tailwind", "regime"]
+        if "date" in df.columns:
+            keep.append("date")
+        return df[keep].copy()
+
+    @staticmethod
+    def _strategy_family(strategy_name: str) -> str:
+        s = str(strategy_name or "").strip().lower()
+        if any(token in s for token in ('ownership', 'shareholding', 'promoter')):
+            return 'ownership'
+        if any(token in s for token in ('sentiment', 'news')):
+            return 'sentiment'
+        if any(token in s for token in ('alternative', 'announcement', 'bulk', 'credit', 'pledge')):
+            return 'alternative'
+        return ''
     
     def load_strategy_performance(self):
         """Load strategy performance data from backtests"""
@@ -209,6 +259,9 @@ class SimpleTailwindEngine:
                 if pref_key.lower() in strategy_name.lower():
                     base_preference = pref_value
                     break
+            if base_preference == 1.0:
+                family = self._strategy_family(strategy_name)
+                base_preference = self.family_preferences.get(current_regime, {}).get(family, 1.0)
             
             # Adjust based on recent performance
             recent_sharpe = data.get('recent_sharpe', 0)
@@ -371,8 +424,9 @@ class SimpleTailwindEngine:
         try:
             if os.path.exists(self.paths['strategy_tailwinds']):
                 tailwinds = pd.read_parquet(self.paths['strategy_tailwinds'])
+                normalized = self._normalize_tailwind_frame(tailwinds)
                 print(f"📊 Loaded strategy tailwinds: {tailwinds.shape}")
-                return tailwinds
+                return normalized if not normalized.empty else tailwinds
         except Exception as e:
             print(f"⚠️ Could not load tailwinds: {e}")
         

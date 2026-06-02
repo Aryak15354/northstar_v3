@@ -1,0 +1,64 @@
+{
+  "generated_at": "2026-03-20T01:44:24.898075+00:00",
+  "status": "WARN",
+  "canonical_missing": [],
+  "operational_files_checked": [
+    "run.py",
+    "run_complete_v3_system.py",
+    "run_daily_v3.py",
+    "launch_dashboard.py",
+    "launch_dashboard.sh",
+    "launch_old_dashboard.sh",
+    "START_LIVE_SYSTEM.sh",
+    "START_OPTIONS_SYSTEM.sh",
+    "scripts/run_complete_v3_system.py",
+    "scripts/run_complete_v3_system.sh",
+    "scripts/run_trading_day_orchestrator.py",
+    "scripts/northstar_daily_scheduler.py",
+    "scripts/start_dashboard.sh",
+    "scripts/start_trading_system.sh",
+    "scripts/check_live_status.py",
+    "scripts/check_system_status.py",
+    "scripts/launchers/launch_dashboard.py"
+  ],
+  "deprecated_reference_count": 0,
+  "deprecated_references": [],
+  "retention": [
+    {
+      "path": "data/processed/backups",
+      "keep_latest_per_prefix": 4,
+      "candidate_count": 18,
+      "removed_count": 0,
+      "candidates": [
+        "data/processed/backups/market_state_20260319_151729.parquet",
+        "data/processed/backups/market_state_20260319_103208.parquet",
+        "data/processed/backups/market_state_20260319_102134.parquet",
+        "data/processed/backups/market_state_20260319_101610.parquet",
+        "data/processed/backups/market_state_20260319_100800.parquet",
+        "data/processed/backups/market_state_20260319_100535.parquet",
+        "data/processed/backups/portfolio_analytics_20260319_024314.json",
+        "data/processed/backups/portfolio_analytics_20260319_024051.json",
+        "data/processed/backups/portfolio_analytics_20260319_023954.json",
+        "data/processed/backups/portfolio_analytics_20260319_023836.json",
+        "data/processed/backups/portfolio_analytics_20260319_021047.json",
+        "data/processed/backups/portfolio_analytics_20260319_014615.json",
+        "data/processed/backups/portfolio_weights_20260319_024501.parquet",
+        "data/processed/backups/portfolio_weights_20260319_024314.parquet",
+        "data/processed/backups/portfolio_weights_20260319_024051.parquet",
+        "data/processed/backups/portfolio_weights_20260319_023954.parquet",
+        "data/processed/backups/portfolio_weights_20260319_023836.parquet",
+        "data/processed/backups/portfolio_weights_20260319_021047.parquet"
+      ],
+      "removed": []
+    },
+    {
+      "path": "data/pnl/backup_before_rebuild",
+      "keep_latest_per_prefix": 3,
+      "candidate_count": 0,
+      "removed_count": 0,
+      "candidates": [],
+      "removed": []
+    }
+  ],
+  "apply_retention": false
+}

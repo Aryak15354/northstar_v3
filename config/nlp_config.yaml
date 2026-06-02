@@ -1,0 +1,141 @@
+nlp:
+  enabled: true
+
+  models:
+    sentiment:
+      primary: "finbert_india"
+      fallback: "finbert_base"
+      hf_model_id: "ProsusAI/finbert"
+      local_path: "data/nlp/models/finbert_base"
+      india_finetuned_path: "data/nlp/models/finbert_india"
+      use_india_model_if_available: true
+      allow_remote_download: false
+      device: "cpu"
+      batch_size: 8
+      max_length: 256
+      low_cpu_mem_usage: true
+      torch_num_threads: 4
+      score_labels:
+        positive: "positive"
+        negative: "negative"
+        neutral: "neutral"
+
+    ner:
+      model: "india_ner"
+      local_path: "data/nlp/models/india_ner"
+      fallback_ner: "dbmdz/bert-large-cased-finetuned-conll03-english"
+      entity_types:
+        - ORG
+        - PERSON
+        - GPE
+        - MONEY
+        - PERCENT
+        - DATE
+
+    event_classifier:
+      model: "event_classifier"
+      local_path: "data/nlp/models/event_classifier"
+      classes:
+        - earnings_beat
+        - earnings_miss
+        - earnings_in_line
+        - management_change_positive
+        - management_change_negative
+        - fraud_allegation
+        - regulatory_action_negative
+        - regulatory_action_positive
+        - merger_acquisition
+        - debt_restructuring
+        - promoter_pledge_increase
+        - promoter_pledge_decrease
+        - order_win
+        - order_loss
+        - capex_announcement
+        - dividend_announcement
+        - buyback_announcement
+        - macro_rate_hike
+        - macro_rate_cut
+        - macro_inflation_high
+        - macro_inflation_low
+        - macro_geopolitical
+        - macro_crude_spike
+        - macro_fii_outflow
+        - macro_fii_inflow
+        - sector_cyclical_positive
+        - sector_cyclical_negative
+        - neutral_corporate
+        - unknown
+
+    encoder:
+      model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+      local_path: "data/nlp/models/sentence_encoder"
+      embedding_dim: 384
+      cache_embeddings: true
+      cache_path: "data/nlp/cache/embeddings"
+
+  pipeline:
+    batch_size: 8
+    historical_chunk_size: 1000
+    max_headlines_per_ticker_per_day: 20
+    min_headline_length: 10
+    max_headline_length: 256
+    aggregation_method: "conviction_weighted_mean"
+    availability_lag_hours: 2
+    min_confidence: 0.55
+    remove_bse_nse_disclaimer: true
+    normalize_company_names: true
+    handle_code_mixing: true
+
+  training:
+    fine_tune_enabled: false
+    min_labeled_examples: 500
+    validation_split: 0.15
+    test_split: 0.10
+    epochs: 3
+    learning_rate: 2.0e-5
+    weight_decay: 0.01
+    tokenizer_max_length: 256
+    per_device_train_batch_size: 4
+    per_device_eval_batch_size: 4
+    gradient_accumulation_steps: 2
+    warmup_ratio: 0.10
+    lr_scheduler_type: "linear"
+    max_grad_norm: 1.0
+    random_seed: 42
+    metric_for_best_model: "eval_macro_f1"
+    greater_is_better: true
+    freeze_base_model: true
+    continue_from_india_model: false
+    unfreeze_last_n_layers: 0
+    trainable_head_patterns:
+      - "classifier"
+      - "score"
+      - "pre_classifier"
+    save_total_limit: 1
+    auto_label_enabled: true
+    auto_label_positive_threshold: 0.03
+    auto_label_negative_threshold: -0.03
+    auto_label_confidence: 0.70
+    high_quality_positive_threshold: 0.04
+    high_quality_negative_threshold: -0.04
+    high_quality_neutral_abs_threshold: 0.005
+    high_quality_neutral_presample_size: 6000
+    teacher_min_confidence: 0.75
+    teacher_neutral_min_confidence: 0.45
+    teacher_neutral_max_abs_polarity: 0.12
+    max_examples_per_ticker_per_class: 20
+    deduplicate_training_text: true
+
+  shock_impact_learner:
+    enabled: true
+    learning_rate: 0.01
+    momentum: 0.95
+    min_events_to_update: 5
+    output_path: "data/nlp/shock_impact_weights.json"
+
+  evaluation:
+    run_ic_validation: true
+    ic_validation_lookback_weeks: 52
+    ic_validation_horizon_days: 5
+    min_acceptable_ic: 0.015
+    comparison_baseline: "data/canonical/sentiment/company_sentiment_daily.parquet"

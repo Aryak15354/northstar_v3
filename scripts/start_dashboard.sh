@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Start the integrated volatility dashboard
-echo "🚀 Starting Unified Volatility Engine Dashboard..."
-echo "📊 Integrated with Options System v3"
+# Start the canonical dashboard surface
+echo "🚀 Starting Northstar V3 Canonical Dashboard..."
+echo "📊 Integrated with the current dashboard app surface"
 echo ""
 
 # Check if options system data is available
@@ -20,4 +20,4 @@ echo "📍 Dashboard will be available at: http://localhost:8501"
 echo ""
 
 # Start the dashboard
-streamlit run dashboard/volatility_dashboard.py --server.port 8501 --server.headless false
+python3 launch_dashboard.py --port 8501 --dev

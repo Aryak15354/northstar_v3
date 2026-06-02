@@ -33,7 +33,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.options.capital_scaling_engine import CapitalScalingEngine, ScalingState
 from src.options.config_loader import get_config
 from src.options.position_manager import Position, PositionLeg, PositionManager
-from src.options.regime_detector import Regime, RegimeState, RegimeDetector
+from src.options.options_regime_detector import Regime, RegimeState, RegimeDetector
 from src.options.stock_options_loader import get_stock_loader
 from src.options.enhanced_strategy_generator_v3 import EnhancedStrategyGeneratorV3
 from src.options.strategy_generator import Greeks, OptionStrategy
@@ -51,8 +51,12 @@ from src.options.trade_eligibility_validator import TradeEligibilityValidator
 from src.options.trade_ledger import TradeLedger
 from src.options.upstox_adapter import UpstoxAdapter
 from src.options.v3_event_integration import create_event_publisher
+from src.intelligence.news_brain.news_signal_state import deserialize_market_intelligence_state
 from src.integration.alpha_os_adapter import AlphaOSAdapter
-from src.sentiment.context_loader import load_sentiment_context as load_canonical_sentiment_context
+from src.sentiment.context_loader import (
+    load_company_sentiment_scores,
+    load_sentiment_context as load_canonical_sentiment_context,
+)
 from src.runtime import (
     DecisionMode as PRSDecisionMode,
     PortfolioRuntimeService,
@@ -61,15 +65,20 @@ from src.runtime import (
     build_certification_snapshot,
 )
 from src.runtime.hash_utils import canonical_hash, file_sha256
+from src.runtime.live_book_sync import sync_options_runtime_book
+from src.pnl.runtime_accounting_sync import refresh_runtime_accounting
 from src.volatility.regime_detector import VolatilityRegime
 from src.volatility.alpha_os_types import AlphaOSContext
 
 
 IST = pytz.timezone("Asia/Kolkata")
-AGGRESSIVE_DEFAULT_PORTFOLIO_RISK_CAP_PCT = 0.10
+AGGRESSIVE_DEFAULT_PORTFOLIO_RISK_CAP_PCT = 0.14
 PORTFOLIO_OVERLAY_DEFAULT_MAX_STOCKS = 6
-PORTFOLIO_OVERLAY_DEFAULT_MAX_DYNAMIC_UNDERLYINGS = 18
+PORTFOLIO_OVERLAY_DEFAULT_MAX_DYNAMIC_UNDERLYINGS = 180
+PORTFOLIO_OVERLAY_MIN_DYNAMIC_UNDERLYINGS = 150
+PORTFOLIO_OVERLAY_MAX_DYNAMIC_UNDERLYINGS = 250
 INDEX_UNDERLYINGS = {"NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY"}
+BROADER_INDEX_UNDERLYINGS = {"NIFTY", "MIDCPNIFTY"}
 UNBOUNDED_WEEKLY_TRADES = 1_000_000
 DEFAULT_LOOP_INTERVAL_SECONDS = 300.0
 SHORT_VOL_STRATEGY_TYPES = {
@@ -95,7 +104,23 @@ HEDGE_PREFERRED_STRATEGY_TYPES = {
     "bear_put_spread",
     "calendar_spread",
 }
-SENTIMENT_TOP_COMPANIES_LIMIT = 100
+SENTIMENT_TOP_COMPANIES_LIMIT = 300
+DEFAULT_SENTIMENT_EXECUTION_MIN_SCORE = 0.15
+DEFAULT_SENTIMENT_EXECUTION_FRACTION = 0.20
+DEFAULT_SENTIMENT_EXECUTION_MIN_CANDIDATES = 24
+DEFAULT_SENTIMENT_EXECUTION_MAX_CANDIDATES = 42
+DEFAULT_SENTIMENT_SCAN_INDEX_UNDERLYINGS = [
+    "NIFTY",
+    "BANKNIFTY",
+    "FINNIFTY",
+    "MIDCPNIFTY",
+    "NIFTYAUTO",
+    "NIFTYPHARMA",
+    "NIFTYFMCG",
+    "NIFTYMETAL",
+    "NIFTYENERGY",
+    "NIFTYREALTY",
+]
 POSITIVE_SENTIMENT_LABELS = {"positive", "very_positive", "bullish"}
 NEGATIVE_SENTIMENT_LABELS = {"negative", "very_negative", "bearish", "downside"}
 STRATEGY_CONCENTRATION_LOOKBACK = 80
@@ -118,6 +143,11 @@ SECTOR_INDEX_MAP: Dict[str, List[str]] = {
     "fast moving consumer goods": ["NIFTYFMCG"],
     "oil gas & consumable fuels": ["NIFTYENERGY"],
     "energy": ["NIFTYENERGY"],
+}
+UNDERLYING_TO_SECTOR: Dict[str, str] = {
+    str(index).strip().upper(): str(sector).strip().lower()
+    for sector, indices in SECTOR_INDEX_MAP.items()
+    for index in indices
 }
 
 logging.basicConfig(
@@ -144,11 +174,25 @@ def _parse_dt(v: Optional[str]) -> Optional[datetime]:
         return None
     try:
         dt = datetime.fromisoformat(v)
-        if dt.tzinfo is not None:
-            return dt.astimezone(pytz.UTC).replace(tzinfo=None)
-        return dt
+        if dt.tzinfo is None:
+            return IST.localize(dt)
+        return dt.astimezone(IST)
     except Exception:
         return None
+
+
+def _position_hold_duration_minutes(position: Position, *, fallback_now: Optional[datetime] = None) -> float:
+    end_time = getattr(position, "exit_time", None) or fallback_now or _now_ist()
+    start_time = getattr(position, "entry_time", None) or end_time
+    if getattr(start_time, "tzinfo", None) is None:
+        start_time = IST.localize(start_time)
+    else:
+        start_time = start_time.astimezone(IST)
+    if getattr(end_time, "tzinfo", None) is None:
+        end_time = IST.localize(end_time)
+    else:
+        end_time = end_time.astimezone(IST)
+    return float(max((end_time - start_time).total_seconds() / 60.0, 0.0))
 
 
 def _to_regime(value: str) -> VolatilityRegime:
@@ -180,6 +224,15 @@ def _sentiment_sign(sentiment_label: str, sentiment_score: float) -> int:
     return 0
 
 
+def _directional_label_sign(value: Any) -> int:
+    label = str(value or "").strip().lower()
+    if label in POSITIVE_SENTIMENT_LABELS or label in {"up", "upside", "buy", "upgrade"}:
+        return 1
+    if label in NEGATIVE_SENTIMENT_LABELS or label in {"down", "sell", "downgrade"}:
+        return -1
+    return 0
+
+
 class IntegratedOptionsPaperEngine:
     def __init__(
         self,
@@ -195,7 +248,7 @@ class IntegratedOptionsPaperEngine:
         start_fresh_today: bool = False,
         recovery_mode: bool = False,
     ):
-        load_dotenv(".env.options", override=True)
+        load_dotenv(".env.options", override=False)
 
         self.config = get_config()
         self.stock_loader = get_stock_loader()
@@ -257,6 +310,7 @@ class IntegratedOptionsPaperEngine:
         self.portfolio_overlay: Dict[str, Any] = {}
         self.latest_cycle_diagnostics: Dict[str, Any] = {}
         self.cycle_decision_history: List[Dict[str, Any]] = []
+        self.last_runtime_accounting_refresh_at: Optional[datetime] = None
         self._apply_limit_overrides(
             max_trades_per_week=max_trades_per_week,
             portfolio_risk_cap_pct=portfolio_risk_cap_pct,
@@ -308,6 +362,7 @@ class IntegratedOptionsPaperEngine:
         self.runtime_state_path = self.options_live_dir / "options_runtime_state.json"
         self.dashboard_state_path = self.options_live_dir / "options_dashboard_state.json"
         self.heartbeat_path = self.options_live_dir / "live_engine_heartbeat.json"
+        self.loop_status_path = self.options_live_dir / "options_loop_status.json"
         self.eod_snapshots_dir = self.options_live_dir / "eod_snapshots"
         self.recovery_mode_report_path = self.options_live_dir / "recovery_mode_report.json"
         self.state_io = StateIOManager(self.options_live_dir)
@@ -326,6 +381,7 @@ class IntegratedOptionsPaperEngine:
         self.iv_history: Dict[str, List[Dict[str, Any]]] = {}
         self.regime_history: List[Dict[str, Any]] = []
         self.greeks_history: List[Dict[str, Any]] = []
+        self.regime_flip_tracker: Dict[str, Dict[str, Any]] = {}
         self.last_trade_eligibility: Dict[str, Any] = {
             "signal_generated": False,
             "rejected": False,
@@ -814,6 +870,48 @@ class IntegratedOptionsPaperEngine:
         }
         self._write_json_atomic(self.heartbeat_path, heartbeat)
 
+    def _write_cycle_progress_heartbeat(
+        self,
+        now: datetime,
+        processed_underlyings: int,
+        total_underlyings: int,
+        current_underlying: Optional[str] = None,
+        phase: str = "scanning_underlyings",
+    ) -> None:
+        total = max(0, int(total_underlyings or 0))
+        processed = max(0, min(int(processed_underlyings or 0), total if total else int(processed_underlyings or 0)))
+        progress_pct = float(processed / total) if total else 0.0
+        heartbeat = {
+            "timestamp": _to_iso(now),
+            "pid": os.getpid(),
+            "status": "alive",
+            "recovery_mode": bool(self.recovery_mode),
+            "phase": phase,
+            "processed_underlyings": processed,
+            "total_underlyings": total,
+            "progress_pct": progress_pct,
+            "current_underlying": str(current_underlying or ""),
+        }
+        self._write_json_atomic(self.heartbeat_path, heartbeat)
+
+        loop_status = self._read_json_file(self.loop_status_path)
+        loop_status.update(
+            {
+                "timestamp": _to_iso(now),
+                "status": "running",
+                "result_status": "running",
+                "last_progress_at": _to_iso(now),
+                "progress": {
+                    "phase": phase,
+                    "processed_underlyings": processed,
+                    "total_underlyings": total,
+                    "progress_pct": progress_pct,
+                    "current_underlying": str(current_underlying or ""),
+                },
+            }
+        )
+        self._write_json_atomic(self.loop_status_path, loop_status)
+
     def _write_daily_continuity_snapshot(
         self,
         now: datetime,
@@ -1065,6 +1163,35 @@ class IntegratedOptionsPaperEngine:
             return str(max(probabilities.items(), key=lambda kv: float(kv[1]))[0])
         except Exception:
             return "UNKNOWN"
+
+    @staticmethod
+    def _normalize_underlying_regime_label(value: Any) -> str:
+        raw = str(value or "").strip().upper()
+        if raw in {"CRISIS", "HIGH_STRESS"}:
+            return raw
+        if raw in {"PANIC", "HOSTILE"}:
+            return "HIGH_STRESS"
+        if any(token in raw for token in ("CRISIS", "CRASH", "PANIC", "HIGH_STRESS", "HOSTILE")):
+            return "HIGH_STRESS"
+        return "NORMAL"
+
+    def _current_underlying_regime_context(self) -> str:
+        intent = self.alpha_os_last_intent if isinstance(self.alpha_os_last_intent, dict) else {}
+        regime_snapshot = intent.get("regime_snapshot", {}) if isinstance(intent.get("regime_snapshot"), dict) else {}
+        probabilities = regime_snapshot.get("probabilities", {}) if isinstance(regime_snapshot.get("probabilities"), dict) else {}
+        alpha_os_regime = self._alpha_os_dominant_regime(probabilities)
+        normalized = self._normalize_underlying_regime_label(alpha_os_regime)
+        if normalized != "NORMAL":
+            return normalized
+
+        overlay_regime = ""
+        if isinstance(self.portfolio_overlay, dict):
+            overlay_regime = str(self.portfolio_overlay.get("regime", "") or "")
+        normalized = self._normalize_underlying_regime_label(overlay_regime)
+        if normalized != "NORMAL":
+            return normalized
+
+        return "NORMAL"
 
     def _append_alpha_os_timeseries(self, intent: Dict[str, Any]) -> None:
         diagnostics = intent.get("diagnostics", {}) if isinstance(intent.get("diagnostics"), dict) else {}
@@ -1393,6 +1520,954 @@ class IntegratedOptionsPaperEngine:
             logger.warning("Sentiment context load failed; using safe defaults: %s", e)
             return out
 
+    def _portfolio_overlay_dynamic_target(self) -> int:
+        raw_env = os.getenv("OPTIONS_MAX_DYNAMIC_UNDERLYINGS")
+        if raw_env is None or str(raw_env).strip() == "":
+            target = min(
+                PORTFOLIO_OVERLAY_MAX_DYNAMIC_UNDERLYINGS,
+                max(
+                    PORTFOLIO_OVERLAY_MIN_DYNAMIC_UNDERLYINGS,
+                    PORTFOLIO_OVERLAY_DEFAULT_MAX_DYNAMIC_UNDERLYINGS,
+                ),
+            )
+        else:
+            try:
+                target = max(6, int(float(raw_env)))
+            except Exception:
+                target = PORTFOLIO_OVERLAY_DEFAULT_MAX_DYNAMIC_UNDERLYINGS
+
+        target = max(target, max(6, len(self.underlyings)))
+        available_universe = len(self._broad_option_scan_universe())
+        if available_universe > 0:
+            target = min(target, available_universe)
+        return max(6, target)
+
+    @staticmethod
+    def _explicit_hedge_mode_enabled() -> bool:
+        raw = str(os.getenv("OPTIONS_EXPLICIT_HEDGE_MODE", "0") or "").strip().lower()
+        return raw in {"1", "true", "yes", "on"}
+
+    def _sentiment_execution_candidate_count(self, universe_size: int) -> int:
+        size = max(0, int(universe_size))
+        if size <= 0:
+            return 0
+        raw_env = os.getenv("OPTIONS_SENTIMENT_EXECUTION_CANDIDATES")
+        if raw_env is not None and str(raw_env).strip() != "":
+            try:
+                return max(1, min(size, int(float(raw_env))))
+            except Exception:
+                pass
+        target = int(round(size * DEFAULT_SENTIMENT_EXECUTION_FRACTION))
+        target = max(DEFAULT_SENTIMENT_EXECUTION_MIN_CANDIDATES, target)
+        target = min(DEFAULT_SENTIMENT_EXECUTION_MAX_CANDIDATES, target)
+        return max(1, min(size, target))
+
+    def _broad_option_scan_universe(self) -> List[str]:
+        all_symbols: List[str] = []
+        try:
+            all_symbols = [
+                self._normalize_underlying_symbol(symbol)
+                for symbol in self.stock_loader.get_all_symbols()
+            ]
+        except Exception as exc:
+            logger.warning("Could not enumerate broad option scan universe: %s", exc)
+
+        return self._ordered_unique_underlyings(
+            [
+                *DEFAULT_SENTIMENT_SCAN_INDEX_UNDERLYINGS,
+                *self.underlyings,
+                *all_symbols,
+            ]
+        )
+
+    def _broaden_dynamic_underlyings(
+        self,
+        dynamic_underlyings: List[str],
+        ranked_stock_rows: List[Dict[str, Any]],
+        target_count: int,
+    ) -> List[str]:
+        generic_tokens = {"NSE", "NSE_EQ", "NSE_FO", "NFO", "BSE", "BSE_EQ", "BSE_FO", "NSE_INDEX"}
+        ranked_symbols = [
+            self._normalize_underlying_symbol(row.get("symbol"))
+            for row in ranked_stock_rows
+            if isinstance(row, dict)
+        ]
+        expanded = self._ordered_unique_underlyings(
+            [
+                *dynamic_underlyings,
+                *ranked_symbols,
+                *self._broad_option_scan_universe(),
+            ]
+        )
+        out: List[str] = []
+        for sym in expanded:
+            if not sym or sym in generic_tokens or sym in out:
+                continue
+            out.append(sym)
+            if len(out) >= max(1, int(target_count)):
+                break
+        return out
+
+    def _load_exact_sentiment_snapshot(
+        self,
+        universe: List[str],
+        as_of_date: datetime,
+    ) -> pd.DataFrame:
+        normalized_universe = self._ordered_unique_underlyings(universe)
+        columns = [
+            "underlying",
+            "exact_sentiment_signal",
+            "abs_exact_sentiment",
+            "execution_priority",
+            "daily_sentiment_signal",
+            "intraday_sentiment_signal",
+            "daily_sentiment_polarity",
+            "daily_sentiment_conviction",
+            "trend_score",
+            "event_shock_factor",
+            "headline_count",
+            "market_moving_count",
+            "sentiment_label",
+            "sentiment_sign",
+            "dominant_event_direction",
+        ]
+        if not normalized_universe:
+            return pd.DataFrame(columns=columns)
+
+        base = pd.DataFrame({"underlying": normalized_universe})
+        as_of_ts = pd.Timestamp(as_of_date)
+        if as_of_ts.tzinfo is not None:
+            as_of_ts = as_of_ts.tz_localize(None)
+
+        daily = pd.DataFrame()
+        sentiment_path = PROJECT_ROOT / "data" / "canonical" / "sentiment" / "company_sentiment_daily.parquet"
+        if sentiment_path.exists():
+            try:
+                daily = pd.read_parquet(sentiment_path)
+                if isinstance(daily, pd.DataFrame) and not daily.empty:
+                    daily = daily.copy()
+                    daily["date"] = pd.to_datetime(daily.get("date"), errors="coerce")
+                    if "availability_date" in daily.columns:
+                        daily["availability_date"] = pd.to_datetime(
+                            daily.get("availability_date"),
+                            errors="coerce",
+                        )
+                        daily = daily[daily["availability_date"] <= as_of_ts]
+                    else:
+                        daily = daily[daily["date"] <= as_of_ts]
+                    daily["underlying"] = (
+                        daily["ticker"]
+                        .astype(str)
+                        .str.replace(r"\.(NS|BO)$", "", regex=True)
+                        .str.upper()
+                    )
+                    daily = daily[daily["underlying"].isin(normalized_universe)]
+                    if not daily.empty:
+                        sort_cols = [col for col in ["availability_date", "date"] if col in daily.columns]
+                        daily = daily.sort_values(sort_cols or ["date"], kind="mergesort")
+                        daily = daily.groupby("underlying", as_index=False).tail(1)
+                        polarity_source = (
+                            daily["sentiment_polarity"]
+                            if "sentiment_polarity" in daily.columns
+                            else pd.Series([0.0] * len(daily), index=daily.index)
+                        )
+                        daily["daily_sentiment_polarity"] = pd.to_numeric(
+                            polarity_source,
+                            errors="coerce",
+                        ).fillna(0.0)
+                        conviction_source = (
+                            daily["sentiment_conviction"]
+                            if "sentiment_conviction" in daily.columns
+                            else pd.Series([0.0] * len(daily), index=daily.index)
+                        )
+                        daily["daily_sentiment_conviction"] = pd.to_numeric(
+                            conviction_source,
+                            errors="coerce",
+                        ).fillna(0.0)
+                        daily["daily_sentiment_signal"] = (
+                            daily["daily_sentiment_polarity"] * daily["daily_sentiment_conviction"]
+                        ).clip(lower=-1.0, upper=1.0)
+                        headline_source = (
+                            daily["headline_count"]
+                            if "headline_count" in daily.columns
+                            else (
+                                daily["news_volume"]
+                                if "news_volume" in daily.columns
+                                else pd.Series([0.0] * len(daily), index=daily.index)
+                            )
+                        )
+                        daily["daily_headline_count"] = pd.to_numeric(
+                            headline_source,
+                            errors="coerce",
+                        ).fillna(0.0)
+                        market_moving_source = (
+                            daily["market_moving_count"]
+                            if "market_moving_count" in daily.columns
+                            else pd.Series([0.0] * len(daily), index=daily.index)
+                        )
+                        daily["market_moving_count"] = pd.to_numeric(
+                            market_moving_source,
+                            errors="coerce",
+                        ).fillna(0.0)
+                        if "dominant_event_direction" in daily.columns:
+                            dominant_event_direction = daily["dominant_event_direction"]
+                        else:
+                            dominant_event_direction = pd.Series(
+                                ["neutral"] * len(daily),
+                                index=daily.index,
+                            )
+                        daily["dominant_event_direction"] = dominant_event_direction.astype(str).str.lower()
+                        daily["dominant_direction_sign"] = daily["dominant_event_direction"].map(
+                            _directional_label_sign
+                        ).fillna(0).astype(int)
+                        daily = daily[
+                            [
+                                "underlying",
+                                "daily_sentiment_signal",
+                                "daily_sentiment_polarity",
+                                "daily_sentiment_conviction",
+                                "daily_headline_count",
+                                "market_moving_count",
+                                "dominant_event_direction",
+                                "dominant_direction_sign",
+                            ]
+                        ]
+            except Exception as exc:
+                logger.warning("Could not load canonical company sentiment for ranking: %s", exc)
+
+        intraday = pd.DataFrame()
+        try:
+            intraday = load_company_sentiment_scores(
+                project_root=PROJECT_ROOT,
+                top_companies_limit=max(
+                    SENTIMENT_TOP_COMPANIES_LIMIT,
+                    len(normalized_universe) * 2,
+                ),
+            )
+            if isinstance(intraday, pd.DataFrame) and not intraday.empty:
+                intraday = intraday.copy()
+                intraday["underlying"] = (
+                    intraday["ticker"]
+                    .astype(str)
+                    .str.replace(r"\.(NS|BO)$", "", regex=True)
+                    .str.upper()
+                )
+                intraday = intraday[intraday["underlying"].isin(normalized_universe)]
+                if not intraday.empty:
+                    intraday_signal_source = (
+                        intraday["sentiment_signal"]
+                        if "sentiment_signal" in intraday.columns
+                        else pd.Series([0.0] * len(intraday), index=intraday.index)
+                    )
+                    intraday["intraday_sentiment_signal"] = pd.to_numeric(
+                        intraday_signal_source,
+                        errors="coerce",
+                    ).fillna(0.0)
+                    trend_source = (
+                        intraday["trend_score"]
+                        if "trend_score" in intraday.columns
+                        else pd.Series([0.0] * len(intraday), index=intraday.index)
+                    )
+                    intraday["trend_score"] = pd.to_numeric(
+                        trend_source,
+                        errors="coerce",
+                    ).fillna(0.0)
+                    shock_source = (
+                        intraday["event_shock_factor"]
+                        if "event_shock_factor" in intraday.columns
+                        else pd.Series([0.0] * len(intraday), index=intraday.index)
+                    )
+                    intraday["event_shock_factor"] = pd.to_numeric(
+                        shock_source,
+                        errors="coerce",
+                    ).fillna(0.0)
+                    intraday_headline_source = (
+                        intraday["headline_count"]
+                        if "headline_count" in intraday.columns
+                        else pd.Series([0.0] * len(intraday), index=intraday.index)
+                    )
+                    intraday["intraday_headline_count"] = pd.to_numeric(
+                        intraday_headline_source,
+                        errors="coerce",
+                    ).fillna(0.0)
+                    if "sentiment_label" in intraday.columns:
+                        sentiment_label = intraday["sentiment_label"]
+                    else:
+                        sentiment_label = pd.Series(["neutral"] * len(intraday), index=intraday.index)
+                    intraday["sentiment_label"] = sentiment_label.astype(str).str.lower()
+                    intraday = intraday[
+                        [
+                            "underlying",
+                            "intraday_sentiment_signal",
+                            "trend_score",
+                            "event_shock_factor",
+                            "intraday_headline_count",
+                            "sentiment_label",
+                        ]
+                    ]
+        except Exception as exc:
+            logger.warning("Could not load intraday company sentiment ranking overlay: %s", exc)
+
+        if daily.empty:
+            daily = pd.DataFrame(
+                columns=[
+                    "underlying",
+                    "daily_sentiment_signal",
+                    "daily_sentiment_polarity",
+                    "daily_sentiment_conviction",
+                    "daily_headline_count",
+                    "market_moving_count",
+                    "dominant_event_direction",
+                    "dominant_direction_sign",
+                ]
+            )
+        if intraday.empty:
+            intraday = pd.DataFrame(
+                columns=[
+                    "underlying",
+                    "intraday_sentiment_signal",
+                    "trend_score",
+                    "event_shock_factor",
+                    "intraday_headline_count",
+                    "sentiment_label",
+                ]
+            )
+
+        merged = base.merge(daily, how="left", on="underlying")
+        merged = merged.merge(intraday, how="left", on="underlying")
+
+        numeric_cols = [
+            "daily_sentiment_signal",
+            "daily_sentiment_polarity",
+            "daily_sentiment_conviction",
+            "daily_headline_count",
+            "market_moving_count",
+            "dominant_direction_sign",
+            "intraday_sentiment_signal",
+            "trend_score",
+            "event_shock_factor",
+            "intraday_headline_count",
+        ]
+        for col in numeric_cols:
+            if col not in merged.columns:
+                merged[col] = 0.0
+            merged[col] = pd.to_numeric(merged[col], errors="coerce").fillna(0.0)
+
+        if "dominant_event_direction" not in merged.columns:
+            merged["dominant_event_direction"] = "neutral"
+        merged["dominant_event_direction"] = merged["dominant_event_direction"].astype(str).str.lower()
+        if "sentiment_label" not in merged.columns:
+            merged["sentiment_label"] = "neutral"
+        merged["sentiment_label"] = merged["sentiment_label"].astype(str).str.lower()
+
+        merged["headline_count"] = merged[["daily_headline_count", "intraday_headline_count"]].max(axis=1)
+
+        intraday_sign = np.sign(merged["intraday_sentiment_signal"].to_numpy(dtype=float))
+        daily_sign = np.sign(merged["daily_sentiment_signal"].to_numpy(dtype=float))
+        direction_sign = np.sign(merged["dominant_direction_sign"].to_numpy(dtype=float))
+        sentiment_sign = intraday_sign.copy()
+        sentiment_sign[np.isclose(sentiment_sign, 0.0)] = daily_sign[np.isclose(sentiment_sign, 0.0)]
+        sentiment_sign[np.isclose(sentiment_sign, 0.0)] = direction_sign[np.isclose(sentiment_sign, 0.0)]
+        sentiment_sign = np.sign(sentiment_sign)
+        merged["sentiment_sign"] = sentiment_sign.astype(int)
+
+        trend_component = merged["trend_score"] * merged["sentiment_sign"]
+        shock_component = merged["event_shock_factor"] * merged["sentiment_sign"]
+        dominant_direction_component = (
+            merged["dominant_direction_sign"]
+            * np.maximum(
+                merged["daily_sentiment_signal"].abs(),
+                merged["intraday_sentiment_signal"].abs(),
+            )
+        )
+        headline_signal = np.tanh(merged["headline_count"] / 6.0)
+        market_moving_signal = np.tanh(merged["market_moving_count"] / 2.0)
+
+        exact_signal = (
+            0.44 * merged["daily_sentiment_signal"]
+            + 0.34 * merged["intraday_sentiment_signal"]
+            + 0.10 * trend_component
+            + 0.06 * shock_component
+            + 0.04 * dominant_direction_component
+            + 0.02 * market_moving_signal * merged["sentiment_sign"]
+        )
+        merged["exact_sentiment_signal"] = exact_signal.clip(lower=-1.0, upper=1.0)
+        merged["abs_exact_sentiment"] = merged["exact_sentiment_signal"].abs()
+        merged["execution_priority"] = (
+            merged["abs_exact_sentiment"]
+            * (
+                1.0
+                + 0.15 * headline_signal
+                + 0.12 * market_moving_signal
+                + 0.08 * merged["trend_score"].abs()
+            )
+        )
+
+        neutral_mask = merged["sentiment_label"].isin({"", "neutral", "none", "nan"})
+        merged.loc[neutral_mask & (merged["exact_sentiment_signal"] >= DEFAULT_SENTIMENT_EXECUTION_MIN_SCORE), "sentiment_label"] = "positive"
+        merged.loc[neutral_mask & (merged["exact_sentiment_signal"] <= -DEFAULT_SENTIMENT_EXECUTION_MIN_SCORE), "sentiment_label"] = "negative"
+        merged["sentiment_label"] = (
+            merged["sentiment_label"]
+            .replace({"nan": "neutral", "none": "neutral"})
+            .fillna("neutral")
+        )
+
+        merged = merged.sort_values(
+            ["execution_priority", "abs_exact_sentiment", "headline_count"],
+            ascending=[False, False, False],
+            kind="mergesort",
+        )
+        return merged[columns].reset_index(drop=True)
+
+    @staticmethod
+    def _overlay_sentiment_signal_map(overlay: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        targeting = overlay.get("sentiment_targeting", {}) if isinstance(overlay, dict) else {}
+        signal_scores = targeting.get("signal_scores", {}) if isinstance(targeting, dict) else {}
+        return signal_scores if isinstance(signal_scores, dict) else {}
+
+    def _augment_overlay_with_sentiment_plan(
+        self,
+        overlay: Dict[str, Any],
+        candidate_map: Dict[str, Any],
+        universe_size: int,
+    ) -> None:
+        if not isinstance(overlay, dict):
+            return
+
+        signal_scores = candidate_map.get("signal_scores", {})
+        if not isinstance(signal_scores, dict):
+            signal_scores = {}
+        execution_candidates = candidate_map.get("execution_candidates", [])
+        if not isinstance(execution_candidates, list):
+            execution_candidates = []
+
+        stock_objectives = dict(overlay.get("stock_objectives", {}) or {})
+        for sym in execution_candidates:
+            normalized = self._normalize_underlying_symbol(sym, fallback=str(sym or ""))
+            if not normalized:
+                continue
+            meta = signal_scores.get(normalized, {})
+            if not isinstance(meta, dict):
+                meta = {}
+            exact_signal = float(meta.get("exact_sentiment_signal", 0.0) or 0.0)
+            execution_priority = float(meta.get("execution_priority", 0.0) or 0.0)
+            existing = dict(stock_objectives.get(normalized, {}) or {})
+            if "objective" not in existing:
+                if exact_signal <= -0.28:
+                    objective = "event_shock_hedge"
+                    reason = "exact_sentiment_negative_extreme"
+                elif exact_signal <= -DEFAULT_SENTIMENT_EXECUTION_MIN_SCORE:
+                    objective = "protect_core"
+                    reason = "exact_sentiment_negative_signal"
+                elif exact_signal >= 0.24:
+                    objective = "alpha_momentum"
+                    reason = "exact_sentiment_positive_signal"
+                elif exact_signal >= DEFAULT_SENTIMENT_EXECUTION_MIN_SCORE:
+                    objective = "alpha_income"
+                    reason = "exact_sentiment_positive_income_signal"
+                else:
+                    objective = "vol_breakout"
+                    reason = "exact_sentiment_high_attention_signal"
+
+                stock_loader = getattr(self, "stock_loader", None)
+                stock = None
+                if stock_loader is not None:
+                    try:
+                        stock = stock_loader.get_stock(normalized)
+                    except Exception:
+                        stock = None
+                existing.update(
+                    {
+                        "objective": objective,
+                        "reason": reason,
+                        "weight": float(existing.get("weight", 0.0) or 0.0),
+                        "ticker": str(existing.get("ticker") or normalized),
+                        "sector": existing.get("sector") or (stock.sector if stock else None),
+                        "position_role": existing.get("position_role") or "broad_sentiment_scan",
+                    }
+                )
+
+            existing.update(
+                {
+                    "exact_sentiment_signal": exact_signal,
+                    "execution_priority": execution_priority,
+                    "daily_sentiment_signal": float(meta.get("daily_sentiment_signal", 0.0) or 0.0),
+                    "intraday_sentiment_signal": float(meta.get("intraday_sentiment_signal", 0.0) or 0.0),
+                    "trend_score": float(meta.get("trend_score", 0.0) or 0.0),
+                    "headline_count": int(float(meta.get("headline_count", 0.0) or 0.0)),
+                    "market_moving_count": float(meta.get("market_moving_count", 0.0) or 0.0),
+                    "sentiment_label": str(meta.get("sentiment_label", "neutral") or "neutral").lower(),
+                }
+            )
+            stock_objectives[normalized] = existing
+
+        overlay["stock_objectives"] = stock_objectives
+        overlay["sentiment_execution"] = {
+            "scan_universe_size": int(universe_size),
+            "execution_candidate_count": int(len(execution_candidates)),
+            "execution_candidates": list(execution_candidates),
+            "top_positive": list(candidate_map.get("call_candidates", []) or [])[:12],
+            "top_negative": list(candidate_map.get("put_candidates", []) or [])[:12],
+            "top_ranked": list(candidate_map.get("ranked_universe", []) or [])[:12],
+        }
+
+    def _execution_allowed_for_underlying(
+        self,
+        underlying: str,
+        objective_ctx: Dict[str, Any],
+        overlay: Dict[str, Any],
+    ) -> Tuple[bool, Dict[str, Any]]:
+        normalized = self._normalize_underlying_symbol(underlying, fallback=underlying)
+        signal_map = self._overlay_sentiment_signal_map(overlay if isinstance(overlay, dict) else {})
+        signal_meta = dict(signal_map.get(normalized, {}) or {})
+        targeting = overlay.get("sentiment_targeting", {}) if isinstance(overlay, dict) else {}
+        execution_candidates = targeting.get("execution_candidates", []) if isinstance(targeting, dict) else []
+        execution_set = {
+            self._normalize_underlying_symbol(symbol, fallback=str(symbol or ""))
+            for symbol in execution_candidates
+            if str(symbol or "").strip()
+        }
+        objective = str(objective_ctx.get("objective") or "balanced_overlay").strip().lower()
+        index_objectives = overlay.get("index_objectives", {}) if isinstance(overlay, dict) else {}
+        is_index_underlying = normalized in INDEX_UNDERLYINGS or (
+            isinstance(index_objectives, dict) and normalized in index_objectives
+        )
+        explicit_hedge_mode = bool(overlay.get("explicit_hedge_mode", False)) if isinstance(overlay, dict) else False
+
+        if is_index_underlying:
+            allowed = bool(explicit_hedge_mode)
+            reason = (
+                "explicit_hedge_mode_active"
+                if allowed
+                else "index_scan_only_until_explicit_hedge_mode"
+            )
+        elif objective != "balanced_overlay":
+            allowed = True
+            reason = "overlay_objective_execution_allowed"
+        elif execution_set:
+            allowed = normalized in execution_set
+            reason = (
+                "top_exact_sentiment_execution_candidate"
+                if allowed
+                else "scan_only_below_execution_cutoff"
+            )
+        else:
+            exact_signal = float(signal_meta.get("exact_sentiment_signal", 0.0) or 0.0)
+            allowed = abs(exact_signal) >= DEFAULT_SENTIMENT_EXECUTION_MIN_SCORE
+            reason = (
+                "exact_sentiment_threshold_met"
+                if allowed
+                else "sentiment_data_unavailable_fallback"
+            )
+
+        signal_meta.update(
+            {
+                "eligible_for_execution": bool(allowed),
+                "eligibility_reason": reason,
+                "execution_shortlist_size": int(len(execution_set)),
+                "explicit_hedge_mode": bool(explicit_hedge_mode),
+            }
+        )
+        return bool(allowed), signal_meta
+
+    def _load_intelligence_state(self):
+        unified_state_path = PROJECT_ROOT / "data" / "state" / "unified_state.json"
+        if not unified_state_path.exists():
+            return None
+        try:
+            payload = json.loads(unified_state_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            logger.warning("Could not read unified state intelligence payload: %s", exc)
+            return None
+        raw = payload.get("intelligence_state") if isinstance(payload, dict) else None
+        return deserialize_market_intelligence_state(raw if isinstance(raw, dict) else None)
+
+    def _load_urgent_shock_flag(self) -> Optional[Dict[str, Any]]:
+        flag_path = PROJECT_ROOT / "data" / "intelligence" / "urgent_shock_flag.json"
+        if not flag_path.exists():
+            return None
+        try:
+            payload = json.loads(flag_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            logger.warning("Could not read urgent shock flag: %s", exc)
+            return None
+
+        written_at = _parse_dt(payload.get("written_at"))
+        if written_at is None:
+            return None
+        age_minutes = max((_now_ist() - written_at).total_seconds() / 60.0, 0.0)
+        if age_minutes > 30.0:
+            return None
+        payload["age_minutes"] = float(age_minutes)
+        return payload
+
+    def _apply_market_intelligence_overlay(
+        self,
+        overlay: Dict[str, Any],
+        intelligence_state,
+    ) -> Dict[str, Any]:
+        if intelligence_state is None or not getattr(intelligence_state, "available", False):
+            return overlay
+
+        overlay = dict(overlay or {})
+        urgent_flag = self._load_urgent_shock_flag()
+        sentiment = dict(overlay.get("sentiment_context", {}) or {})
+        severity_value = float(getattr(intelligence_state, "shock_severity").value)
+        shock_confidence = float(getattr(intelligence_state, "shock_confidence", 0.0) or 0.0)
+        severity_signal = min(1.0, (severity_value / 5.0) * 0.80 + shock_confidence * 0.35)
+        sentiment["event_shock_score"] = max(float(sentiment.get("event_shock_score", 0.0) or 0.0), severity_signal)
+        if severity_value >= 4:
+            sentiment["alert_level"] = "critical"
+        elif severity_value >= 3:
+            sentiment["alert_level"] = "high"
+        elif severity_value >= 2:
+            sentiment["alert_level"] = "elevated"
+        else:
+            sentiment["alert_level"] = str(sentiment.get("alert_level", "normal") or "normal").lower()
+        sentiment["market_intelligence_shock_type"] = intelligence_state.primary_shock_type.value
+        sentiment["market_intelligence_shock_confidence"] = shock_confidence
+        sentiment["negative_trending_companies"] = list(
+            dict.fromkeys(
+                [*(sentiment.get("negative_trending_companies", []) or []), *list(getattr(intelligence_state, "tickers_negative", []) or [])]
+            )
+        )
+
+        event_impacts = []
+        sector_items = sorted(
+            getattr(intelligence_state, "sector_impacts", {}).items(),
+            key=lambda item: abs(float(item[1].impact_score)),
+            reverse=True,
+        )
+        for sector, impact in sector_items[:8]:
+            ticker = None
+            impact_direction = "mixed"
+            if impact.key_tickers_at_risk:
+                ticker = impact.key_tickers_at_risk[0]
+                impact_direction = "negative"
+            elif impact.key_tickers_to_benefit:
+                ticker = impact.key_tickers_to_benefit[0]
+                impact_direction = "positive"
+            if not ticker:
+                continue
+            event_impacts.append(
+                {
+                    "ticker": str(ticker).replace(".NS", ""),
+                    "event_type": intelligence_state.primary_shock_type.value,
+                    "impact_score": float(impact.impact_score),
+                    "impact_direction": impact_direction,
+                    "sector": sector,
+                }
+            )
+        sentiment["event_company_impacts"] = event_impacts
+        overlay["sentiment_context"] = sentiment
+        overlay["market_intelligence"] = {
+            "shock_type": intelligence_state.primary_shock_type.value,
+            "secondary_shock_type": intelligence_state.secondary_shock_type.value if intelligence_state.secondary_shock_type else None,
+            "shock_severity": intelligence_state.shock_severity.name,
+            "shock_direction": intelligence_state.shock_direction.value,
+            "shock_confidence": shock_confidence,
+            "requires_immediate_hedge": bool(intelligence_state.requires_immediate_hedge),
+            "requires_portfolio_rebalance": bool(intelligence_state.requires_portfolio_rebalance),
+            "urgent_flag_active": bool(urgent_flag),
+        }
+        overlay["hedge_intensity"] = max(float(overlay.get("hedge_intensity", 0.0) or 0.0), severity_signal)
+        if urgent_flag:
+            overlay["hedge_intensity"] = max(float(overlay.get("hedge_intensity", 0.0) or 0.0), 0.85)
+            logger.warning(
+                "URGENT SHOCK FLAG active: %s %s (age=%.1fmin)",
+                urgent_flag.get("shock_type"),
+                urgent_flag.get("severity"),
+                float(urgent_flag.get("age_minutes", 0.0) or 0.0),
+            )
+
+        dynamic_underlyings = list(dict.fromkeys(overlay.get("dynamic_underlyings", []) or []))
+        selected_stock_underlyings = list(dict.fromkeys(overlay.get("selected_stock_underlyings", []) or []))
+        stock_objectives = dict(overlay.get("stock_objectives", {}) or {})
+        index_objectives = dict(overlay.get("index_objectives", {}) or {})
+
+        selected_strategies = list(getattr(intelligence_state, "selected_option_strategies", []) or [])
+        if selected_strategies:
+            logger.info(
+                "Strategy library selected %s strategies: %s",
+                len(selected_strategies),
+                [str(item.get("strategy")) for item in selected_strategies],
+            )
+
+        for selected in selected_strategies:
+            underlying = str((selected or {}).get("underlying", "") or "").strip().upper()
+            if underlying and underlying not in dynamic_underlyings:
+                dynamic_underlyings.insert(0, underlying)
+
+        if severity_value >= 3:
+            overlay["portfolio_objective"] = "defensive_convexity"
+            index_objectives["NIFTY"] = "event_shock_hedge"
+            if intelligence_state.primary_shock_type.value in {"rate_hike_rbi", "banking_stress", "fii_outflow"}:
+                index_objectives["BANKNIFTY"] = "event_shock_hedge"
+
+        for sector_name, impact in sector_items:
+            if impact.impact_score <= -0.45:
+                for ticker in impact.key_tickers_at_risk[:3]:
+                    symbol = str(ticker).replace(".NS", "").strip().upper()
+                    if symbol and symbol not in dynamic_underlyings:
+                        dynamic_underlyings.append(symbol)
+                    if symbol:
+                        stock_objectives[symbol] = {
+                            "objective": "event_shock_hedge" if severity_value >= 3 else "protect_core",
+                            "reason": f"market_intelligence_negative_sector:{sector_name}",
+                            "weight": float(stock_objectives.get(symbol, {}).get("weight", 0.0) or 0.0),
+                            "sector": sector_name,
+                        }
+                        if symbol not in selected_stock_underlyings:
+                            selected_stock_underlyings.append(symbol)
+            elif impact.impact_score >= 0.45:
+                for ticker in impact.key_tickers_to_benefit[:3]:
+                    symbol = str(ticker).replace(".NS", "").strip().upper()
+                    if symbol and symbol not in dynamic_underlyings:
+                        dynamic_underlyings.append(symbol)
+                    if symbol:
+                        stock_objectives[symbol] = {
+                            "objective": "alpha_momentum",
+                            "reason": f"market_intelligence_beneficiary:{sector_name}",
+                            "weight": float(stock_objectives.get(symbol, {}).get("weight", 0.0) or 0.0),
+                            "sector": sector_name,
+                        }
+                        if symbol not in selected_stock_underlyings:
+                            selected_stock_underlyings.append(symbol)
+
+        overlay["dynamic_underlyings"] = dynamic_underlyings or list(self.underlyings)
+        overlay["selected_stock_underlyings"] = selected_stock_underlyings
+        overlay["stock_objectives"] = stock_objectives
+        overlay["index_objectives"] = index_objectives
+        return overlay
+
+    def _read_alternative_frame(self, *relative_candidates: str) -> pd.DataFrame:
+        for candidate in relative_candidates:
+            path = PROJECT_ROOT / candidate
+            if not path.exists():
+                continue
+            try:
+                if path.suffix.lower() == ".parquet":
+                    return pd.read_parquet(path)
+                return pd.read_csv(path, low_memory=False)
+            except Exception as exc:
+                logger.warning("Could not load alternative frame %s: %s", path, exc)
+        return pd.DataFrame()
+
+    def _load_alternative_signal_stocks(self, now: datetime, existing_symbols: set[str]) -> List[Dict[str, Any]]:
+        as_of = pd.Timestamp(now)
+        if as_of.tzinfo is not None:
+            as_of = as_of.tz_convert(None)
+
+        results: List[Dict[str, Any]] = []
+        seen: set[str] = set()
+
+        def _append_signal(
+            *,
+            ticker: str,
+            score: float,
+            source: str,
+            event_date: Any,
+            headline: str | None = None,
+            metadata: Optional[Dict[str, Any]] = None,
+        ) -> None:
+            symbol = str(ticker or "").replace(".NS", "").strip().upper()
+            if not symbol or symbol in existing_symbols or symbol in seen:
+                return
+            stock = self.stock_loader.get_stock(symbol)
+            if not stock:
+                return
+            signed_score = float(score or 0.0)
+            if not math.isfinite(signed_score) or abs(signed_score) < 0.20:
+                return
+            signal_direction = "bullish" if signed_score > 0 else "bearish"
+            payload = {
+                "ticker": symbol,
+                "symbol": symbol,
+                "weight": 0.0,
+                "position_role": "alternative_event",
+                "industry": stock.sector if stock.sector else None,
+                "option_eligible": True,
+                "instrument_key": stock.instrument_key,
+                "sector": stock.sector,
+                "alternative_source": source,
+                "alternative_signal_score": float(np.clip(signed_score, -1.0, 1.0)),
+                "signal_direction": signal_direction,
+                "event_date": str(pd.to_datetime(event_date, errors="coerce").date()) if pd.notna(pd.to_datetime(event_date, errors="coerce")) else None,
+                "headline": str(headline or "").strip() or None,
+            }
+            if isinstance(metadata, dict):
+                payload.update(metadata)
+            results.append(payload)
+            seen.add(symbol)
+
+        bulk = self._read_alternative_frame(
+            "data/canonical/alternative/bulk_deals_nse_all.parquet",
+            "data/canonical/alternative/bulk_deals_nse_all.csv",
+            "data/processed/alternative/bulk_deals_nse_all.parquet",
+            "data/processed/alternative/bulk_deals_nse_all.csv",
+            "data/processed/alternative/bulk_deals_all.csv",
+        )
+        if not bulk.empty:
+            work = bulk.copy()
+            work["date"] = pd.to_datetime(work.get("date"), errors="coerce")
+            work["nse_ticker"] = work.get("nse_ticker", "").astype(str).str.replace(".NS", "", regex=False).str.upper()
+            work["deal_type"] = work.get("deal_type", "").astype(str).str.upper()
+            work["client_name"] = work.get("client_name", "").astype(str)
+            work["company_name"] = work.get("company_name", "").astype(str)
+            work["notional"] = pd.to_numeric(work.get("quantity"), errors="coerce").fillna(0.0) * pd.to_numeric(work.get("price"), errors="coerce").fillna(0.0)
+            work = work[work["date"] >= (as_of - pd.Timedelta(days=10))].copy()
+            if not work.empty:
+                inst_mask = work["client_name"].str.contains(
+                    r"FUND|MUTUAL|ASSET|CAPITAL|INSURANCE|BANK|FII|DII|TRUST|INVEST",
+                    case=False,
+                    regex=True,
+                    na=False,
+                )
+                work["signed_notional"] = np.where(work["deal_type"].eq("BUY"), 1.0, -1.0) * work["notional"]
+                work["inst_signed_notional"] = np.where(inst_mask, work["signed_notional"], 0.0)
+                grouped = (
+                    work.groupby("nse_ticker", as_index=False)
+                    .agg(
+                        signed_notional=("signed_notional", "sum"),
+                        inst_signed_notional=("inst_signed_notional", "sum"),
+                        latest_date=("date", "max"),
+                        company_name=("company_name", "last"),
+                    )
+                )
+                grouped["score"] = np.tanh(grouped["inst_signed_notional"].abs() / 5.0e8) * np.sign(grouped["inst_signed_notional"])
+                grouped.loc[grouped["score"].abs() < 0.20, "score"] = np.tanh(grouped["signed_notional"].abs() / 8.0e8) * np.sign(grouped["signed_notional"])
+                grouped = grouped.sort_values("score", key=lambda s: s.abs(), ascending=False).head(8)
+                for _, row in grouped.iterrows():
+                    _append_signal(
+                        ticker=row.get("nse_ticker"),
+                        score=float(row.get("score", 0.0) or 0.0),
+                        source="bulk_deals",
+                        event_date=row.get("latest_date"),
+                        headline=f"Institutional bulk flow: {row.get('company_name', row.get('nse_ticker', ''))}",
+                        metadata={"opportunity_type": "Alternative Flow"},
+                    )
+
+        ratings = self._read_alternative_frame(
+            "data/canonical/alternative/credit_ratings_nse_all.parquet",
+            "data/canonical/alternative/credit_ratings_nse_all.csv",
+            "data/processed/alternative/credit_ratings_nse_all.parquet",
+            "data/processed/alternative/credit_ratings_nse_all.csv",
+            "data/processed/alternative/credit_ratings_all.csv",
+        )
+        if not ratings.empty:
+            work = ratings.copy()
+            work["date"] = pd.to_datetime(work.get("date", work.get("DATE OF CREDIT RATING")), errors="coerce", dayfirst=True)
+            work["nse_ticker"] = work.get("nse_ticker", "").astype(str).str.replace(".NS", "", regex=False).str.upper()
+            work["action_type"] = work.get("action_type", work.get("rating_action", "")).astype(str).str.upper()
+            work["outlook"] = work.get("outlook", "").astype(str).str.upper()
+            work["company_name"] = work.get("company_name", "").astype(str)
+            work["new_rating"] = work.get("new_rating", work.get("rating", "")).astype(str)
+            work = work[(work["date"] >= (as_of - pd.Timedelta(days=45))) & work["nse_ticker"].ne("")].copy()
+            if not work.empty:
+                work["score"] = 0.0
+                work.loc[work["action_type"].str.contains("DOWNGRADE|WATCH_NEGATIVE|SUSPEND", na=False), "score"] -= 0.80
+                work.loc[work["action_type"].str.contains("UPGRADE|REVISEUP|POSITIVE", na=False), "score"] += 0.65
+                work.loc[work["outlook"].str.contains("NEGATIVE", na=False), "score"] -= 0.35
+                work.loc[work["outlook"].str.contains("POSITIVE", na=False), "score"] += 0.25
+                work = work[work["score"].abs() >= 0.20].copy()
+                work = work.sort_values(["date", "score"], ascending=[False, False]).groupby("nse_ticker", as_index=False).head(1)
+                for _, row in work.iterrows():
+                    _append_signal(
+                        ticker=row.get("nse_ticker"),
+                        score=float(row.get("score", 0.0) or 0.0),
+                        source="credit_ratings",
+                        event_date=row.get("date"),
+                        headline=f"Credit rating {row.get('action_type', '').strip() or 'update'}: {row.get('company_name', row.get('nse_ticker', ''))}",
+                        metadata={
+                            "opportunity_type": "Alternative Credit",
+                            "rating_action": row.get("action_type"),
+                            "new_rating": row.get("new_rating"),
+                        },
+                    )
+
+        pledge = self._read_alternative_frame(
+            "data/canonical/alternative/promoter_pledge_all.parquet",
+            "data/canonical/alternative/promoter_pledge_all.csv",
+            "data/processed/alternative/promoter_pledge_all.parquet",
+            "data/processed/alternative/promoter_pledge_all.csv",
+        )
+        if not pledge.empty:
+            work = pledge.copy()
+            work["date"] = pd.to_datetime(work.get("date"), errors="coerce")
+            work["nse_ticker"] = work.get("nse_ticker", "").astype(str).str.replace(".NS", "", regex=False).str.upper()
+            work["company_name"] = work.get("company_name", "").astype(str)
+            work["pledge_pct"] = pd.to_numeric(work.get("pledge_pct"), errors="coerce")
+            work = work[(work["date"] >= (as_of - pd.Timedelta(days=450))) & work["nse_ticker"].ne("")].copy()
+            if not work.empty:
+                work = work.sort_values(["nse_ticker", "date"], kind="mergesort")
+                work["pledge_change_1q"] = work.groupby("nse_ticker", sort=False)["pledge_pct"].diff(1)
+                latest = work.groupby("nse_ticker", as_index=False).tail(1).copy()
+                latest["score"] = 0.0
+                latest.loc[latest["pledge_pct"] >= 50.0, "score"] -= 0.95
+                latest.loc[(latest["pledge_pct"] >= 30.0) & (latest["score"] == 0.0), "score"] -= 0.75
+                latest.loc[(latest["pledge_pct"] >= 15.0) & (latest["score"] == 0.0), "score"] -= 0.45
+                latest.loc[latest["pledge_change_1q"] >= 5.0, "score"] -= 0.20
+                latest = latest[latest["score"].abs() >= 0.25].sort_values("score").head(6)
+                for _, row in latest.iterrows():
+                    _append_signal(
+                        ticker=row.get("nse_ticker"),
+                        score=float(row.get("score", 0.0) or 0.0),
+                        source="promoter_pledge",
+                        event_date=row.get("date"),
+                        headline=f"Promoter pledge stress: {row.get('company_name', row.get('nse_ticker', ''))}",
+                        metadata={
+                            "opportunity_type": "Alternative Risk",
+                            "pledge_pct": float(row.get("pledge_pct", 0.0) or 0.0),
+                        },
+                    )
+
+        announcements = self._read_alternative_frame(
+            "data/canonical/alternative/announcements_all.parquet",
+            "data/canonical/alternative/announcements_all.csv",
+            "data/processed/alternative/announcements_all.parquet",
+            "data/processed/alternative/announcements_all.csv",
+        )
+        if not announcements.empty:
+            work = announcements.copy()
+            work["date"] = pd.to_datetime(work.get("date"), errors="coerce")
+            work["nse_ticker"] = work.get("nse_ticker", "").astype(str).str.replace(".NS", "", regex=False).str.upper()
+            work["category"] = work.get("category", "").astype(str).str.upper()
+            work["headline"] = work.get("headline", "").astype(str)
+            work["announcement_text"] = work.get("announcement_text", "").astype(str)
+            work = work[(work["date"] >= (as_of - pd.Timedelta(days=21))) & work["nse_ticker"].ne("")].copy()
+            if not work.empty:
+                work["score"] = 0.0
+                work.loc[work["category"].str.contains("ORDER WIN", na=False), "score"] += 0.60
+                work.loc[work["category"].str.contains("CAPACITY EXPANSION", na=False), "score"] += 0.35
+                work.loc[work["category"].str.contains("ACQUISITION|MERGER", na=False), "score"] += 0.25
+                buy_mask = work["headline"].str.contains(r"\bbuy|purchase|acquire\b", case=False, regex=True, na=False)
+                sell_mask = work["headline"].str.contains(r"\bsell|sale|disposed\b", case=False, regex=True, na=False)
+                work.loc[work["category"].str.contains("INSIDER TRADING", na=False) & buy_mask, "score"] += 0.35
+                work.loc[work["category"].str.contains("INSIDER TRADING", na=False) & sell_mask, "score"] -= 0.35
+                grouped = (
+                    work.groupby("nse_ticker", as_index=False)
+                    .agg(
+                        score=("score", "sum"),
+                        latest_date=("date", "max"),
+                        headline=("headline", "last"),
+                    )
+                )
+                grouped["score"] = grouped["score"].clip(-0.9, 0.9)
+                grouped = grouped[grouped["score"].abs() >= 0.25].sort_values("score", key=lambda s: s.abs(), ascending=False).head(8)
+                for _, row in grouped.iterrows():
+                    _append_signal(
+                        ticker=row.get("nse_ticker"),
+                        score=float(row.get("score", 0.0) or 0.0),
+                        source="announcements",
+                        event_date=row.get("latest_date"),
+                        headline=row.get("headline"),
+                        metadata={"opportunity_type": "Alternative Event"},
+                    )
+
+        if results:
+            logger.info("Added %d alternative-data driven stocks to the options overlay", len(results))
+        return results
+
     def _load_portfolio_overlay_context(self, now: datetime) -> Dict[str, Any]:
         """Build portfolio-aware options context from V3 weekly portfolio artifacts + opportunity surface."""
         sentiment_context = self._load_sentiment_context(now)
@@ -1419,6 +2494,8 @@ class IntegratedOptionsPaperEngine:
                 "option_eligible_holdings": 0,
                 "selected_holdings": 0,
                 "opportunity_surface_stocks": 0,
+                "held_pressure_stocks": 0,
+                "alternative_signal_stocks": 0,
             },
             "sentiment_context": sentiment_context,
         }
@@ -1427,6 +2504,9 @@ class IntegratedOptionsPaperEngine:
             return overlay
 
         weights_path = PROJECT_ROOT / "data/processed/portfolio_weights.parquet"
+        current_holdings_path = PROJECT_ROOT / "data/processed/current_holdings.parquet"
+        current_positions_path = PROJECT_ROOT / "data/portfolio/current_positions.json"
+        watchlist_path = PROJECT_ROOT / "data/processed/portfolio_sentiment_watchlist.json"
         analytics_path = PROJECT_ROOT / "data/processed/portfolio_analytics.json"
         capital_path = PROJECT_ROOT / "data/processed/capital_allocations.json"
         narrative_path = PROJECT_ROOT / "data/reports/narrative_suite_latest.json"
@@ -1435,18 +2515,19 @@ class IntegratedOptionsPaperEngine:
         research_opportunity_path = PROJECT_ROOT / "data/processed/research_opportunity_surface.parquet"
 
         weights_rows: List[Dict[str, Any]] = []
-        if not weights_path.exists():
+        holdings_source = current_holdings_path if current_holdings_path.exists() else weights_path
+        if not holdings_source.exists():
             overlay["status"] = "partial"
-            overlay["warnings"].append(f"missing_weights_file:{weights_path}")
+            overlay["warnings"].append(f"missing_holdings_file:{holdings_source}")
         else:
             try:
-                wdf = pd.read_parquet(weights_path)
+                wdf = pd.read_parquet(holdings_source)
                 if isinstance(wdf, pd.DataFrame) and not wdf.empty:
                     symbol_col = "symbol" if "symbol" in wdf.columns else ("ticker" if "ticker" in wdf.columns else None)
-                    weight_col = next((c for c in ["weight", "final_weight", "allocation", "w"] if c in wdf.columns), None)
+                    weight_col = next((c for c in ["weight", "final_weight", "allocation", "w", "exposure"] if c in wdf.columns), None)
                     if not symbol_col or not weight_col:
                         overlay["status"] = "partial"
-                        overlay["warnings"].append("weights_missing_symbol_or_weight_column")
+                        overlay["warnings"].append("holdings_missing_symbol_or_weight_column")
                     else:
                         for _, row in wdf.iterrows():
                             raw_ticker = str(row.get(symbol_col, "") or "").strip().upper()
@@ -1472,7 +2553,7 @@ class IntegratedOptionsPaperEngine:
                             })
             except Exception as e:
                 overlay["status"] = "partial"
-                overlay["warnings"].append(f"weights_load_error:{e}")
+                overlay["warnings"].append(f"holdings_load_error:{e}")
 
         weights_rows.sort(key=lambda x: float(x.get("weight", 0.0) or 0.0), reverse=True)
         option_rows = [r for r in weights_rows if bool(r.get("option_eligible"))]
@@ -1482,6 +2563,7 @@ class IntegratedOptionsPaperEngine:
         # Load opportunity surface for alpha generation beyond portfolio
         opportunity_stocks: List[Dict[str, Any]] = []
         sentiment_driven_stocks: List[Dict[str, Any]] = []
+        held_pressure_stocks: List[Dict[str, Any]] = []
         opp_frames: List[pd.DataFrame] = []
         if opportunity_path.exists():
             try:
@@ -1565,6 +2647,37 @@ class IntegratedOptionsPaperEngine:
             except Exception as e:
                 overlay["warnings"].append(f"merged_opportunity_surface_load_error:{e}")
                 logger.warning(f"Could not merge opportunity surfaces: {e}")
+
+        watchlist_payload = self._read_json_file(watchlist_path)
+        watch_rows = (
+            watchlist_payload.get("held_positions_under_pressure", [])
+            if isinstance(watchlist_payload, dict)
+            else []
+        )
+        existing_holdings = {str(r.get("symbol", "")).upper() for r in selected_rows}
+        for row in watch_rows[:24] if isinstance(watch_rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            ticker = str(row.get("ticker", "") or row.get("symbol", "")).replace(".NS", "").strip().upper()
+            if not ticker or ticker in existing_holdings:
+                continue
+            stock = self.stock_loader.get_stock(ticker)
+            if not stock:
+                continue
+            held_pressure_stocks.append({
+                "ticker": ticker,
+                "symbol": ticker,
+                "weight": float(row.get("weight", 0.0) or 0.0),
+                "position_role": "held_sentiment_pressure",
+                "industry": stock.sector if stock.sector else row.get("sector"),
+                "option_eligible": True,
+                "instrument_key": stock.instrument_key,
+                "sector": stock.sector or row.get("sector"),
+                "trend_score": float(row.get("impact_score", 0.0) or 0.0),
+                "sentiment_label": str(row.get("sentiment_label", "") or "").lower(),
+                "headline_count": 0,
+            })
+            existing_holdings.add(ticker)
 
         # Add sentiment/event-shock names from NS-USO company intelligence for cross-system coherence.
         sentiment_top = sentiment_context.get("top_trending_companies", []) if isinstance(sentiment_context, dict) else []
@@ -1686,8 +2799,14 @@ class IntegratedOptionsPaperEngine:
                 max(0, len(sentiment_driven_stocks) - pos_count - neg_count),
             )
 
-        # Combine portfolio stocks + opportunity stocks
-        all_selected_rows = selected_rows + opportunity_stocks + sentiment_driven_stocks
+        alt_existing_symbols = {
+            str(r.get("symbol", "")).upper()
+            for r in (selected_rows + held_pressure_stocks + opportunity_stocks + sentiment_driven_stocks)
+        }
+        alternative_signal_stocks = self._load_alternative_signal_stocks(now, alt_existing_symbols)
+
+        # Combine portfolio stocks + held-pressure names + opportunity stocks + sentiment + alternative events
+        all_selected_rows = selected_rows + held_pressure_stocks + opportunity_stocks + sentiment_driven_stocks + alternative_signal_stocks
 
         overlay["weights_summary"] = {
             "total_holdings": int(len(weights_rows)),
@@ -1695,6 +2814,8 @@ class IntegratedOptionsPaperEngine:
             "selected_holdings": int(len(selected_rows)),
             "opportunity_surface_stocks": int(len(opportunity_stocks)),
             "sentiment_driven_stocks": int(len(sentiment_driven_stocks)),
+            "held_pressure_stocks": int(len(held_pressure_stocks)),
+            "alternative_signal_stocks": int(len(alternative_signal_stocks)),
             "total_selected": int(len(all_selected_rows)),
         }
         overlay["selected_stock_underlyings"] = [str(r.get("symbol")) for r in all_selected_rows]
@@ -1704,6 +2825,7 @@ class IntegratedOptionsPaperEngine:
         capital = self._read_json_file(capital_path)
         narrative = self._read_json_file(narrative_path)
         regime_feed = self._read_json_file(regime_path)
+        current_positions_payload = self._read_json_file(current_positions_path)
 
         portfolio_summary = analytics.get("portfolio_summary", {}) if isinstance(analytics.get("portfolio_summary"), dict) else {}
         sector_allocation = analytics.get("sector_allocation", {}) if isinstance(analytics.get("sector_allocation"), dict) else {}
@@ -1719,6 +2841,16 @@ class IntegratedOptionsPaperEngine:
             total_exposure = float(portfolio_summary.get("total_exposure", 0.0) or 0.0)
         except Exception:
             total_exposure = 0.0
+        if (cash_level <= 0.0 and total_exposure <= 0.0) and isinstance(current_positions_payload, dict):
+            try:
+                total_value = float(current_positions_payload.get("total_value", 0.0) or 0.0)
+                invested_value = float(current_positions_payload.get("invested_value", 0.0) or 0.0)
+                cash_value = float(current_positions_payload.get("cash", 0.0) or 0.0)
+                if total_value > 0.0:
+                    total_exposure = invested_value / total_value
+                    cash_level = cash_value / total_value
+            except Exception:
+                pass
         try:
             concentration = float(portfolio_summary.get("largest_position", 0.0) or 0.0)
         except Exception:
@@ -1814,6 +2946,11 @@ class IntegratedOptionsPaperEngine:
             mispricing = float(row.get("mispricing", 0.0) or 0.0)
             sentiment_label = str(row.get("sentiment_label", "") or "").lower()
             trend_score = float(row.get("trend_score", 0.0) or 0.0)
+            raw_alt_source = row.get("alternative_source", "")
+            alt_source = "" if pd.isna(raw_alt_source) else str(raw_alt_source or "").lower()
+            alt_score = float(row.get("alternative_signal_score", 0.0) or 0.0)
+            raw_signal_direction = row.get("signal_direction", "")
+            signal_direction = "" if pd.isna(raw_signal_direction) else str(raw_signal_direction or "").lower()
 
             if role == "sentiment_event":
                 if sentiment_label in {"negative", "very_negative", "bearish", "downside"}:
@@ -1844,6 +2981,29 @@ class IntegratedOptionsPaperEngine:
                 else:
                     objective = "alpha_income"
                     reason = "opportunity_surface_income_tilt"
+            elif role == "alternative_event":
+                if signal_direction == "bearish":
+                    if alt_source in {"credit_ratings", "promoter_pledge"} or abs(alt_score) >= 0.65:
+                        objective = "event_shock_hedge"
+                    else:
+                        objective = "protect_core"
+                    reason = f"alternative_{alt_source or 'event'}_bearish_signal"
+                elif alt_source in {"bulk_deals", "announcements"} and alt_score >= 0.35:
+                    objective = "alpha_momentum"
+                    reason = f"alternative_{alt_source}_bullish_signal"
+                else:
+                    objective = "alpha_income"
+                    reason = f"alternative_{alt_source or 'event'}_carry_overlay"
+            elif role == "held_sentiment_pressure":
+                if sentiment_label in {"negative", "very_negative", "bearish", "downside"} or trend_score <= -0.20:
+                    objective = "event_shock_hedge"
+                    reason = "held_name_negative_sentiment_pressure"
+                elif sentiment_label in {"positive", "very_positive", "bullish", "upside"} or trend_score >= 0.25:
+                    objective = "alpha_momentum"
+                    reason = "held_name_positive_sentiment_pressure"
+                else:
+                    objective = "protect_core"
+                    reason = "held_name_under_live_sentiment_watch"
             elif hedge_priority_mode and weight >= 0.010:
                 objective = "protect_core"
                 reason = "hedge_priority_for_weighted_core_holding"
@@ -1879,8 +3039,19 @@ class IntegratedOptionsPaperEngine:
                 "position_role": role or None,
                 "confirmation": confirmation if role == "opportunity_alpha" else None,
                 "mispricing": mispricing if role == "opportunity_alpha" else None,
-                "trend_score": trend_score if role == "sentiment_event" else None,
-                "sentiment_label": sentiment_label if role == "sentiment_event" else None,
+                "trend_score": trend_score if role in {"sentiment_event", "held_sentiment_pressure"} else None,
+                "sentiment_label": sentiment_label if role in {"sentiment_event", "held_sentiment_pressure"} else None,
+                "alternative_source": alt_source if role == "alternative_event" else None,
+                "alternative_signal_score": alt_score if role == "alternative_event" else None,
+                "priority_score": (
+                    2.0 if objective in HEDGE_OBJECTIVES else
+                    1.5 if role == "held_sentiment_pressure" else
+                    1.25 if role == "sentiment_event" else
+                    1.10 if role == "alternative_event" else
+                    1.0 if role == "opportunity_alpha" else
+                    0.5
+                ),
+                "signal_direction": signal_direction if role in {"alternative_event", "opportunity_alpha"} else None,
             })
 
         base_indices = [u for u in self.underlyings if u in INDEX_UNDERLYINGS or u in sector_index_underlyings]
@@ -1936,37 +3107,28 @@ class IntegratedOptionsPaperEngine:
             or str((narrative.get("five_layer_narrative", {}) or {}).get("why_happening", "") or "").strip()
         )
 
-        try:
-            max_dynamic_underlyings = int(
-                os.getenv(
-                    "OPTIONS_MAX_DYNAMIC_UNDERLYINGS",
-                    str(PORTFOLIO_OVERLAY_DEFAULT_MAX_DYNAMIC_UNDERLYINGS),
-                )
-            )
-        except Exception:
-            max_dynamic_underlyings = PORTFOLIO_OVERLAY_DEFAULT_MAX_DYNAMIC_UNDERLYINGS
-        max_dynamic_underlyings = max(max(6, len(self.underlyings)), max_dynamic_underlyings)
+        max_dynamic_underlyings = self._portfolio_overlay_dynamic_target()
 
         dynamic_underlyings: List[str] = []
         for sym in [*weekly_hedge_targets, *base_indices, *self.underlyings]:
             if sym and sym not in dynamic_underlyings:
                 dynamic_underlyings.append(sym)
+        ranked_stock_rows = sorted(
+            stock_rows,
+            key=lambda r: (
+                float(r.get("priority_score", 0.0) or 0.0),
+                float(abs(r.get("weight", 0.0) or 0.0)),
+                float(abs(r.get("trend_score", 0.0) or 0.0)),
+                float(abs(r.get("alternative_signal_score", 0.0) or 0.0)),
+            ),
+            reverse=True,
+        )
         if len(dynamic_underlyings) < max_dynamic_underlyings:
-            ranked_stock_rows = sorted(
-                stock_rows,
-                key=lambda r: (
-                    float(r.get("weight", 0.0) or 0.0),
-                    1.0 if str(r.get("objective", "")).strip().lower() in HEDGE_OBJECTIVES else 0.0,
-                ),
-                reverse=True,
+            dynamic_underlyings = self._broaden_dynamic_underlyings(
+                dynamic_underlyings,
+                ranked_stock_rows,
+                max_dynamic_underlyings,
             )
-            for row in ranked_stock_rows:
-                sym = str(row.get("symbol", "") or "").strip().upper()
-                if not sym or sym in dynamic_underlyings:
-                    continue
-                dynamic_underlyings.append(sym)
-                if len(dynamic_underlyings) >= max_dynamic_underlyings:
-                    break
         if dynamic_underlyings:
             resolved = [u for u in dynamic_underlyings if self._resolve_key(u)]
             dynamic_underlyings = resolved if resolved else dynamic_underlyings
@@ -1976,6 +3138,7 @@ class IntegratedOptionsPaperEngine:
             "weekly_rationale": weekly_rationale,
             "portfolio_objective": portfolio_objective,
             "hedge_intensity": hedge_intensity,
+            "explicit_hedge_mode": bool(self._explicit_hedge_mode_enabled()),
             "risk_on_probability": risk_on_probability,
             "cash_level": cash_level,
             "total_exposure": total_exposure,
@@ -1995,14 +3158,82 @@ class IntegratedOptionsPaperEngine:
             "index_objectives": index_objectives,
             "dynamic_underlyings": dynamic_underlyings or list(self.underlyings),
         })
-        return overlay
+        intelligence_state = self._load_intelligence_state()
+        return self._apply_market_intelligence_overlay(overlay, intelligence_state)
 
     def _resolve_cycle_underlyings(self, overlay: Dict[str, Any]) -> List[str]:
+        def _sentiment_target_order(
+            candidate_map: Dict[str, List[str]],
+            universe: List[str],
+            overlay_payload: Optional[Dict[str, Any]],
+        ) -> List[str]:
+            market_signal = self._load_market_sentiment_signal(_now_ist(), overlay_payload)
+            effective_signal = float(
+                market_signal.get(
+                    "effective_global_risk_sentiment",
+                    market_signal.get("global_risk_sentiment", 0.0),
+                )
+                or 0.0
+            )
+
+            if bool(market_signal.get("sentiment_crisis_detected")) or effective_signal <= -0.5:
+                selection_mode = "put_priority"
+                ordered = list(candidate_map.get("put_candidates", []) or [])
+            elif effective_signal >= 0.5:
+                selection_mode = "call_priority"
+                ordered = list(candidate_map.get("call_candidates", []) or [])
+            else:
+                selection_mode = "straddle_priority"
+                ordered = list(candidate_map.get("straddle_candidates", []) or [])
+            ranked_universe = list(candidate_map.get("ranked_universe", []) or [])
+            execution_candidates = list(candidate_map.get("execution_candidates", []) or [])
+            signal_scores = dict(candidate_map.get("signal_scores", {}) or {})
+            fallback_order = ranked_universe or list(universe)
+
+            if isinstance(overlay_payload, dict):
+                overlay_payload["sentiment_targeting"] = {
+                    "selection_mode": selection_mode,
+                    "market_signal": dict(market_signal),
+                    "call_candidates": list(candidate_map.get("call_candidates", []) or []),
+                    "put_candidates": list(candidate_map.get("put_candidates", []) or []),
+                    "straddle_candidates": list(candidate_map.get("straddle_candidates", []) or []),
+                    "ranked_universe": ranked_universe,
+                    "execution_candidates": execution_candidates,
+                    "signal_scores": signal_scores,
+                }
+                self._augment_overlay_with_sentiment_plan(
+                    overlay_payload,
+                    candidate_map,
+                    len(universe),
+                )
+
+            logger.info(
+                "Sentiment-targeted cycle universe mode=%s effective_signal=%.3f crisis=%s top=%s execution=%s",
+                selection_mode,
+                effective_signal,
+                bool(market_signal.get("sentiment_crisis_detected")),
+                ordered[: min(6, len(ordered))],
+                execution_candidates[: min(6, len(execution_candidates))],
+            )
+            return (ordered or fallback_order)[: len(universe)] if universe else fallback_order
+
         if not self.portfolio_overlay_enabled:
-            return list(self.underlyings)
+            universe = list(self.underlyings)
+            candidate_map = self.get_sentiment_ranked_underlyings(
+                universe,
+                _now_ist(),
+                top_n=len(universe),
+            )
+            return _sentiment_target_order(candidate_map, universe, overlay if isinstance(overlay, dict) else {})
         dynamic = overlay.get("dynamic_underlyings", [])
         if not isinstance(dynamic, list):
-            return list(self.underlyings)
+            universe = list(self.underlyings)
+            candidate_map = self.get_sentiment_ranked_underlyings(
+                universe,
+                _now_ist(),
+                top_n=len(universe),
+            )
+            return _sentiment_target_order(candidate_map, universe, overlay if isinstance(overlay, dict) else {})
         generic_tokens = {"NSE", "NSE_EQ", "NSE_FO", "NFO", "BSE", "BSE_EQ", "BSE_FO", "NSE_INDEX"}
         resolved = []
         for u in dynamic:
@@ -2011,7 +3242,357 @@ class IntegratedOptionsPaperEngine:
                 continue
             if self._resolve_key(sym):
                 resolved.append(sym)
-        return resolved or list(self.underlyings)
+        universe = resolved or list(self.underlyings)
+        candidate_map = self.get_sentiment_ranked_underlyings(
+            universe,
+            _now_ist(),
+            top_n=len(universe),
+        )
+        return _sentiment_target_order(candidate_map, universe, overlay)
+
+    @staticmethod
+    def _ordered_unique_underlyings(symbols: List[str]) -> List[str]:
+        ordered: List[str] = []
+        for raw in symbols or []:
+            sym = str(raw or "").strip().upper()
+            if sym and sym not in ordered:
+                ordered.append(sym)
+        return ordered
+
+    def _load_market_sentiment_signal(
+        self,
+        as_of_date: datetime,
+        overlay: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        as_of_ts = pd.Timestamp(as_of_date)
+        if as_of_ts.tzinfo is not None:
+            as_of_ts = as_of_ts.tz_localize(None)
+
+        signal: Dict[str, Any] = {
+            "source": "",
+            "source_timestamp": None,
+            "india_market_polarity": 0.0,
+            "global_risk_sentiment": 0.0,
+            "effective_global_risk_sentiment": 0.0,
+            "overlay_sentiment_bias": 0.0,
+            "overlay_alert_level": "normal",
+            "overlay_event_shock_score": 0.0,
+            "sentiment_crisis_detected": False,
+        }
+
+        unified_state_path = PROJECT_ROOT / "data" / "state" / "unified_state.json"
+        if unified_state_path.exists():
+            try:
+                payload = json.loads(unified_state_path.read_text(encoding="utf-8"))
+                sentiment_state = (
+                    (payload.get("sentiment_state") or payload.get("sentiment") or {})
+                    if isinstance(payload, dict)
+                    else {}
+                )
+                if isinstance(sentiment_state, dict) and sentiment_state:
+                    raw_global = sentiment_state.get("global_risk_sentiment")
+                    if raw_global is None:
+                        zscore = pd.to_numeric(sentiment_state.get("market_sentiment_zscore"), errors="coerce")
+                        if pd.notna(zscore):
+                            raw_global = float(np.clip(float(zscore) / 2.0, -1.0, 1.0))
+                    raw_india = sentiment_state.get("india_market_polarity", raw_global)
+                    if raw_global is not None:
+                        parsed_global = pd.to_numeric(raw_global, errors="coerce")
+                        if pd.notna(parsed_global):
+                            signal["global_risk_sentiment"] = float(parsed_global)
+                            signal["effective_global_risk_sentiment"] = signal["global_risk_sentiment"]
+                            signal["source"] = "unified_state"
+                    if raw_india is not None:
+                        parsed_india = pd.to_numeric(raw_india, errors="coerce")
+                        if pd.notna(parsed_india):
+                            signal["india_market_polarity"] = float(parsed_india)
+                    signal["source_timestamp"] = (
+                        sentiment_state.get("last_updated")
+                        or payload.get("checkpoint_time")
+                        or payload.get("last_updated")
+                    )
+                    signal["sentiment_crisis_detected"] = bool(
+                        sentiment_state.get("sentiment_crisis_signal", False)
+                    )
+            except Exception as exc:
+                logger.warning("Could not read unified sentiment state for options targeting: %s", exc)
+
+        market_path = PROJECT_ROOT / "data" / "canonical" / "sentiment" / "market_sentiment_daily.parquet"
+        if market_path.exists():
+            try:
+                market_df = pd.read_parquet(market_path)
+                if isinstance(market_df, pd.DataFrame) and not market_df.empty:
+                    market_df = market_df.copy()
+                    market_df["date"] = pd.to_datetime(market_df.get("date"), errors="coerce")
+                    if "availability_date" in market_df.columns:
+                        market_df["availability_date"] = pd.to_datetime(
+                            market_df.get("availability_date"),
+                            errors="coerce",
+                        )
+                        market_df = market_df[market_df["availability_date"] <= as_of_ts]
+                    market_df = market_df[market_df["date"] <= as_of_ts]
+                    if not market_df.empty:
+                        market_df = market_df.sort_values("date")
+                        last_row = market_df.iloc[-1]
+                        canonical_global_raw = pd.to_numeric(
+                            last_row.get(
+                                "global_risk_sentiment",
+                                last_row.get("india_market_polarity", 0.0),
+                            ),
+                            errors="coerce",
+                        )
+                        canonical_global = float(canonical_global_raw) if pd.notna(canonical_global_raw) else 0.0
+                        canonical_india_raw = pd.to_numeric(
+                            last_row.get("india_market_polarity", canonical_global),
+                            errors="coerce",
+                        )
+                        canonical_india = (
+                            float(canonical_india_raw)
+                            if pd.notna(canonical_india_raw)
+                            else canonical_global
+                        )
+                        signal.update(
+                            {
+                                "source": "canonical_market_sentiment",
+                                "source_timestamp": pd.Timestamp(last_row.get("date")).isoformat()
+                                if pd.notna(last_row.get("date"))
+                                else signal.get("source_timestamp"),
+                                "india_market_polarity": canonical_india,
+                                "global_risk_sentiment": canonical_global,
+                                "effective_global_risk_sentiment": canonical_global,
+                                "sentiment_crisis_detected": bool(
+                                    signal.get("sentiment_crisis_detected", False)
+                                    or canonical_india <= -0.6
+                                    or canonical_global <= -0.8
+                                ),
+                            }
+                        )
+            except Exception as exc:
+                logger.warning("Could not read canonical market sentiment for options targeting: %s", exc)
+
+        overlay_sentiment = self._overlay_sentiment(overlay if isinstance(overlay, dict) else {})
+        overlay_bias_raw = pd.to_numeric(
+            overlay_sentiment.get("sentiment_bias", overlay_sentiment.get("polarity", 0.0)),
+            errors="coerce",
+        )
+        overlay_bias = float(overlay_bias_raw) if pd.notna(overlay_bias_raw) else 0.0
+        overlay_alert = str(overlay_sentiment.get("alert_level", "normal") or "normal").strip().lower()
+        overlay_event_shock_raw = pd.to_numeric(
+            overlay_sentiment.get("event_shock_score", 0.0),
+            errors="coerce",
+        )
+        overlay_event_shock = (
+            float(overlay_event_shock_raw) if pd.notna(overlay_event_shock_raw) else 0.0
+        )
+        signal["overlay_sentiment_bias"] = overlay_bias
+        signal["overlay_alert_level"] = overlay_alert
+        signal["overlay_event_shock_score"] = overlay_event_shock
+        if abs(overlay_bias) > abs(float(signal.get("effective_global_risk_sentiment", 0.0) or 0.0)):
+            signal["effective_global_risk_sentiment"] = overlay_bias
+        if abs(float(signal.get("india_market_polarity", 0.0) or 0.0)) < abs(overlay_bias):
+            signal["india_market_polarity"] = overlay_bias
+
+        signal["sentiment_crisis_detected"] = bool(
+            signal.get("sentiment_crisis_detected", False)
+            or float(signal.get("india_market_polarity", 0.0) or 0.0) <= -0.6
+            or float(signal.get("effective_global_risk_sentiment", 0.0) or 0.0) <= -0.8
+            or overlay_alert in {"high", "critical"}
+            or overlay_event_shock >= 0.90
+        )
+        return signal
+
+    def get_sentiment_ranked_underlyings(
+        self,
+        universe: List[str],
+        as_of_date: datetime,
+        top_n: int = 10,
+    ) -> Dict[str, Any]:
+        """Bucket underlyings into bullish, bearish, and volatility targets using exact ticker sentiment."""
+        if not universe:
+            return {
+                "call_candidates": [],
+                "put_candidates": [],
+                "straddle_candidates": [],
+                "ranked_universe": [],
+                "execution_candidates": [],
+                "signal_scores": {},
+            }
+
+        normalized_universe = self._ordered_unique_underlyings(universe)
+        fallback = normalized_universe[:top_n]
+        out: Dict[str, Any] = {
+            "call_candidates": list(fallback),
+            "put_candidates": list(fallback),
+            "straddle_candidates": list(fallback),
+            "ranked_universe": list(fallback),
+            "execution_candidates": [],
+            "signal_scores": {},
+        }
+
+        try:
+            exact_snapshot = self._load_exact_sentiment_snapshot(normalized_universe, as_of_date)
+            if exact_snapshot.empty:
+                return out
+
+            has_signal_data = bool(
+                (
+                    pd.to_numeric(exact_snapshot.get("execution_priority"), errors="coerce").fillna(0.0) > 0.0
+                ).any()
+                or (
+                    pd.to_numeric(exact_snapshot.get("abs_exact_sentiment"), errors="coerce").fillna(0.0) > 0.0
+                ).any()
+            )
+            if not has_signal_data:
+                logger.warning("Exact sentiment data unavailable; using unranked underlying universe")
+                return out
+
+            ranked_rows = exact_snapshot.sort_values(
+                ["execution_priority", "abs_exact_sentiment", "headline_count"],
+                ascending=[False, False, False],
+                kind="mergesort",
+            )
+            positive = ranked_rows[
+                pd.to_numeric(ranked_rows["exact_sentiment_signal"], errors="coerce").fillna(0.0)
+                >= DEFAULT_SENTIMENT_EXECUTION_MIN_SCORE
+            ].sort_values(
+                ["exact_sentiment_signal", "execution_priority", "headline_count"],
+                ascending=[False, False, False],
+                kind="mergesort",
+            )["underlying"].tolist()
+            negative = ranked_rows[
+                pd.to_numeric(ranked_rows["exact_sentiment_signal"], errors="coerce").fillna(0.0)
+                <= -DEFAULT_SENTIMENT_EXECUTION_MIN_SCORE
+            ].sort_values(
+                ["exact_sentiment_signal", "execution_priority", "headline_count"],
+                ascending=[True, False, False],
+                kind="mergesort",
+            )["underlying"].tolist()
+            volatile = ranked_rows["underlying"].tolist()
+
+            index_priority = [
+                sym for sym in normalized_universe
+                if sym in {"NIFTY", "BANKNIFTY"}
+            ]
+            residual = [
+                sym for sym in normalized_universe
+                if sym not in set([*volatile, *index_priority])
+            ]
+            execution_candidate_count = self._sentiment_execution_candidate_count(len(normalized_universe))
+            execution_candidates = volatile[:execution_candidate_count]
+
+            signal_scores: Dict[str, Dict[str, Any]] = {}
+            for rank, row in enumerate(ranked_rows.to_dict("records"), start=1):
+                underlying = str(row.get("underlying", "") or "").strip().upper()
+                if not underlying:
+                    continue
+                signal_scores[underlying] = {
+                    "exact_sentiment_signal": float(row.get("exact_sentiment_signal", 0.0) or 0.0),
+                    "execution_priority": float(row.get("execution_priority", 0.0) or 0.0),
+                    "daily_sentiment_signal": float(row.get("daily_sentiment_signal", 0.0) or 0.0),
+                    "intraday_sentiment_signal": float(row.get("intraday_sentiment_signal", 0.0) or 0.0),
+                    "daily_sentiment_polarity": float(row.get("daily_sentiment_polarity", 0.0) or 0.0),
+                    "daily_sentiment_conviction": float(row.get("daily_sentiment_conviction", 0.0) or 0.0),
+                    "trend_score": float(row.get("trend_score", 0.0) or 0.0),
+                    "event_shock_factor": float(row.get("event_shock_factor", 0.0) or 0.0),
+                    "headline_count": int(float(row.get("headline_count", 0.0) or 0.0)),
+                    "market_moving_count": float(row.get("market_moving_count", 0.0) or 0.0),
+                    "sentiment_label": str(row.get("sentiment_label", "neutral") or "neutral").lower(),
+                    "sentiment_sign": int(float(row.get("sentiment_sign", 0.0) or 0.0)),
+                    "dominant_event_direction": str(row.get("dominant_event_direction", "neutral") or "neutral").lower(),
+                    "execution_candidate_rank": int(rank),
+                }
+
+            out = {
+                "call_candidates": self._ordered_unique_underlyings(
+                    [*positive, *volatile, *index_priority, *residual, *normalized_universe]
+                )[:top_n],
+                "put_candidates": self._ordered_unique_underlyings(
+                    [*index_priority, *negative, *volatile, *residual, *normalized_universe]
+                )[:top_n],
+                "straddle_candidates": self._ordered_unique_underlyings(
+                    [*index_priority, *volatile, *negative, *positive, *residual, *normalized_universe]
+                )[:top_n],
+                "ranked_universe": self._ordered_unique_underlyings(
+                    [*volatile, *negative, *positive, *index_priority, *residual, *normalized_universe]
+                )[:top_n],
+                "execution_candidates": list(execution_candidates),
+                "signal_scores": signal_scores,
+            }
+            logger.info(
+                "Exact-sentiment candidate buckets prepared: calls=%s puts=%s straddles=%s execution=%s",
+                out["call_candidates"][: min(5, len(out["call_candidates"]))],
+                out["put_candidates"][: min(5, len(out["put_candidates"]))],
+                out["straddle_candidates"][: min(5, len(out["straddle_candidates"]))],
+                out["execution_candidates"][: min(5, len(out["execution_candidates"]))],
+            )
+            return out
+        except Exception as exc:
+            logger.warning("Sentiment ranking failed: %s", exc)
+            return out
+
+    def _sentiment_crisis_override_active(
+        self,
+        underlying: str,
+        overlay: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        normalized = self._normalize_underlying_symbol(underlying)
+        if normalized not in {"NIFTY", "BANKNIFTY"}:
+            return False
+        targeting = overlay.get("sentiment_targeting", {}) if isinstance(overlay, dict) else {}
+        market_signal = targeting.get("market_signal", {}) if isinstance(targeting, dict) else {}
+        if not isinstance(market_signal, dict) or not market_signal:
+            market_signal = self._load_market_sentiment_signal(_now_ist(), overlay)
+        return bool(market_signal.get("sentiment_crisis_detected", False))
+
+    def _should_bypass_alpha_os_strategy_gate(
+        self,
+        underlying: str,
+        strategy_type: str,
+        overlay: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        return bool(
+            str(strategy_type or "").strip().lower() == "bear_put_spread"
+            and self._sentiment_crisis_override_active(
+                underlying,
+                overlay if isinstance(overlay, dict) else self.portfolio_overlay,
+            )
+        )
+
+    def _hot_load_strategy(self, strategy_name: str) -> None:
+        """Compatibility hook for operator-driven strategy hot loading."""
+        logger.info("Hot-load requested for strategy '%s' but dynamic loading is not implemented", strategy_name)
+
+    def _hot_unload_strategy(self, strategy_name: str) -> None:
+        """Compatibility hook for operator-driven strategy hot unloading."""
+        logger.info("Hot-unload requested for strategy '%s' but dynamic unloading is not implemented", strategy_name)
+
+    def _check_hot_reload_signals(self) -> Dict[str, Any]:
+        """
+        Check for optional hot-reload instructions on the canonical engine surface.
+        """
+        signal_path = self.options_live_dir / "strategy_hot_reload.json"
+        if not signal_path.exists():
+            return {"available": False, "actions": []}
+
+        try:
+            payload = json.loads(signal_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            logger.warning("Ignoring unreadable hot-reload payload: %s", exc)
+            return {"available": False, "error": str(exc), "actions": []}
+
+        actions = payload.get("actions") or []
+        for action in actions:
+            if not isinstance(action, dict):
+                continue
+            strategy_name = str(action.get("strategy") or "").strip()
+            if not strategy_name:
+                continue
+            op = str(action.get("op") or "").strip().lower()
+            if op == "load":
+                self._hot_load_strategy(strategy_name)
+            elif op == "unload":
+                self._hot_unload_strategy(strategy_name)
+        return {"available": True, "actions": actions}
 
     def _objective_for_underlying(self, underlying: str, overlay: Dict[str, Any]) -> Dict[str, Any]:
         default = {"objective": "balanced_overlay", "reason": "default_objective", "weight": None}
@@ -2036,6 +3617,170 @@ class IntegratedOptionsPaperEngine:
                     "weight": float(stock_meta.get("weight", 0.0) or 0.0),
                 }
         return default
+
+    @staticmethod
+    def _prs_option_symbol(underlying: str, proposal_id: str) -> str:
+        return f"OPT::{str(underlying or '').strip().upper()}::{str(proposal_id or '').strip().upper()}"
+
+    def _prs_sector_for_underlying(self, underlying: str, objective_ctx: Optional[Dict[str, Any]] = None) -> str:
+        normalized = self._normalize_underlying_symbol(underlying)
+        if not normalized:
+            return ""
+        if normalized in BROADER_INDEX_UNDERLYINGS:
+            return ""
+        mapped_sector = UNDERLYING_TO_SECTOR.get(normalized)
+        if mapped_sector:
+            return mapped_sector
+        try:
+            stock = self.stock_loader.get_stock(normalized)
+        except Exception:
+            stock = None
+        if stock and getattr(stock, "sector", None):
+            return str(stock.sector).strip().lower()
+        if isinstance(objective_ctx, dict):
+            return str(objective_ctx.get("sector", "") or "").strip().lower()
+        return ""
+
+    def _dominant_sector_hint(self) -> str:
+        if not isinstance(self.portfolio_overlay, dict):
+            return ""
+        dominant = self.portfolio_overlay.get("dominant_sector", {})
+        if isinstance(dominant, dict):
+            return str(dominant.get("name", "") or "").strip().lower()
+        return str(dominant or "").strip().lower()
+
+    def _get_current_equity_positions(self) -> Dict[str, Dict[str, Any]]:
+        """Load current equity positions for hedge sizing from live books."""
+        current_positions_path = PROJECT_ROOT / "data/portfolio/current_positions.json"
+        portfolio_path = PROJECT_ROOT / "data/processed/portfolio_weights.parquet"
+
+        if current_positions_path.exists():
+            try:
+                payload = json.loads(current_positions_path.read_text(encoding="utf-8"))
+                positions = payload.get("positions", {}) if isinstance(payload, dict) else {}
+                if isinstance(positions, dict):
+                    normalized: Dict[str, Dict[str, Any]] = {}
+                    for symbol, raw in positions.items():
+                        row = dict(raw or {})
+                        normalized_symbol = str(symbol or "").strip().upper()
+                        if not normalized_symbol:
+                            continue
+                        row["symbol"] = normalized_symbol
+                        row["weight"] = float(pd.to_numeric(row.get("weight"), errors="coerce") or 0.0)
+                        row["market_value"] = float(pd.to_numeric(row.get("market_value"), errors="coerce") or 0.0)
+                        normalized[normalized_symbol] = row
+                    if normalized:
+                        return normalized
+            except Exception as exc:
+                logger.warning("Could not read runtime equity positions: %s", exc)
+
+        if portfolio_path.exists():
+            try:
+                df = pd.read_parquet(portfolio_path)
+                if isinstance(df, pd.DataFrame) and not df.empty:
+                    symbol_col = "ticker" if "ticker" in df.columns else ("symbol" if "symbol" in df.columns else None)
+                    weight_col = next(
+                        (c for c in ["weight", "final_weight", "allocation", "w", "exposure"] if c in df.columns),
+                        None,
+                    )
+                    if symbol_col and weight_col:
+                        normalized = {}
+                        for _, row in df.iterrows():
+                            symbol = str(row.get(symbol_col, "") or "").replace(".NS", "").strip().upper()
+                            if not symbol:
+                                continue
+                            normalized[symbol] = {
+                                "symbol": symbol,
+                                "weight": float(pd.to_numeric(row.get(weight_col), errors="coerce") or 0.0),
+                                "market_value": float(pd.to_numeric(row.get("market_value"), errors="coerce") or 0.0),
+                                "sector": str(row.get("Industry", "") or "").strip() or None,
+                            }
+                        if normalized:
+                            return normalized
+            except Exception as exc:
+                logger.warning("Could not read portfolio weights for hedge sizing: %s", exc)
+
+        logger.warning("No equity position source found; hedge sizing will be approximate")
+        return {}
+
+    def _hedging_state_for_underlying(self, underlying: str, objective: str) -> Dict[str, Any]:
+        objective_key = str(objective or "").strip().lower()
+        ranked: List[Dict[str, Any]] = []
+        for symbol, raw in self._get_current_equity_positions().items():
+            row = dict(raw or {})
+            row["symbol"] = str(symbol or "").strip().upper()
+            row["weight"] = float(row.get("weight", 0.0) or 0.0)
+            row["market_value"] = float(row.get("market_value", 0.0) or 0.0)
+            ranked.append(row)
+        ranked.sort(key=lambda row: (float(row.get("weight", 0.0) or 0.0), float(row.get("market_value", 0.0) or 0.0)), reverse=True)
+
+        protected_rows: List[Dict[str, Any]] = []
+        normalized_underlying = str(underlying or "").strip().upper()
+        if normalized_underlying and any(str(row.get("symbol", "") or "").upper() == normalized_underlying for row in ranked):
+            protected_rows = [
+                row for row in ranked
+                if str(row.get("symbol", "") or "").upper() == normalized_underlying
+            ][:1]
+        elif normalized_underlying in {"BANKNIFTY", "FINNIFTY"}:
+            protected_rows = [
+                row for row in ranked
+                if "financial" in str(row.get("sector", "") or "").strip().lower()
+                or "bank" in str(row.get("symbol", "") or "").strip().lower()
+            ][:12]
+        elif objective_key in HEDGE_OBJECTIVES or normalized_underlying in INDEX_UNDERLYINGS:
+            protected_rows = ranked[:12]
+
+        protected_symbols = [str(row.get("symbol", "") or "").strip().upper() for row in protected_rows if str(row.get("symbol", "") or "").strip()]
+        protected_weight = sum(float(row.get("weight", 0.0) or 0.0) for row in protected_rows)
+        protected_market_value = sum(float(row.get("market_value", 0.0) or 0.0) for row in protected_rows)
+        return {
+            "objective": objective_key,
+            "underlying_symbol": normalized_underlying,
+            "portfolio_objective": str((self.portfolio_overlay or {}).get("portfolio_objective", "") or ""),
+            "hedge_intensity": float((self.portfolio_overlay or {}).get("hedge_intensity", 0.0) or 0.0),
+            "protected_symbols": protected_symbols,
+            "protected_symbols_count": int(len(protected_symbols)),
+            "protected_weight": float(protected_weight),
+            "protected_market_value": float(protected_market_value),
+            "weekly_hedge_targets": list((self.portfolio_overlay or {}).get("weekly_hedge_targets", []) or []),
+        }
+
+    def _repair_position_metadata(self, position: Position) -> None:
+        metadata = dict(getattr(position, "metadata", {}) or {})
+        underlying = self._normalize_underlying_symbol(
+            getattr(position, "underlying", ""),
+            fallback=str(metadata.get("underlying_symbol", "") or ""),
+        )
+        objective_ctx = self._objective_for_underlying(underlying, self.portfolio_overlay)
+        inferred_objective = str(
+            metadata.get("objective")
+            or objective_ctx.get("objective")
+            or ("hedge_convexity" if underlying in INDEX_UNDERLYINGS else "alpha_momentum")
+        ).strip()
+        prs_position_key = str(metadata.get("prs_position_key") or position.position_id or "").strip()
+        prs_symbol = str(metadata.get("prs_symbol") or "").strip()
+        if not prs_symbol and prs_position_key:
+            if prs_position_key == str(position.position_id or "").strip():
+                prs_symbol = f"OPT::{prs_position_key}"
+            else:
+                prs_symbol = self._prs_option_symbol(underlying, prs_position_key)
+        prs_symbol = prs_symbol.upper()
+        hedging_state = metadata.get("hedging_state")
+        if not isinstance(hedging_state, dict) or not hedging_state:
+            hedging_state = self._hedging_state_for_underlying(underlying, inferred_objective)
+        metadata.update(
+            {
+                "prs_symbol": prs_symbol,
+                "prs_position_key": prs_position_key,
+                "underlying_symbol": underlying,
+                "objective": inferred_objective,
+                "reason": str(metadata.get("reason") or objective_ctx.get("reason") or ""),
+                "hedging_state": dict(hedging_state or {}),
+                "sector": self._prs_sector_for_underlying(underlying, objective_ctx),
+            }
+        )
+        position.underlying = underlying
+        position.metadata = metadata
 
     @staticmethod
     def _overlay_sentiment(overlay: Dict[str, Any]) -> Dict[str, Any]:
@@ -2479,31 +4224,28 @@ class IntegratedOptionsPaperEngine:
         strategy: OptionStrategy,
         objective: str,
         overlay: Dict[str, Any],
+        liquidity_snapshot: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, float]:
         expected_gross = self._estimate_expected_gross_pnl(strategy, objective=objective, overlay=overlay)
+        slippage_bps = 0.0
+        if isinstance(liquidity_snapshot, dict):
+            slippage_bps = float(
+                liquidity_snapshot.get("estimated_slippage_bps", liquidity_snapshot.get("spread_bps", 0.0)) or 0.0
+            )
 
-        turnover = 0.0
-        buy_turnover = 0.0
-        for leg in strategy.legs:
-            premium = max(0.0, float(getattr(leg, "premium", 0.0) or 0.0))
-            qty = max(1.0, float(getattr(leg, "quantity", 1) or 1))
-            notional = premium * qty
-            turnover += notional
-            if str(getattr(leg, "action", "")).strip().upper() == "BUY":
-                buy_turnover += notional
-
-        costs_cfg = self.config.costs
-        tax_cfg = self.config.tax
-        brokerage = float(costs_cfg.brokerage_per_leg) * len(strategy.legs) * 2.0
-        exchange = turnover * float(costs_cfg.exchange_charges_pct) * 2.0
-        sebi = (turnover * 2.0 / 10_000_000.0) * float(costs_cfg.sebi_charges_per_crore)
-        stamp = buy_turnover * float(costs_cfg.stamp_duty_pct)
-        gst = (brokerage + exchange) * float(costs_cfg.gst_pct)
-        total_costs = brokerage + exchange + sebi + stamp + gst
-        tax = expected_gross * float(tax_cfg.rate) if expected_gross > 0 else 0.0
-        expected_net = expected_gross - total_costs - tax
+        economics = self.pnl_tracker.estimate_trade_economics(
+            legs=strategy.legs,
+            expected_gross_pnl=expected_gross,
+            max_loss=float(abs(strategy.max_loss or 0.0)),
+            slippage_bps=slippage_bps,
+        )
+        direct_costs = economics.get("costs")
+        total_costs = float(getattr(direct_costs, "total", 0.0) or 0.0)
+        slippage_cost = float(economics.get("slippage_cost", 0.0) or 0.0)
+        expected_net = float(economics.get("expected_net_pnl", 0.0) or 0.0)
+        tax = float(economics.get("expected_tax", 0.0) or 0.0)
         objective_key = str(objective or "").strip().lower()
-        threshold_multiplier = float(tax_cfg.min_profitability_multiplier)
+        threshold_multiplier = float(self.config.tax.min_profitability_multiplier)
         if not self._is_short_vol_strategy(strategy):
             # Long-vol/debit strategies incur larger explicit costs for similar notional.
             # Keeping the same strict cost-multiple gate can reject the whole universe.
@@ -2512,16 +4254,21 @@ class IntegratedOptionsPaperEngine:
                 threshold_multiplier = min(threshold_multiplier, 0.30)
         min_threshold = max(
             MIN_NET_EXPECTANCY_INR,
-            total_costs * threshold_multiplier,
+            (total_costs + slippage_cost) * threshold_multiplier,
         )
 
         return {
             "expected_gross_pnl": float(expected_gross),
             "expected_total_costs": float(total_costs),
+            "expected_slippage_cost": float(slippage_cost),
+            "expected_slippage_bps": float(max(0.0, slippage_bps)),
             "expected_tax": float(tax),
             "expected_net_pnl": float(expected_net),
             "min_threshold": float(min_threshold),
             "threshold_multiplier": float(threshold_multiplier),
+            "net_max_loss": float(economics.get("net_max_loss", abs(float(strategy.max_loss or 0.0)))),
+            "cost_to_max_loss_ratio": float(economics.get("cost_to_max_loss_ratio", 0.0) or 0.0),
+            "friction_total": float(economics.get("friction_total", 0.0) or 0.0),
         }
 
     def _passes_net_profit_gate(
@@ -2529,8 +4276,14 @@ class IntegratedOptionsPaperEngine:
         strategy: OptionStrategy,
         objective: str,
         overlay: Dict[str, Any],
+        liquidity_snapshot: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        estimate = self._estimate_expected_net_pnl(strategy, objective=objective, overlay=overlay)
+        estimate = self._estimate_expected_net_pnl(
+            strategy,
+            objective=objective,
+            overlay=overlay,
+            liquidity_snapshot=liquidity_snapshot,
+        )
         expected_net = float(estimate.get("expected_net_pnl", 0.0) or 0.0)
         min_threshold = float(estimate.get("min_threshold", 0.0) or 0.0)
         objective_key = str(objective or "").strip().lower()
@@ -2543,6 +4296,11 @@ class IntegratedOptionsPaperEngine:
         hedge_intensity = float(overlay.get("hedge_intensity", 0.0) or 0.0) if isinstance(overlay, dict) else 0.0
         event_shock = float(sentiment.get("event_shock_score", 0.0) or 0.0)
         hedge_priority_mode = self._is_hedge_priority_mode(overlay if isinstance(overlay, dict) else {})
+        eligibility_cfg = getattr(self.config, "eligibility", self.config)
+        max_slippage_bps = float(getattr(eligibility_cfg, "max_expected_slippage_bps", 120.0) or 120.0)
+        max_cost_ratio = float(getattr(eligibility_cfg, "max_transaction_cost_pct_of_max_loss", 0.20) or 0.20)
+        expected_slippage_bps = float(estimate.get("expected_slippage_bps", 0.0) or 0.0)
+        cost_to_max_loss_ratio = float(estimate.get("cost_to_max_loss_ratio", 0.0) or 0.0)
 
         short_vol_min_threshold = float(min_threshold)
         if self._is_short_vol_strategy(strategy) and hedge_priority_mode:
@@ -2554,13 +4312,19 @@ class IntegratedOptionsPaperEngine:
             and not self._is_short_vol_strategy(strategy)
             and alert in HEDGE_PRIORITY_ALERT_LEVELS
         )
-        passed = bool(expected_net >= min_threshold or override)
+        slippage_ok = expected_slippage_bps <= max_slippage_bps
+        cost_ratio_ok = cost_to_max_loss_ratio <= max_cost_ratio
+        passed = bool((expected_net >= min_threshold or override) and slippage_ok and cost_ratio_ok)
 
         return {
             **estimate,
             "passed": passed,
             "override_applied": bool(override and expected_net < min_threshold),
             "objective": objective_key,
+            "slippage_ok": bool(slippage_ok),
+            "cost_ratio_ok": bool(cost_ratio_ok),
+            "max_expected_slippage_bps": float(max_slippage_bps),
+            "max_cost_to_max_loss_ratio": float(max_cost_ratio),
         }
 
     def _generate_portfolio_aware_strategy(
@@ -2579,6 +4343,9 @@ class IntegratedOptionsPaperEngine:
             "reason": "",
             "candidates": [],
         }
+        crisis_override_active = self._sentiment_crisis_override_active(underlying, overlay)
+        if crisis_override_active:
+            selector["sentiment_crisis_override"] = True
 
         normalized_regime = _to_regime(getattr(routed_regime, "value", routed_regime))
         candidates: List[Tuple[str, OptionStrategy]] = []
@@ -2599,7 +4366,13 @@ class IntegratedOptionsPaperEngine:
             candidates.append(("regime_default", default_strategy))
 
         candidate_order = self._candidate_generation_order(objective)
-        if self._is_hedge_priority_mode(overlay):
+        if crisis_override_active:
+            ordered: List[str] = []
+            for name in ["bear_put_spread", *candidate_order]:
+                if name not in ordered:
+                    ordered.append(name)
+            candidate_order = ordered
+        elif self._is_hedge_priority_mode(overlay):
             hedge_first = [
                 "bear_put_spread",
                 "long_strangle",
@@ -2635,7 +4408,13 @@ class IntegratedOptionsPaperEngine:
         for source, strategy in candidates:
             gate_lots = self._indicative_candidate_lots(strategy, objective=objective, overlay=overlay)
             strategy_for_gate = self._scale_strategy(strategy, gate_lots) if gate_lots > 1 else strategy
-            net_gate = self._passes_net_profit_gate(strategy_for_gate, objective=objective, overlay=overlay)
+            liquidity_snapshot = self._prs_liquidity_snapshot(option_chain, strategy_for_gate)
+            net_gate = self._passes_net_profit_gate(
+                strategy_for_gate,
+                objective=objective,
+                overlay=overlay,
+                liquidity_snapshot=liquidity_snapshot,
+            )
             score, details = self._score_strategy_candidate(
                 strategy,
                 objective=objective,
@@ -2652,6 +4431,8 @@ class IntegratedOptionsPaperEngine:
                 "net_credit_debit": float(strategy.net_credit_debit),
                 "expected_net_pnl": float(net_gate.get("expected_net_pnl", 0.0) or 0.0),
                 "min_net_threshold": float(net_gate.get("min_threshold", 0.0) or 0.0),
+                "expected_slippage_bps": float(net_gate.get("expected_slippage_bps", 0.0) or 0.0),
+                "cost_to_max_loss_ratio": float(net_gate.get("cost_to_max_loss_ratio", 0.0) or 0.0),
                 "net_profit_gate_passed": bool(net_gate.get("passed", False)),
                 "net_profit_override": bool(net_gate.get("override_applied", False)),
                 "gate_lots": int(gate_lots),
@@ -2664,6 +4445,30 @@ class IntegratedOptionsPaperEngine:
             scored.append((source, strategy, score, details))
 
         if not scored:
+            if crisis_override_active:
+                crisis_soft = [
+                    row for row in soft_fallback
+                    if self._strategy_type_value(row[1]) == "bear_put_spread"
+                ]
+                if crisis_soft:
+                    crisis_soft.sort(
+                        key=lambda x: (
+                            float((x[4] or {}).get("expected_net_pnl", 0.0) or 0.0),
+                            x[2],
+                        ),
+                        reverse=True,
+                    )
+                    selected_source, selected_strategy, selected_score, _selected_details, selected_gate = crisis_soft[0]
+                    selector["selected_source"] = selected_source
+                    selector["selected_strategy_type"] = self._strategy_type_value(selected_strategy)
+                    selector["selected_score"] = float(selected_score)
+                    selector["soft_net_gate_fallback"] = True
+                    selector["crisis_override_applied"] = True
+                    selector["reason"] = (
+                        "sentiment crisis override selected protective bear_put_spread "
+                        f"with expected net ₹{float((selected_gate or {}).get('expected_net_pnl', 0.0) or 0.0):,.0f}"
+                    )
+                    return selected_strategy, selector
             if soft_fallback:
                 soft_fallback.sort(
                     key=lambda x: (
@@ -2686,6 +4491,21 @@ class IntegratedOptionsPaperEngine:
             return None, selector
 
         scored.sort(key=lambda x: x[2], reverse=True)
+        if crisis_override_active:
+            crisis_candidates = [
+                row for row in scored
+                if self._strategy_type_value(row[1]) == "bear_put_spread"
+            ]
+            if crisis_candidates:
+                selected_source, selected_strategy, selected_score, _ = crisis_candidates[0]
+                selector["selected_source"] = selected_source
+                selector["selected_strategy_type"] = self._strategy_type_value(selected_strategy)
+                selector["selected_score"] = float(selected_score)
+                selector["crisis_override_applied"] = True
+                selector["reason"] = (
+                    "sentiment crisis override selected NIFTY/BANKNIFTY protective bear_put_spread"
+                )
+                return selected_strategy, selector
         selected_source, selected_strategy, selected_score, _ = scored[0]
         top_type = self._strategy_type_value(selected_strategy)
         top_share = self._recent_strategy_share(top_type)
@@ -2738,6 +4558,7 @@ class IntegratedOptionsPaperEngine:
         self.iv_history = state.get("iv_history", {}) or {}
         self.regime_history = state.get("regime_history", []) or []
         self.greeks_history = state.get("greeks_history", []) or []
+        self.regime_flip_tracker = state.get("regime_flip_tracker", {}) or {}
         self.last_trade_eligibility = state.get("last_trade_eligibility", self.last_trade_eligibility)
         self.last_eligibility_checks = state.get("last_eligibility_checks", []) or []
         self.last_kill_switch = state.get("last_kill_switch", {"active": False}) or {"active": False}
@@ -2765,10 +4586,12 @@ class IntegratedOptionsPaperEngine:
         for p in state.get("open_positions", []) or []:
             pos = self._position_from_dict(p)
             if pos:
+                self._repair_position_metadata(pos)
                 self.position_manager.open_positions[pos.position_id] = pos
         for p in state.get("closed_positions", []) or []:
             pos = self._position_from_dict(p)
             if pos:
+                self._repair_position_metadata(pos)
                 self.position_manager.closed_positions.append(pos)
 
         scaling = state.get("scaling_state")
@@ -2809,6 +4632,10 @@ class IntegratedOptionsPaperEngine:
         risk_cap_value = self._portfolio_risk_cap_value()
         risk_remaining = max(0.0, float(risk_cap_value - self._current_open_risk()))
         self.last_reconciled_at = _to_iso(now)
+        open_positions = list(self.position_manager.get_open_positions())
+        closed_positions = list(self.position_manager.get_closed_positions())
+        for pos in [*open_positions, *closed_positions]:
+            self._repair_position_metadata(pos)
 
         state = {
             "schema_version": "2.1.0",
@@ -2830,12 +4657,13 @@ class IntegratedOptionsPaperEngine:
             "current_mode": "normal_operation",
             "mode_constraints": {},
             "block_new_risk": False,
-            "open_positions": [self._position_to_dict(p) for p in self.position_manager.get_open_positions()],
-            "closed_positions": [self._position_to_dict(p) for p in self.position_manager.get_closed_positions()[-500:]],
+            "open_positions": [self._position_to_dict(p) for p in open_positions],
+            "closed_positions": [self._position_to_dict(p) for p in closed_positions[-500:]],
             "scaling_state": scaling,
             "iv_history": self.iv_history,
             "regime_history": self.regime_history[-5000:],
             "greeks_history": self.greeks_history[-2000:],
+            "regime_flip_tracker": self.regime_flip_tracker,
             "last_trade_eligibility": self.last_trade_eligibility,
             "last_eligibility_checks": self.last_eligibility_checks,
             "last_kill_switch": self.last_kill_switch,
@@ -2872,6 +4700,45 @@ class IntegratedOptionsPaperEngine:
                     state[key] = existing_runtime[key]
         if not self.state_io.write_runtime_state(state):
             logger.error("Failed writing runtime state; preserving previous runtime snapshot")
+            return
+        try:
+            sync_report = self.trade_ledger.sync_runtime_state(state)
+            if any(int(v) > 0 for v in sync_report.values()):
+                logger.info(
+                    "Recovered missing immutable trade-ledger entries from runtime state: %s",
+                    sync_report,
+                )
+        except Exception as exc:
+            logger.warning("Failed syncing runtime state into immutable trade ledger: %s", exc)
+        if self.prs_enabled and self.prs is not None:
+            try:
+                core_payload = self._read_json_file(PROJECT_ROOT / "data/portfolio/current_positions.json")
+                prs_sync = sync_options_runtime_book(
+                    self.prs,
+                    runtime_payload=state,
+                    current_positions_payload=core_payload,
+                    runtime_scope="live",
+                )
+                if int(prs_sync.get("trade_events", 0) or 0) > 0:
+                    logger.info("Synchronized options runtime into PRS: %s", prs_sync)
+            except Exception as exc:
+                logger.warning("Failed syncing options runtime into PRS: %s", exc)
+
+    def _refresh_runtime_accounting_artifacts(self, now: datetime, *, force: bool = False) -> None:
+        if not force and self.last_runtime_accounting_refresh_at is not None:
+            elapsed = (now - self.last_runtime_accounting_refresh_at).total_seconds()
+            if elapsed < 15 * 60:
+                return
+        try:
+            report = refresh_runtime_accounting()
+            self.last_runtime_accounting_refresh_at = now
+            logger.info(
+                "Refreshed runtime accounting: ledger_rows=%s recon=%s",
+                report.ledger_rows,
+                report.reconciliation_status,
+            )
+        except Exception as exc:
+            logger.warning("Failed refreshing runtime accounting after options cycle: %s", exc)
 
     def _position_to_dict(self, p: Position) -> Dict[str, Any]:
         return {
@@ -2889,10 +4756,12 @@ class IntegratedOptionsPaperEngine:
             "unrealized_pnl": p.unrealized_pnl,
             "realized_pnl": p.realized_pnl,
             "days_held": p.days_held,
+            "hold_duration_minutes": _position_hold_duration_minutes(p),
             "greeks": p.greeks.__dict__ if p.greeks else None,
             "entry_greeks": p.entry_greeks.__dict__ if p.entry_greeks else None,
             "exit_time": _to_iso(p.exit_time),
             "exit_reason": p.exit_reason,
+            "metadata": dict(getattr(p, "metadata", {}) or {}),
         }
 
     def _position_from_dict(self, d: Dict[str, Any]) -> Optional[Position]:
@@ -2921,7 +4790,7 @@ class IntegratedOptionsPaperEngine:
                 underlying=underlying,
                 regime_at_entry=_to_regime(d.get("regime_at_entry")),
                 legs=legs,
-                entry_time=_parse_dt(d.get("entry_time")) or datetime.utcnow(),
+                entry_time=_parse_dt(d.get("entry_time")) or _now_ist(),
                 expiry=date.fromisoformat(d.get("expiry")),
                 max_loss=float(d.get("max_loss", 0.0) or 0.0),
                 max_profit=float(d.get("max_profit", 0.0) or 0.0),
@@ -2934,6 +4803,7 @@ class IntegratedOptionsPaperEngine:
                 entry_greeks=entry_greeks,
                 exit_time=_parse_dt(d.get("exit_time")),
                 exit_reason=d.get("exit_reason"),
+                metadata=dict(d.get("metadata", {}) or {}),
             )
         except Exception as e:
             logger.warning(f"Skipping invalid position state: {e}")
@@ -3042,6 +4912,10 @@ class IntegratedOptionsPaperEngine:
         today = _now_ist().date()
         expiries = [exp for exp in expiries if isinstance(exp, date) and exp >= today]
         if not expiries:
+            cached_chain = self._fallback_chain_from_disk(underlying)
+            if not cached_chain.empty:
+                logger.warning("Using cached option chain because expiry discovery failed for %s", underlying)
+                return cached_chain
             if underlying in INDEX_UNDERLYINGS:
                 expiries = self._fallback_expiries(underlying, count=4)
             else:
@@ -3311,6 +5185,66 @@ class IntegratedOptionsPaperEngine:
             return "vol"
         return "directional"
 
+    def _prs_budget_snapshot(self) -> Dict[str, Any]:
+        equity = max(1.0, float(self._current_net_equity()))
+        reserve_usage = {
+            "equity_alpha": 0.0,
+            "options_alpha": 0.0,
+            "hedge": 0.0,
+            "discretionary": 0.0,
+        }
+        strategy_usage: Dict[str, float] = {}
+
+        for position in self.position_manager.get_open_positions():
+            self._repair_position_metadata(position)
+            metadata = position.metadata if isinstance(getattr(position, "metadata", {}), dict) else {}
+            objective = str(metadata.get("objective", "") or "")
+            origin = self._prs_origin_from_objective(objective)
+            if origin == ProposalOrigin.OPTIONS_HEDGE:
+                reserve_pool = "hedge"
+            elif origin == ProposalOrigin.OPTIONS_ALPHA:
+                reserve_pool = "options_alpha"
+            elif origin == ProposalOrigin.MANUAL:
+                reserve_pool = "discretionary"
+            else:
+                reserve_pool = "equity_alpha"
+
+            notional = abs(float(position.max_loss or position.current_value or position.entry_credit_debit or 0.0))
+            reserve_usage[reserve_pool] = float(reserve_usage.get(reserve_pool, 0.0) + notional)
+            strategy_key = str(position.strategy_type or "unknown")
+            strategy_usage[strategy_key] = float(strategy_usage.get(strategy_key, 0.0) + (notional / equity))
+
+        return {
+            "reserve_usage": reserve_usage,
+            "strategy_usage": strategy_usage,
+        }
+
+    def _prs_risk_snapshot(self) -> Dict[str, Any]:
+        equity = max(1.0, float(self._current_net_equity()))
+        strategy_exposure: Dict[str, float] = {}
+        origin_exposure: Dict[str, float] = {}
+
+        for position in self.position_manager.get_open_positions():
+            self._repair_position_metadata(position)
+            metadata = position.metadata if isinstance(getattr(position, "metadata", {}), dict) else {}
+            objective = str(metadata.get("objective", "") or "")
+            origin = self._prs_origin_from_objective(objective)
+            notional = abs(float(position.max_loss or position.current_value or position.entry_credit_debit or 0.0))
+            strategy_key = str(position.strategy_type or "unknown")
+            strategy_exposure[strategy_key] = float(strategy_exposure.get(strategy_key, 0.0) + (notional / equity))
+            origin_exposure[origin.value] = float(origin_exposure.get(origin.value, 0.0) + (notional / equity))
+
+        return {
+            "risk_budget_ratio": float(
+                self._current_open_risk() / max(1e-9, self._portfolio_risk_cap_value())
+            ),
+            "strategy_exposure": strategy_exposure,
+            "origin_exposure": origin_exposure,
+            "signal_entropy": float(
+                self._alpha_os_entropy((self.alpha_os_last_intent or {}).get("probabilities", {}) or {})
+            ) if self.alpha_os_last_intent else 1.0,
+        }
+
     def _build_prs_open_proposal(
         self,
         *,
@@ -3323,7 +5257,7 @@ class IntegratedOptionsPaperEngine:
         strategy_type = self._strategy_type_value(strategy)
         total_qty = float(sum(abs(int(getattr(leg, "quantity", 0) or 0)) for leg in strategy.legs) or 1.0)
         avg_price = abs(float(strategy.net_credit_debit or 0.0)) / max(1.0, total_qty)
-        side = "sell" if float(strategy.net_credit_debit or 0.0) > 0.0 else "buy"
+        side = "buy" if float(strategy.net_credit_debit or 0.0) > 0.0 else "sell"
         notional = float(abs(strategy.max_loss or 0.0))
         portfolio_greeks = strategy.portfolio_greeks
         delta_per_unit = float(getattr(portfolio_greeks, "delta", 0.0) or 0.0) / max(1.0, total_qty)
@@ -3331,12 +5265,13 @@ class IntegratedOptionsPaperEngine:
         vega_per_unit = float(getattr(portfolio_greeks, "vega", 0.0) or 0.0) / max(1.0, total_qty)
         theta_per_unit = float(getattr(portfolio_greeks, "theta", 0.0) or 0.0) / max(1.0, total_qty)
         rho_per_unit = float(getattr(portfolio_greeks, "rho", 0.0) or 0.0) / max(1.0, total_qty)
-        sector_hint = ""
-        if isinstance(self.portfolio_overlay, dict):
-            sector_hint = str(self.portfolio_overlay.get("dominant_sector", "") or "").strip().lower()
+        objective_ctx = self._objective_for_underlying(str(underlying).upper(), self.portfolio_overlay)
+        sector_hint = self._prs_sector_for_underlying(str(underlying).upper(), objective_ctx)
         signal_ts = now.strftime("%Y%m%d%H%M%S")
         signal_id = f"sig_{str(underlying).upper()}_{signal_ts}"
         proposal_id = f"prop_{signal_id}_{strategy_type}"
+        prs_symbol = self._prs_option_symbol(underlying, proposal_id)
+        hedging_state = self._hedging_state_for_underlying(underlying, objective)
         return TradeProposal(
             proposal_id=proposal_id,
             origin=self._prs_origin_from_objective(objective),
@@ -3350,7 +5285,8 @@ class IntegratedOptionsPaperEngine:
                 "objective": str(objective or ""),
             },
             instrument_plan={
-                "symbol": str(underlying).upper(),
+                "symbol": prs_symbol,
+                "underlying_symbol": str(underlying).upper(),
                 "side": side,
                 "price": float(max(0.0, avg_price)),
                 "quantity": float(total_qty),
@@ -3364,6 +5300,8 @@ class IntegratedOptionsPaperEngine:
                 "sector": sector_hint,
                 "lifecycle_action": "open",
                 "position_key": proposal_id,
+                "objective": str(objective or ""),
+                "hedging_state": hedging_state,
             },
             requested_notional=float(max(0.0, notional)),
             certification_snapshot_hash=str(self.prs_cert_snapshot_hash or ""),
@@ -3373,9 +5311,11 @@ class IntegratedOptionsPaperEngine:
         )
 
     def _build_prs_close_proposal(self, position: Position, now: datetime) -> TradeProposal:
+        self._repair_position_metadata(position)
+        metadata = position.metadata if isinstance(getattr(position, "metadata", {}), dict) else {}
         signal_id = f"close_{str(position.position_id)}_{now.strftime('%Y%m%d%H%M%S')}"
         notional = float(abs(position.current_value or position.entry_credit_debit or 0.0))
-        side = "buy" if float(position.entry_credit_debit or 0.0) > 0.0 else "sell"
+        side = "sell" if float(position.entry_credit_debit or 0.0) > 0.0 else "buy"
         total_qty = float(sum(abs(leg.quantity) for leg in position.legs) or 1.0)
         pos_greeks = position.greeks or position.entry_greeks
         delta_per_unit = float(getattr(pos_greeks, "delta", 0.0) or 0.0) / max(1.0, total_qty)
@@ -3383,9 +5323,11 @@ class IntegratedOptionsPaperEngine:
         vega_per_unit = float(getattr(pos_greeks, "vega", 0.0) or 0.0) / max(1.0, total_qty)
         theta_per_unit = float(getattr(pos_greeks, "theta", 0.0) or 0.0) / max(1.0, total_qty)
         rho_per_unit = float(getattr(pos_greeks, "rho", 0.0) or 0.0) / max(1.0, total_qty)
+        objective = str(metadata.get("objective", "") or "")
+        prs_symbol = str(metadata.get("prs_symbol", "") or "").strip() or f"OPT::{str(position.position_id or '').strip()}".upper()
         return TradeProposal(
             proposal_id=f"prop_{signal_id}",
-            origin=ProposalOrigin.OPTIONS_ALPHA,
+            origin=self._prs_origin_from_objective(objective),
             strategy_id=str(position.strategy_type or "unknown"),
             signal_id=signal_id,
             alpha_type="closeout",
@@ -3393,7 +5335,8 @@ class IntegratedOptionsPaperEngine:
             risk_score=0.0,
             regime_context={"entry_regime": str(position.regime_at_entry)},
             instrument_plan={
-                "symbol": str(getattr(position, "underlying", "") or ""),
+                "symbol": prs_symbol,
+                "underlying_symbol": str(getattr(position, "underlying", "") or ""),
                 "side": side,
                 "price": float(max(0.0, abs(position.current_value or 0.0)) / max(1.0, total_qty)),
                 "quantity": float(total_qty),
@@ -3405,8 +5348,10 @@ class IntegratedOptionsPaperEngine:
                 "greek_rho_per_unit": rho_per_unit,
                 "close_only": True,
                 "lifecycle_action": "close",
-                "position_key": str(position.position_id),
+                "position_key": str(metadata.get("prs_position_key", "") or position.position_id),
                 "realized_pnl": float(position.realized_pnl or 0.0),
+                "objective": objective,
+                "hedging_state": dict(metadata.get("hedging_state", {}) or {}),
             },
             requested_notional=notional,
             certification_snapshot_hash=str(self.prs_cert_snapshot_hash or ""),
@@ -3422,24 +5367,41 @@ class IntegratedOptionsPaperEngine:
         c["bid"] = pd.to_numeric(c.get("bid", 0.0), errors="coerce")
         c["ask"] = pd.to_numeric(c.get("ask", 0.0), errors="coerce")
         c["ltp"] = pd.to_numeric(c.get("ltp", c.get("premium", 0.0)), errors="coerce")
+        c["volume"] = pd.to_numeric(c.get("volume", 0.0), errors="coerce")
+        c["oi"] = pd.to_numeric(c.get("oi", 0.0), errors="coerce")
+        leg_keys = {
+            str(getattr(leg, "instrument_key", "") or "").strip()
+            for leg in list(getattr(strategy, "legs", []) or [])
+            if str(getattr(leg, "instrument_key", "") or "").strip()
+        }
+        if leg_keys and "instrument_key" in c.columns:
+            filtered = c[c["instrument_key"].astype(str).isin(leg_keys)].copy()
+            if not filtered.empty:
+                c = filtered
         spread_bps = 0.0
         try:
             mid = (c["bid"] + c["ask"]) / 2.0
             spread = (c["ask"] - c["bid"]).clip(lower=0.0)
-            spread_bps = float((spread / mid.replace(0.0, np.nan)).dropna().median() * 10000.0) if not mid.empty else 0.0
+            ratios = (spread / mid.replace(0.0, np.nan)).dropna()
+            spread_bps = float(ratios.median() * 10000.0) if not ratios.empty else 0.0
         except Exception:
             spread_bps = 0.0
+        total_qty = float(sum(abs(int(getattr(leg, "quantity", 0) or 0)) for leg in strategy.legs) or 1.0)
+        median_ltp = float(c["ltp"].dropna().median()) if not c["ltp"].dropna().empty else 0.0
+        adv_notional = float((c["volume"].fillna(0.0) * c["ltp"].fillna(0.0)).sum())
+        depth_qty = float(c["oi"].fillna(0.0).min()) if not c["oi"].dropna().empty else 0.0
         return {
-            "adv_notional": float(pd.to_numeric(c.get("volume", 0.0), errors="coerce").fillna(0.0).sum()),
+            "adv_notional": float(max(adv_notional, median_ltp * total_qty * 10.0)),
             "spread_bps": float(max(0.0, spread_bps)),
-            "depth_qty": float(pd.to_numeric(c.get("oi", 0.0), errors="coerce").fillna(0.0).sum()),
-            "estimated_slippage_bps": float(min(500.0, max(0.0, spread_bps * 0.6))),
+            "depth_qty": float(max(depth_qty, total_qty)),
+            "estimated_slippage_bps": float(min(250.0, max(0.0, spread_bps * 0.45))),
         }
 
     def run_cycle(self) -> Dict[str, Any]:
         now = _now_ist()
         logger.info(f"Running integrated options cycle at {now.isoformat(timespec='seconds')}")
         self._write_live_engine_heartbeat(now)
+        self._check_hot_reload_signals()
         if self.prs_enabled and self.prs is not None:
             latest_ctx = self._build_prs_context()
             if latest_ctx != self.prs_context:
@@ -3529,7 +5491,24 @@ class IntegratedOptionsPaperEngine:
             "precycle_survival_lock": bool(precycle_survival_lock),
         }
 
-        for underlying in cycle_underlyings:
+        total_cycle_underlyings = len(cycle_underlyings)
+        self._write_cycle_progress_heartbeat(
+            now,
+            processed_underlyings=0,
+            total_underlyings=total_cycle_underlyings,
+            current_underlying=cycle_underlyings[0] if cycle_underlyings else None,
+            phase="cycle_started",
+        )
+
+        for idx, underlying in enumerate(cycle_underlyings, start=1):
+            if idx == 1 or idx % 5 == 0:
+                self._write_cycle_progress_heartbeat(
+                    _now_ist(),
+                    processed_underlyings=idx - 1,
+                    total_underlyings=total_cycle_underlyings,
+                    current_underlying=underlying,
+                    phase="scanning_underlyings",
+                )
             objective_ctx = self._objective_for_underlying(underlying, self.portfolio_overlay)
             decision: Dict[str, Any] = {
                 "timestamp": _to_iso(now),
@@ -3576,7 +5555,12 @@ class IntegratedOptionsPaperEngine:
 
             iv = self._estimate_atm_iv(chain)
             iv_series = self._series_for_underlying(underlying, now, iv)
-            regime_state = self.regime_detector.detect_regime(chain, iv_series, underlying_regime="NORMAL")
+            underlying_regime = self._current_underlying_regime_context()
+            regime_state = self.regime_detector.detect_regime(
+                chain,
+                iv_series,
+                underlying_regime=underlying_regime,
+            )
             routed_regime = self._aggressive_regime(regime_state)
             current_regimes[underlying] = _to_regime(getattr(routed_regime, "value", routed_regime))
             spot = None
@@ -3593,15 +5577,36 @@ class IntegratedOptionsPaperEngine:
                 "atm_iv": float(iv),
                 "regime": str(getattr(regime_state.regime, "value", regime_state.regime)),
                 "routed_regime": str(getattr(routed_regime, "value", routed_regime)),
+                "underlying_regime": underlying_regime,
                 "iv_rank": float(regime_state.metrics.iv_rank),
                 "confidence": float(regime_state.confidence),
             })
+            execution_allowed, sentiment_gate = self._execution_allowed_for_underlying(
+                underlying,
+                objective_ctx,
+                self.portfolio_overlay,
+            )
+            if sentiment_gate:
+                decision["exact_sentiment"] = sentiment_gate
+            if not execution_allowed:
+                decision.update(
+                    {
+                        "status": "scan_only_sentiment_watch",
+                        "reason": str(
+                            sentiment_gate.get("eligibility_reason")
+                            or "scan_only_below_execution_cutoff"
+                        ),
+                    }
+                )
+                cycle_diag["underlyings"].append(decision)
+                continue
 
             self.regime_history.append({
                 "timestamp": _to_iso(now),
                 "underlying": underlying,
                 "regime": str(getattr(regime_state.regime, "value", regime_state.regime)),
                 "routed_regime": str(getattr(routed_regime, "value", routed_regime)),
+                "underlying_regime": underlying_regime,
                 "iv_rank": float(regime_state.metrics.iv_rank),
                 "confidence": float(regime_state.confidence),
             })
@@ -3634,20 +5639,38 @@ class IntegratedOptionsPaperEngine:
             strategy_type_token = self._strategy_type_value(strategy)
             blocked_by_alpha, alpha_block_reason = self._alpha_os_strategy_blocked(strategy_type_token)
             alpha_strategy_multiplier = self._alpha_os_strategy_size_multiplier(strategy_type_token)
+            crisis_strategy_override = self._should_bypass_alpha_os_strategy_gate(
+                underlying,
+                strategy_type_token,
+                self.portfolio_overlay,
+            )
             decision["alpha_os_strategy_gate"] = {
                 "strategy_type": strategy_type_token,
                 "blocked": bool(blocked_by_alpha),
                 "reason": alpha_block_reason,
                 "size_multiplier": float(alpha_strategy_multiplier),
+                "override_active": bool(crisis_strategy_override),
+                "override_reason": (
+                    "sentiment_crisis_bear_put_override"
+                    if crisis_strategy_override
+                    else None
+                ),
             }
-            if blocked_by_alpha:
+            if blocked_by_alpha and not crisis_strategy_override:
                 decision.update({
                     "status": "blocked_alpha_os_strategy_gate",
                     "reason": alpha_block_reason or "alpha_os_strategy_weight_block",
                 })
                 cycle_diag["underlyings"].append(decision)
                 continue
+            if crisis_strategy_override:
+                logger.warning(
+                    "Sentiment crisis detected; bypassing Alpha OS posterior gate for %s %s",
+                    underlying,
+                    strategy_type_token,
+                )
 
+            liq_snapshot = self._prs_liquidity_snapshot(chain, strategy)
             eligibility = self.eligibility_validator.validate_trade(strategy, regime_state, chain)
             eligibility_checks = [{
                 "check": r.value,
@@ -3716,7 +5739,25 @@ class IntegratedOptionsPaperEngine:
                 cycle_diag["underlyings"].append(decision)
                 continue
 
-            lots = self.capital_scaling.get_position_size(self.scaling_state, strategy.max_loss)
+            pre_scale_gate = self._passes_net_profit_gate(
+                strategy,
+                objective=str(objective_ctx.get("objective") or "balanced_overlay"),
+                overlay=self.portfolio_overlay,
+                liquidity_snapshot=liq_snapshot,
+            )
+            per_lot_risk = max(1.0, float(pre_scale_gate.get("net_max_loss", abs(float(strategy.max_loss or 0.0))) or 1.0))
+            decision["trade_economics"] = {
+                "per_lot_expected_net_pnl": float(pre_scale_gate.get("expected_net_pnl", 0.0) or 0.0),
+                "per_lot_expected_gross_pnl": float(pre_scale_gate.get("expected_gross_pnl", 0.0) or 0.0),
+                "per_lot_total_costs": float(pre_scale_gate.get("expected_total_costs", 0.0) or 0.0),
+                "per_lot_slippage_cost": float(pre_scale_gate.get("expected_slippage_cost", 0.0) or 0.0),
+                "per_lot_tax": float(pre_scale_gate.get("expected_tax", 0.0) or 0.0),
+                "per_lot_net_max_loss": float(pre_scale_gate.get("net_max_loss", 0.0) or 0.0),
+                "expected_slippage_bps": float(pre_scale_gate.get("expected_slippage_bps", 0.0) or 0.0),
+                "cost_to_max_loss_ratio": float(pre_scale_gate.get("cost_to_max_loss_ratio", 0.0) or 0.0),
+            }
+
+            lots = self.capital_scaling.get_position_size(self.scaling_state, per_lot_risk)
             lots = int(max(1, round(lots * float(eligibility.size_adjustment))))
             if self.aggressive:
                 lots = max(1, int(round(lots * 1.5)))
@@ -3730,7 +5771,7 @@ class IntegratedOptionsPaperEngine:
                 lots = max(1, int(round(lots * alpha_os_trade_multiplier)))
             # Enforce risk-budget sizing before kill-switch evaluation so oversized
             # proposals do not trip a global portfolio risk kill switch.
-            unit_risk = max(1.0, abs(float(strategy.max_loss or 0.0)))
+            unit_risk = float(per_lot_risk)
             risk_cap = self._portfolio_risk_cap_value()
             open_risk = self._current_open_risk()
             remaining_risk = max(0.0, risk_cap - open_risk)
@@ -3767,20 +5808,45 @@ class IntegratedOptionsPaperEngine:
                 strategy,
                 objective=str(objective_ctx.get("objective") or "balanced_overlay"),
                 overlay=self.portfolio_overlay,
+                liquidity_snapshot=liq_snapshot,
             )
+            strategy.max_loss = max(float(strategy.max_loss or 0.0), float(post_scale_gate.get("net_max_loss", 0.0) or 0.0))
             decision["net_profit_gate"] = {
                 "passed": bool(post_scale_gate.get("passed", False)),
                 "expected_net_pnl": float(post_scale_gate.get("expected_net_pnl", 0.0) or 0.0),
+                "expected_gross_pnl": float(post_scale_gate.get("expected_gross_pnl", 0.0) or 0.0),
+                "expected_total_costs": float(post_scale_gate.get("expected_total_costs", 0.0) or 0.0),
+                "expected_slippage_cost": float(post_scale_gate.get("expected_slippage_cost", 0.0) or 0.0),
+                "expected_tax": float(post_scale_gate.get("expected_tax", 0.0) or 0.0),
+                "expected_slippage_bps": float(post_scale_gate.get("expected_slippage_bps", 0.0) or 0.0),
                 "min_threshold": float(post_scale_gate.get("min_threshold", 0.0) or 0.0),
                 "override_applied": bool(post_scale_gate.get("override_applied", False)),
+                "slippage_ok": bool(post_scale_gate.get("slippage_ok", False)),
+                "cost_ratio_ok": bool(post_scale_gate.get("cost_ratio_ok", False)),
+                "cost_to_max_loss_ratio": float(post_scale_gate.get("cost_to_max_loss_ratio", 0.0) or 0.0),
+                "net_max_loss": float(post_scale_gate.get("net_max_loss", 0.0) or 0.0),
             }
             if not bool(post_scale_gate.get("passed", False)):
                 exp_net = float(post_scale_gate.get("expected_net_pnl", 0.0) or 0.0)
                 min_thr = float(post_scale_gate.get("min_threshold", 0.0) or 0.0)
+                slip_bps = float(post_scale_gate.get("expected_slippage_bps", 0.0) or 0.0)
+                max_slip = float(post_scale_gate.get("max_expected_slippage_bps", 0.0) or 0.0)
+                cost_ratio = float(post_scale_gate.get("cost_to_max_loss_ratio", 0.0) or 0.0)
+                max_cost_ratio = float(post_scale_gate.get("max_cost_to_max_loss_ratio", 0.0) or 0.0)
                 risk_budget = decision.get("risk_budget", {}) if isinstance(decision.get("risk_budget"), dict) else {}
                 requested_lots = int(risk_budget.get("requested_lots", lots) or lots)
                 affordable_lots = int(risk_budget.get("affordable_lots", lots) or lots)
-                if affordable_lots < requested_lots:
+                if not bool(post_scale_gate.get("slippage_ok", True)):
+                    decision.update({
+                        "status": "rejected_execution_friction",
+                        "reason": f"expected slippage {slip_bps:.1f}bps exceeds cap {max_slip:.1f}bps",
+                    })
+                elif not bool(post_scale_gate.get("cost_ratio_ok", True)):
+                    decision.update({
+                        "status": "rejected_execution_friction",
+                        "reason": f"cost-to-max-loss ratio {cost_ratio:.2f} exceeds cap {max_cost_ratio:.2f}",
+                    })
+                elif affordable_lots < requested_lots:
                     decision.update({
                         "status": "deferred_risk_budget",
                         "reason": (
@@ -3865,18 +5931,12 @@ class IntegratedOptionsPaperEngine:
                     decision=decision,
                     now=open_time,
                 )
-                liq_snapshot = self._prs_liquidity_snapshot(chain, strategy)
+                budget_snapshot = self._prs_budget_snapshot()
+                risk_snapshot = self._prs_risk_snapshot()
                 prs_result = self.prs.process_proposal(
                     open_proposal,
-                    budget_snapshot={"reserve_usage": {}},
-                    risk_snapshot={
-                        "risk_budget_ratio": float(
-                            self._current_open_risk() / max(1e-9, self._portfolio_risk_cap_value())
-                        ),
-                        "strategy_exposure": {},
-                        "origin_exposure": {},
-                        "signal_entropy": float(self._alpha_os_entropy((self.alpha_os_last_intent or {}).get("probabilities", {}) or {})) if self.alpha_os_last_intent else 1.0,
-                    },
+                    budget_snapshot=budget_snapshot,
+                    risk_snapshot=risk_snapshot,
                     market_snapshot={
                         "regime_transition_probability": float((self.alpha_os_last_intent or {}).get("transition_probability", 0.0) or 0.0),
                         "vol_percentile_jump": float((decision.get("market_context") or {}).get("vol_jump", 0.0) or 0.0),
@@ -3901,8 +5961,18 @@ class IntegratedOptionsPaperEngine:
                 getattr(position, "underlying", ""),
                 fallback=underlying,
             )
-            if not self.prs_enabled:
-                self.trade_ledger.write_position_open(position)
+            if prs_result is not None and self.prs_enabled and self.prs is not None:
+                instrument_plan = dict(open_proposal.instrument_plan or {})
+                position.metadata = {
+                    "prs_symbol": str(instrument_plan.get("symbol", "") or "").strip(),
+                    "prs_position_key": str(instrument_plan.get("position_key", "") or "").strip(),
+                    "underlying_symbol": str(instrument_plan.get("underlying_symbol", "") or position.underlying),
+                    "objective": str(objective_ctx.get("objective") or "balanced_overlay"),
+                    "reason": str(objective_ctx.get("reason") or decision.get("reason") or ""),
+                    "hedging_state": dict(instrument_plan.get("hedging_state", {}) or {}),
+                    "sector": str(instrument_plan.get("sector", "") or ""),
+                }
+            self.trade_ledger.write_position_open(position)
             self.event_publisher.publish_position_opened(
                 position_id=position.position_id,
                 strategy_type=position.strategy_type,
@@ -3918,9 +5988,18 @@ class IntegratedOptionsPaperEngine:
                 "position_underlying": position.underlying,
                 "opened_max_loss": float(position.max_loss),
                 "opened_credit_debit": float(position.entry_credit_debit),
+                "prs_symbol": str((position.metadata or {}).get("prs_symbol", "") or ""),
                 "prs": prs_result.to_dict() if prs_result is not None else {},
             })
             cycle_diag["underlyings"].append(decision)
+
+        self._write_cycle_progress_heartbeat(
+            _now_ist(),
+            processed_underlyings=total_cycle_underlyings,
+            total_underlyings=total_cycle_underlyings,
+            current_underlying=None,
+            phase="updating_positions",
+        )
 
         merged_chain = pd.concat(chain_cache.values(), ignore_index=True) if chain_cache else pd.DataFrame()
         profitable_closes = 0
@@ -3937,7 +6016,49 @@ class IntegratedOptionsPaperEngine:
             )
             regime_key = str(getattr(pos, "underlying", "") or default_regime_key).strip().upper()
             regime = current_regimes.get(regime_key, current_regimes.get(default_regime_key, VolatilityRegime.TRANSITION))
-            exit_signal = self.position_manager.check_exit_conditions(pos, regime, now.date())
+            entry_regime = str(getattr(pos.regime_at_entry, "value", pos.regime_at_entry) or "")
+            current_regime_name = str(getattr(regime, "value", regime) or "")
+            tracker = self.regime_flip_tracker.get(pos.position_id, {}) if isinstance(self.regime_flip_tracker, dict) else {}
+            mismatch = bool(current_regime_name and current_regime_name != entry_regime)
+            if mismatch:
+                prior_regime = str(tracker.get("last_regime", "") or "")
+                streak = int(tracker.get("streak", 0) or 0)
+                streak = streak + 1 if prior_regime == current_regime_name else 1
+                self.regime_flip_tracker[pos.position_id] = {
+                    "last_regime": current_regime_name,
+                    "streak": int(streak),
+                    "last_observed_at": _to_iso(now),
+                }
+            else:
+                self.regime_flip_tracker.pop(pos.position_id, None)
+                streak = 0
+
+            entry_time = pos.entry_time
+            if getattr(entry_time, "tzinfo", None) is None:
+                entry_time = entry_time.replace(tzinfo=now.tzinfo)
+            else:
+                entry_time = entry_time.astimezone(now.tzinfo)
+
+            held_minutes = max((now - entry_time).total_seconds() / 60.0, 0.0)
+            market_open = now.replace(hour=9, minute=15, second=0, microsecond=0)
+            since_open_minutes = max((now - market_open).total_seconds() / 60.0, 0.0)
+            min_hold_minutes = max(0, int(getattr(self.config.exit_rules, "regime_flip_min_hold_minutes", 30) or 0))
+            confirmation_cycles = max(1, int(getattr(self.config.exit_rules, "regime_flip_confirmation_cycles", 2) or 1))
+            open_grace_minutes = max(0, int(getattr(self.config.exit_rules, "regime_flip_market_open_grace_minutes", 30) or 0))
+            regime_flip_exit_allowed = (
+                mismatch
+                and streak >= confirmation_cycles
+                and held_minutes >= float(min_hold_minutes)
+                and since_open_minutes >= float(open_grace_minutes)
+            )
+            exit_signal = self.position_manager.check_exit_conditions(
+                pos,
+                regime,
+                now.date(),
+                current_time=now,
+                regime_flip_exit_allowed=regime_flip_exit_allowed,
+                minimum_hold_minutes=float(min_hold_minutes),
+            )
             if not exit_signal:
                 continue
             closed_pos = self.position_manager.close_position(
@@ -3945,6 +6066,7 @@ class IntegratedOptionsPaperEngine:
                 exit_time=now,
                 exit_reason=exit_signal.reason.value,
             )
+            self.regime_flip_tracker.pop(pos.position_id, None)
             prs_close = None
             if self.prs_enabled and self.prs is not None:
                 close_proposal = self._build_prs_close_proposal(closed_pos, now)
@@ -3962,8 +6084,7 @@ class IntegratedOptionsPaperEngine:
             self.cumulative_net_pnl += trade_pnl.net_pnl
             if trade_pnl.net_pnl > 0:
                 profitable_closes += 1
-            if not self.prs_enabled:
-                self.trade_ledger.write_position_close(closed_pos, trade_pnl)
+            self.trade_ledger.write_position_close(closed_pos, trade_pnl)
             self.event_publisher.publish_position_closed(
                 position_id=closed_pos.position_id,
                 strategy_type=closed_pos.strategy_type,
@@ -3971,6 +6092,7 @@ class IntegratedOptionsPaperEngine:
                 net_pnl=float(trade_pnl.net_pnl),
                 exit_reason=str(closed_pos.exit_reason or "unknown"),
                 hold_duration_days=float(closed_pos.days_held),
+                hold_duration_minutes=_position_hold_duration_minutes(closed_pos, fallback_now=now),
             )
             if prs_close is not None and (not prs_close.approved):
                 logger.warning(
@@ -4052,6 +6174,7 @@ class IntegratedOptionsPaperEngine:
         self._write_live_engine_heartbeat(now)
         self._write_daily_continuity_snapshot(now, dashboard_state)
         self._save_runtime_state()
+        self._refresh_runtime_accounting_artifacts(now, force=bool(opened or closed))
 
         return {
             "status": "ok",
@@ -4076,14 +6199,17 @@ class IntegratedOptionsPaperEngine:
         centralized_pnl = self._read_json_file(PROJECT_ROOT / "data/processed/v3_centralized_pnl.json")
         eligibility = dict(self.last_trade_eligibility or {})
         ts = _parse_dt(eligibility.get("timestamp")) if isinstance(eligibility, dict) else None
-        if ts and (datetime.utcnow() - ts).total_seconds() > 45 * 60:
-            eligibility = {
-                "signal_generated": False,
-                "rejected": False,
-                "violations": [],
-                "timestamp": _to_iso(now),
-                "stale": True,
-            }
+        if ts:
+            compare_now = now if getattr(now, "tzinfo", None) is not None else _now_ist()
+            compare_ts = ts.astimezone(compare_now.tzinfo) if getattr(ts, "tzinfo", None) is not None else ts.replace(tzinfo=compare_now.tzinfo)
+            if (compare_now - compare_ts).total_seconds() > 45 * 60:
+                eligibility = {
+                    "signal_generated": False,
+                    "rejected": False,
+                    "violations": [],
+                    "timestamp": _to_iso(now),
+                    "stale": True,
+                }
 
         return {
             "timestamp": _to_iso(now),
@@ -4115,6 +6241,8 @@ class IntegratedOptionsPaperEngine:
                     "realized_pnl": float(p.realized_pnl or 0.0),
                     "exit_reason": p.exit_reason,
                     "hold_duration_days": p.days_held,
+                    "hold_duration_minutes": _position_hold_duration_minutes(p),
+                    "max_loss": float(p.max_loss or 0.0),
                 }
                 for p in closed[-200:]
             ],
@@ -4642,6 +6770,22 @@ def main() -> int:
             cycle_start = _now_ist()
             result: Dict[str, Any] = {}
             error_message: Optional[str] = None
+            _write_loop_status(
+                {
+                    "timestamp": cycle_start.isoformat(),
+                    "status": "running",
+                    "result_status": "running",
+                    "mode": "single",
+                    "last_cycle_started_at": cycle_start.isoformat(),
+                    "last_cycle_finished_at": None,
+                    "last_success_at": last_success_at,
+                    "duration_seconds": 0.0,
+                    "interval_minutes": interval_seconds / 60.0,
+                    "next_cycle_eta": None,
+                    "start_fresh_today": bool(args.start_fresh_today),
+                    "recovery_mode": bool(args.recovery_mode),
+                }
+            )
             try:
                 result = engine.run_cycle()
             except Exception as exc:
@@ -4691,6 +6835,22 @@ def main() -> int:
             cycle_start = _now_ist()
             result: Dict[str, Any] = {}
             error_message: Optional[str] = None
+            _write_loop_status(
+                {
+                    "timestamp": cycle_start.isoformat(),
+                    "status": "running",
+                    "result_status": "running",
+                    "mode": "continuous",
+                    "last_cycle_started_at": cycle_start.isoformat(),
+                    "last_cycle_finished_at": None,
+                    "last_success_at": last_success_at,
+                    "duration_seconds": 0.0,
+                    "interval_minutes": interval_seconds / 60.0,
+                    "next_cycle_eta": None,
+                    "start_fresh_today": bool(args.start_fresh_today),
+                    "recovery_mode": bool(args.recovery_mode),
+                }
+            )
             try:
                 result = engine.run_cycle()
             except Exception as exc:

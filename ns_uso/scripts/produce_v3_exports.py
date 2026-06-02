@@ -17,6 +17,11 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
+try:
+    from zoneinfo import ZoneInfo
+except Exception:  # pragma: no cover
+    ZoneInfo = None  # type: ignore
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EXPORT_DIR = PROJECT_ROOT / "ns_uso" / "exports" / "v3"
@@ -24,6 +29,7 @@ DEFAULT_TARGET_DIR = PROJECT_ROOT / "data" / "sentiment" / "v3"
 WEEKEND_TOP_COMPANIES = 100
 POSITIVE_SENTIMENT_LABELS = {"positive", "very_positive", "bullish", "upside"}
 NEGATIVE_SENTIMENT_LABELS = {"negative", "very_negative", "bearish", "downside"}
+IST = ZoneInfo("Asia/Kolkata") if ZoneInfo else None
 
 
 def _safe_read_json(path: Path) -> dict:
@@ -53,6 +59,23 @@ def _last_market_row(path: Path) -> dict:
         return dict(df.iloc[-1].to_dict())
     except Exception:
         return {}
+
+
+def _coerce_scalar(value: Any, default: float = 0.0) -> float:
+    """Convert scalar-ish input to a finite float, treating NaN as missing."""
+    try:
+        numeric = pd.to_numeric(value, errors="coerce")
+    except Exception:
+        return float(default)
+    if pd.isna(numeric):
+        return float(default)
+    try:
+        out = float(numeric)
+    except Exception:
+        return float(default)
+    if not np.isfinite(out):
+        return float(default)
+    return float(out)
 
 
 def _load_market_inputs() -> Tuple[Dict[str, dict], dict, dict]:
@@ -92,8 +115,11 @@ def _build_market_sentiment_row(
         cohesion = 0.6
         conviction = 0.6
 
-    macro_score = float(pd.to_numeric(market_state.get("macro_score", 0.0), errors="coerce") or 0.0)
-    risk_on_probability = float(pd.to_numeric(market_state.get("risk_on_probability", market_state.get("risk_on", 0.5)), errors="coerce") or 0.5)
+    macro_score = _coerce_scalar(market_state.get("macro_score", 0.0), 0.0)
+    risk_on_probability = _coerce_scalar(
+        market_state.get("risk_on_probability", market_state.get("risk_on", 0.5)),
+        0.5,
+    )
     change_count = int(narrative_change.get("change_count", 0) or 0)
 
     policy_weight = float(np.clip(0.35 + abs(macro_score) * 0.25 + min(change_count, 6) * 0.03, 0.0, 1.0))
@@ -101,9 +127,9 @@ def _build_market_sentiment_row(
 
     # Capture subtle intraday shifts from previous cycle in the 5-min loop.
     prev = previous_row or {}
-    prev_polarity = float(pd.to_numeric(prev.get("polarity", 0.0), errors="coerce") or 0.0)
-    prev_uncertainty = float(pd.to_numeric(prev.get("uncertainty", 0.0), errors="coerce") or 0.0)
-    prev_conviction = float(pd.to_numeric(prev.get("conviction", conviction), errors="coerce") or conviction)
+    prev_polarity = _coerce_scalar(prev.get("polarity", 0.0), 0.0)
+    prev_uncertainty = _coerce_scalar(prev.get("uncertainty", 0.0), 0.0)
+    prev_conviction = _coerce_scalar(prev.get("conviction", conviction), conviction)
     delta_polarity = float(polarity - prev_polarity)
     delta_uncertainty = float(uncertainty - prev_uncertainty)
     delta_conviction = float(conviction - prev_conviction)
@@ -130,7 +156,7 @@ def _build_market_sentiment_row(
         dominant_theme = "monetary_policy"
 
     return {
-        "date": pd.Timestamp.now(tz="UTC").tz_localize(None),
+        "date": pd.Timestamp.now(tz=IST).tz_localize(None) if IST else pd.Timestamp.now(),
         "polarity": polarity,
         "conviction": conviction,
         "uncertainty": uncertainty,
@@ -182,8 +208,8 @@ def _build_sector_narratives(indices: Dict[str, dict]) -> pd.DataFrame:
 
 
 def _build_policy_context(market_state: dict, narrative_change: dict) -> dict:
-    macro_score = float(pd.to_numeric(market_state.get("macro_score", 0.0), errors="coerce") or 0.0)
-    momentum = float(pd.to_numeric(market_state.get("macro_momentum", 0.0), errors="coerce") or 0.0)
+    macro_score = _coerce_scalar(market_state.get("macro_score", 0.0), 0.0)
+    momentum = _coerce_scalar(market_state.get("macro_momentum", 0.0), 0.0)
     change_count = int(narrative_change.get("change_count", 0) or 0)
 
     if macro_score >= 0.2:
@@ -372,11 +398,11 @@ def _build_company_sentiment_trends(inputs: Dict[str, Any]) -> pd.DataFrame:
             continue
         industry = str(row.get("Industry", row.get("industry", "Unknown")) or "Unknown").strip()
         industry_l = industry.lower()
-        mispricing = float(pd.to_numeric(row.get("mispricing", 0.0), errors="coerce") or 0.0)
-        confirmation = float(pd.to_numeric(row.get("confirmation", 0.0), errors="coerce") or 0.0)
-        northstar_score = float(pd.to_numeric(row.get("northstar_score", 50.0), errors="coerce") or 50.0)
-        momentum_score = float(pd.to_numeric(row.get("momentum_score", 50.0), errors="coerce") or 50.0)
-        cohesive_alpha = float(pd.to_numeric(row.get("cohesive_alpha_score", 0.0), errors="coerce") or 0.0)
+        mispricing = _coerce_scalar(row.get("mispricing", 0.0), 0.0)
+        confirmation = _coerce_scalar(row.get("confirmation", 0.0), 0.0)
+        northstar_score = _coerce_scalar(row.get("northstar_score", 50.0), 50.0)
+        momentum_score = _coerce_scalar(row.get("momentum_score", 50.0), 50.0)
+        cohesive_alpha = _coerce_scalar(row.get("cohesive_alpha_score", 0.0), 0.0)
         opp_type = str(row.get("opportunity_type", "Unknown") or "Unknown")
 
         alpha_component = np.tanh((northstar_score - 50.0) / 22.0)
@@ -481,7 +507,7 @@ def _build_event_company_impact(company_df: pd.DataFrame, inputs: Dict[str, Any]
 
     for _, ev in event_rows.iterrows():
         event_type = str(ev.get("event_type", "macro_shift") or "macro_shift")
-        magnitude = float(pd.to_numeric(ev.get("magnitude", 0.0), errors="coerce") or 0.0)
+        magnitude = _coerce_scalar(ev.get("magnitude", 0.0), 0.0)
         significance = str(ev.get("significance", "medium") or "medium").strip().lower()
         sig_weight = {"high": 1.0, "medium": 0.65, "low": 0.35}.get(significance, 0.5)
         event_weight = float(np.clip(abs(magnitude) * 0.8 + sig_weight * 0.35, 0.15, 1.25))
@@ -490,9 +516,9 @@ def _build_event_company_impact(company_df: pd.DataFrame, inputs: Dict[str, Any]
             ticker = _normalize_ticker(row.get("ticker", ""))
             if not ticker:
                 continue
-            base_trend = float(row.get("trend_score", 0.0) or 0.0)
-            sentiment = float(row.get("sentiment_score", 0.0) or 0.0)
-            shock_factor = float(row.get("event_shock_factor", 0.0) or 0.0)
+            base_trend = _coerce_scalar(row.get("trend_score", 0.0), 0.0)
+            sentiment = _coerce_scalar(row.get("sentiment_score", 0.0), 0.0)
+            shock_factor = _coerce_scalar(row.get("event_shock_factor", 0.0), 0.0)
             score = float(np.clip(base_trend * (0.55 + shock_factor * 0.45) * event_weight, 0.0, 3.0))
             direction = "downside" if sentiment < -0.15 else ("upside" if sentiment > 0.15 else "mixed")
 

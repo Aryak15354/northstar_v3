@@ -9,7 +9,7 @@ NS-USO has been successfully integrated into Northstar V3 with **zero impact** o
 ## 🎯 INTEGRATION SUMMARY
 
 ### What Was Built
-1. **NS-USO V3 Batch Processor** (`northstar/scripts/run_v3_batch_ingestion.py`)
+1. **NS-USO V3 Batch Processor** (`ns_uso/scripts/run_v3_batch_ingestion.py`)
    - India-specific sentiment processing
    - Batch-safe, deterministic execution
    - V3-native artifact generation

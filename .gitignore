@@ -57,6 +57,9 @@ data/
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb
+!notebooks/nb00_feature_health.ipynb
+!notebooks/nb01_baselines.ipynb
+!notebooks/nb02_regime_ic.ipynb
 
 # Test and tooling caches
 .hypothesis/
@@ -69,25 +72,41 @@ data/
 coverage.xml
 htmlcov/
 tests/**/.hypothesis/
+tests/**/test_results_*.json
 
 # Generated workspace noise
+analysis_results/
+archive/
+backups/
+catboost_info/
 snapshots/
+reports/
 reports/workspace_analysis.md
 reports/cleanup_plan.md
 reports/script_catalog.md
 reports/daily/
 reports/weekly/
+runs/
+tmp/
+dist/kaggle/
 
 # Options Trading System - CRITICAL
 .env.options
+.env.options.*
 config/options/*.secret
 data/options/
 logs/options_*.log
 
 # Credentials (never commit)
 .env
+.env.*
+!.env.example
+!.env.options.template
 *.key
 *.pem
+*.p12
+*.pfx
 *.secret
 credentials.json
+kaggle.json
 _cold_archive/

@@ -94,7 +94,7 @@ df.ffill().bfill()
 - **Real NIFTY Data**: Integrated yfinance for authentic NIFTY 50 data
 - **Real Yield Data**: Extracted from actual RBI CSV files
 - **Real Credit Data**: Processed from RBI weekly/daily data
-- **Removed ALL synthetic data**: No mock, temporary, or placeholder files
+- **Reduced synthetic dependence substantially**: real inputs now back the main market-brain surfaces, but some development and missing-data fallbacks still remain elsewhere in the subsystem
 
 **Real Data Sources**:
 - ✅ **NIFTY**: 1,356 periods from yfinance (2020-2025)

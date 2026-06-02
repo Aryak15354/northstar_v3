@@ -64,7 +64,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--end-year", type=int, default=date.today().year)
     p.add_argument("--resume", action="store_true", default=True)
     p.add_argument("--no-resume", action="store_false", dest="resume")
-    p.add_argument("--sources", type=str, default="bse,gdelt,rss", help="Comma list: bse,gdelt,rss")
+    p.add_argument("--sources", type=str, default="nse,gdelt,rss", help="Comma list: nse,bse,gdelt,rss")
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--gdelt-max-records", type=int, default=250)
     p.add_argument(

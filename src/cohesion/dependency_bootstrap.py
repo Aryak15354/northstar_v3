@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Any, Optional
 from pathlib import Path
 
-from src.dependency_container import DependencyContainer, DependencyScope, get_container
+from src.dependency_container_compat import DependencyContainer, DependencyScope, get_container
 from src.service_interfaces import (
     IConfigurationManager, IMarketConfiguration, IStateManager,
     ITemporalGuard, IDataPipeline, ISchemaValidator, IRiskEngine,
@@ -78,7 +78,7 @@ class DependencyBootstrap:
         logger.debug("Registering core services")
         
         # Configuration Manager (singleton - single source of truth)
-        from src.configuration_manager import ConfigurationManager
+        from src.cohesion.configuration_manager import ConfigurationManager
         self.container.register_interface(
             IConfigurationManager,
             ConfigurationManager,
@@ -87,7 +87,7 @@ class DependencyBootstrap:
         self._registered_services.add("ConfigurationManager")
         
         # Market Configuration (singleton - loaded once)
-        from src.configuration_manager import MarketConfiguration
+        from src.cohesion.configuration_manager import MarketConfiguration
         self.container.register_interface(
             IMarketConfiguration,
             MarketConfiguration,
@@ -96,7 +96,7 @@ class DependencyBootstrap:
         self._registered_services.add("MarketConfiguration")
         
         # Error Handler (singleton - centralized error handling)
-        from src.error_handler import ErrorHandler
+        from src.cohesion.error_handler import ErrorHandler
         self.container.register_interface(
             IErrorHandler,
             ErrorHandler,
@@ -105,7 +105,7 @@ class DependencyBootstrap:
         self._registered_services.add("ErrorHandler")
         
         # Audit Logger (singleton - centralized audit trail)
-        from src.audit_logger import AuditLogger
+        from src.cohesion.audit_logger import AuditLogger
         self.container.register_interface(
             IAuditLogger,
             AuditLogger,
@@ -118,7 +118,7 @@ class DependencyBootstrap:
         logger.debug("Registering data services")
         
         # State Manager (singleton - single source of truth)
-        from src.unified_state_manager import UnifiedStateManager
+        from src.cohesion.unified_state_manager import UnifiedStateManager
         self.container.register_interface(
             IStateManager,
             UnifiedStateManager,
@@ -127,7 +127,7 @@ class DependencyBootstrap:
         self._registered_services.add("StateManager")
         
         # Temporal Guard (singleton - consistent temporal context)
-        from src.temporal_guard import TemporalGuard
+        from src.cohesion.temporal_guard import TemporalGuard
         self.container.register_interface(
             ITemporalGuard,
             TemporalGuard,
@@ -136,7 +136,7 @@ class DependencyBootstrap:
         self._registered_services.add("TemporalGuard")
         
         # Schema Validator (singleton - consistent validation rules)
-        from src.schema_validator import SchemaValidator
+        from src.cohesion.schema_validator import SchemaValidator
         self.container.register_interface(
             ISchemaValidator,
             SchemaValidator,
@@ -145,7 +145,7 @@ class DependencyBootstrap:
         self._registered_services.add("SchemaValidator")
         
         # Cache Manager (singleton - centralized caching)
-        from src.cache_manager import CacheManager
+        from src.cohesion.cache_manager import CacheManager
         self.container.register_interface(
             ICacheManager,
             CacheManager,
@@ -154,7 +154,7 @@ class DependencyBootstrap:
         self._registered_services.add("CacheManager")
         
         # Data Pipeline (singleton - coordinated data processing)
-        from src.integrated_data_pipeline import IntegratedDataPipeline
+        from src.cohesion.integrated_data_pipeline import IntegratedDataPipeline
         self.container.register_interface(
             IDataPipeline,
             IntegratedDataPipeline,
@@ -163,7 +163,7 @@ class DependencyBootstrap:
         self._registered_services.add("DataPipeline")
         
         # Data Source Factory (singleton - consistent data source creation)
-        from src.data_source_factory import DataSourceFactory
+        from src.cohesion.data_source_factory import DataSourceFactory
         self.container.register_interface(
             IDataSourceFactory,
             DataSourceFactory,
@@ -176,7 +176,7 @@ class DependencyBootstrap:
         logger.debug("Registering intelligence services")
         
         # Risk Authority (singleton - single source of truth for risk parameters)
-        from src.risk_authority import RiskAuthority
+        from src.volatility.risk_authority import RiskAuthority
         self.container.register_interface(
             RiskAuthority,
             RiskAuthority,
@@ -185,7 +185,7 @@ class DependencyBootstrap:
         self._registered_services.add("RiskAuthority")
         
         # Risk Engine (singleton - consistent risk management)
-        from src.risk_engine import RiskEngine
+        from src.processing.risk_engine import RiskEngine
         self.container.register_interface(
             IRiskEngine,
             RiskEngine,
@@ -194,7 +194,7 @@ class DependencyBootstrap:
         self._registered_services.add("RiskEngine")
         
         # Intelligence Engine (singleton - consistent intelligence state)
-        from src.intelligence_engine import IntelligenceEngine
+        from src.volatility.intelligence_engine import IntelligenceEngine
         self.container.register_interface(
             IIntelligenceEngine,
             IntelligenceEngine,
@@ -207,7 +207,7 @@ class DependencyBootstrap:
         logger.debug("Registering monitoring services")
         
         # Health Monitor (singleton - centralized health monitoring)
-        from src.health_monitor import HealthMonitor
+        from src.core.health_monitor import HealthMonitor
         self.container.register_interface(
             IHealthMonitor,
             HealthMonitor,

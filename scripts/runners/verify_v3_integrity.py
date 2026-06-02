@@ -483,7 +483,7 @@ def _cross_checks() -> List[Dict[str, Any]]:
 
     # 6) Certification lineage + macro-unit integrity coherence.
     try:
-        p = PROJECT_ROOT / "reports/research/formula_lineage_and_unit_integrity_latest.json"
+        p = PROJECT_ROOT / "data/results/research/reports/formula_lineage_and_unit_integrity_latest.json"
         if not p.exists():
             add("formula_lineage_unit_integrity", "critical", "missing_formula_lineage_report")
         else:
@@ -581,7 +581,7 @@ def _build_specs() -> List[ArtifactSpec]:
         ArtifactSpec("data/processed/valuation_validation_regime.parquet", "parquet", required=False, key_columns=["market_regime", "horizon_days"], max_stale_days=120.0, read_columns=["market_regime", "horizon_days", "ic_mean", "spread_mean", "monotonic_rate"]),
         ArtifactSpec("data/processed/shadow_trading_snapshot.json", "json", required=False),
         ArtifactSpec("data/processed/shadow_pnl_series.parquet", "parquet", required=False, key_columns=["date", "portfolio_value"], max_stale_days=35.0, read_columns=["date", "portfolio_value", "daily_return"]),
-        ArtifactSpec("reports/research/formula_lineage_and_unit_integrity_latest.json", "json", required=True),
+        ArtifactSpec("data/results/research/reports/formula_lineage_and_unit_integrity_latest.json", "json", required=True),
         ArtifactSpec("data/processed/macro_transmission/macro_unit_profile.json", "json", required=False),
         ArtifactSpec("data/processed/macro_transmission/macro_unit_conversion_log.json", "json", required=False),
     ]

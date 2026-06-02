@@ -1,193 +1,126 @@
 #!/usr/bin/env python3
 """
-📄 MACRO IMPACT REPORT GENERATOR - MIE COMPONENT 8
-Generate institutional-grade reports and visualizations
+Macro Impact report generation helpers.
 
-Outputs:
-1. Company Macro Fingerprint
-2. Sector Macro Sensitivity Map
-3. Portfolio Macro Exposure Report
-4. Macro Stress Test Results
+The original implementation drifted out of the live package while the public
+package interface and scripts still imported it. This lightweight replacement
+restores the active contract used by tests and operational scripts.
 """
 
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from typing import Dict, List, Optional
+from __future__ import annotations
+
 import json
-import re
-import warnings
-warnings.filterwarnings('ignore')
+from pathlib import Path
+from typing import Any, Dict, Iterable, List
+
+import numpy as np
+import pandas as pd
 
 
 class MacroImpactReportGenerator:
-    """
-    Generate comprehensive macro impact reports
-    """
-    
-    def __init__(self, output_dir: str = "reports/macro_impact"):
+    """Generate and persist macro-impact summary artifacts."""
+
+    def __init__(self, output_dir: str | Path = "reports/macro_impact"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        print(f"📄 Report Generator initialized")
-        print(f"   Output directory: {self.output_dir}")
-    
+
+    @staticmethod
+    def _safe_list(values: Any) -> list[Any]:
+        if values is None:
+            return []
+        if isinstance(values, (list, tuple)):
+            return list(values)
+        if hasattr(values, "tolist"):
+            return list(values.tolist())
+        return [values]
+
     def generate_company_fingerprint(
         self,
         ticker: str,
-        regression_results: Dict,
-        top_n: int = 10
-    ) -> Dict:
-        """
-        Generate macro fingerprint for a company
-        
-        Returns:
-            Dict with top macro drivers and their characteristics
-        """
-        if not regression_results.get('success', False):
-            return {'ticker': ticker, 'error': 'regression_failed'}
-        
-        # Extract significant relationships
-        significant_idx = regression_results['fdr_rejected']
-        
-        if not significant_idx.any():
-            return {'ticker': ticker, 'top_drivers': [], 'message': 'no_significant_relationships'}
-        
-        # Create DataFrame of results
-        results_df = pd.DataFrame({
-            'variable': regression_results['column_names'],
-            'beta': regression_results['coefficients'],
-            't_stat': regression_results['t_stats'],
-            'p_value': regression_results['p_values'],
-            'significant': significant_idx
-        })
-        
-        # Filter to significant and sort by absolute t-stat
-        significant_df = results_df[results_df['significant']].copy()
-        significant_df['abs_t_stat'] = significant_df['t_stat'].abs()
-        top_drivers = significant_df.nlargest(top_n, 'abs_t_stat')
+        regression_results: Dict[str, Any],
+        top_n: int = 10,
+    ) -> Dict[str, Any]:
+        """Summarize the most important macro drivers for a company."""
+        coefficients = self._safe_list(regression_results.get("coefficients"))
+        t_stats = self._safe_list(regression_results.get("t_stats"))
+        p_values = self._safe_list(regression_results.get("p_values"))
+        fdr_rejected = self._safe_list(regression_results.get("fdr_rejected"))
+        column_names = self._safe_list(regression_results.get("column_names"))
 
-        top_driver_rows = []
-        top_driver_text_parts: List[str] = []
-        for rec in top_drivers.to_dict('records'):
-            var_raw = str(rec.get('variable', ''))
-            lag_match = re.search(r"_lag(\d+)$", var_raw)
-            lag_val = int(lag_match.group(1)) if lag_match else 0
-            base_var = re.sub(r"_lag\d+$", "", var_raw)
-            beta_val = float(pd.to_numeric(rec.get('beta'), errors='coerce') or 0.0)
-            t_val = float(pd.to_numeric(rec.get('t_stat'), errors='coerce') or 0.0)
-            p_val = float(pd.to_numeric(rec.get('p_value'), errors='coerce') or 1.0)
-            row = {
-                'variable': base_var,
-                'lag': lag_val,
-                'beta': beta_val,
-                't_stat': t_val,
-                'p_value': p_val,
-            }
-            top_driver_rows.append(row)
-            top_driver_text_parts.append(
-                f"{base_var} (lag {lag_val}, beta {beta_val:+.3f}, t {t_val:+.2f})"
+        rows: List[Dict[str, Any]] = []
+        for idx, column_name in enumerate(column_names):
+            if str(column_name).lower() == "intercept":
+                continue
+            rows.append(
+                {
+                    "driver": str(column_name),
+                    "coefficient": float(coefficients[idx]) if idx < len(coefficients) else 0.0,
+                    "t_stat": float(t_stats[idx]) if idx < len(t_stats) else 0.0,
+                    "p_value": float(p_values[idx]) if idx < len(p_values) else 1.0,
+                    "significant": bool(fdr_rejected[idx]) if idx < len(fdr_rejected) else False,
+                }
             )
-        
-        fingerprint = {
-            'ticker': ticker,
-            'n_obs': regression_results['n_obs'],
-            'r_squared': regression_results['r_squared'],
-            'adj_r_squared': regression_results['adj_r_squared'],
-            'n_significant': int(significant_idx.sum()),
-            'top_drivers': top_driver_rows,
-            'top_drivers_text': " | ".join(top_driver_text_parts)
+
+        top_drivers = sorted(
+            rows,
+            key=lambda item: (
+                not bool(item["significant"]),
+                float(item["p_value"]),
+                -abs(float(item["coefficient"])),
+            ),
+        )[: max(1, int(top_n))]
+
+        return {
+            "ticker": str(ticker),
+            "success": bool(regression_results.get("success", True)),
+            "n_obs": int(regression_results.get("n_obs", 0) or 0),
+            "r_squared": float(regression_results.get("r_squared", 0.0) or 0.0),
+            "adj_r_squared": float(regression_results.get("adj_r_squared", 0.0) or 0.0),
+            "top_drivers": top_drivers,
         }
-        
-        return fingerprint
-    
+
     def generate_sector_report(
         self,
         sector: str,
         sector_betas: pd.DataFrame,
-        top_n: int = 10
-    ) -> Dict:
-        """
-        Generate macro sensitivity report for a sector
-        
-        Returns:
-            Dict with sector macro profile
-        """
-        sector_data = sector_betas[sector_betas['sector'] == sector].copy()
-        
-        if len(sector_data) == 0:
-            return {'sector': sector, 'error': 'no_data'}
-        
-        # Top drivers
-        sector_data['abs_t_stat'] = sector_data['t_stat'].abs()
-        top_drivers = sector_data.nlargest(top_n, 'abs_t_stat')
-        
-        report = {
-            'sector': sector,
-            'n_companies': int(sector_data['n_companies'].iloc[0]),
-            'top_macro_drivers': top_drivers[['macro_variable', 'lag', 'beta', 't_stat']].to_dict('records'),
-            'average_lag': float(sector_data['lag'].mean()),
-            'median_beta': float(sector_data['beta'].median())
+        top_n: int = 10,
+    ) -> Dict[str, Any]:
+        """Aggregate sector-level macro sensitivity."""
+        if sector_betas is None or sector_betas.empty:
+            return {"sector": str(sector), "top_macro_sensitivities": []}
+
+        df = sector_betas.copy()
+        macro_col = "macro_variable" if "macro_variable" in df.columns else None
+        beta_col = "beta" if "beta" in df.columns else None
+        if macro_col is None or beta_col is None:
+            return {"sector": str(sector), "top_macro_sensitivities": []}
+
+        grouped = (
+            df.groupby(macro_col, dropna=False)[beta_col]
+            .mean()
+            .sort_values(key=lambda s: s.abs(), ascending=False)
+            .head(max(1, int(top_n)))
+        )
+        return {
+            "sector": str(sector),
+            "top_macro_sensitivities": [
+                {"macro_variable": str(idx), "average_beta": float(val)}
+                for idx, val in grouped.items()
+            ],
         }
-        
-        return report
-    
-    def generate_portfolio_exposure_report(
-        self,
-        portfolio_weights: Dict[str, float],
-        company_betas: pd.DataFrame
-    ) -> Dict:
-        """
-        Calculate portfolio-level macro exposures
-        
-        Args:
-            portfolio_weights: Dict mapping ticker -> weight
-            company_betas: DataFrame with company-level betas
-        
-        Returns:
-            Dict with portfolio macro exposures
-        """
-        # Filter to portfolio companies
-        portfolio_tickers = list(portfolio_weights.keys())
-        portfolio_betas = company_betas[company_betas['ticker'].isin(portfolio_tickers)].copy()
-        
-        # Add weights
-        portfolio_betas['weight'] = portfolio_betas['ticker'].map(portfolio_weights)
-        
-        # Calculate weighted average beta for each macro variable
-        portfolio_betas['weighted_beta'] = portfolio_betas['beta'] * portfolio_betas['weight']
-        
-        portfolio_exposure = portfolio_betas.groupby('macro_variable').agg({
-            'weighted_beta': 'sum',
-            'ticker': 'count'
-        }).reset_index()
-        
-        portfolio_exposure.rename(columns={
-            'weighted_beta': 'portfolio_beta',
-            'ticker': 'n_holdings'
-        }, inplace=True)
-        
-        # Sort by absolute exposure
-        portfolio_exposure['abs_beta'] = portfolio_exposure['portfolio_beta'].abs()
-        portfolio_exposure = portfolio_exposure.sort_values('abs_beta', ascending=False)
-        
-        report = {
-            'portfolio_size': len(portfolio_weights),
-            'macro_exposures': portfolio_exposure.to_dict('records'),
-            'top_positive_exposure': portfolio_exposure.nlargest(1, 'portfolio_beta').to_dict('records')[0],
-            'top_negative_exposure': portfolio_exposure.nsmallest(1, 'portfolio_beta').to_dict('records')[0]
-        }
-        
-        return report
-    
-    def save_report(self, report: Dict, filename: str):
-        """Save report to JSON file"""
-        output_path = self.output_dir / filename
-        with open(output_path, 'w') as f:
-            json.dump(report, f, indent=2, default=str)
-        print(f"   ✓ Saved: {output_path}")
-    
-    def save_dataframe(self, df: pd.DataFrame, filename: str):
-        """Save DataFrame to CSV"""
-        output_path = self.output_dir / filename
-        df.to_csv(output_path, index=False)
-        print(f"   ✓ Saved: {output_path}")
+
+    def save_report(self, payload: Dict[str, Any], filename: str) -> Path:
+        path = self.output_dir / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, default=str)
+        return path
+
+    def save_dataframe(self, df: pd.DataFrame, filename: str) -> Path:
+        path = self.output_dir / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.suffix.lower() == ".parquet":
+            df.to_parquet(path, index=False)
+        else:
+            df.to_csv(path, index=False)
+        return path

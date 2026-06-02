@@ -51,6 +51,23 @@ def _check_view_model(mode: str) -> dict:
     }
 
 
+def _check_current_positions() -> dict:
+    path = ROOT / "data/portfolio/current_positions.json"
+    _require_file(path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise RuntimeError("current_positions.json must contain an object")
+    positions = payload.get("positions")
+    if not isinstance(positions, dict) or not positions:
+        raise RuntimeError("current_positions.json missing non-empty positions map")
+    total_value = float(payload.get("total_value", 0.0) or 0.0)
+    if total_value <= 0.0:
+        raise RuntimeError("current_positions.json total_value must be > 0")
+    if not payload.get("updated_at") and not payload.get("timestamp"):
+        raise RuntimeError("current_positions.json missing timestamp/updated_at")
+    return {"positions": int(len(positions)), "total_value": total_value}
+
+
 def main() -> int:
     scores = _check_parquet(
         ROOT / "data/processed/scores.parquet",
@@ -63,6 +80,10 @@ def main() -> int:
     beliefs = _check_parquet(
         ROOT / "data/processed/strategy_beliefs.parquet",
         {"strategy"},
+    )
+    current_holdings = _check_parquet(
+        ROOT / "data/processed/current_holdings.parquet",
+        {"ticker", "weight", "market_value"},
     )
 
     system_status_path = ROOT / "data/processed/system_status.json"
@@ -79,6 +100,8 @@ def main() -> int:
         "scores": scores,
         "portfolio": portfolio,
         "beliefs": beliefs,
+        "current_positions": _check_current_positions(),
+        "current_holdings": current_holdings,
         "system_status_keys": sorted(status.keys()),
         "dashboard_view_model_live": _check_view_model("live"),
         "dashboard_view_model_research": _check_view_model("research"),

@@ -42,7 +42,7 @@ def _normalize_ticker(value: object) -> str:
 
 def _load_universe() -> list[tuple[str, str]]:
     rows: list[tuple[str, str]] = []
-    meta_dir = Path("data/raw/screener/metadata")
+    meta_dir = Path("data/raw/vendors/screener/metadata")
     for p in sorted(meta_dir.glob("*_metadata.json")):
         try:
             d = json.loads(p.read_text())
@@ -178,7 +178,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    out_dir = Path("data/raw/alternative/promoter_pledge")
+    out_dir = Path("data/raw/exchanges/bse/alternative/promoter_pledge")
     out_dir.mkdir(parents=True, exist_ok=True)
     state = ResumeState(out_dir / ".resume_state.json")
 

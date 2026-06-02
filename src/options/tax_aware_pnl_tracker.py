@@ -152,11 +152,13 @@ class TaxAwarePnLTracker:
         buy_side_premium = 0.0
         
         for leg in legs:
-            leg_turnover = leg.entry_premium * leg.quantity
+            premium = self._leg_premium(leg)
+            quantity = self._leg_quantity(leg)
+            leg_turnover = premium * quantity
             total_turnover += leg_turnover
             
             # Track buy-side premium for stamp duty
-            if leg.action == "buy":
+            if self._leg_action(leg) == "buy":
                 buy_side_premium += leg_turnover
         
         # Exchange charges: 0.05% of turnover (entry + exit)
@@ -182,6 +184,91 @@ class TaxAwarePnLTracker:
             gst=gst,
             total=total
         )
+
+    @staticmethod
+    def _leg_action(leg: Any) -> str:
+        return str(getattr(leg, "action", "buy") or "buy").strip().lower()
+
+    @staticmethod
+    def _leg_quantity(leg: Any) -> float:
+        try:
+            quantity = float(getattr(leg, "quantity", 0.0) or 0.0)
+        except Exception:
+            return 0.0
+        return max(0.0, quantity)
+
+    @staticmethod
+    def _leg_premium(leg: Any) -> float:
+        raw = getattr(leg, "entry_premium", None)
+        if raw is None:
+            raw = getattr(leg, "premium", 0.0)
+        try:
+            premium = float(raw or 0.0)
+        except Exception:
+            return 0.0
+        return max(0.0, premium)
+
+    def estimate_slippage_cost(self, legs: List[Any], slippage_bps: float) -> float:
+        """
+        Estimate round-trip slippage cost from expected turnover.
+
+        Slippage is applied on total premium turnover for both entry and exit.
+        """
+        bps = max(0.0, float(slippage_bps or 0.0))
+        if bps <= 0.0:
+            return 0.0
+
+        total_turnover = 0.0
+        for leg in legs:
+            total_turnover += self._leg_premium(leg) * self._leg_quantity(leg)
+
+        return float(total_turnover * 2.0 * (bps / 10_000.0))
+
+    def estimate_trade_economics(
+        self,
+        *,
+        legs: List[Any],
+        expected_gross_pnl: float,
+        max_loss: float,
+        slippage_bps: float = 0.0,
+    ) -> Dict[str, Any]:
+        """
+        Estimate all-in trade economics before execution.
+
+        Returns expected net P&L after Indian charges, GST, tax, and slippage,
+        plus a conservative max-loss figure that includes execution friction.
+        """
+        costs = self.calculate_costs(legs)
+        slippage_cost = self.estimate_slippage_cost(legs, slippage_bps=slippage_bps)
+        tax = self.calculate_tax(expected_gross_pnl)
+        expected_net_pnl = self.calculate_net_pnl(
+            expected_gross_pnl,
+            TradeCosts(
+                brokerage=costs.brokerage,
+                exchange_charges=costs.exchange_charges,
+                sebi_charges=costs.sebi_charges,
+                stamp_duty=costs.stamp_duty,
+                gst=costs.gst,
+                total=costs.total + slippage_cost,
+            ),
+            tax,
+        )
+        base_max_loss = max(0.0, float(max_loss or 0.0))
+        friction_total = float(costs.total + slippage_cost)
+        net_max_loss = float(base_max_loss + friction_total)
+        cost_to_max_loss_ratio = float(friction_total / max(base_max_loss, 1.0))
+
+        return {
+            "expected_gross_pnl": float(expected_gross_pnl),
+            "expected_tax": float(tax),
+            "expected_net_pnl": float(expected_net_pnl),
+            "slippage_bps": float(max(0.0, float(slippage_bps or 0.0))),
+            "slippage_cost": float(slippage_cost),
+            "costs": costs,
+            "friction_total": friction_total,
+            "net_max_loss": net_max_loss,
+            "cost_to_max_loss_ratio": cost_to_max_loss_ratio,
+        }
     
     def calculate_tax(self, gross_pnl: float) -> float:
         """

@@ -183,7 +183,7 @@ def _clean_file(path: Path, min_file_relevance: float) -> tuple[pd.DataFrame, di
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Audit and clean legacy news CSVs.")
     p.add_argument("--news-dir", type=str, default="data/news/equities")
-    p.add_argument("--backup-dir", type=str, default="data/news_backup/news_old/equities")
+    p.add_argument("--backup-dir", type=str, default="data/archive/news/legacy_backup/news_old/equities")
     p.add_argument("--out-dir", type=str, default="data/processed/news")
     p.add_argument("--report-dir", type=str, default="reports")
     p.add_argument("--min-file-relevance", type=float, default=30.0, help="Min %% relevance for file quality reporting.")

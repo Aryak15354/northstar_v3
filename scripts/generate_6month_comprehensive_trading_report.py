@@ -47,13 +47,13 @@ def load_shadow_trading_data():
     return pd.concat(shadow_data, ignore_index=True) if shadow_data else None
 
 def load_live_trading_data():
-    """Load comprehensive live trading data from analysis_results/live_trading"""
+    """Load comprehensive live trading data from data/results/analysis/live_trading"""
     print("📊 Loading Live Trading Data...")
     
     live_data = []
     
     # Load portfolio PnL data (main performance data)
-    pnl_file = 'analysis_results/live_trading/live_data_portfolio_pnl.csv'
+    pnl_file = 'data/results/analysis/live_trading/live_data_portfolio_pnl.csv'
     if os.path.exists(pnl_file):
         print(f"   📄 Loading {pnl_file}")
         pnl_df = pd.read_csv(pnl_file)
@@ -78,7 +78,7 @@ def load_live_trading_data():
         print(f"   ✅ Portfolio PnL: {len(pnl_df)} days from {pnl_df['date'].min().date()} to {pnl_df['date'].max().date()}")
     
     # Load performance summary data
-    perf_file = 'analysis_results/live_trading/live_data_performance_summary.csv'
+    perf_file = 'data/results/analysis/live_trading/live_data_performance_summary.csv'
     if os.path.exists(perf_file):
         print(f"   📄 Loading {perf_file}")
         perf_df = pd.read_csv(perf_file)
@@ -95,7 +95,7 @@ def load_live_trading_data():
         print(f"   ✅ Performance Summary: {len(perf_df)} days from {perf_df['date'].min().date()} to {perf_df['date'].max().date()}")
     
     # Load engine decisions data
-    engine_file = 'analysis_results/live_trading/live_data_engine_decisions.csv'
+    engine_file = 'data/results/analysis/live_trading/live_data_engine_decisions.csv'
     if os.path.exists(engine_file):
         print(f"   📄 Loading {engine_file}")
         engine_df = pd.read_csv(engine_file)
@@ -109,8 +109,8 @@ def load_backtest_data():
     print("📊 Loading Backtest Data...")
     
     backtest_files = [
-        'analysis_results/backtests/northstar_all_strategies_3year_backtest.csv',
-        'analysis_results/backtests/northstar_3year_backtest_real_data.csv',
+        'data/results/analysis/backtests/northstar_all_strategies_3year_backtest.csv',
+        'data/results/analysis/backtests/northstar_3year_backtest_real_data.csv',
         'northstar_3year_backtest_results.csv'
     ]
     

@@ -274,7 +274,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    out_dir = Path("data/raw/alternative/earnings_dates")
+    out_dir = Path("data/raw/shared/alternative/earnings_dates")
     out_dir.mkdir(parents=True, exist_ok=True)
     state = ResumeState(out_dir / ".resume_state.json")
 

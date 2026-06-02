@@ -15,7 +15,7 @@ from typing import List
 
 from src.options.position_manager import PositionManager, Position, PositionLeg, Greeks, ExitReason
 from src.options.strategy_generator import OptionStrategy, StrategyType, OptionLeg as StrategyOptionLeg
-from src.options.regime_detector import Regime
+from src.options.options_regime_detector import Regime
 
 
 # Mock config for testing
@@ -25,6 +25,9 @@ class MockExitRulesConfig:
     stop_loss_pct: float = 0.40
     profit_target_pct: float = 0.55
     days_before_expiry: int = 2
+    regime_flip_min_hold_minutes: int = 30
+    regime_flip_confirmation_cycles: int = 2
+    regime_flip_market_open_grace_minutes: int = 30
 
 
 @dataclass

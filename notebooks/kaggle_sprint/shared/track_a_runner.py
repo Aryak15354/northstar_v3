@@ -36,6 +36,9 @@ from sprint_utils import (
     top_ic_feature_names,
 )
 
+if os.environ.get("PYTORCH_CUDA_ALLOC_CONF") is None:
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 
 def _ensure_module(module_name: str, pip_spec: str | None = None):
     try:
@@ -119,6 +122,27 @@ def _safe_float(value: Any, default: float = float("-inf")) -> float:
     except (TypeError, ValueError):
         return default
     return numeric if np.isfinite(numeric) else default
+
+
+def _build_date_quality_weights(dates: Any, rules: list[Any] | tuple[Any, ...] | None) -> np.ndarray | None:
+    if dates is None:
+        return None
+    date_index = pd.to_datetime(pd.Series(list(dates)), errors="coerce")
+    if date_index.empty:
+        return None
+    weights = np.ones(len(date_index), dtype=float)
+    for raw_rule in list(rules or []):
+        if not isinstance(raw_rule, (list, tuple)) or len(raw_rule) < 3:
+            continue
+        start_raw, end_raw, weight_raw = raw_rule[:3]
+        start = pd.Timestamp(start_raw)
+        end = pd.Timestamp(end_raw)
+        weight = _safe_float(weight_raw, default=float("nan"))
+        if not np.isfinite(weight):
+            continue
+        mask = date_index.between(start, end, inclusive="both").to_numpy(dtype=bool)
+        weights[mask] = float(weight)
+    return weights
 
 
 def _pick_first_existing(columns: list[str], preferred: list[str]) -> str | None:
@@ -210,6 +234,18 @@ class TrackARunConfig:
     catboost_min_data_in_leaf: int = 40
     catboost_l2_leaf_reg: float = 15.0
     catboost_iterations: int = 800
+    regime_caps: dict[str, float] = field(
+        default_factory=lambda: {"R7|Rate-Event": 0.05, "R8|Election/Binary": 0.05, "default": 0.40}
+    )
+    deployment_thresholds: dict[str, float] = field(
+        default_factory=lambda: {
+            "high_ic": 0.015,
+            "medium_ic": 0.005,
+            "high_exposure": 0.40,
+            "medium_exposure": 0.20,
+            "low_exposure": 0.05,
+        }
+    )
 
     @classmethod
     def from_env(cls) -> "TrackARunConfig":
@@ -661,6 +697,9 @@ class TrackARunner:
             "random_seed": 42,
             "task_type": "GPU" if self.config.device == "cuda" else "CPU",
             "od_wait": 30,
+            "use_early_stopping": True,
+            "apply_quality_weights": False,
+            "quality_weight_rules": [],
             "output_dir": str(self.output_dir),
             "resume_from_checkpoint": self.config.resume_from_checkpoint,
             "require_group_ranking": self.config.require_group_ranking,
@@ -991,45 +1030,78 @@ class TrackARunner:
                 y_train,
                 require=bool(config.get("require_group_ranking", True)),
             )
-            X_fit, X_val, y_fit, y_val, fit_groups, val_groups = self._split_ranking_train_val(
-                X_train_sel,
-                y_train,
-                train_groups,
-            )
+            use_early_stopping = bool(config.get("use_early_stopping", True))
+            if use_early_stopping:
+                X_fit, X_val, y_fit, y_val, fit_groups, val_groups = self._split_ranking_train_val(
+                    X_train_sel,
+                    y_train,
+                    train_groups,
+                )
+            else:
+                X_fit = X_train_sel
+                X_val = X_train_sel[:0]
+                y_fit = y_train
+                y_val = y_train[:0]
+                fit_groups = list(train_groups)
+                val_groups = []
             y_fit_rank = self._to_group_relevance_labels(y_fit, fit_groups)
             y_val_rank = self._to_group_relevance_labels(y_val, val_groups) if len(y_val) else y_val
             fit_group_id = np.repeat(np.arange(len(fit_groups)), fit_groups)
-            model = CatBoostRanker(
-                iterations=config["iterations"],
-                depth=config["depth"],
-                learning_rate=config["learning_rate"],
-                l2_leaf_reg=config["l2_leaf_reg"],
-                min_data_in_leaf=config["min_data_in_leaf"],
-                loss_function=config["loss_function"],
-                eval_metric=config["eval_metric"],
-                boosting_type=config["boosting_type"],
-                verbose=config["verbose"],
-                random_seed=config["random_seed"],
-                task_type=config["task_type"],
-                od_type="Iter",
-                od_wait=config["od_wait"],
-            )
+            train_group_weights = None
+            full_train_group_weights = None
+            if bool(config.get("apply_quality_weights", False)):
+                weight_rules = list(config.get("quality_weight_rules") or [])
+                full_train_weights = _build_date_quality_weights(ctx.get("train_dates"), weight_rules)
+                if full_train_weights is not None and len(full_train_weights) == len(y_train):
+                    train_group_weights = np.asarray(full_train_weights[: len(y_fit)], dtype=float)
+                    full_train_group_weights = np.asarray(full_train_weights, dtype=float)
+                    eval_group_weights = np.asarray(full_train_weights[len(y_fit) :], dtype=float) if len(y_val) else None
+                else:
+                    train_group_weights = None
+                    full_train_group_weights = None
+                    eval_group_weights = None
+            else:
+                eval_group_weights = None
+            model_kwargs = {
+                "iterations": config["iterations"],
+                "depth": config["depth"],
+                "learning_rate": config["learning_rate"],
+                "l2_leaf_reg": config["l2_leaf_reg"],
+                "min_data_in_leaf": config["min_data_in_leaf"],
+                "loss_function": config["loss_function"],
+                "eval_metric": config["eval_metric"],
+                "boosting_type": config["boosting_type"],
+                "verbose": config["verbose"],
+                "random_seed": config["random_seed"],
+                "task_type": config["task_type"],
+            }
+            if use_early_stopping:
+                model_kwargs["od_type"] = "Iter"
+                model_kwargs["od_wait"] = config["od_wait"]
+            if config.get("grow_policy"):
+                model_kwargs["grow_policy"] = config["grow_policy"]
+            if config.get("max_leaves") is not None:
+                model_kwargs["max_leaves"] = int(config["max_leaves"])
+            if config.get("bootstrap_type"):
+                model_kwargs["bootstrap_type"] = config["bootstrap_type"]
+            model = CatBoostRanker(**model_kwargs)
             if int(config.get("window_id", 0) or 0) == 1:
                 print(
                     f"CatBoost confirm params: depth={config['depth']} min_leaf={config['min_data_in_leaf']} "
-                    f"l2={config['l2_leaf_reg']} iterations={config['iterations']}",
+                    f"l2={config['l2_leaf_reg']} iterations={config['iterations']} "
+                    f"early_stopping={use_early_stopping}",
                     flush=True,
                 )
-            train_pool = Pool(X_fit, y_fit_rank, group_id=fit_group_id)
+            train_pool = Pool(X_fit, y_fit_rank, group_id=fit_group_id, group_weight=train_group_weights)
             fit_kwargs: dict[str, Any] = {}
-            if len(y_val):
+            if use_early_stopping and len(y_val):
                 eval_group_id = np.repeat(np.arange(len(val_groups)), val_groups)
-                fit_kwargs["eval_set"] = Pool(X_val, y_val_rank, group_id=eval_group_id)
-                fit_kwargs["use_best_model"] = True
+                fit_kwargs["eval_set"] = Pool(X_val, y_val_rank, group_id=eval_group_id, group_weight=eval_group_weights)
+                fit_kwargs["use_best_model"] = bool(config.get("use_best_model", True))
             model.fit(train_pool, **fit_kwargs)
 
             full_group_id = np.repeat(np.arange(len(train_groups)), train_groups)
-            full_train_pool = Pool(X_train_sel, y_train, group_id=full_group_id)
+            full_train_pool = Pool(X_train_sel, y_train, group_id=full_group_id, group_weight=full_train_group_weights)
             train_preds = model.predict(X_train_sel)
             test_preds = model.predict(X_test_sel)
             try:
@@ -1184,6 +1256,22 @@ class TrackARunner:
             flat = x_grad.grad.abs().mean(dim=0).reshape(-1)
             return flat[:n_features].detach().cpu().numpy()
 
+        def predict_sequence_batches(model, X_values, device, batch_size):
+            values = np.asarray(X_values, dtype=np.float32)
+            if len(values) == 0:
+                return np.empty(0, dtype=np.float32)
+            preds: list[np.ndarray] = []
+            model.eval()
+            with torch.no_grad():
+                for start in range(0, len(values), max(1, int(batch_size))):
+                    stop = min(start + max(1, int(batch_size)), len(values))
+                    xb = torch.tensor(values[start:stop], dtype=torch.float32, device=device)
+                    preds.append(model(xb).detach().cpu().numpy().reshape(-1))
+                    del xb
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            return np.concatenate(preds, axis=0) if preds else np.empty(0, dtype=np.float32)
+
         class LSTMRanker(nn.Module):
             def __init__(self, input_size, hidden_size=64, num_layers=2, dropout=0.3):
                 super().__init__()
@@ -1327,18 +1415,10 @@ class TrackARunner:
             device = config["device"]
             X_seq, n_features = reshape_feature_sequence(X_train, config["lookback_weeks"])
             split_idx = max(int(len(X_seq) * 0.9), 1)
-            X_fit = torch.tensor(X_seq[:split_idx], dtype=torch.float32, device=device)
-            y_fit = torch.tensor(y_train[:split_idx], dtype=torch.float32, device=device)
-            X_val = (
-                torch.tensor(X_seq[split_idx:], dtype=torch.float32, device=device)
-                if split_idx < len(X_seq)
-                else X_fit[:0]
-            )
-            y_val = (
-                torch.tensor(y_train[split_idx:], dtype=torch.float32, device=device)
-                if split_idx < len(X_seq)
-                else y_fit[:0]
-            )
+            X_fit = np.asarray(X_seq[:split_idx], dtype=np.float32)
+            y_fit = np.asarray(y_train[:split_idx], dtype=np.float32)
+            X_val = np.asarray(X_seq[split_idx:], dtype=np.float32) if split_idx < len(X_seq) else X_fit[:0]
+            y_val = np.asarray(y_train[split_idx:], dtype=np.float32) if split_idx < len(X_seq) else y_fit[:0]
             model = model_cls(input_size=X_seq.shape[2], **model_kwargs).to(device)
             head_params = list(model.head.parameters()) if hasattr(model, "head") else []
             head_param_ids = {id(param) for param in head_params}
@@ -1363,25 +1443,27 @@ class TrackARunner:
             best_loss = float("inf")
             best_state = None
             patience_counter = 0
-            batch_size = min(config["batch_size"], len(X_fit))
+            batch_size = min(int(config["batch_size"]), len(X_fit))
             for _ in range(config["max_epochs"]):
-                perm = torch.randperm(len(X_fit), device=device)
+                perm = np.random.permutation(len(X_fit))
                 model.train()
                 for start in range(0, len(X_fit), batch_size):
                     idx = perm[start : start + batch_size]
-                    xb = X_fit[idx]
-                    yb = y_fit[idx]
+                    xb = torch.tensor(X_fit[idx], dtype=torch.float32, device=device)
+                    yb = torch.tensor(y_fit[idx], dtype=torch.float32, device=device)
                     optimizer.zero_grad(set_to_none=True)
                     preds = model(xb)
                     loss = loss_fn(preds, yb)
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     optimizer.step()
-                model.eval()
-                with torch.no_grad():
-                    eval_x = X_val if len(X_val) else X_fit
-                    eval_y = y_val if len(y_val) else y_fit
-                    eval_loss = float(loss_fn(model(eval_x), eval_y).item())
+                    del xb, yb, preds, loss
+                eval_x = X_val if len(X_val) else X_fit
+                eval_y = y_val if len(y_val) else y_fit
+                eval_preds = predict_sequence_batches(model, eval_x, device, min(batch_size, 256))
+                eval_loss = -float(np.corrcoef(eval_preds, eval_y)[0, 1]) if len(eval_preds) > 4 else float("inf")
+                if not np.isfinite(eval_loss):
+                    eval_loss = float("inf")
                 if eval_loss < best_loss - 1e-4:
                     best_loss = eval_loss
                     best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -1405,22 +1487,23 @@ class TrackARunner:
             all_test = []
             all_importance = []
             X_test_seq, n_features = reshape_feature_sequence(X_test_sel, config["lookback_weeks"])
-            X_test_tensor = torch.tensor(X_test_seq, dtype=torch.float32, device=config["device"])
             seeds = config.get("seeds", [42])[: config.get("n_seeds", 1)]
             for seed in seeds:
                 set_seed(seed)
                 model, X_train_seq, _ = train_sequence_model(model_cls, X_train_sel, y_train, config, model_kwargs)
-                model.eval()
-                X_train_tensor = torch.tensor(X_train_seq, dtype=torch.float32, device=config["device"])
-                with torch.no_grad():
-                    train_preds = model(X_train_tensor).cpu().numpy()
-                    test_preds = model(X_test_tensor).cpu().numpy()
-                raw_importance = extract_importance(model, X_test_tensor[: min(len(X_test_tensor), 1024)], n_features)
+                train_preds = predict_sequence_batches(model, X_train_seq, config["device"], min(config["batch_size"], 256))
+                test_preds = predict_sequence_batches(model, X_test_seq, config["device"], min(config["batch_size"], 256))
+                X_test_tensor = torch.tensor(
+                    X_test_seq[: min(len(X_test_seq), 512)],
+                    dtype=torch.float32,
+                    device=config["device"],
+                )
+                raw_importance = extract_importance(model, X_test_tensor, n_features)
                 importance = expand_feature_importance(raw_importance, selected_indices, len(feature_names))
                 all_train.append(train_preds)
                 all_test.append(test_preds)
                 all_importance.append(importance)
-                del model, X_train_tensor
+                del model, X_test_tensor
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
                 gc.collect()
@@ -1893,23 +1976,25 @@ class TrackARunner:
         ranked_models = self.state.get("ranked_models") or self._rank_models()
         best_model = ranked_models[0] if ranked_models else None
         deployment_simulation = []
-        regime_caps = {
-            "R7|Rate-Event": 0.05,
-            "R8|Election/Binary": 0.05,
-            "default": 0.40,
-        }
+        regime_caps = dict(self.config.regime_caps or {"default": 0.40})
+        thresholds = dict(self.config.deployment_thresholds or {})
+        high_ic = float(thresholds.get("high_ic", 0.015) or 0.015)
+        medium_ic = float(thresholds.get("medium_ic", 0.005) or 0.005)
+        high_exposure = float(thresholds.get("high_exposure", 0.40) or 0.40)
+        medium_exposure = float(thresholds.get("medium_exposure", 0.20) or 0.20)
+        low_exposure = float(thresholds.get("low_exposure", 0.05) or 0.05)
         if best_model is not None:
             for window in self.state["all_model_results"][best_model]["windows"]:
                 if "error" in window:
                     continue
                 test_ic = window.get("test_ic", 0)
                 regime_name = str(window.get("regime", "unknown"))
-                if test_ic > 0.015:
-                    simulated_exposure = 0.40
-                elif test_ic > 0.005:
-                    simulated_exposure = 0.20
+                if test_ic > high_ic:
+                    simulated_exposure = high_exposure
+                elif test_ic > medium_ic:
+                    simulated_exposure = medium_exposure
                 else:
-                    simulated_exposure = 0.05
+                    simulated_exposure = low_exposure
                 regime_cap = float(regime_caps.get(regime_name, regime_caps["default"]))
                 simulated_exposure = min(simulated_exposure, regime_cap)
                 deployment_simulation.append(
@@ -1923,6 +2008,9 @@ class TrackARunner:
                 )
 
         sim_df = pd.DataFrame(deployment_simulation)
+        mean_exposure = float(sim_df["simulated_exposure"].mean()) if not sim_df.empty else float("nan")
+        windows_above_20pct = int((sim_df["simulated_exposure"] >= 0.20).sum()) if not sim_df.empty else 0
+        windows_in_hold = int((sim_df["simulated_exposure"] <= 0.05).sum()) if not sim_df.empty else 0
         if not sim_df.empty:
             for row in sim_df.itertuples(index=False):
                 print(
@@ -1930,18 +2018,26 @@ class TrackARunner:
                     f"test_ic={float(row.test_ic):+.4f} cap={float(row.regime_cap):.0%} "
                     f"exposure={float(row.simulated_exposure):.0%}"
                 )
-            print(f"Mean simulated exposure: {sim_df['simulated_exposure'].mean():.1%}")
-            print(f"Windows above 20% exposure: {(sim_df['simulated_exposure'] >= 0.20).sum()}/{len(sim_df)}")
-            print(f"Windows in HOLD (5%): {(sim_df['simulated_exposure'] <= 0.05).sum()}/{len(sim_df)}")
+            print(f"Mean simulated exposure: {mean_exposure:.1%}")
+            print(f"Windows above 20% exposure: {windows_above_20pct}/{len(sim_df)}")
+            print(f"Windows in HOLD (5%): {windows_in_hold}/{len(sim_df)}")
 
         self.state["mean_gain"] = mean_gain
         self.state["passes_parity"] = passes_parity
+        self.state["deployment_simulation"] = sim_df.to_dict(orient="records") if not sim_df.empty else []
+        self.state["deployment_summary"] = {
+            "mean_exposure": mean_exposure,
+            "windows_above_20pct": windows_above_20pct,
+            "windows_in_hold_5pct": windows_in_hold,
+            "regime_caps": regime_caps,
+            "deployment_thresholds": thresholds,
+        }
         self.saver.save_all(
             self.output_dir,
             self.track_name,
             {
                 "day6_ensemble": ensemble_results_list,
-                "day6_deployment_simulation": sim_df.to_dict(orient="records") if not sim_df.empty else [],
+                "day6_deployment_simulation": self.state["deployment_simulation"],
             },
         )
 

@@ -77,11 +77,37 @@ def check_status_file(path: Path, expected_interval_min: float = 5.0, now: Optio
     return result
 
 
+def check_artifact_file(path: Path, expected_interval_min: float = 15.0, now: Optional[datetime] = None) -> Dict[str, Any]:
+    now = now or datetime.now(IST)
+    result = {
+        "path": str(path.name),
+        "exists": path.exists(),
+        "healthy": False,
+        "age_minutes": None,
+        "message": "",
+    }
+    if not path.exists():
+        result["message"] = "Artifact missing"
+        return result
+
+    mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=IST)
+    age_minutes = (now - mtime).total_seconds() / 60.0
+    result["age_minutes"] = round(age_minutes, 1)
+    max_age = (expected_interval_min * 2.0) + 5.0
+    if age_minutes <= max_age:
+        result["healthy"] = True
+        result["message"] = f"Fresh ({age_minutes:.1f}m ago)"
+    else:
+        result["message"] = f"Stale ({age_minutes:.1f}m ago, expected <{max_age:.0f}m)"
+    return result
+
+
 def check_running_processes() -> List[str]:
     """Find running live loop processes."""
     try:
         ps_out = subprocess.run(["ps", "-ax"], capture_output=True, text=True, check=True).stdout
         patterns = [
+            "run_5min_market_updates",
             "run_integrated_options_paper_engine",
             "run_ns_uso_sentiment_loop",
             "run_trading_day_orchestrator",
@@ -97,22 +123,43 @@ def check_running_processes() -> List[str]:
         return []
 
 
-def check_cron_schedule() -> Tuple[bool, str, Optional[str]]:
-    """Check if orchestrator is scheduled in crontab."""
+def _cron_lines() -> List[str]:
     try:
         result = subprocess.run(["crontab", "-l"], capture_output=True, text=True, check=False)
         if result.returncode != 0:
-            return False, "No crontab configured", None
-
-        lines = result.stdout.splitlines()
-        for line in lines:
-            stripped = line.strip()
-            if "run_trading_day_orchestrator" in stripped and not stripped.startswith("#"):
-                return True, f"Scheduled: {stripped}", stripped
-
-        return False, "Orchestrator not found in crontab", None
+            return []
+        return result.stdout.splitlines()
     except Exception as exc:
-        return False, f"Error checking crontab: {exc}", None
+        return [f"ERROR:{exc}"]
+
+
+def check_cron_schedule(
+    *,
+    pattern: str,
+    label: str,
+    required_tokens: Optional[List[str]] = None,
+) -> Tuple[bool, str, Optional[str]]:
+    """Check if a required schedule is present and using the hardened command shape."""
+    lines = _cron_lines()
+    if not lines:
+        return False, "No crontab configured", None
+    if lines and lines[0].startswith("ERROR:"):
+        return False, f"Error checking crontab: {lines[0][6:]}", None
+
+    for line in lines:
+        stripped = line.strip()
+        if pattern not in stripped or stripped.startswith("#"):
+            continue
+        required_tokens = required_tokens or []
+        missing = [token for token in required_tokens if token not in stripped]
+        if missing:
+            return (
+                False,
+                f"{label} scheduled but missing hardened tokens: {', '.join(missing)}",
+                stripped,
+            )
+        return True, f"Scheduled: {stripped}", stripped
+    return False, f"{label} not found in crontab", None
 
 
 def check_orchestrator_dry_run() -> Tuple[bool, str]:
@@ -179,15 +226,17 @@ def main() -> int:
     print("📊 STATUS FILE HEALTH")
     print("-" * 80)
     status_checks = [
-        (PROJECT_ROOT / "data/options/live/options_loop_status.json", "Options Engine"),
-        (PROJECT_ROOT / "data/sentiment/v3/sentiment_loop_status.json", "NS-USO Sentiment"),
-        (PROJECT_ROOT / "data/options/live/trading_day_orchestrator_status.json", "Orchestrator"),
+        (PROJECT_ROOT / "data/processed/market_refresh_status.json", "Market Refresh", 5.0),
+        (PROJECT_ROOT / "data/options/live/options_loop_status.json", "Options Engine", 5.0),
+        (PROJECT_ROOT / "data/sentiment/v3/sentiment_loop_status.json", "NS-USO Sentiment", 5.0),
+        (PROJECT_ROOT / "data/options/live/trading_day_orchestrator_status.json", "Orchestrator", 5.0),
+        (PROJECT_ROOT / "data/pnl/accounting_snapshot.json", "PnL / Accounting", 15.0),
     ]
 
     all_healthy = True
     warnings = 0
-    for path, name in status_checks:
-        result = check_status_file(path, expected_interval_min=5.0, now=now_ist)
+    for path, name, expected_interval in status_checks:
+        result = check_status_file(path, expected_interval_min=expected_interval, now=now_ist)
 
         if result["error"]:
             icon = "❌"
@@ -218,6 +267,35 @@ def main() -> int:
 
     print()
 
+    # 1b. Check portfolio memory surfaces.
+    print("📚 PORTFOLIO MEMORY SURFACES")
+    print("-" * 80)
+    artifact_checks = [
+        (PROJECT_ROOT / "data/portfolio/current_positions.json", "Current Positions", 15.0 if intraday_expected else 24.0 * 60.0),
+        (PROJECT_ROOT / "data/processed/current_holdings.parquet", "Current Holdings", 15.0 if intraday_expected else 24.0 * 60.0),
+        (PROJECT_ROOT / "data/processed/portfolio_trade_blotter.parquet", "Trade Blotter", 15.0 if intraday_expected else 24.0 * 60.0),
+        (PROJECT_ROOT / "data/processed/options_trade_history.parquet", "Options History", 15.0 if intraday_expected else 24.0 * 60.0),
+        (PROJECT_ROOT / "data/processed/options_runtime_audit.json", "Options Runtime Audit", 15.0 if intraday_expected else 24.0 * 60.0),
+    ]
+    for path, name, expected_interval in artifact_checks:
+        result = check_artifact_file(path, expected_interval_min=expected_interval, now=now_ist)
+        if intraday_expected:
+            icon = "✅" if result["healthy"] else "❌"
+            if not result["healthy"]:
+                all_healthy = False
+        else:
+            if result["healthy"]:
+                icon = "✅"
+            elif result["exists"]:
+                icon = "⚠️ "
+                warnings += 1
+            else:
+                icon = "❌"
+                all_healthy = False
+        print(f"{icon} {name:20s} {result['message']}")
+
+    print()
+
     # 2. Check running processes.
     print("🔄 RUNNING PROCESSES")
     print("-" * 80)
@@ -242,9 +320,29 @@ def main() -> int:
     # 3. Check cron schedule.
     print("⏰ CRON SCHEDULE")
     print("-" * 80)
-    is_scheduled, schedule_msg, _ = check_cron_schedule()
-    print(f"{'✅' if is_scheduled else '❌'} {schedule_msg}")
-    if not is_scheduled:
+    trading_scheduled, trading_msg, _ = check_cron_schedule(
+        pattern="run_trading_day_orchestrator",
+        label="Trading-day orchestrator",
+        required_tokens=[
+            "load_runtime_env.sh",
+            "--run-once-day",
+            "--start-fresh-today",
+            "--runtime-sync-minutes 15",
+            "--eod-v3-mode quick",
+            "--skip-options-backtest",
+        ],
+    )
+    print(f"{'✅' if trading_scheduled else '❌'} {trading_msg}")
+    if not trading_scheduled:
+        all_healthy = False
+
+    weekend_scheduled, weekend_msg, _ = check_cron_schedule(
+        pattern="run_weekend_maintenance.py",
+        label="Weekend maintenance",
+        required_tokens=["load_runtime_env.sh"],
+    )
+    print(f"{'✅' if weekend_scheduled else '❌'} {weekend_msg}")
+    if not weekend_scheduled:
         all_healthy = False
 
     print()
@@ -262,24 +360,25 @@ def main() -> int:
     if not dry_ok:
         all_healthy = False
 
-    print("✅ Options engine: Accepts float --interval-minutes")
-    print("✅ NS-USO sentiment: Accepts float --interval-minutes")
-    print("✅ Orchestrator: Passes --interval-minutes 5.0 to both loops")
-    print("✅ Default cadence: 5 minutes for both systems")
-    print("✅ Auto-restart: Enabled (max 8 restarts per loop)")
+    print("✅ Singleton orchestrator lock: enabled")
+    print("✅ Preflight: Upstox, sentiment, alternative data, accounting, runtime, and pre-open guardrails")
+    print("✅ Intraday recovery: stale market/options/sentiment loops are recycled automatically")
+    print("✅ Runtime sync: ledger + accounting + strict options checks every 15 minutes")
+    print("✅ EOD closeout: runtime sync, prices, RBI, alternative data, artifact refresh, strict system check")
+    print("✅ Weekend maintenance: scheduled full upkeep path for backup, refresh, rebalance, and readiness")
 
     print()
 
     # 5. Quick start commands.
     print("🚀 QUICK START COMMANDS")
     print("-" * 80)
-    print("Manual start (foreground):")
-    print("  ./scripts/run_trading_day_orchestrator.py")
+    print("Manual start (safe launcher):")
+    print("  bash scripts/start_live_trading.sh")
     print()
     print("Dry-run test (verify config):")
-    print("  ./scripts/run_trading_day_orchestrator.py --dry-run")
+    print("  python3 scripts/run_trading_day_orchestrator.py --dry-run")
     print()
-    print("Install to cron (auto-start daily):")
+    print("Install live schedules (trading + weekend + backup):")
     print("  ./scripts/manage_cron.sh install")
     print()
     print("Check cron status:")

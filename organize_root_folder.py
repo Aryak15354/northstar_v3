@@ -33,8 +33,10 @@ def organize_root_folder():
         ],
         
         # System files
-        'system/': [
+        'scripts/': [
             'check_system_status.py',
+        ],
+        'data/state/': [
             'sealed_results.json',
             'system_freeze_hash.txt',
             'THE_CRITICAL_ANSWER.json'

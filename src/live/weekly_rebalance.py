@@ -347,7 +347,7 @@ def run(force_weekday: bool = False):
     
     now = datetime.now()
     if now.weekday() < 5 and not force_weekday:  # Monday-Friday
-        print("⏭️ Weekly rebalance skipped (weekend-only policy active).")
+        print("⏭️ Weekly rebalance not executed (weekend-only policy active).")
         print(f"   Current day: {now.strftime('%A')} ({now.date()})")
         return
     

@@ -1,0 +1,98 @@
+# Portfolio Governor Configuration
+# This file configures the top-level capital structure authority
+
+# Starting capital for NAV size protection calculations
+starting_capital_inr: 10000000  # 1 crore INR
+
+# Default capital structure when regime signals are unavailable
+default_capital_structure:
+  equity_fraction: 0.70
+  options_fraction: 0.15
+  cash_fraction: 0.15
+
+# Regime-conditional capital structures
+# These are the base structures before modifiers are applied
+regime_table:
+  FULL_DEPLOYMENT:
+    equity_fraction: 0.90
+    options_fraction: 0.08
+    cash_fraction: 0.02
+    description: "Applied when: market=BULL AND sentiment=OPTIMISM/NEUTRAL AND economic_activity=EXPANSION/RECOVERING AND crisis_prob < 0.10"
+  
+  STANDARD:
+    equity_fraction: 0.75
+    options_fraction: 0.15
+    cash_fraction: 0.10
+    description: "Applied when: market=BULL/SIDEWAYS AND sentiment=NEUTRAL AND economic_activity=NEUTRAL AND crisis_prob < 0.15"
+  
+  CAUTIOUS:
+    equity_fraction: 0.60
+    options_fraction: 0.20
+    cash_fraction: 0.20
+    description: "Applied when: market=SIDEWAYS/VOLATILE OR sentiment=FEAR OR economic_activity=SLOWING OR crisis_prob 0.15-0.25"
+  
+  DEFENSIVE:
+    equity_fraction: 0.40
+    options_fraction: 0.20
+    cash_fraction: 0.40
+    description: "Applied when: market=BEAR OR sentiment=FEAR AND economic_activity=SLOWING OR crisis_prob 0.25-0.40"
+  
+  CAPITAL_PRESERVATION:
+    equity_fraction: 0.15
+    options_fraction: 0.10
+    cash_fraction: 0.75
+    description: "Applied when: market=CRISIS OR sentiment=PANIC OR crisis_prob > 0.40"
+
+# Caution score thresholds for regime classification
+caution_score_thresholds:
+  full_deployment: 0.15
+  standard: 0.30
+  cautious: 0.50
+  defensive: 0.70
+
+# Weights for caution score computation (must sum to 1.0)
+caution_score_weights:
+  market_regime: 0.30
+  volatility_regime: 0.15
+  macro_regime: 0.20
+  sentiment_regime: 0.15
+  economic_activity_regime: 0.10
+  crisis_probability: 0.10
+
+# Modifiers applied ON TOP of the base table values
+modifiers:
+  drawdown_reduction:
+    trigger_drawdown_pct: -8.0        # Activate if drawdown > 8%
+    equity_reduction_per_pct: 0.03    # Reduce equity by 3% for each 1% of drawdown beyond trigger
+    max_equity_reduction: 0.25        # Never reduce equity by more than 25% via this modifier alone
+    cash_absorption: true             # Excess moves to cash, not options
+  
+  recovery_restoration:
+    activation_drawdown_pct: -3.0     # Start restoring when drawdown < 3%
+    restoration_rate_per_day: 0.01    # Restore 1% equity per day
+    max_restoration_per_day: 0.02     # Never restore more than 2% per day
+  
+  crisis_override:
+    crisis_prob_cautious: 0.15        # Force CAUTIOUS if crisis_prob > 0.15
+    crisis_prob_defensive: 0.25       # Force DEFENSIVE if crisis_prob > 0.25
+    crisis_prob_preservation: 0.40    # Force CAPITAL_PRESERVATION if crisis_prob > 0.40
+  
+  nav_size_protection:
+    trigger_nav_multiple: 1.20        # Activate when NAV > 1.20x starting capital
+    cash_per_multiple: 0.02           # Add 2% cash per 0.1x above trigger
+    max_additional_cash: 0.10         # Cap at 10% additional cash via this modifier
+
+# Hard limits — these cannot be overridden by any regime or modifier
+hard_limits:
+  min_equity_fraction: 0.10          # Always at least 10% equity unless in full emergency
+  max_equity_fraction: 0.95          # Never fully invested — keep at least 5% cash
+  min_cash_fraction: 0.05            # Always at least 5% cash for liquidity
+  max_options_fraction: 0.25         # Never more than 25% of capital in options
+  min_options_fraction: 0.00         # Options are optional
+  emergency_cash_minimum: 0.20       # In CAPITAL_PRESERVATION: at minimum 20% cash
+
+# Intraday escalation settings
+intraday_escalation:
+  check_frequency_minutes: 30        # Check for escalation every 30 minutes
+  enabled: true                      # Enable intraday escalation checks
+  min_regime_shift: 1                # Minimum regime levels to shift for escalation

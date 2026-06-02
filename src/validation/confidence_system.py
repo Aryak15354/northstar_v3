@@ -261,7 +261,7 @@ class ConfidenceSystem:
 
 def main():
     print("🎯 CONFIDENCE SYSTEM - DEMONSTRATION")
-    confidence = ConfidenceSystem(base_dir="data/test_confidence")
+    confidence = ConfidenceSystem(base_dir="data/testing/confidence")
     
     regime_confidence = confidence.compute_regime_confidence(
         regime_similarity=0.85,

@@ -241,15 +241,15 @@ python scripts/northstar_daemon.py --recovery-mode
 - Source of truth directories:
   - `data/options/`
   - `data/model_registry/`
-  - `data/research/`
-- Recommended external destination: `/Volumes/NORTHSTAR_BACKUP/northstar_v3`
+  - `data/results/research/`
+- Recommended external destination: set `NORTHSTAR_BACKUP_ROOT` to an external drive or managed backup mount.
 - Manual run:
   ```bash
-  python scripts/backup_northstar_data.py --destination-root /Volumes/NORTHSTAR_BACKUP/northstar_v3 --verify
+  NORTHSTAR_BACKUP_ROOT=/path/to/northstar_backup python scripts/backup_northstar_data.py --verify
   ```
 - Enable daily automation:
   ```bash
-  BACKUP_DEST=/Volumes/NORTHSTAR_BACKUP/northstar_v3 scripts/manage_cron.sh add-backup
+  BACKUP_DEST=/path/to/northstar_backup scripts/manage_cron.sh add-backup
   ```
 
 ### Recovery Procedures

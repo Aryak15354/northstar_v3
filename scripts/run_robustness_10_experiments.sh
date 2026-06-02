@@ -11,8 +11,8 @@ if [[ ! -f "${BASE_CONFIG}" ]]; then
 fi
 
 RUN_TS="$(date +%Y%m%d_%H%M%S)"
-OUTDIR="data/research/regime_ic_runs/robustness_${RUN_TS}"
-RPTDIR="data/research/reports/robustness_${RUN_TS}"
+OUTDIR="data/results/research/regime_ic_runs/robustness_${RUN_TS}"
+RPTDIR="data/results/research/reports/regime_ic/robustness_${RUN_TS}"
 mkdir -p "${OUTDIR}" "${RPTDIR}"
 
 python3 -m py_compile \

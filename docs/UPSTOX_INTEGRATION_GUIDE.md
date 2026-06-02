@@ -58,7 +58,7 @@ python scripts/start_engine.py --config config/production_upstox.yaml
 ### 5. Launch Dashboard
 
 ```bash
-streamlit run dashboard/volatility_dashboard.py
+streamlit run src/dashboard/app.py
 ```
 
 Access at: http://localhost:8501
@@ -327,7 +327,7 @@ Paper trading:
 
 5. **Launch Dashboard**:
    ```bash
-   streamlit run dashboard/volatility_dashboard.py
+   streamlit run src/dashboard/app.py
    ```
 
 ### Intraday Monitoring

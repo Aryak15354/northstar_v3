@@ -43,19 +43,19 @@ class TestBehavioralStabilityProperties:
     
     def setup_method(self):
         """Setup test environment"""
-        self.tester = BehavioralStabilityTester(base_dir="data/test_behavioral_stability")
+        self.tester = BehavioralStabilityTester(base_dir="data/testing/behavioral_stability")
         
         # Clean test directory
         import shutil
-        if os.path.exists("data/test_behavioral_stability"):
-            shutil.rmtree("data/test_behavioral_stability")
-        os.makedirs("data/test_behavioral_stability", exist_ok=True)
+        if os.path.exists("data/testing/behavioral_stability"):
+            shutil.rmtree("data/testing/behavioral_stability")
+        os.makedirs("data/testing/behavioral_stability", exist_ok=True)
     
     def teardown_method(self):
         """Cleanup test environment"""
         import shutil
-        if os.path.exists("data/test_behavioral_stability"):
-            shutil.rmtree("data/test_behavioral_stability")
+        if os.path.exists("data/testing/behavioral_stability"):
+            shutil.rmtree("data/testing/behavioral_stability")
     
     @given(
         n_periods=st.integers(min_value=50, max_value=200),
@@ -449,7 +449,7 @@ class TestBehavioralStabilityProperties:
 def test_behavioral_stability_tester_initialization():
     """Test that behavioral stability tester initializes correctly"""
     
-    tester = BehavioralStabilityTester(base_dir="data/test_init")
+    tester = BehavioralStabilityTester(base_dir="data/testing/init")
     
     # Check configuration
     assert tester.config['correlation_threshold'] == 0.85
@@ -462,8 +462,8 @@ def test_behavioral_stability_tester_initialization():
     
     # Cleanup
     import shutil
-    if os.path.exists("data/test_init"):
-        shutil.rmtree("data/test_init")
+    if os.path.exists("data/testing/init"):
+        shutil.rmtree("data/testing/init")
 
 
 if __name__ == "__main__":

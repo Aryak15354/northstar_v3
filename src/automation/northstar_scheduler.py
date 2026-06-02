@@ -16,8 +16,10 @@ try:
 except ImportError:
     schedule = None
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 # Setup logging
-LOG_DIR = "data/automation/logs"
+LOG_DIR = str(PROJECT_ROOT / "data/runtime/automation/logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 logging.basicConfig(
@@ -35,12 +37,12 @@ class NorthstarScheduler:
     """Automated scheduler for Northstar updates"""
     
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent.parent
+        self.project_root = PROJECT_ROOT
         self.update_script = self.project_root / "run_daily_v3.py"
         # Guaranteed cycle runner (strict export sync + live fallback producer)
         self.sentiment_script = self.project_root / "ns_uso/scripts/run_v3_sentiment_cycle.py"
         self.refresh_script = self.project_root / "scripts/runners/refresh_v3_artifacts.py"
-        self.last_run_file = LOG_DIR + "/last_successful_run.txt"
+        self.last_run_file = os.path.join(LOG_DIR, "last_successful_run.txt")
         
     def run_update(self, trigger_type="scheduled"):
         """Run the complete Northstar update"""

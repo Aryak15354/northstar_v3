@@ -1,0 +1,189 @@
+# Factor Configuration — Northstar V3 Factor Library
+# Academic factor signals for research and live trading
+
+factors:
+  enabled: true
+  
+  # Which factors are active
+  enabled_factors:
+    - bab
+    - amihud
+    - piotroski
+    - max
+    - earnings_quality
+    - operating_profitability
+    - earnings_surprise
+    - promoter_pledge
+    - bulk_deal
+  
+  # Feature columns to include in the live feature matrix
+  # Options: zscore_only, all, zscore_and_rank
+  feature_columns: zscore_only
+  
+  # Minimum coverage required for a factor to be included
+  minimum_coverage_threshold: 0.60  # 60% of universe must have valid data
+  
+  # BAB (Betting Against Beta) configuration
+  bab:
+    lookback_days: 252         # 1 year for correlation
+    vol_lookback_days: 21      # 1 month for volatility
+    min_observations: 120      # minimum valid trading days required
+    min_coverage_pct: 0.80     # BAB should have high coverage
+  
+  # Amihud Illiquidity configuration
+  amihud:
+    lookback_days: 21          # 1 month for liquidity measure
+    min_observations: 10       # minimum valid trading days
+    scaling: 1000000           # ×10^6 before log transform
+    min_coverage_pct: 0.80     # Should have high coverage
+  
+  # Piotroski F-Score configuration
+  piotroski:
+    min_coverage_pct: 0.50     # Lower coverage OK — financials patchy
+    min_tests_required: 6      # Require at least 6 of 9 tests
+    reporting_lag_days: 60     # Annual results are typically filed within ~60 days
+  
+  # MAX Lottery Factor configuration
+  max:
+    lookback_days: 21          # 1 month lookback
+    top_n_days: 5              # MAX5: average of top 5 daily returns
+    min_observations: 15       # minimum valid trading days
+    min_coverage_pct: 0.80     # High coverage
+  
+  # Earnings Quality configuration
+  earnings_quality:
+    india_accrual_sign: positive  # India-correct sign per Sehgal et al. (2012)
+    min_coverage_pct: 0.45     # Lower coverage OK — fundamentals patchier
+    component_weights:
+      sloan_accruals: 0.40
+      cash_conversion: 0.30
+      owc_change: 0.30
+    reporting_lag_days: 60
+
+  operating_profitability:
+    min_coverage_pct: 0.50
+    reporting_lag_days: 60
+
+  earnings_surprise:
+    min_coverage_pct: 0.45
+    announcement_safety_lag_days: 2
+    min_quarters_history: 6
+
+  promoter_pledge:
+    min_coverage_pct: 0.25
+    safety_lag_days: 25
+
+  bulk_deal:
+    lookback_days: 63
+    safety_lag_days: 1
+    min_classification_accuracy: 0.90
+    min_coverage_pct: 0.20
+    entity_table_path: data/reference/bulk_deal_entities.csv
+
+  ivol:
+    enabled: false
+    lookback_days: 252
+    min_observations: 120
+    min_coverage_pct: 0.75
+  
+  # Factor store configuration
+  store:
+    base_path: "data/factors"
+    default_frequency: "weekly"  # weekly factor refresh
+    cache_ttl_minutes: 60        # in-memory cache TTL
+
+use_gap9_academic_factors: true
+sentiment_feature_mode: full
+
+feature_groups:
+  gap9_academic_factors:
+    enabled: true
+    factor_lookback_days: 252
+    beta_lookback_days: 252
+    beta_min_observations: 120
+    amihud_lookback_days: 20
+    amihud_min_observations: 10
+    max_lookback_days: 20
+    max_min_observations: 10
+    min_piotroski_signals: 6
+    outputs:
+      - piotroski_fscore
+      - piotroski_fscore_cs_z
+      - piotroski_fscore_cs_rank
+      - bab_signal
+      - bab_signal_cs_z
+      - bab_signal_cs_rank
+      - amihud_illiquidity
+      - amihud_illiquidity_cs_z
+      - amihud_illiquidity_cs_rank
+      - max_ret_20d
+      - max_ret_20d_cs_z
+      - max_ret_20d_cs_rank
+      - earnings_quality_ratio
+      - earnings_quality_ratio_cs_z
+      - earnings_quality_ratio_cs_rank
+  company_sentiment_nlp:
+    reduced_keep:
+      - sent_northstar_score
+      - sentiment_polarity
+      - sentiment_conviction_x_polarity
+      - sentiment_surprise
+      - sentiment_polarity_momentum
+      - sent_cohesive_alpha_score
+      - narrative_strength
+      - topic_drift
+      - sentiment_uncertainty
+      - agreement_score
+      - sent_trend_score
+      - sentiment_volume_spike
+      - sent_event_shock_factor
+      - sent_momentum_score
+      - sentiment_shock
+  market_sentiment_macro_overlay:
+    reduced_keep:
+      - macro_sentiment_polarity
+      - macro_sentiment_conviction
+      - macro_sentiment_uncertainty
+      - macro_sentiment_event_shock
+      - macro_sentiment_regime_headwind
+      - macro_sentiment_risk_multiplier
+      - macro_sentiment_news_signal
+      - macro_sentiment_delta_polarity
+      - macro_sentiment_micro_shift
+      - macro_sentiment_change_velocity
+      - mkt_sent_polarity
+      - mkt_sent_conviction
+      - mkt_sent_narrative_cohesion
+      - mkt_sent_delta_polarity
+      - mkt_sent_uncertainty
+  macro_regime_and_breadth:
+    outputs:
+      - rbi_repo_rate_level
+      - rbi_repo_rate_ts_z
+      - rbi_repo_rate_change_13w
+      - yield_curve_slope
+      - yield_curve_slope_ts_z
+      - cpi_surprise
+      - cpi_surprise_ts_z
+
+models:
+  universe_size: 300
+  sequence_models_enabled: false
+
+  xgboost:
+    max_depth: 4
+    learning_rate: 0.05
+    n_estimators: 500
+    subsample: 0.7
+    colsample_bytree: 0.7
+    min_child_weight: 10
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    n_ensemble_seeds: 5
+
+  catboost:
+    iterations: 500
+    learning_rate: 0.05
+    depth: 6
+    l2_leaf_reg: 3.0
+    subsample: 0.8

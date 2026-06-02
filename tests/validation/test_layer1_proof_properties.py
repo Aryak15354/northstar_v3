@@ -126,7 +126,7 @@ def test_property_1_temporal_correctness(positions, month_end, nifty_return):
     """
     
     # Create tracker
-    tracker = PerformanceTracker(output_dir="data/test_output")
+    tracker = PerformanceTracker(output_dir="data/testing/output")
     
     # Generate returns for the stocks in the portfolio
     tickers = list(positions.keys())
@@ -188,7 +188,7 @@ def test_property_2_performance_calculation(positions, month_end, nifty_return):
     Mathematically: R_portfolio = sum(w_i * R_i)
     """
     
-    tracker = PerformanceTracker(output_dir="data/test_output")
+    tracker = PerformanceTracker(output_dir="data/testing/output")
     
     # Generate returns
     tickers = list(positions.keys())
@@ -232,7 +232,7 @@ def test_property_3_schema_completeness(positions, month_end, nifty_return):
     and have valid types.
     """
     
-    tracker = PerformanceTracker(output_dir="data/test_output")
+    tracker = PerformanceTracker(output_dir="data/testing/output")
     
     # Generate returns
     tickers = list(positions.keys())
@@ -332,7 +332,7 @@ def test_property_5_net_return_arithmetic(positions, month_end, nifty_return):
     Mathematically: R_net = R_gross - Costs
     """
     
-    tracker = PerformanceTracker(output_dir="data/test_output")
+    tracker = PerformanceTracker(output_dir="data/testing/output")
     
     # Generate returns
     tickers = list(positions.keys())
@@ -376,7 +376,7 @@ def test_property_6_active_share_bounds(portfolio_weights, benchmark_weights):
     where 0.0 means identical to benchmark and 1.0 means completely different.
     """
     
-    tracker = PerformanceTracker(output_dir="data/test_output")
+    tracker = PerformanceTracker(output_dir="data/testing/output")
     
     # Calculate active share
     active_share = tracker._calculate_active_share(portfolio_weights, benchmark_weights)
@@ -412,7 +412,7 @@ def test_property_7_turnover_non_negativity(positions1, positions2):
     Turnover measures trading activity and can never be negative.
     """
     
-    tracker = PerformanceTracker(output_dir="data/test_output")
+    tracker = PerformanceTracker(output_dir="data/testing/output")
     
     # Set previous positions
     tracker.previous_positions = positions1
@@ -660,7 +660,7 @@ def test_full_monthly_cycle():
     """
     
     # Clean up any existing test data
-    test_output_dir = "data/test_output"
+    test_output_dir = "data/testing/output"
     test_file = os.path.join(test_output_dir, "performance_summary.parquet")
     if os.path.exists(test_file):
         os.remove(test_file)
@@ -709,7 +709,7 @@ def test_temporal_discipline_enforcement():
     """
     
     # Clean up any existing test data
-    test_output_dir = "data/test_output"
+    test_output_dir = "data/testing/output"
     test_file = os.path.join(test_output_dir, "performance_summary.parquet")
     if os.path.exists(test_file):
         os.remove(test_file)

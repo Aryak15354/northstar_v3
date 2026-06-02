@@ -203,9 +203,6 @@ class RealDataIntegrator:
         print("\n💰 EXTRACTING REAL YIELD DATA FROM RBI")
         print("-" * 40)
         
-        # Check if synthetic data is allowed (dev/test only)
-        allow_synthetic = os.getenv('NORTHSTAR_ALLOW_SYNTHETIC', 'false').lower() == 'true'
-        
         try:
             # Try to load real RBI data first
             real_data_loaded = False
@@ -236,25 +233,18 @@ class RealDataIntegrator:
                         print(f"   ❌ Error loading {rbi_path}: {e}")
                         continue
             
-            # If no real data found, fail closed in production
+            # If no real data found, fail closed and surface the absence explicitly.
             if not real_data_loaded:
-                if not allow_synthetic:
-                    raise ValueError(
-                        "CRITICAL: No real RBI yield data found. "
-                        "Please provide real RBI data files in data/raw/rbi/ or set NORTHSTAR_ALLOW_SYNTHETIC=true for development. "
-                        "Expected files: yield_curve.csv, policy_rates.csv"
-                    )
-                else:
-                    print("   ⚠️ WARNING: Using synthetic data (DEVELOPMENT MODE ONLY)")
-                    yield_data = self._generate_synthetic_yields_for_dev()
+                print("   ⚠️ No real RBI yield data found; returning None")
+                return None
             
             # Ensure directory exists
             os.makedirs(os.path.dirname(self.paths['yields_output']), exist_ok=True)
             
             # Add provenance metadata
-            yield_data['provenance'] = 'real_rbi' if real_data_loaded else 'synthetic_dev'
+            yield_data['provenance'] = 'real_rbi'
             yield_data['generated_at'] = datetime.now().isoformat()
-            yield_data['environment'] = 'production' if not allow_synthetic else 'development'
+            yield_data['environment'] = 'production'
             
             # Save to CSV
             yield_data.to_csv(self.paths['yields_output'], index=False)
@@ -311,40 +301,16 @@ class RealDataIntegrator:
         
         return processed_data
     
-    def _generate_synthetic_yields_for_dev(self):
-        """Generate synthetic yield data ONLY for development/testing"""
-        print("   🚨 GENERATING SYNTHETIC DATA - DEVELOPMENT MODE ONLY")
-        
-        dates = pd.date_range(start='2020-01-01', end=datetime.now(), freq='W')
-        
-        yield_data = pd.DataFrame({
-            'Date': dates,
-            '3M': np.random.uniform(3.0, 7.0, len(dates)),
-            '6M': np.random.uniform(3.5, 7.5, len(dates)),
-            '1Y': np.random.uniform(4.0, 8.0, len(dates)),
-            '10Y': np.random.uniform(5.0, 9.0, len(dates)),
-            'Policy_Rate': np.random.uniform(4.0, 6.5, len(dates)),
-            'Repo_Rate': np.random.uniform(4.0, 6.5, len(dates)),
-            'Reverse_Repo': np.random.uniform(3.5, 6.0, len(dates)),
-            'Call_Money_High': np.random.uniform(4.5, 7.0, len(dates)),
-            'Call_Money_Low': np.random.uniform(3.5, 6.0, len(dates))
-        })
-        
-        return yield_data
-    
     def extract_real_fundamentals_data(self):
         """Extract real fundamentals data from NSE/BSE sources"""
         
         print("\n📊 EXTRACTING REAL FUNDAMENTALS DATA")
         print("-" * 40)
         
-        try:
-            # TODO: Implement real fundamentals extraction
-            print("   ⚠️ Real fundamentals extraction not yet implemented")
-            return True
-        except Exception as e:
-            print(f"   ❌ Error extracting fundamentals: {e}")
-            return False
+        raise NotImplementedError(
+            "Real fundamentals extraction is not yet implemented. "
+            "Provide a real fundamentals ingestion path before calling this method."
+        )
     
     def validate_real_data_quality(self):
         """Validate the quality of extracted real data"""

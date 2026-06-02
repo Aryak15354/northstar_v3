@@ -1,0 +1,9 @@
+name: "lightgbm_v1"
+model: "lightgbm"
+params:
+  objective: "regression"
+  num_leaves: 31
+  min_data_in_leaf: 20
+  learning_rate: 0.05
+  n_estimators: 300
+  reg_lambda: 3.0

@@ -1,0 +1,62 @@
+# Signal Engineering System - Baseline Configuration
+# Phase 0: Baseline Stabilization
+# Target IC: 0.032
+
+version: "1.0"
+phase: "Phase 0"
+timestamp: "2026-03-12T00:00:00"
+
+# XGBoost Hyperparameters (Corrected from over-regularized values)
+xgboost:
+  max_depth: 4                    # Limits tree complexity
+  min_child_weight: 20            # CRITICAL: 20 for 150-stock universe (not 3!)
+  learning_rate: 0.05             # Conservative rate for stable convergence
+  n_estimators: 200               # Number of boosting rounds
+  subsample: 0.8                  # Row sampling per tree
+  colsample_bytree: 0.8           # Column sampling per tree
+  reg_alpha: 0.1                  # L1 regularization
+  reg_lambda: 1.0                 # L2 regularization
+  objective: "reg:squarederror"   # Regression objective
+
+# Universe Configuration
+universe_size: 150                # Starting with 150 stocks (Phase 0-4)
+liquidity_threshold_cr: 2.0       # Rs 2 crore minimum ADT
+min_history_days: 252             # Minimum 1 year of trading history
+rebalance_frequency: "quarterly"  # Quarterly universe rebalancing
+regime_mode: "vix_nifty"          # 2-axis regime framework (VIX + Nifty 200d SMA)
+vix_threshold: 15                 # High-vol threshold (plan v2)
+nifty_sma_window: 200             # 200 trading days
+
+# Active Features (Phase 0 baseline)
+active_features: []               # Will be populated as features are added
+
+# Point-in-Time Safety Buffers (in trading days)
+pit_buffers:
+  quarterly_financials: 2         # 2 days after NSE announcement
+  annual_financials: 2            # 2 days after NSE announcement
+  earnings_announcements: 1       # 1 day after NSE announcement
+  bulk_deals: 1                   # Disclosed after market close, usable next day
+  price_data: 1                   # 1 day (EOD data available next day)
+  analyst_estimates: 0            # Same day (revision date is public date)
+  shareholding: 2                 # 2 days after BSE/NSE filing
+
+# Leakage Test Configuration
+leakage_shift_days: 5             # Forward shift for leakage detection
+leakage_ic_ratio_threshold: 1.20  # 20% improvement threshold flags leakage
+
+# Phase Gate Thresholds (IC targets)
+gates:
+  phase_0: 0.032                  # Baseline stabilization
+  phase_1: 0.035                  # Controlled feature additions (V2 de-rated)
+  phase_2: 0.037                  # Bulk deal integration
+  phase_3: 0.039                  # Regime overlay
+  phase_4: 0.041                  # Earnings surprise
+  phase_5: 0.044                  # Universe expansion (300 stocks)
+  phase_6: 0.046                  # Advanced signals
+  phase_7: 0.048                  # Sequence models (target)
+  regime_minimum: 0.010           # Minimum IC for any regime
+
+# Walk-Forward Validation Configuration
+train_window_months: 24           # 24-month training window
+test_window_months: 3             # 3-month test window
+cv_folds: 5                       # 5-fold cross-validation

@@ -15,7 +15,7 @@ import os
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.options.regime_detector import RegimeDetector, Regime
+from src.options.options_regime_detector import RegimeDetector, Regime
 from src.options.strategy_generator import StrategyGenerator
 from src.options.trade_eligibility_validator import TradeEligibilityValidator
 from src.options.config_loader import get_config

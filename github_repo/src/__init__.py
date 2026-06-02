@@ -1,1 +1,0 @@
-# Northstar V3 Source Package

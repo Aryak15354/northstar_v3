@@ -42,19 +42,19 @@ class TestForwardValidatorProperties:
     
     def setup_method(self):
         """Setup test environment"""
-        self.validator = ForwardValidator(base_dir="data/test_forward_validator")
+        self.validator = ForwardValidator(base_dir="data/testing/forward_validator")
         
         # Clean test directory
         import shutil
-        if os.path.exists("data/test_forward_validator"):
-            shutil.rmtree("data/test_forward_validator")
-        os.makedirs("data/test_forward_validator", exist_ok=True)
+        if os.path.exists("data/testing/forward_validator"):
+            shutil.rmtree("data/testing/forward_validator")
+        os.makedirs("data/testing/forward_validator", exist_ok=True)
     
     def teardown_method(self):
         """Cleanup test environment"""
         import shutil
-        if os.path.exists("data/test_forward_validator"):
-            shutil.rmtree("data/test_forward_validator")
+        if os.path.exists("data/testing/forward_validator"):
+            shutil.rmtree("data/testing/forward_validator")
     
     @given(
         n_periods=st.integers(min_value=50, max_value=200),
@@ -477,7 +477,7 @@ class TestForwardValidatorProperties:
 def test_forward_validator_initialization():
     """Test that forward validator initializes correctly"""
     
-    validator = ForwardValidator(base_dir="data/test_init")
+    validator = ForwardValidator(base_dir="data/testing/init")
     
     # Check configuration
     assert validator.config['min_allocation_change'] == 0.05
@@ -490,8 +490,8 @@ def test_forward_validator_initialization():
     
     # Cleanup
     import shutil
-    if os.path.exists("data/test_init"):
-        shutil.rmtree("data/test_init")
+    if os.path.exists("data/testing/init"):
+        shutil.rmtree("data/testing/init")
 
 
 if __name__ == "__main__":

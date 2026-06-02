@@ -69,8 +69,8 @@ class FeatureFactory:
         use_announcement_dates: bool = True,
         use_et500_features: bool = False,
         use_screener_features: bool = False,
-        screener_fundamentals_path: str = "data/canonical/fundamentals/fundamentals_annual_panel.csv",
-        screener_shareholding_path: str = "data/canonical/fundamentals/shareholding_quarterly.csv",
+        screener_fundamentals_path: str = "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
+        screener_shareholding_path: str = "data/canonical/fundamentals/shareholding_quarterly.parquet",
         use_screener_extended_features: bool = False,  # backward-compat alias
         config: Optional[dict[str, Any]] = None,
     ):
@@ -942,7 +942,7 @@ class FeatureFactory:
             logger.warning("[screener] annual fundamentals not found at %s", path)
             return None
         try:
-            raw = pd.read_csv(path, parse_dates=["availability_date"])
+            raw = self._safe_load_table(path)
         except Exception as exc:  # noqa: BLE001
             logger.warning("[screener] failed to read annual fundamentals at %s: %s", path, exc)
             return None
@@ -956,7 +956,7 @@ class FeatureFactory:
             logger.warning("[screener] shareholding not found at %s", path)
             return None
         try:
-            raw = pd.read_csv(path, parse_dates=["availability_date"])
+            raw = self._safe_load_table(path)
         except Exception as exc:  # noqa: BLE001
             logger.warning("[screener] failed to read shareholding at %s: %s", path, exc)
             return None

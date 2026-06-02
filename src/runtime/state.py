@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from numbers import Integral, Real
 from typing import Any, Dict, List
 
 from .contracts import ExecutionEvent, ExecutionEventType, PortfolioStateSnapshot
@@ -18,6 +19,89 @@ _MUTATING_EVENT_TYPES = {
     ExecutionEventType.CORPORATE_ACTION_APPLIED,
     ExecutionEventType.MARK_TO_MARKET,
 }
+
+_BROAD_INDEX_UNDERLYINGS = {"NIFTY", "MIDCPNIFTY"}
+
+_STATE_HASH_FIELDS = (
+    "cash",
+    "net_liquidation_value",
+    "gross_exposure",
+    "net_exposure",
+    "beta",
+    "sector_allocation",
+    "regime_context",
+    "hedging_state",
+    "transaction_history",
+    "unrealized_pnl",
+    "realized_pnl",
+    "net_delta",
+    "net_gamma",
+    "net_vega",
+    "net_theta",
+    "net_rho",
+    "holdings",
+    "last_rebalance_reason",
+    "source_event_id",
+)
+
+
+def _holding_underlying_symbol(symbol: str) -> str:
+    text = str(symbol or "").strip().upper()
+    if text.startswith("OPT::"):
+        parts = text.split("::")
+        if len(parts) >= 2:
+            return str(parts[1] or "").strip().upper()
+    return text
+
+
+def _counts_toward_sector_caps(holding: "Holding") -> bool:
+    sector = str(getattr(holding, "sector", "") or "").strip()
+    if not sector:
+        return False
+    instrument_type = str(getattr(holding, "instrument_type", "") or "").strip().lower()
+    origin = str(getattr(holding, "origin", "") or "").strip().lower()
+    underlying = _holding_underlying_symbol(getattr(holding, "symbol", ""))
+    if origin == "options_hedge":
+        return False
+    if instrument_type in {"option", "options"} and underlying in _BROAD_INDEX_UNDERLYINGS:
+        return False
+    return True
+
+
+def state_hash_payload(snapshot_like: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Build the deterministic payload used for runtime state hashing.
+
+    `timestamp_utc` is intentionally excluded so replaying the same event
+    stream later yields the same state hash.
+    """
+    payload = {key: snapshot_like.get(key) for key in _STATE_HASH_FIELDS}
+    payload["sector_allocation"] = dict(payload.get("sector_allocation", {}) or {})
+    payload["regime_context"] = dict(payload.get("regime_context", {}) or {})
+    payload["hedging_state"] = dict(payload.get("hedging_state", {}) or {})
+    payload["transaction_history"] = list(payload.get("transaction_history", []) or [])
+    payload["holdings"] = dict(payload.get("holdings", {}) or {})
+    payload["last_rebalance_reason"] = str(payload.get("last_rebalance_reason", "") or "")
+    payload["source_event_id"] = int(payload.get("source_event_id", 0) or 0)
+    return _normalize_hash_value(payload)
+
+
+def compute_state_hash(snapshot_like: Dict[str, Any]) -> str:
+    return canonical_hash(state_hash_payload(snapshot_like))
+
+
+def _normalize_hash_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(k): _normalize_hash_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_normalize_hash_value(v) for v in value]
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, Integral):
+        return int(value)
+    if isinstance(value, Real):
+        return f"{float(value):.8f}"
+    return value
 
 
 @dataclass
@@ -212,7 +296,7 @@ class PortfolioState:
             pos_notional = h.notional()
             gross += abs(pos_notional)
             net += pos_notional
-            if h.sector:
+            if _counts_toward_sector_caps(h):
                 sector_notional[h.sector] = sector_notional.get(h.sector, 0.0) + abs(pos_notional)
             unreal += h.quantity * (h.last_price - h.avg_price)
 
@@ -283,7 +367,7 @@ class PortfolioState:
             notional = h.notional()
             gross += abs(notional)
             net += notional
-            if h.sector:
+            if _counts_toward_sector_caps(h):
                 sector_notional[h.sector] = sector_notional.get(h.sector, 0.0) + abs(notional)
             holdings_dict[symbol] = {
                 "instrument_type": h.instrument_type,
@@ -307,7 +391,6 @@ class PortfolioState:
             sector_alloc = {k: float(v / gross) for k, v in sorted(sector_notional.items())}
 
         snap_core = {
-            "timestamp_utc": ts.isoformat(),
             "cash": float(self.cash),
             "net_liquidation_value": float(net_liq),
             "gross_exposure": float(gross),
@@ -328,7 +411,7 @@ class PortfolioState:
             "last_rebalance_reason": self.last_rebalance_reason,
             "source_event_id": int(self.last_event_id),
         }
-        state_hash = canonical_hash(snap_core)
+        state_hash = compute_state_hash(snap_core)
 
         return PortfolioStateSnapshot(
             timestamp_utc=ts,

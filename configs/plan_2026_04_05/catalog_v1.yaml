@@ -1,0 +1,457 @@
+plan:
+  plan_id: northstar_v3_compendium_2026_04_05
+  version: v1
+  source_doc: /Users/aryakghoshal/Downloads/northstar_v3_master_compendium (1).docx
+  master_notebook: /Users/aryakghoshal/Downloads/northstar/northstar_v3/notebooks/kaggle_sprint/master_experiment_suite_v1.ipynb
+  dataset_contract:
+    features: northstar_features.parquet
+    metadata: northstar_metadata.parquet
+    regimes: northstar_regime_labels.parquet
+    splits: northstar_walk_forward_splits.json
+  anchor_factors:
+    - eps_sue_decay
+    - eps_revision_accel
+    - rev_sue_decay
+    - agreement_score
+    - earnings_quality_ratio
+    - accruals_ratio
+  cross_asset_signals:
+    - inrusd_4w_return
+    - inrusd_vol_4w
+    - crude_4w_return
+    - crude_shock
+    - gold_4w_return
+    - steel_4w_return
+    - copper_4w_return
+    - coal_4w_return
+    - stock_x_crude
+    - stock_x_inrusd
+    - dxy_4w_return
+    - fii_proxy
+    - vix_india_4w
+    - rbi_rate_chg
+    - us_10y_4w
+    - commodity_basket
+  sector_conditional_features:
+    - eps_sue_decay
+    - rev_sue_decay
+    - earnings_quality_ratio_cs_z
+    - agreement_score_cs_z
+    - accruals_ratio_cs_z
+    - mom_20d_sector_rel_cs_z
+    - res_mom_20d_cs_z
+    - price_to_sma20_cs_z
+    - vol_z20_cs_z
+    - oil_sensitivity_score
+    - fx_sensitivity_score
+    - rate_sensitivity_score
+experiments:
+  EXP-09:
+    title: CatBoost Depth Ablation + Early Stopping
+    family: ratio
+    priority: 1
+    dependencies: []
+    hypothesis: Lower tree depth plus a tighter chronological early-stopping policy should reduce train-test ratio without destroying IC.
+    outputs:
+      - summary.json
+      - candidate_table.csv
+      - economic_narrative.md
+    params:
+      train_window_years: 2
+      depth_grid: [3, 4, 5]
+      early_stopping_rounds: [20, 30, 50]
+      leak_watch_windows: [13, 17, 19]
+      ic_floor: 0.020
+      pass_ratio_gate: 5.0
+      strong_pass_ratio_gate: 3.0
+      base_catboost:
+        depth: 4
+        l2_leaf_reg: 15.0
+        min_data_in_leaf: 40
+  EXP-10:
+    title: L2 Regularization Sweep
+    family: ratio
+    priority: 2
+    dependencies: [EXP-09]
+    hypothesis: Increasing leaf regularization on top of the best EXP-09 configuration should improve generalization stability and lower the ratio toward the 2.5x gate.
+    outputs:
+      - summary.json
+      - candidate_table.csv
+      - economic_narrative.md
+    params:
+      l2_leaf_reg_grid: [3, 5, 8, 10, 15, 20]
+      stability_ratio_gate: 2.5
+      pareto_ratio_cap: 2.5
+  EXP-11:
+    title: Ordered vs Plain Boosting Type
+    family: ratio
+    priority: 3
+    dependencies: [EXP-09, EXP-10]
+    hypothesis: Ordered boosting should remain superior under chronological validation, but Plain boosting needs a controlled comparison before we freeze the CatBoost setup.
+    outputs:
+      - summary.json
+      - candidate_table.csv
+      - economic_narrative.md
+    params:
+      boosting_types: [Ordered, Plain]
+      plain_ic_tolerance: 0.005
+  EXP-12:
+    title: Training Window Length Extension
+    family: ratio
+    priority: 4
+    dependencies: [EXP-11]
+    hypothesis: Extending the training history from 2 years to 3 or 4 years with a fixed 6-month test window should improve stability if older data remains regime-relevant.
+    outputs:
+      - summary.json
+      - candidate_table.csv
+      - economic_narrative.md
+    params:
+      train_window_years: [2, 3, 4]
+      test_window_weeks: 26
+      step_weeks: 26
+      ic_tolerance_vs_current: 0.003
+      verdict_a_validation_seeds: [42, 123, 456, 789, 1337]
+  EXP-13:
+    title: Financial Services Sector Model
+    family: sector
+    priority: 5
+    dependencies: [EXP-12]
+    hypothesis: A dedicated Financial Services model should outperform the broad-universe CatBoost because rates, regulation, and balance-sheet structure are more homogeneous inside the sector.
+    outputs:
+      - summary.json
+      - sector_subset_manifest.json
+      - economic_narrative.md
+    params:
+      sector_name: Financial Services
+      required_features:
+        - nim_4q_trend
+        - npa_net_4q
+        - provision_coverage
+        - credit_deposit_ratio
+        - rbi_rate_chg
+        - loan_growth_yoy
+        - casa_ratio
+        - gnpa_yoy
+      rate_state_splits: [rate_hiking, rate_cutting, on_hold]
+      contingency_sub_universes: [banks, nbfcs, insurance, other_financials]
+  EXP-14:
+    title: IT Services Sector Model
+    family: sector
+    priority: 6
+    dependencies: [EXP-12]
+    hypothesis: An IT-focused model should benefit from export sensitivity and earnings-revision concentration that are diluted in the broad cross-section.
+    outputs:
+      - summary.json
+      - sector_subset_manifest.json
+      - economic_narrative.md
+    params:
+      sector_name: Information Technology
+      required_features:
+        - inrusd_4w_return
+        - inrusd_vol_4w
+        - deal_TCV_qoq
+        - attrition_rate
+        - headcount_growth
+        - us_tech_index_4w
+      proxy_split_labels: [offshore_heavy, domestic_heavy]
+  EXP-15:
+    title: Capital Goods Sector Model
+    family: sector
+    priority: 7
+    dependencies: [EXP-12]
+    hypothesis: Capital Goods should respond more strongly to capex, power, and macro activity signals than the broad universe, lifting IC when trained separately.
+    outputs:
+      - summary.json
+      - sector_subset_manifest.json
+      - economic_narrative.md
+    params:
+      sector_name: Capital Goods
+      required_features:
+        - order_backlog_growth
+        - govt_capex_qoq
+        - steel_4w_return
+        - copper_4w_return
+        - infra_spending_index
+        - power_sector_capex
+      interaction_feature: order_backlog_growth_x_steel_4w_return
+      pass_ic_gate: 0.040
+      interaction_rank_gate: 5
+  EXP-16:
+    title: Sector Blend Model with Sector-Conditional Features
+    family: sector
+    priority: 8
+    dependencies: [EXP-13, EXP-14, EXP-15]
+    hypothesis: A single CatBoost with sector identity and sector-conditional features can capture sector structure while preserving cross-sector transfer learning.
+    outputs:
+      - summary.json
+      - augmented_feature_manifest.json
+      - economic_narrative.md
+    params:
+      sectors:
+        - Financial Services
+        - Information Technology
+        - Capital Goods
+        - Healthcare
+        - Oil Gas & Consumable Fuels
+        - Fast Moving Consumer Goods
+      incremental_ic_gate: 0.003
+      ratio_not_worse: true
+  EXP-17:
+    title: Factor IC Heat Map Across All Anchor Factors and Events
+    family: regime
+    priority: 9
+    dependencies: []
+    hypothesis: The 6 anchor factors should show clear event-specific strengths and blind spots across all 22 canonical major events.
+    outputs:
+      - summary.json
+      - factor_event_heatmap.csv
+      - factor_event_heatmap.parquet
+      - economic_narrative.md
+    params:
+      event_source: nse_regime_events_major.parquet
+      anchor_factors:
+        - eps_sue_decay
+        - eps_revision_accel
+        - rev_sue_decay
+        - agreement_score
+        - earnings_quality_ratio
+        - accruals_ratio
+      survival_min_ic: 0.020
+      survival_min_windows: 15
+      breakout_min_ic: 0.040
+      breakout_min_windows: 18
+      reference_event_count: 22
+  EXP-18:
+    title: Model Collapse Quantification on High-Risk Events
+    family: regime
+    priority: 10
+    dependencies: [EXP-12, EXP-17]
+    hypothesis: Even the best CatBoost configuration should show controlled degradation on the highest-risk events, and the collapse pattern should be measurable event by event.
+    outputs:
+      - summary.json
+      - event_collapse_table.csv
+      - economic_narrative.md
+    params:
+      fixed_event_ids: [E004, E007, E011, E012, E014]
+      top_n_high_risk_events: 5
+      train_window_weeks: 104
+      collapse_pass_mean: 0.40
+      regime_specific_ic_lift_gate: 0.005
+  EXP-19:
+    title: Regime-Conditional CatBoost Routing
+    family: regime
+    priority: 11
+    dependencies: [EXP-18]
+    hypothesis: Routing between regime-specialized CatBoost models should improve effective IC versus a single always-on model.
+    outputs:
+      - summary.json
+      - routing_table.csv
+      - routing_windows.csv
+      - economic_narrative.md
+    params:
+      candidate_models: [CatBoost]
+      router_buckets: [non_crisis, macro_bear, currency_crisis]
+      bucket_train_weeks: 52
+      bucket_test_weeks: 13
+      bucket_step_weeks: 13
+      currency_crisis_vix_threshold: 25.0
+      currency_crisis_inrusd_4w_threshold: -0.03
+      macro_bear_drawdown_threshold: -0.10
+      macro_bear_drawdown_weeks: 8
+      inference_center_outputs: true
+      ic_ir_lift_gate: 0.10
+  EXP-20:
+    title: LSTM on Nifty 150 Large-Cap Universe
+    family: redemption
+    priority: 12
+    dependencies: []
+    hypothesis: The LSTM should improve once it is restricted to the large-cap universe where liquidity, financial coverage, and regime coherence are stronger.
+    outputs:
+      - summary.json
+      - subset_manifest.json
+      - economic_narrative.md
+    params:
+      top_n_tickers: 150
+      model: lstm
+      architecture:
+        layers: 2
+        hidden_size: 64
+        dropout: 0.3
+        batch_size: 64
+        lookback_days: 60
+        input_channels: [daily_return, daily_volume_zscore, daily_volatility]
+        forecast_horizon_days: 5
+        training_mode_fix: model.train_before_backward
+      favorable_events: [E005, E008, E015]
+      pass_ic_gate: 0.025
+      pass_ratio_gate: 5.0
+      pass_hit_rate_gate: 0.54
+  EXP-21:
+    title: TFT as Macro Signal Distillation Engine
+    family: redemption
+    priority: 13
+    dependencies: []
+    hypothesis: TFT variable selection should distill a compact macro-state representation even if TFT does not become the final production ranker.
+    outputs:
+      - summary.json
+      - macro_embedding_manifest.json
+      - economic_narrative.md
+    params:
+      model: tft
+      training_panel:
+        start_year: 2010
+        end_year: 2025
+      lookback_weeks: 52
+      forecast_horizon_weeks: 4
+      known_future_inputs: [rbi_calendar_flag, earnings_season_flag]
+      observed_inputs: [rbi_rate_chg, inrusd_4w_return, vix_india_4w, fii_proxy, us_10y_4w]
+      output_probabilities:
+        - macro_regime_p_crisis
+        - macro_regime_p_bear
+        - macro_regime_p_neutral
+        - macro_regime_p_bull
+      incremental_ic_gate: 0.003
+      val_loss_gate: 0.01
+      convergence_epoch_cap: 50
+  EXP-22:
+    title: TCN for Sector Momentum and Rotation Detection
+    family: redemption
+    priority: 14
+    dependencies: []
+    hypothesis: TCN should capture medium-horizon rotation and sector persistence more cleanly than the broad-universe sequence baselines.
+    outputs:
+      - summary.json
+      - subset_manifest.json
+      - economic_narrative.md
+    params:
+      model: tcn
+      sector_count: 21
+      lookback_weeks: 104
+      forecast_horizon_weeks: 4
+      dilations: [1, 2, 4, 8]
+      kernel_size: 3
+      layers: 4
+      output_feature_name: sector_tcn_momentum
+      standalone_ic_gate: 0.015
+      incremental_ic_gate: 0.002
+  EXP-23:
+    title: iTransformer on Sector and Cross-Asset Channels
+    family: redemption
+    priority: 15
+    dependencies: []
+    hypothesis: An iTransformer over a constrained sector and macro channel set should recover useful attention structure even if the final IC remains modest.
+    outputs:
+      - summary.json
+      - channel_manifest.json
+      - economic_narrative.md
+    params:
+      model: itransformer
+      section_header_channel_count: 60
+      intended_channel_count: 45
+      lookback_weeks: 208
+      output_feature_name: itransformer_sector_signal
+      oom_resolved_required: true
+      derived_signal_ic_gate: 0.010
+      feature_candidates:
+        - mom_20d_sector_rel_cs_z
+        - res_mom_20d_cs_z
+        - price_to_sma20_cs_z
+        - vol_z20_cs_z
+        - inrusd_4w_return
+        - crude_4w_return
+        - gold_4w_return
+        - copper_4w_return
+        - steel_4w_return
+        - coal_4w_return
+        - dxy_4w_return
+        - vix_india_4w
+        - rbi_rate_chg
+        - us_10y_4w
+        - commodity_basket
+  EXP-24:
+    title: Full Forex x Commodity Signal IC Battery
+    family: signal
+    priority: 16
+    dependencies: []
+    hypothesis: The full exact cross-asset signal stack should show sector- and regime-specific IC patterns strong enough to justify keeping the signal family in the production export.
+    outputs:
+      - summary.json
+      - signal_ic_battery.csv
+      - economic_narrative.md
+    params:
+      signal_count: 16
+      interaction_signals: [stock_x_crude, stock_x_inrusd]
+      standalone_ic_gate: 0.015
+      targeted_sectors:
+        inrusd_4w_return: [Information Technology, Healthcare]
+        crude_4w_return: [Oil Gas & Consumable Fuels, Healthcare, Fast Moving Consumer Goods]
+        steel_4w_return: [Capital Goods, Construction, Construction Materials]
+        copper_4w_return: [Capital Goods, Power, Consumer Durables]
+        coal_4w_return: [Power, Construction Materials]
+        stock_x_crude: [Oil Gas & Consumable Fuels]
+        stock_x_inrusd: [Information Technology, Healthcare]
+  EXP-25:
+    title: Conglomerate Co-Movement Signal Full Validation
+    family: signal
+    priority: 17
+    dependencies: []
+    hypothesis: Lagged peer moves inside a conglomerate group should contain economically grounded predictive information once isolated from generic sector momentum.
+    outputs:
+      - summary.json
+      - ccms_feature_frame.parquet
+      - economic_narrative.md
+    params:
+      min_group_size: 2
+      lookback_weeks: 4
+      adani_event_id: E017
+      overall_ic_gate: 0.015
+      adani_ic_gate: 0.040
+  EXP-26:
+    title: Anchor Factor Verification Full 5-Test Battery
+    family: verification
+    priority: 18
+    dependencies: [EXP-17]
+    hypothesis: All 6 anchor factors must pass the formal 5-test battery or be downgraded before the production research stack is frozen.
+    outputs:
+      - summary.json
+      - five_test_battery.csv
+      - factor_tier_classification.json
+      - economic_narrative.md
+    params:
+      tests: [T1, T2, T3, T4, T5]
+      anchor_factors:
+        - eps_sue_decay
+        - eps_revision_accel
+        - rev_sue_decay
+        - agreement_score
+        - earnings_quality_ratio
+        - accruals_ratio
+      ind_as_pre_period: [2015, 2017]
+      ind_as_post_period: [2018, 2025]
+      factor_aliases:
+        eps_sue_decay: [eps_sue_decay_cs_z, eps_sue_decay_cs_rank]
+        eps_revision_accel: [combined_revision_score_cs_z]
+        rev_sue_decay: [rev_sue_decay_cs_z, rev_sue_decay_cs_rank]
+        agreement_score: [agreement_score_cs_z, agreement_score_cs_rank]
+        earnings_quality_ratio: [earnings_quality_ratio_cs_z, earnings_quality_ratio_cs_rank]
+        accruals_ratio: [accruals_ratio_cs_z, accruals_ratio_cs_rank]
+  EXP-27:
+    title: India Earnings Quality Sign Deep Validation
+    family: verification
+    priority: 19
+    dependencies: [EXP-26]
+    hypothesis: The India earnings quality sign should remain positive, but the effect should concentrate in smaller and more retail-heavy names and strengthen after Ind-AS adoption.
+    outputs:
+      - summary.json
+      - earnings_quality_validation.csv
+      - economic_narrative.md
+    params:
+      feature_candidates:
+        - accruals_ratio
+        - earnings_quality_ratio
+      regime_bucket_groups:
+        stress: [R4, R7, R8, R9]
+        bull_recovery: [R1, R2, R5]
+      factor_aliases:
+        accruals_ratio: [accruals_ratio_cs_z, accruals_ratio_cs_rank]
+        earnings_quality_ratio: [earnings_quality_ratio_cs_z, earnings_quality_ratio_cs_rank]

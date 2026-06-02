@@ -14,7 +14,7 @@ import pytest
 from datetime import datetime, timedelta
 import numpy as np
 
-from src.volatility.capital_allocator import (
+from src.volatility.volatility_capital_allocator import (
     CapitalAllocator,
     AllocationConstraints,
     PerformanceHistory

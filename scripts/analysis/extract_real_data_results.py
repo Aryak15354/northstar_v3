@@ -9,8 +9,12 @@ import numpy as np
 import os
 import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
+
+BACKTEST_OUTPUT_DIR = Path("data/results/analysis/backtests")
+LIVE_OUTPUT_DIR = Path("data/results/analysis/live_trading")
 
 def extract_3year_backtest_results():
     """Extract 3-year backtest results from real data files"""
@@ -132,12 +136,12 @@ def extract_3year_backtest_results():
         print(f"   🏆 Strategies: {combined_results['strategy'].nunique()}")
         
         # Save to CSV
-        output_file = 'northstar_3year_backtest_real_data.csv'
+        output_file = BACKTEST_OUTPUT_DIR / 'northstar_3year_backtest_real_data.csv'
         combined_results.to_csv(output_file, index=False)
         
         # Generate summary
         summary_stats = generate_real_summary(combined_results)
-        summary_file = 'northstar_3year_backtest_summary_real.csv'
+        summary_file = BACKTEST_OUTPUT_DIR / 'northstar_3year_backtest_summary_real.csv'
         summary_stats.to_csv(summary_file, index=False)
         
         print(f"\n🎯 Real Data Results Saved:")
@@ -290,7 +294,7 @@ def extract_6month_live_trading_data():
             print(f"   📊 Data types: {combined_live['data_type'].value_counts().to_dict()}")
         
         # Save to CSV
-        output_file = 'northstar_6month_live_trading_real_data.csv'
+        output_file = LIVE_OUTPUT_DIR / 'northstar_6month_live_trading_real_data.csv'
         combined_live.to_csv(output_file, index=False)
         
         print(f"\n🎯 Live Trading Data Saved:")
@@ -399,3 +403,6 @@ if __name__ == "__main__":
         print(f"✅ 6-Month Live Data: {len(live_results)} observations saved")
     else:
         print("❌ No 6-month live data available")
+    BACKTEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    LIVE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

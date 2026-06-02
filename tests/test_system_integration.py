@@ -19,7 +19,7 @@ from src.volatility.greeks_aggregator import GreeksAggregator
 from src.volatility.risk_authority import UnifiedRiskAuthority
 from src.volatility.dispersion_module import DispersionModule
 from src.volatility.gamma_scalper import GammaScalper
-from src.volatility.capital_allocator import CapitalAllocator
+from src.volatility.volatility_capital_allocator import CapitalAllocator
 from src.volatility.monte_carlo_engine import MonteCarloEngine
 from src.volatility.regime_detector import RegimeDetector
 from src.volatility.execution_interface import ExecutionInterface
@@ -43,7 +43,7 @@ class TestCompleteTradingDaySimulation:
     def setup_method(self):
         """Setup unified engine with real components"""
         # Create real components (not mocks) for integration testing
-        self.state_engine = VolatilityStateEngine(persistence_dir="data/test_state")
+        self.state_engine = VolatilityStateEngine(persistence_dir="data/testing/state")
         
         # Initialize with sample market data
         self.state_engine.update_volatility_metrics(
@@ -194,7 +194,7 @@ class TestMultiStrategyPortfolioManagement:
     
     def setup_method(self):
         """Setup components for multi-strategy testing"""
-        self.state_engine = VolatilityStateEngine(persistence_dir="data/test_state")
+        self.state_engine = VolatilityStateEngine(persistence_dir="data/testing/state")
         
         # Setup mocked components
         self.strategy_generator = Mock(spec=StrategyGenerator)
@@ -340,7 +340,7 @@ class TestConcurrentDispersionAndGammaScalping:
     
     def setup_method(self):
         """Setup for concurrent strategy testing"""
-        self.state_engine = VolatilityStateEngine(persistence_dir="data/test_state")
+        self.state_engine = VolatilityStateEngine(persistence_dir="data/testing/state")
         
         # Initialize state with correlation data
         corr_matrix = np.array([

@@ -862,18 +862,87 @@ class MacroSpecialist(BaseSpecialist):
         )
     
     def _get_sector(self, symbol: str) -> str:
-        """Get sector classification for symbol (mock implementation)"""
+        """
+        Get sector classification for symbol from actual sector mapping file.
         
-        # Mock sector classification based on symbol
+        Falls back to industry-based mapping if sector mapping unavailable.
+        """
+        from pathlib import Path
+        import pandas as pd
+        
+        # Try to load sector mapping from file
+        sector_map_path = Path('data/processed/sector_mapping.csv')
+        if sector_map_path.exists():
+            try:
+                sector_map_df = pd.read_csv(sector_map_path)
+                # Normalize symbol (remove .NS suffix for matching)
+                symbol_clean = symbol.replace('.NS', '').replace('.BO', '')
+                
+                # Try exact match first
+                match = sector_map_df[sector_map_df['ticker'].str.replace('.NS', '').str.replace('.BO', '') == symbol_clean]
+                if len(match) > 0 and 'sector' in match.columns:
+                    return match.iloc[0]['sector']
+                
+                # Try industry column if sector not available
+                if len(match) > 0 and 'industry' in match.columns:
+                    industry = match.iloc[0]['industry']
+                    # Map industry to sector
+                    industry_to_sector = {
+                        'Technology': 'Technology',
+                        'Financials': 'Financials',
+                        'Energy': 'Energy',
+                        'Consumer Discretionary': 'Consumer',
+                        'Consumer Staples': 'Consumer',
+                        'Healthcare': 'Healthcare',
+                        'Industrials': 'Industrials',
+                        'Materials': 'Materials',
+                        'Utilities': 'Utilities',
+                        'Real Estate': 'Real Estate',
+                        'Telecommunication': 'Telecom',
+                    }
+                    return industry_to_sector.get(industry, 'Industrials')
+            except Exception:
+                pass
+        
+        # Fallback: use hardcoded mapping for major stocks
         sector_map = {
-            'RELIANCE.NS': 'Energy',
-            'TCS.NS': 'Technology',
-            'INFY.NS': 'Technology',
-            'HDFCBANK.NS': 'Financials',
-            'ICICIBANK.NS': 'Financials'
+            'RELIANCE': 'Energy',
+            'TCS': 'Technology',
+            'INFY': 'Technology',
+            'HDFCBANK': 'Financials',
+            'ICICIBANK': 'Financials',
+            'HINDUNILVR': 'Consumer',
+            'ITC': 'Consumer',
+            'KOTAKBANK': 'Financials',
+            'L&T': 'Industrials',
+            'SBIN': 'Financials',
+            'BHARTIARTL': 'Telecom',
+            'ASIANPAINT': 'Materials',
+            'MARUTI': 'Consumer',
+            'AXISBANK': 'Financials',
+            'KALPATPOWR': 'Utilities',
+            'TITAN': 'Consumer',
+            'SUNPHARMA': 'Healthcare',
+            'ULTRACEMCO': 'Materials',
+            'NESTLEIND': 'Consumer',
+            'BAJFINANCE': 'Financials',
+            'WIPRO': 'Technology',
+            'POWERGRID': 'Utilities',
+            'NTPC': 'Utilities',
+            'M&M': 'Consumer',
+            'TATAMOTORS': 'Consumer',
+            'TATASTEEL': 'Materials',
+            'JSWSTEEL': 'Materials',
+            'ADANIENT': 'Energy',
+            'ADANIPORTS': 'Industrials',
+            'COALINDIA': 'Energy',
+            'ONGC': 'Energy',
+            'BPCL': 'Energy',
+            'IOC': 'Energy',
         }
         
-        return sector_map.get(symbol, 'Industrials')  # Default sector
+        symbol_clean = symbol.replace('.NS', '').replace('.BO', '')
+        return sector_map.get(symbol_clean, 'Industrials')
     
     def _analyze_rate_sensitivity(self, symbol: str, yields: Dict[str, float]) -> float:
         """Analyze interest rate sensitivity"""

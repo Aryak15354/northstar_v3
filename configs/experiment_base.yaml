@@ -1,0 +1,114 @@
+# Northstar V3 - Base Experiment Config
+# Every Kaggle experiment inherits from this file.
+
+experiment:
+  base_version: "v3"
+  description: "Base Kaggle experiment config - do not run directly"
+  owner: "aryak"
+  seed_list: [42, 123, 456, 789, 1337]
+
+data:
+  export_dir: "/kaggle/input/northstar-v3-export/00_export"
+  nb00_report: "/kaggle/input/northstar-v3-nb00/feature_health_report.json"
+  universe: "nifty_500"
+  expected_universe_size: 500
+  date_range_start: "2018-01-05"
+  date_range_end: "2026-03-20"
+
+datasets:
+  export_dataset: "northstar-v3-export"
+  code_dataset: "northstar-v3-code"
+  nb00_dataset: "northstar-v3-nb00"
+
+features:
+  mode: "full"  # full | tier1 | custom
+  source: "nb00_tier12"  # nb00_tier12 | explicit | export_manifest
+  nb00_tiers: ["TIER_1", "TIER_2"]
+  custom_set: null
+  set_paths:
+    tier1: "feature_sets/tier1_canonical.yaml"
+    full: "feature_sets/full_97.yaml"
+    india_forced: "feature_sets/india_factors.yaml"
+  dead_filter:
+    enabled: true
+    null_threshold: 0.80
+    min_unique: 1
+    min_cross_sectional_std: 1.0e-8
+    min_abs_ic: 0.002
+    min_abs_tstat: 1.5
+  force_include:
+    - "val_earnings_quality_score_zscore"
+    - "eps_sue_decay"
+    - "eps_sue_decay_cs_z"
+    - "screener_fii_pct"
+    - "fii_interaction"
+  redundancy_dedup:
+    enabled: true
+    drop_variants:
+      - suffix: "_cs_rank"
+        keep_canonical: true
+      - suffix: "_cs_z"
+        keep_canonical: true
+    exceptions:
+      - "ret_5d_sector_rel"
+      - "res_mom_5d_cs_rank"
+
+preprocessing:
+  normalize_raw_financials: true
+  eps_sue_decay_ffill: true
+  eps_sue_decay_availability_flag: true
+
+walk_forward:
+  n_windows: 20
+  train_weeks: 52
+  test_weeks: 13
+  step_size_weeks: 13
+  purge_gap_weeks: 1
+  embargo_weeks: 2
+  target_type: "cross_sectional_rank"
+  target_horizon_days: 5
+  winsorize: [0.01, 0.99]
+
+models:
+  run: ["xgboost", "lightgbm", "catboost"]
+  config_refs:
+    catboost: "model_configs/catboost_v1.yaml"
+    xgboost: "model_configs/xgboost_regression.yaml"
+    lightgbm: "model_configs/lightgbm_v1.yaml"
+
+promotion_gates:
+  mean_ic_min: 0.020
+  ic_ir_min: 0.500
+  train_test_ratio_max: 2.50
+  hit_rate_min: 0.50
+  investigate_band:
+    ic_ir_min: 0.500
+    train_test_ratio_max: 3.50
+
+deployment:
+  ic_thresholds:
+    high: 0.015
+    medium: 0.005
+  exposures:
+    high: 0.40
+    medium: 0.20
+    low: 0.05
+
+reference:
+  canonical_root: "data/canonical/reference"
+  research_inputs_manifest: "data/canonical/reference/research_inputs_manifest.json"
+  required_universe_size: 500
+  fail_if_universe_mismatch: true
+
+logging:
+  output_dir: "/kaggle/working/runs"
+  local_output_dir: "runs"
+  save_window_details: true
+  save_feature_importance: true
+  save_regime_breakdown: true
+  flush_every_windows: 1
+
+runtime:
+  resume_from_checkpoint: true
+  continue_on_error: true
+  profile: "full"

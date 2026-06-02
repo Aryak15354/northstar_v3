@@ -18,6 +18,30 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 
+def load_access_token() -> tuple[str, str]:
+    """Load Upstox token using the same precedence as the live adapter."""
+    try:
+        from src.options.config_loader import get_config
+        from src.options.upstox_adapter import UpstoxAdapter
+
+        config = get_config(reload=True)
+        adapter = UpstoxAdapter(config.upstox)
+        token = adapter._load_access_token_from_sources(
+            prefer_files=True,
+            current_token=config.upstox.access_token,
+        )
+        token = str(token or config.upstox.access_token or "").strip()
+        if token:
+            return token, "options credential sources"
+    except Exception as exc:
+        logger.warning(f"Warning: failed loading token from options config: {exc}")
+
+    token = os.getenv('UPSTOX_ACCESS_TOKEN', '').strip()
+    if token:
+        return token, "environment"
+    return "", "unavailable"
+
+
 def check_market_hours():
     """Check if market is currently open"""
     now = datetime.now()
@@ -219,16 +243,15 @@ def main():
     logger.info("Upstox API Connection Test")
     logger.info("=" * 60)
     
-    # Get access token from environment
-    access_token = os.getenv('UPSTOX_ACCESS_TOKEN', '')
+    access_token, token_source = load_access_token()
     
     if not access_token:
         logger.error("\n✗ ERROR: UPSTOX_ACCESS_TOKEN not found in environment")
-        logger.error("Please set the access token:")
-        logger.error("  export UPSTOX_ACCESS_TOKEN='your_token_here'")
+        logger.error("Please refresh or configure the token:")
+        logger.error("  python3 scripts/refresh_upstox_token.py")
         return 1
     
-    logger.info(f"\nUsing access token: {access_token[:20]}...")
+    logger.info(f"\nUsing access token from {token_source}: {access_token[:20]}...")
     
     # Check current time
     now = datetime.now()

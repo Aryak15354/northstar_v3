@@ -17,7 +17,7 @@ from scripts.research_roadmap_gate import run_preflight
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run Northstar V3 roadmap preflight checks")
     ap.add_argument("--base-config", default="config/research_policy.yaml")
-    ap.add_argument("--output-root", default="reports/research/roadmap")
+    ap.add_argument("--output-root", default="data/results/research/reports/roadmap")
     ap.add_argument("--phase", default="all", choices=["all", "phase1", "phase2", "phase3", "phase4"])
     args = ap.parse_args()
 

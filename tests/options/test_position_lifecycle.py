@@ -17,7 +17,7 @@ import pandas as pd
 
 from src.options.position_manager import PositionManager, Position, PositionLeg, ExitReason
 from src.options.strategy_generator import OptionStrategy, OptionLeg as StrategyLeg, Greeks, StrategyType
-from src.options.regime_detector import Regime
+from src.options.options_regime_detector import Regime
 from src.options.config_loader import ExitRulesConfig, GreekSafetyBandsConfig
 
 
@@ -28,7 +28,10 @@ def position_manager():
         profit_target_pct=0.55,
         stop_loss_pct=0.40,
         days_before_expiry=2,
-        precedence=['stop_loss', 'gamma_escalation', 'regime_flip', 'time_decay', 'profit_target']
+        precedence=['stop_loss', 'gamma_escalation', 'regime_flip', 'time_decay', 'profit_target'],
+        regime_flip_min_hold_minutes=30,
+        regime_flip_confirmation_cycles=2,
+        regime_flip_market_open_grace_minutes=30,
     )
     
     greek_config = GreekSafetyBandsConfig(
@@ -242,6 +245,43 @@ def test_regime_flip_exit(position_manager, sample_strategy):
     assert exit_signal is not None
     assert exit_signal.should_exit
     assert exit_signal.reason == ExitReason.REGIME_FLIP
+
+
+def test_regime_flip_exit_can_be_deferred(position_manager, sample_strategy):
+    """Regime-flip exit should be suppressible until cooldown/confirmation is satisfied."""
+    entry_time = datetime.now()
+    position = position_manager.open_position(sample_strategy, entry_time)
+    if position.greeks is not None:
+        position.greeks.theta = 1.0
+
+    exit_signal = position_manager.check_exit_conditions(
+        position,
+        Regime.HIGH_VOL_SELL,
+        date.today(),
+        current_time=entry_time + timedelta(minutes=5),
+        regime_flip_exit_allowed=False,
+    )
+
+    assert exit_signal is None
+
+
+def test_regime_flip_exit_respects_minimum_hold_minutes(position_manager, sample_strategy):
+    """Minimum hold should suppress regime-flip exits even when caller marks the flip eligible."""
+    entry_time = datetime.now()
+    position = position_manager.open_position(sample_strategy, entry_time)
+    if position.greeks is not None:
+        position.greeks.theta = 1.0
+
+    exit_signal = position_manager.check_exit_conditions(
+        position,
+        Regime.HIGH_VOL_SELL,
+        date.today(),
+        current_time=entry_time + timedelta(minutes=5),
+        regime_flip_exit_allowed=True,
+        minimum_hold_minutes=30.0,
+    )
+
+    assert exit_signal is None
 
 
 def test_time_decay_exit(position_manager, sample_strategy):

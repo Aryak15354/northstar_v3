@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 from src.cohesion.unified_state_manager import UnifiedStateManager, SystemState, AuthorityLevel
 from src.cohesion.cache_manager import IntelligentCacheManager
-from src.cohesion.health_monitor import ComprehensiveHealthMonitor
+from src.cohesion.cohesion_health_monitor import ComprehensiveHealthMonitor
 
 
 class TestSimpleSystemIntegration:

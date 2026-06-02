@@ -902,7 +902,7 @@ def main():
     print("=" * 60)
     
     # Initialize logger
-    logger = ShadowLogger(base_dir="data/test_shadow")
+    logger = ShadowLogger(base_dir="data/testing/shadow")
     
     # Simulate 5 days of shadow fund operation
     np.random.seed(42)

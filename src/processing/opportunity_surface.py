@@ -1,6 +1,13 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from src.cohesion.state_file_manager import StateFileManager
 
 SCORES_FILE = "data/processed/scores.parquet"
@@ -62,9 +69,18 @@ def main():
     # Fill missing values with neutral scores
     df['true_undervaluation'] = df['true_undervaluation'].fillna(50)
     
-    # Use momentum_score as market_score if not available
+    # Normalize score schema across legacy and canonical daily scorer outputs.
     if 'market_score' not in df.columns:
-        df['market_score'] = df['momentum_score']
+        score_source = next(
+            (c for c in ['momentum_score', 'final_score', 'score', 'northstar_score'] if c in df.columns),
+            None,
+        )
+        if score_source is None:
+            df['market_score'] = 0.0
+        else:
+            df['market_score'] = pd.to_numeric(df[score_source], errors='coerce').fillna(0.0)
+    else:
+        df['market_score'] = pd.to_numeric(df['market_score'], errors='coerce').fillna(0.0)
 
     # PHASE 3: APPLY MARKET STATE AUTHORITY
     print("🧠 Applying Market State Authority to scores...")

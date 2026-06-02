@@ -45,31 +45,7 @@ jobs:
       - name: Install dependencies
         run: bash scripts/ci/install_ci_dependencies.sh
       - name: Parse active python files
-        run: |
-          python - <<'PY'
-          import ast
-          import json
-          from pathlib import Path
-          bad=[]
-          root=Path('.')
-          baseline_path = root / 'audit/reachability_baseline.json'
-          if not baseline_path.exists():
-              raise SystemExit('audit/reachability_baseline.json missing')
-          baseline = json.loads(baseline_path.read_text(encoding='utf-8'))
-          active = set(baseline.get('reachable_files', []))
-          for rel in sorted(active):
-              p = root / rel
-              if not p.exists() or p.suffix != '.py':
-                  continue
-              try:
-                  ast.parse(p.read_text(encoding='utf-8', errors='replace'), filename=str(p))
-              except Exception as e:
-                  bad.append((rel,str(e)))
-          if bad:
-              for rel,e in bad[:200]:
-                  print(f'{rel}: {e}')
-              raise SystemExit(1)
-          PY
+        run: python scripts/ci/check_active_python_parse.py
       - name: Zero-byte module check
         run: |
           python - <<'PY'
@@ -92,6 +68,12 @@ jobs:
               print('\n'.join(bad[:200]))
               raise SystemExit(1)
           PY
+      - name: Public secret scan
+        run: python scripts/ci/check_no_secrets.py
+      - name: No machine-local paths in active files
+        run: python scripts/ci/check_no_local_paths.py
+      - name: No tracked generated/archive deadweight
+        run: python scripts/ci/check_no_tracked_deadweight.py
       - name: No lazy imports in risk/execution path
         run: python scripts/ci/check_no_lazy_imports_risk_path.py
       - name: No direct wall-clock calls in risk/execution path

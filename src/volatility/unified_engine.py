@@ -27,7 +27,7 @@ from .greeks_aggregator import GreeksAggregator, PortfolioGreeks
 from .risk_authority import UnifiedRiskAuthority, TradeValidationResult
 from .dispersion_module import DispersionModule
 from .gamma_scalper import GammaScalper
-from .capital_allocator import CapitalAllocator
+from .volatility_capital_allocator import CapitalAllocator
 from .monte_carlo_engine import MonteCarloEngine
 from .regime_detector import RegimeDetector
 from .execution_interface import ExecutionInterface, Order

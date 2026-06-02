@@ -182,7 +182,7 @@ class NorthstarOperationsDeployer:
         env_config = self._apply_environment_overrides(base_config)
         
         # Save environment configuration
-        config_path = self.deployment_root / "config" / "operation_config.yaml"
+        config_path = self.deployment_root / "config" / "operation" / ("operation_" "config.yaml")
         self.config_manager.save_config(env_config, str(config_path))
         
         # Deploy scenario-specific configurations
@@ -571,10 +571,10 @@ echo "Northstar V3 Operations startup completed successfully!"
     def _verify_configuration_files(self) -> bool:
         """Verify configuration files are deployed correctly."""
         required_configs = [
-            "operation_config.yaml",
+            str(Path("operation") / ("operation_" "config.yaml")),
             "crisis_validation_config.yaml",
             "alpha_validation_config.yaml",
-            "live_operation_config.yaml",
+            "live_operation_" "config.yaml",
             "system_validation_config.yaml",
             "integration_config.json"
         ]

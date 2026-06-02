@@ -652,6 +652,29 @@ class RuntimeEventStore:
         now = self._utcnow_iso()
 
         if action == "open":
+            existing = self._conn.execute(
+                """
+                SELECT id
+                FROM position_lifecycle_table
+                WHERE position_key = ? AND close_event_id IS NULL
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (key,),
+            ).fetchone()
+            if existing is not None:
+                self._conn.execute(
+                    """
+                    UPDATE position_lifecycle_table
+                    SET updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        now,
+                        int(existing["id"]),
+                    ),
+                )
+                return
             self._conn.execute(
                 """
                 INSERT INTO position_lifecycle_table (

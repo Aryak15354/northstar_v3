@@ -8,6 +8,8 @@ from uuid import uuid4
 
 from .contracts import BudgetDecision, CapitalDecision, TradeProposal
 
+_BROAD_INDEX_UNDERLYINGS = {"NIFTY", "MIDCPNIFTY"}
+
 
 @dataclass(frozen=True)
 class RiskBudgetConfig:
@@ -42,6 +44,16 @@ class RiskBudgetManager:
         if direction < 0:
             return -1.0
         return 1.0
+
+    @staticmethod
+    def _sector_cap_applicable(proposal: TradeProposal) -> bool:
+        if str(proposal.origin.value) == "options_hedge":
+            return False
+        instrument_type = str(proposal.instrument_plan.get("instrument_type", "") or "").strip().lower()
+        underlying = str(proposal.instrument_plan.get("underlying_symbol", "") or "").strip().upper()
+        if instrument_type in {"option", "options"} and underlying in _BROAD_INDEX_UNDERLYINGS:
+            return False
+        return True
 
     def check(
         self,
@@ -113,7 +125,7 @@ class RiskBudgetManager:
             return BudgetDecision(decision_id, False, 0.0, "risk.strategy_cap_breach", cap_obs, True)
         if origin_ratio > float(self.config.per_origin_cap_ratio):
             return BudgetDecision(decision_id, False, 0.0, "risk.origin_cap_breach", cap_obs, True)
-        if sector and sector_ratio > sector_cap:
+        if self._sector_cap_applicable(proposal) and sector and sector_ratio > sector_cap:
             return BudgetDecision(decision_id, False, 0.0, "risk.sector_cap_breach", cap_obs, True)
         if worst_stress > float(self.config.stress_loss_cap_ratio):
             return BudgetDecision(decision_id, False, 0.0, "risk.stress_cap_breach", cap_obs, True)

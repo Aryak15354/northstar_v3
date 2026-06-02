@@ -26,7 +26,7 @@ def test_ns_uso_v3_batch_ingestion():
     # Run the batch ingestion
     import subprocess
     result = subprocess.run([
-        sys.executable, "northstar/scripts/run_v3_batch_ingestion.py", "--quiet"
+        sys.executable, "ns_uso/scripts/run_v3_batch_ingestion.py", "--quiet"
     ], capture_output=True, text=True)
     
     if result.returncode != 0:

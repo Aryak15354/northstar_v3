@@ -27,7 +27,7 @@ sys.path.insert(0, str(project_root))
 
 from src.options.config_loader import get_config
 from src.options.upstox_adapter import UpstoxAdapter
-from src.options.regime_detector import RegimeDetector, Regime
+from src.options.options_regime_detector import RegimeDetector, Regime
 from src.options.strategy_generator import StrategyGenerator
 from src.options.trade_eligibility_validator import TradeEligibilityValidator
 from src.options.capital_scaling_engine import CapitalScalingEngine

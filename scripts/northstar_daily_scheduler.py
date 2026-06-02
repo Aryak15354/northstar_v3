@@ -14,6 +14,12 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CANONICAL_RUNNER = PROJECT_ROOT / "scripts" / "run_complete_v3_system.py"
+DASHBOARD_LAUNCHER = PROJECT_ROOT / "launch_dashboard.py"
 
 
 def next_run_time(hour: int, minute: int) -> datetime:
@@ -25,14 +31,18 @@ def next_run_time(hour: int, minute: int) -> datetime:
 
 
 def run_pipeline(quick: bool, launch_dashboard: bool, skip_options_cycle: bool) -> int:
-    cmd = [sys.executable, "run_complete_v3_system.py"]
+    cmd = [sys.executable, str(CANONICAL_RUNNER)]
     if quick:
         cmd.append("--quick")
-    if not launch_dashboard:
-        cmd.append("--no-dashboard")
     if skip_options_cycle:
-        cmd.append("--skip-options-cycle")
-    return subprocess.call(cmd)
+        print("Compatibility note: --with-options-cycle no longer affects the canonical daily runner.")
+    rc = subprocess.call(cmd, cwd=str(PROJECT_ROOT))
+    if rc == 0 and launch_dashboard:
+        rc = subprocess.call(
+            [sys.executable, str(DASHBOARD_LAUNCHER), "--port", "8517"],
+            cwd=str(PROJECT_ROOT),
+        )
+    return rc
 
 
 def main() -> None:

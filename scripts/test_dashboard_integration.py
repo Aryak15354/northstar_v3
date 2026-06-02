@@ -135,7 +135,7 @@ def main():
     if data_test and import_test:
         print("\n🎉 All tests passed! Dashboard integration is working.")
         print("\n💡 To run the dashboard:")
-        print("   streamlit run dashboard/volatility_dashboard.py")
+        print("   streamlit run src/dashboard/app.py")
     else:
         print("\n⚠️  Some tests failed. Check the errors above.")
     

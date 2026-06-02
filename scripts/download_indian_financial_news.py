@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""
+Download Indian Financial News dataset from Hugging Face
+Dataset: kdave/Indian_Financial_News
+"""
+
+import os
+from pathlib import Path
+from datasets import load_dataset
+
+def download_dataset():
+    """Download and save the Indian Financial News dataset"""
+    
+    # Create data directory if it doesn't exist
+    data_dir = Path("data/raw/news")
+    data_dir.mkdir(parents=True, exist_ok=True)
+    
+    print("Downloading Indian Financial News dataset from Hugging Face...")
+    print("Dataset: kdave/Indian_Financial_News")
+    
+    try:
+        # Load the dataset with explicit trust_remote_code
+        ds = load_dataset("kdave/Indian_Financial_News", trust_remote_code=True)
+        
+        print(f"\nDataset loaded successfully!")
+        print(f"Available splits: {list(ds.keys())}")
+        
+        # Save to disk in different formats
+        for split_name, split_data in ds.items():
+            print(f"\nProcessing split: {split_name}")
+            print(f"Number of rows: {len(split_data)}")
+            
+            # Save as CSV
+            csv_path = data_dir / f"indian_financial_news_{split_name}.csv"
+            split_data.to_csv(str(csv_path))
+            print(f"Saved CSV: {csv_path}")
+            
+            # Save as JSON
+            json_path = data_dir / f"indian_financial_news_{split_name}.json"
+            split_data.to_json(str(json_path))
+            print(f"Saved JSON: {json_path}")
+            
+            # Save as Parquet (efficient format)
+            parquet_path = data_dir / f"indian_financial_news_{split_name}.parquet"
+            split_data.to_parquet(str(parquet_path))
+            print(f"Saved Parquet: {parquet_path}")
+        
+        # Print dataset info
+        print("\n" + "="*60)
+        print("Dataset Information:")
+        print("="*60)
+        for split_name, split_data in ds.items():
+            print(f"\nSplit: {split_name}")
+            print(f"Columns: {split_data.column_names}")
+            print(f"Features: {split_data.features}")
+            if len(split_data) > 0:
+                print(f"\nSample row:")
+                print(split_data[0])
+        
+        print("\n" + "="*60)
+        print(f"Dataset downloaded successfully to: {data_dir}")
+        print("="*60)
+        
+        return ds
+        
+    except Exception as e:
+        print(f"\nError downloading dataset: {e}")
+        print("\nMake sure you have the 'datasets' library installed:")
+        print("pip install datasets")
+        raise
+
+if __name__ == "__main__":
+    download_dataset()

@@ -47,7 +47,7 @@ cat > scripts/run_daily_eod_collection.sh << 'EOF'
 # Daily EOD Collection Wrapper
 # Activates conda environment and runs collection
 
-cd /Users/aryakghoshal/Downloads/northstar/northstar_v3
+cd /path/to/northstar_v3
 
 # Activate conda environment
 source ~/miniconda3/etc/profile.d/conda.sh
@@ -70,7 +70,7 @@ chmod +x scripts/run_daily_eod_collection.sh
 crontab -e
 
 # Add this line (runs at 4:00 PM IST, Monday-Friday)
-0 16 * * 1-5 /Users/aryakghoshal/Downloads/northstar/northstar_v3/scripts/run_daily_eod_collection.sh >> /Users/aryakghoshal/Downloads/northstar/northstar_v3/logs/cron_eod_collection.log 2>&1
+0 16 * * 1-5 /path/to/northstar_v3/scripts/run_daily_eod_collection.sh >> /path/to/northstar_v3/logs/cron_eod_collection.log 2>&1
 ```
 
 **Cron Schedule Explained**:

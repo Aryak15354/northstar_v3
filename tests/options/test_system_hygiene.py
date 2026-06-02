@@ -8,7 +8,7 @@ import pytest
 from datetime import datetime, timedelta
 
 from src.options.system_hygiene import SystemHygieneRules, TradeRecord, HygieneCheckResult
-from src.options.regime_detector import Regime
+from src.options.options_regime_detector import Regime
 
 
 @pytest.fixture

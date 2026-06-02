@@ -18,10 +18,13 @@ import fcntl
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_BACKUP_DESTINATION = Path(
+    os.environ.get("NORTHSTAR_BACKUP_ROOT", str(Path.home() / "northstar_backups" / "northstar_v3"))
+)
 SOURCE_DIRS = [
     PROJECT_ROOT / "data/options",
     PROJECT_ROOT / "data/model_registry",
-    PROJECT_ROOT / "data/research",
+    PROJECT_ROOT / "data/results/research",
 ]
 
 
@@ -227,8 +230,8 @@ def main() -> int:
     parser.add_argument(
         "--destination-root",
         type=Path,
-        default=Path("/Volumes/NORTHSTAR_BACKUP/northstar_v3"),
-        help="Backup root folder (external SSD recommended)",
+        default=DEFAULT_BACKUP_DESTINATION,
+        help="Backup root folder. Defaults to NORTHSTAR_BACKUP_ROOT or ~/northstar_backups/northstar_v3.",
     )
     parser.add_argument("--retention-days", type=int, default=21)
     parser.add_argument("--verify", action="store_true", help="Verify critical file checksums post-copy")

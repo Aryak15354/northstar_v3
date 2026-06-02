@@ -26,11 +26,14 @@ class MinimalIntelligenceStack:
         self.current_beliefs = {}
         self.current_conviction = 0.5
         
+        # Sentiment integration
+        self.sentiment_enabled = True
+        
         # Output paths
         self.output_dir = 'data/intelligence'
         os.makedirs(self.output_dir, exist_ok=True)
     
-    def generate_complete_intelligence(self, ticker=None, market_data=None):
+    def generate_complete_intelligence(self, ticker=None, market_data=None, unified_state=None):
         """Generate minimal intelligence"""
         
         print("🧠 GENERATING MINIMAL INTELLIGENCE")
@@ -53,13 +56,21 @@ class MinimalIntelligenceStack:
         intelligence_result['regime'] = regime
         print(f"   Current regime: {regime.upper()}")
         
-        # Step 2: Generate minimal beliefs
-        beliefs = self.generate_minimal_beliefs()
+        # Step 1.5: Get sentiment state if available
+        sentiment_state = None
+        if unified_state and hasattr(unified_state, 'sentiment'):
+            sentiment_state = unified_state.sentiment
+            if sentiment_state.is_fresh:
+                print(f"   Sentiment regime: {sentiment_state.market_sentiment_regime.value}")
+                intelligence_result['sentiment_regime'] = sentiment_state.market_sentiment_regime.value
+        
+        # Step 2: Generate minimal beliefs (with sentiment)
+        beliefs = self.generate_minimal_beliefs(sentiment_state)
         intelligence_result['beliefs'] = beliefs
         self.current_beliefs = beliefs
         
-        # Step 3: Generate minimal actions
-        actions = self.generate_minimal_actions()
+        # Step 3: Generate minimal actions (with sentiment weights)
+        actions = self.generate_minimal_actions(sentiment_state)
         intelligence_result['actions'] = actions
         
         # Step 4: Save intelligence state
@@ -80,8 +91,8 @@ class MinimalIntelligenceStack:
         
         return 'neutral'
     
-    def generate_minimal_beliefs(self):
-        """Generate minimal beliefs"""
+    def generate_minimal_beliefs(self, sentiment_state=None):
+        """Generate minimal beliefs with sentiment integration"""
         
         beliefs = {
             'timestamp': datetime.now(),
@@ -106,10 +117,28 @@ class MinimalIntelligenceStack:
             'uncertainty_factors': []
         }
         
+        # Add sentiment if available
+        if sentiment_state and sentiment_state.is_fresh:
+            try:
+                from src.intelligence.sentiment_integration import apply_sentiment_to_beliefs
+                beliefs = apply_sentiment_to_beliefs(beliefs, sentiment_state)
+            except Exception as e:
+                print(f"   Warning: Could not apply sentiment to beliefs: {e}")
+        
         return beliefs
     
-    def generate_minimal_actions(self):
-        """Generate minimal actions"""
+    def generate_minimal_actions(self, sentiment_state=None):
+        """Generate minimal actions with sentiment-adjusted weights"""
+        
+        # Get sentiment weight modifiers if available
+        signal_weights = {'momentum': 1.0, 'mean_reversion': 1.0, 'value': 1.0, 'quality': 1.0}
+        
+        if sentiment_state and sentiment_state.is_fresh:
+            try:
+                from src.intelligence.sentiment_integration import get_sentiment_signal_weights
+                signal_weights = get_sentiment_signal_weights(sentiment_state)
+            except Exception as e:
+                print(f"   Warning: Could not get sentiment weights: {e}")
         
         actions = {
             'timestamp': datetime.now(),
@@ -131,13 +160,20 @@ class MinimalIntelligenceStack:
                 'diversification': 'MAINTAIN',
                 'cash_level': 'NORMAL'
             },
+            'signal_weights': signal_weights,  # NEW: Sentiment-adjusted weights
             'execution_priority': 'medium',
             'reasoning': [
                 'Minimal intelligence system active',
                 'Using conservative defaults',
-                'Regime: neutral'
+                f'Regime: {self.current_regime}'
             ]
         }
+        
+        # Add sentiment reasoning if available
+        if sentiment_state and sentiment_state.is_fresh:
+            actions['reasoning'].append(
+                f'Sentiment regime: {sentiment_state.market_sentiment_regime.value}'
+            )
         
         return actions
     

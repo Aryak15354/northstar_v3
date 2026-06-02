@@ -1,0 +1,44 @@
+{
+  "exp_id": "EXP-09",
+  "title": "CatBoost Depth Ablation + Early Stopping",
+  "feature_count": 462,
+  "candidate_count": 1,
+  "best_candidate": {
+    "label": "depth_3_odwait_20",
+    "params": {
+      "depth": 3,
+      "l2_leaf_reg": 15.0,
+      "min_data_in_leaf": 40,
+      "od_wait": 20,
+      "boosting_type": "Ordered",
+      "iterations": 400,
+      "learning_rate": 0.05
+    },
+    "mean_test_ic": 0.022451842955973786,
+    "ic_ir": null,
+    "mean_train_test_ratio": 1.3898323975853308,
+    "mean_hit_rate": 0.6153846153846154,
+    "windows_completed": 1,
+    "output_dir": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/northstar_ratio_campaign_fresh/exp_09_fresh_20260406/artifacts/depth_3_odwait_20"
+  },
+  "candidates": [
+    {
+      "label": "depth_3_odwait_20",
+      "params": {
+        "depth": 3,
+        "l2_leaf_reg": 15.0,
+        "min_data_in_leaf": 40,
+        "od_wait": 20,
+        "boosting_type": "Ordered",
+        "iterations": 400,
+        "learning_rate": 0.05
+      },
+      "mean_test_ic": 0.022451842955973786,
+      "ic_ir": null,
+      "mean_train_test_ratio": 1.3898323975853308,
+      "mean_hit_rate": 0.6153846153846154,
+      "windows_completed": 1,
+      "output_dir": "/Users/aryakghoshal/Downloads/northstar/northstar_v3/northstar_ratio_campaign_fresh/exp_09_fresh_20260406/artifacts/depth_3_odwait_20"
+    }
+  ]
+}

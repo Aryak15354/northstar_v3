@@ -63,7 +63,7 @@ def main() -> int:
     ap.add_argument("--h10-json", required=True)
     ap.add_argument("--h30-json", required=True)
     ap.add_argument("--weights", default="0.3,0.4,0.3", help="w5,w10,w30")
-    ap.add_argument("--output-json", default="data/research/reports/horizon_ensemble_metrics_latest.json")
+    ap.add_argument("--output-json", default="data/results/research/reports/horizon_ensemble_metrics_latest.json")
     args = ap.parse_args()
 
     w_parts = [float(x.strip()) for x in str(args.weights).split(",") if str(x).strip()]

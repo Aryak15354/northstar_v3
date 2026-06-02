@@ -18,7 +18,7 @@ What it refreshes (in order):
  9) daily narrative parquet (data/processed/daily_narrative.parquet)
 10) regime transitions + intelligence feed (data/processed/regime_transitions.parquet, regime_intelligence_feed.json)
 11) system execution log (data/processed/system_execution_log.json)
- 12) research formula lineage + unit integrity report (reports/research/formula_lineage_and_unit_integrity_latest.json)
+ 12) research formula lineage + unit integrity report (data/results/research/reports/formula_lineage_and_unit_integrity_latest.json)
 
 No mock/synthetic data is generated; everything is derived from existing real
 artifacts or real market data already ingested (yfinance → csv/parquet).
@@ -1521,10 +1521,43 @@ def main() -> int:
     run_step("technical_engine", _step_technicals)
 
     def _step_northstar_scoring():
-        ok, msg = _run_cmd([sys.executable, "-u", "-m", "src.scoring.northstar_model"], timeout=1800)
-        return ok, msg or "scores.parquet rebuilt"
+        score_builder = PROJECT_ROOT / "scripts/runners/generate_daily_scorer_scores.py"
+        if not score_builder.exists():
+            return False, "scripts/runners/generate_daily_scorer_scores.py missing"
+        ok, msg = _run_cmd(
+            [
+                sys.executable,
+                "-u",
+                "scripts/runners/generate_daily_scorer_scores.py",
+                "--date",
+                "today",
+                "--config",
+                "config/research_policy.yaml",
+                "--output",
+                "data/processed/scores.parquet",
+            ],
+            timeout=1800,
+        )
+        return ok, msg or "scores.parquet rebuilt via DailyScorer"
 
     run_step("northstar_scoring", _step_northstar_scoring, optional=True)
+
+    def _step_strategy_portfolios():
+        strategy_dir = PROJECT_ROOT / "data" / "processed" / "strategy_portfolios"
+        scores_path = PROJECT_ROOT / "data" / "processed" / "scores.parquet"
+        if args.quick and strategy_dir.exists() and scores_path.exists():
+            parquet_files = list(strategy_dir.glob("*.parquet"))
+            if parquet_files:
+                newest_strategy = max(p.stat().st_mtime for p in parquet_files)
+                if newest_strategy >= scores_path.stat().st_mtime:
+                    return True, "Quick mode: strategy portfolios already fresh"
+        ok, msg = _run_cmd(
+            [sys.executable, "-B", "-u", "src/portfolio/strategies.py"],
+            timeout=1800,
+        )
+        return ok, msg or "strategy portfolios regenerated"
+
+    run_step("strategy_portfolios", _step_strategy_portfolios, optional=True)
 
     def _step_market_regime():
         regime_script = PROJECT_ROOT / "src/processing/market_regime.py"
@@ -1857,6 +1890,10 @@ def main() -> int:
         ok, msg = _run_cmd([sys.executable, "-u", "src/intelligence/no_edge_detector.py"], timeout=600)
         return ok, msg or "no-edge state refreshed"
 
+    def _step_capital_control_state_sync():
+        ok, msg = _run_cmd([sys.executable, "-u", "scripts/sync_capital_control_state.py"], timeout=600)
+        return ok, msg or "capital control state synced"
+
     def _step_capital_allocator():
         out_p = "data/processed/capital_allocations.json"
         if args.quick and _recent_enough(out_p):
@@ -1864,10 +1901,41 @@ def main() -> int:
         ok, msg = _run_cmd([sys.executable, "-u", "src/intelligence/capital_allocator.py"], timeout=1200)
         return ok, msg or "capital allocations refreshed"
 
+    def _step_canonical_strategy_surface_sync():
+        out_path = PROJECT_ROOT / "data/intelligence/canonical_strategy_sync_status.json"
+        deps = [
+            PROJECT_ROOT / "data/processed/strategy_beliefs.parquet",
+            PROJECT_ROOT / "data/processed/capital_allocations.json",
+            PROJECT_ROOT / "data/processed/market_state.parquet",
+        ]
+        existing_deps = [p for p in deps if p.exists()]
+        if (
+            args.quick
+            and out_path.exists()
+            and existing_deps
+            and out_path.stat().st_mtime >= max(p.stat().st_mtime for p in existing_deps)
+        ):
+            return True, "Quick mode: canonical strategy surface already fresh"
+        ok, msg = _run_cmd(
+            [sys.executable, "-u", "scripts/sync_canonical_strategy_surfaces.py"],
+            timeout=900,
+        )
+        return ok, msg or "canonical strategy surface synced"
+
+    def _step_operational_health_sync():
+        ok, msg = _run_cmd(
+            [sys.executable, "-u", "scripts/sync_operational_health.py"],
+            timeout=300,
+        )
+        return ok, msg or "operational health synced"
+
     run_step("strategy_beliefs", _step_strategy_beliefs, optional=True)
     run_step("strategy_tailwinds", _step_strategy_tailwinds, optional=True)
     run_step("no_edge_detector", _step_no_edge_detector, optional=True)
+    run_step("capital_control_state_sync", _step_capital_control_state_sync)
     run_step("capital_allocator", _step_capital_allocator, optional=True)
+    run_step("canonical_strategy_surface_sync", _step_canonical_strategy_surface_sync)
+    run_step("operational_health_sync", _step_operational_health_sync)
 
     def _step_portfolio_governor():
         ok, msg = _run_cmd([sys.executable, "-u", "-m", "src.portfolio.portfolio_governor"], timeout=1200)
@@ -1962,7 +2030,7 @@ def main() -> int:
 
     def _step_formula_lineage_unit_integrity():
         script = PROJECT_ROOT / "scripts/runners/build_formula_lineage_unit_integrity.py"
-        out_path = PROJECT_ROOT / "reports/research/formula_lineage_and_unit_integrity_latest.json"
+        out_path = PROJECT_ROOT / "data/results/research/reports/formula_lineage_and_unit_integrity_latest.json"
         deps = [
             PROJECT_ROOT / "data/processed/market_state.parquet",
             PROJECT_ROOT / "data/processed/intelligent_market_state.parquet",
@@ -2053,6 +2121,8 @@ def main() -> int:
             "price_processor",
             "market_regime",
             "institutional_hardening",
+            "capital_control_state_sync",
+            "canonical_strategy_surface_sync",
             "formula_lineage_unit_integrity",
             "v3_integrity_audit",
         }

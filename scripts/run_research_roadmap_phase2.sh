@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
 BASE_CONFIG="${1:-config/research_policy.yaml}"
-OUT_ROOT="${ROADMAP_OUT_ROOT:-reports/research/roadmap}"
+OUT_ROOT="${ROADMAP_OUT_ROOT:-data/results/research/reports/roadmap}"
 PHASE="phase2"
 PHASE_DIR="${OUT_ROOT}/${PHASE}"
 mkdir -p "${PHASE_DIR}"

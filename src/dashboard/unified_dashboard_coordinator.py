@@ -27,7 +27,7 @@ class UnifiedDashboardCoordinator:
 
         self.paths: Dict[str, str] = {
             "dashboard_snapshot": "data/processed/cache/dashboard_snapshot.parquet",
-            "unified_state": "data/processed/unified_state.json",
+            "unified_state": "data/state/unified_state.json",
             "dashboard_config": "data/dashboard/unified_config.json",
             "interface_log": "data/dashboard/interface_coordination_log.json",
         }
@@ -57,9 +57,9 @@ class UnifiedDashboardCoordinator:
                 "file": "scripts/northstar_intelligence_organism.py",
             },
             "react": {
-                "name": "React Terminal",
-                "description": "Modern React-based interface",
-                "file": "scripts/launchers/launch_northstar_terminal.py",
+                "name": "Production Dashboard",
+                "description": "Canonical Streamlit production dashboard",
+                "file": "src/dashboard/app.py",
             },
         }
 

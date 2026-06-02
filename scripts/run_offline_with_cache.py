@@ -17,7 +17,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.options.config_loader import get_config
-from src.options.regime_detector import RegimeDetector
+from src.options.options_regime_detector import RegimeDetector
 from src.options.strategy_generator import StrategyGenerator
 from src.options.trade_eligibility_validator import TradeEligibilityValidator
 
@@ -200,7 +200,7 @@ def main():
     print()
     
     # Save results
-    output_file = Path("data/options/offline_analysis_results.json")
+    output_file = Path("data/options/offline_data/results/analysis.json")
     output_file.write_text(json.dumps({
         "timestamp": datetime.now().isoformat(),
         "results": results

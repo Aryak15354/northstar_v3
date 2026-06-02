@@ -17,13 +17,26 @@ import pandas as pd
 import numpy as np
 import os
 import json
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 import warnings
+import logging
+import yaml
 warnings.filterwarnings('ignore')
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.cohesion.bounded_exposure_calculator import BoundedExposureCalculator
 from src.cohesion.state_file_manager import StateFileManager
+from src.core.state import UnifiedState
 from src.intelligence.dual_engine_coordinator import DualEngineCoordinator, MarketRegime
+from src.data.loaders import load_regime_labels
+from src.portfolio.governor import PortfolioGovernor as CapitalStructureGovernor
+
+logger = logging.getLogger(__name__)
 
 class PortfolioGovernor:
     """
@@ -36,13 +49,80 @@ class PortfolioGovernor:
     def __init__(self):
         self.name = "Northstar Portfolio Governor"
         self.version = "3.0"
-        # Default authority: intelligent market state.
-        # Set NS_USE_DUAL_ENGINE_OVERRIDE=1 only if you explicitly want
-        # crisis/trend engines to overwrite canonical regime + exposure.
-        self.use_dual_engine_override = (
+        self.latest_capital_structure = None
+        self.latest_capital_allocation_snapshot = {}
+        # Equity regime authority must come from research regime labels.
+        # Dual engine remains advisory-only for diagnostics/options context.
+        requested_override = (
             str(os.getenv("NS_USE_DUAL_ENGINE_OVERRIDE", "0")).strip().lower()
             in {"1", "true", "yes", "on"}
         )
+        if requested_override:
+            print(
+                "   ⚠️ NS_USE_DUAL_ENGINE_OVERRIDE requested but ignored for equity sizing; "
+                "regime authority is research labels."
+            )
+        self.use_dual_engine_override = False
+        self.live_policy_path = os.getenv("NS_POLICY_CONFIG", "config/research_policy.yaml")
+        self.live_policy = self._load_live_policy(self.live_policy_path)
+        defaults_cfg = self.live_policy.get("defaults", {})
+        opportunity_cfg = self.live_policy.get("opportunity", {})
+        overlay_cfg = self.live_policy.get("regime_overlays", {})
+        signal_blend_cfg = self.live_policy.get("signal_blend", {})
+        deployment_cfg = self.live_policy.get("deployment", {})
+
+        self.canonical_regime_labels_path = str(
+            self.live_policy.get("regime_labels_path", "data/processed/regime_labels.parquet")
+        )
+        self.default_allowed_exposure = self._as_float(defaults_cfg.get("allowed_exposure"), 0.60)
+        self.default_risk_on_prob = self._as_float(defaults_cfg.get("risk_on_probability"), 0.50)
+        self.default_freeze_exposure_cap = self._as_float(defaults_cfg.get("freeze_exposure_cap"), 0.15)
+        self.risk_on_threshold = self._as_float(defaults_cfg.get("risk_on_threshold"), 0.70)
+        self.risk_off_threshold = self._as_float(defaults_cfg.get("risk_off_threshold"), 0.30)
+        self.max_positions_risk_on = self._as_int(defaults_cfg.get("max_positions_risk_on"), 25)
+        self.max_positions_neutral = self._as_int(defaults_cfg.get("max_positions_neutral"), 30)
+        self.max_positions_risk_off = self._as_int(defaults_cfg.get("max_positions_risk_off"), 40)
+        self.concentration_center = self._as_float(defaults_cfg.get("concentration_center"), 0.50)
+        self.concentration_scale = self._as_float(defaults_cfg.get("concentration_scale"), 2.00)
+        self.estimated_portfolio_vol = self._as_float(
+            defaults_cfg.get("estimated_portfolio_volatility"), 0.20
+        )
+        self.target_portfolio_vol = self._as_float(
+            defaults_cfg.get("target_portfolio_volatility"), 0.15
+        )
+
+        self.opp_mispricing_weight = self._as_float(opportunity_cfg.get("mispricing_weight"), 0.60)
+        self.opp_confirmation_weight = self._as_float(opportunity_cfg.get("confirmation_weight"), 0.40)
+        self.opp_legacy_weight = self._as_float(opportunity_cfg.get("legacy_weight"), 0.75)
+        self.opp_macro_weight = self._as_float(opportunity_cfg.get("macro_weight"), 0.25)
+        self.opp_valuation_weight = self._as_float(opportunity_cfg.get("valuation_weight"), 0.20)
+        self.opp_cohesive_weight = self._as_float(opportunity_cfg.get("cohesive_weight"), 0.10)
+        self.opp_macro_default_rank = self._as_float(opportunity_cfg.get("macro_default_rank"), 0.50)
+        self.opp_multiplier_base = self._as_float(opportunity_cfg.get("multiplier_base"), 0.80)
+        self.opp_multiplier_span = self._as_float(opportunity_cfg.get("multiplier_span"), 0.70)
+        self.opp_multiplier_min = self._as_float(opportunity_cfg.get("multiplier_min"), 0.80)
+        self.opp_multiplier_max = self._as_float(opportunity_cfg.get("multiplier_max"), 1.50)
+
+        self.selection_base_weight = self._as_float(signal_blend_cfg.get("base_score_weight"), 0.50)
+        self.selection_cohesive_weight = self._as_float(signal_blend_cfg.get("cohesive_alpha_weight"), 0.20)
+        self.selection_valuation_weight = self._as_float(signal_blend_cfg.get("valuation_weight"), 0.30)
+        self.signal_min_overlay_coverage = self._as_int(signal_blend_cfg.get("min_overlay_coverage"), 25)
+
+        self.deployment_floor_enabled = bool(deployment_cfg.get("enabled", True))
+        self.deployment_floor_fill_ratio = self._as_float(deployment_cfg.get("governor_fill_ratio"), 0.35)
+        self.deployment_floor_max_exposure = self._as_float(deployment_cfg.get("max_floor_exposure"), 0.60)
+        self.deployment_floor_risk_on_min = self._as_float(deployment_cfg.get("risk_on_floor"), 0.45)
+        blocklist = deployment_cfg.get(
+            "regime_blocklist",
+            ["crisis", "panic", "hostile", "slowdown", "tightening", "bear"],
+        )
+        self.deployment_floor_regime_blocklist = {
+            self._normalize_regime_label(item) for item in blocklist if str(item).strip()
+        }
+
+        self.crisis_quality_boost = self._as_float(overlay_cfg.get("crisis_quality_boost"), 1.20)
+        self.expansion_growth_boost = self._as_float(overlay_cfg.get("expansion_growth_boost"), 1.10)
+        self.capital_structure_governor = self._initialize_capital_structure_governor()
         
         # Initialize state management components
         self.exposure_calculator = BoundedExposureCalculator()
@@ -64,14 +144,41 @@ class PortfolioGovernor:
             'model_freeze_state': 'data/processed/model_freeze_state.json',
         }
         
-        # Risk constraints
+        # Risk constraints (single source: config/research_policy.yaml::live_scoring.portfolio_governor.constraints)
+        default_constraints = {
+            'max_single_position': 0.08,
+            'max_sector_exposure': 0.30,
+            'max_total_exposure': 0.95,
+            'min_diversification': 15,
+            'max_turnover': 0.25,
+            'cash_buffer': 0.05,
+        }
+        cfg_constraints = self.live_policy.get("constraints", {})
         self.constraints = {
-            'max_single_position': 0.08,  # 8% max per stock
-            'max_sector_exposure': 0.30,  # 30% max per sector
-            'max_total_exposure': 0.95,   # 95% max total exposure
-            'min_diversification': 15,    # Minimum 15 positions
-            'max_turnover': 0.25,         # 25% max one-way turnover
-            'cash_buffer': 0.05           # 5% minimum cash buffer
+            'max_single_position': self._as_float(
+                cfg_constraints.get('max_single_position'),
+                default_constraints['max_single_position']
+            ),
+            'max_sector_exposure': self._as_float(
+                cfg_constraints.get('max_sector_exposure'),
+                default_constraints['max_sector_exposure']
+            ),
+            'max_total_exposure': self._as_float(
+                cfg_constraints.get('max_total_exposure'),
+                default_constraints['max_total_exposure']
+            ),
+            'min_diversification': self._as_int(
+                cfg_constraints.get('min_diversification'),
+                default_constraints['min_diversification']
+            ),
+            'max_turnover': self._as_float(
+                cfg_constraints.get('max_turnover'),
+                default_constraints['max_turnover']
+            ),
+            'cash_buffer': self._as_float(
+                cfg_constraints.get('cash_buffer'),
+                default_constraints['cash_buffer']
+            ),
         }
         
         # Portfolio roles
@@ -83,6 +190,309 @@ class PortfolioGovernor:
             'Value': 'Contrarian value positions',
             'Quality': 'High-quality defensive positions'
         }
+
+    def _initialize_capital_structure_governor(self):
+        """Bootstrap the canonical Gap 6 governor for budget authority."""
+        config_path = Path("config/portfolio_governor_config.yaml")
+        config = {"starting_capital_inr": 10_000_000, "portfolio_governor": {}}
+        if config_path.exists():
+            try:
+                payload = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+                if isinstance(payload, dict):
+                    config["portfolio_governor"] = payload
+                    config["starting_capital_inr"] = payload.get("starting_capital_inr", config["starting_capital_inr"])
+            except Exception:
+                logger.exception("Failed loading canonical portfolio governor config: %s", config_path)
+        try:
+            return CapitalStructureGovernor(config=config)
+        except Exception:
+            logger.exception("Failed initializing canonical capital-structure governor")
+            return None
+
+    @staticmethod
+    def _iter_open_option_positions(payload):
+        if isinstance(payload, dict):
+            positions = payload.get("open_positions", {})
+            if isinstance(positions, dict):
+                return [dict(pos or {}) for pos in positions.values()]
+            if isinstance(positions, list):
+                return [dict(pos or {}) for pos in positions]
+        return []
+
+    def _get_options_notional_deployed(self) -> float:
+        path = PROJECT_ROOT / "data/options/live/options_runtime_state.json"
+        if not path.exists():
+            return 0.0
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            total = 0.0
+            for position in self._iter_open_option_positions(payload):
+                for key in ("notional", "max_loss", "current_value", "entry_credit_debit"):
+                    value = pd.to_numeric(position.get(key), errors="coerce")
+                    if pd.notna(value):
+                        total += float(abs(value))
+                        break
+            return float(total)
+        except Exception as exc:
+            logger.warning("Could not read options runtime notional: %s", exc)
+            return 0.0
+
+    @staticmethod
+    def _as_float(value, default):
+        if value is None:
+            return float(default)
+        try:
+            return float(value)
+        except Exception:
+            logger.exception("Invalid float config value: %r", value)
+            raise
+
+    @staticmethod
+    def _as_int(value, default):
+        if value is None:
+            return int(default)
+        try:
+            return int(value)
+        except Exception:
+            logger.exception("Invalid int config value: %r", value)
+            raise
+
+    def _load_live_policy(self, config_path: str) -> dict:
+        """Load live scoring policy for portfolio governor."""
+        path = Path(config_path)
+        if not path.exists():
+            return {}
+        try:
+            payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except Exception:
+            logger.exception("Failed loading portfolio live policy: %s", path)
+            raise
+        if not isinstance(payload, dict):
+            return {}
+        live_scoring = payload.get("live_scoring", {})
+        if not isinstance(live_scoring, dict):
+            return {}
+        governor_cfg = live_scoring.get("portfolio_governor", {})
+        return governor_cfg if isinstance(governor_cfg, dict) else {}
+
+    def _load_canonical_regime_label(self) -> str:
+        """Read today's regime from the canonical research regime labels file."""
+        default_regime = "low_vol|uptrend|expansion"
+        path = self.canonical_regime_labels_path
+
+        try:
+            labels = load_regime_labels(config_path=self.live_policy_path)
+            if labels.empty:
+                raise ValueError("regime_labels_empty")
+
+            date_col = "date" if "date" in labels.columns else ("Date" if "Date" in labels.columns else None)
+            if date_col is None or "regime" not in labels.columns:
+                raise ValueError("regime_labels_missing_columns")
+
+            labels[date_col] = pd.to_datetime(labels[date_col], errors="coerce").dt.normalize()
+            today = pd.Timestamp.today().normalize()
+            today_rows = labels[labels[date_col] == today].copy()
+            if today_rows.empty:
+                historical = labels[labels[date_col] <= today].copy()
+                historical = historical.dropna(subset=[date_col]).sort_values(date_col, kind="mergesort")
+                if not historical.empty:
+                    fallback_row = historical.iloc[-1]
+                    fallback_regime = str(fallback_row.get("regime", "") or "").strip()
+                    fallback_date = pd.to_datetime(fallback_row.get(date_col), errors="coerce")
+                    if fallback_regime:
+                        print(
+                            f"   ⚠️ No regime label for {today.date()} in {path}; "
+                            f"using latest available label from {fallback_date.date()}: {fallback_regime}"
+                        )
+                        return fallback_regime
+                print(
+                    f"   ⚠️ No regime label for {today.date()} in {path}; "
+                    f"falling back to {default_regime}"
+                )
+                return default_regime
+
+            regime = str(today_rows["regime"].iloc[-1]).strip()
+            if not regime:
+                raise ValueError("regime_label_blank")
+            return regime
+        except FileNotFoundError:
+            print(
+                f"   ⚠️ Regime labels file missing ({path}); "
+                f"falling back to {default_regime}"
+            )
+            return default_regime
+        except Exception as e:
+            print(
+                f"   ⚠️ Failed to load canonical regime labels ({e}); "
+                f"falling back to {default_regime}"
+            )
+            return default_regime
+
+    def _load_canonical_unified_state(self):
+        """Load the canonical UnifiedState snapshot for Gap 6 budget decisions."""
+        state = UnifiedState()
+        state_path = Path(state.state_file)
+
+        if state_path.exists():
+            try:
+                with open(state_path, "r", encoding="utf-8") as handle:
+                    state.load_snapshot(json.load(handle))
+            except Exception:
+                logger.exception("Failed loading canonical unified state snapshot: %s", state_path)
+
+        # Fill any still-empty sections from legacy sources as a compatibility fallback.
+        if state.market.regime == "unknown":
+            state.load_from_legacy_sources()
+
+        return state
+
+    def _apply_canonical_capital_structure(self, intelligence):
+        """
+        Replace legacy exposure authority with the canonical Gap 6 Governor decision.
+
+        The legacy portfolio constructor still builds weights, but top-level exposure
+        now comes only from the canonical capital structure governor.
+        """
+        if self.capital_structure_governor is None:
+            return intelligence
+
+        try:
+            unified_state = self._load_canonical_unified_state()
+            structure = self.capital_structure_governor.compute_capital_structure(unified_state)
+            if structure is None:
+                print("   ⚠️ Canonical Governor refused to compute on stale unified state")
+                return intelligence
+            self.latest_capital_structure = structure.to_dict()
+            previous_allowed = self._as_float(
+                intelligence.get("allowed_exposure"),
+                self.default_allowed_exposure,
+            )
+            structure_equity = float(structure.equity_fraction)
+            intelligence["legacy_allowed_exposure"] = previous_allowed
+            intelligence["allowed_exposure"] = min(previous_allowed, structure_equity)
+            intelligence["capital_structure"] = self.latest_capital_structure
+            intelligence["capital_structure_regime"] = structure.capital_structure_regime.value
+            intelligence["equity_budget_inr"] = float(structure.equity_budget_inr)
+            intelligence["options_budget_inr"] = float(structure.options_budget_inr)
+            intelligence["cash_reserve_inr"] = float(structure.cash_reserve_inr)
+            intelligence["options_notional_deployed"] = float(self._get_options_notional_deployed())
+            intelligence["governor_primary_rationale"] = structure.primary_rationale
+            print(
+                "   🏛️ Canonical Governor budget: "
+                f"{structure.capital_structure_regime.value} "
+                f"(equity={structure.equity_fraction:.1%}, options={structure.options_fraction:.1%}, cash={structure.cash_fraction:.1%})"
+            )
+            if intelligence["allowed_exposure"] < structure_equity:
+                print(
+                    "   🛡️ Exposure clamp preserved tighter live limit: "
+                    f"{structure_equity:.1%} -> {intelligence['allowed_exposure']:.1%}"
+                )
+        except Exception as exc:
+            logger.exception("Failed applying canonical capital structure")
+            print(f"   ⚠️ Could not apply canonical capital structure: {exc}")
+
+        return intelligence
+
+    def _apply_allocator_exposure_constraints(self, intelligence):
+        """Clamp final exposure to the allocator / NO_EDGE envelope.
+
+        The strategy-layer allocator contributes a hard exposure cap, but it should not
+        force the core equity book to mirror the sum of live strategy sleeve weights.
+        """
+        snapshot = self.latest_capital_allocation_snapshot or {}
+        if not isinstance(snapshot, dict) or not snapshot:
+            return intelligence
+
+        def _ratio(value):
+            parsed = pd.to_numeric(value, errors='coerce')
+            if pd.isna(parsed):
+                return None
+            out = float(parsed)
+            if out > 1.0 and out <= 100.0:
+                out = out / 100.0
+            if not np.isfinite(out):
+                return None
+            return max(0.0, min(1.0, out))
+
+        allocations = intelligence.get('capital_allocations', {}) or {}
+        total_exposure = _ratio(snapshot.get('total_exposure'))
+        if total_exposure is None and isinstance(allocations, dict) and allocations:
+            total_exposure = _ratio(sum(float(v or 0.0) for v in allocations.values()))
+
+        no_edge_state = snapshot.get('no_edge_state', {}) if isinstance(snapshot.get('no_edge_state'), dict) else {}
+        exposure_cap = _ratio(snapshot.get('exposure_cap'))
+        if exposure_cap is None:
+            exposure_cap = _ratio(no_edge_state.get('exposure_cap'))
+        effective_exposure_cap = _ratio(snapshot.get('effective_exposure_cap'))
+        if effective_exposure_cap is None:
+            effective_exposure_cap = exposure_cap
+        enforce_total_exposure_as_cap = bool(snapshot.get('enforce_total_exposure_as_cap', False))
+
+        intelligence['capital_allocator_total_exposure'] = total_exposure
+        intelligence['capital_allocator_exposure_cap'] = exposure_cap
+        intelligence['capital_allocator_effective_exposure_cap'] = effective_exposure_cap
+        intelligence['capital_allocator_no_edge_state'] = no_edge_state
+
+        current_allowed = self._as_float(
+            intelligence.get('allowed_exposure'),
+            self.default_allowed_exposure,
+        )
+        capped_allowed = current_allowed
+        if enforce_total_exposure_as_cap and total_exposure is not None:
+            capped_allowed = min(capped_allowed, total_exposure)
+        if effective_exposure_cap is not None:
+            capped_allowed = min(capped_allowed, effective_exposure_cap)
+
+        if capped_allowed < current_allowed:
+            print(f"   🧮 Capital allocator clamp: {current_allowed:.1%} -> {capped_allowed:.1%}")
+        intelligence['allowed_exposure'] = capped_allowed
+        return intelligence
+
+    def _apply_governor_deployment_floor(self, intelligence):
+        """
+        Ensure we do not under-deploy in supportive conditions when the governor budget
+        is materially above the legacy exposure control.
+        """
+        if not self.deployment_floor_enabled:
+            return intelligence
+        if bool((intelligence.get('freeze_state') or {}).get('freeze_active', False)):
+            return intelligence
+
+        no_edge_state = intelligence.get('capital_allocator_no_edge_state', {}) or {}
+        if str(no_edge_state.get('state', 'NORMAL')).upper() == 'NO_EDGE':
+            return intelligence
+
+        regime_label = self._normalize_regime_label(intelligence.get('regime', 'unknown'))
+        if any(token in regime_label for token in self.deployment_floor_regime_blocklist):
+            return intelligence
+
+        risk_on_prob = self._as_float(intelligence.get('risk_on_prob'), self.default_risk_on_prob)
+        if risk_on_prob < self.deployment_floor_risk_on_min:
+            return intelligence
+
+        capital_structure = intelligence.get('capital_structure', {}) or {}
+        equity_fraction = pd.to_numeric(capital_structure.get('equity_fraction'), errors='coerce')
+        if pd.isna(equity_fraction) or float(equity_fraction) <= 0.0:
+            return intelligence
+
+        target_floor = min(
+            float(equity_fraction) * self.deployment_floor_fill_ratio,
+            self.deployment_floor_max_exposure,
+            float(equity_fraction),
+        )
+        current_allowed = self._as_float(
+            intelligence.get('allowed_exposure'),
+            self.default_allowed_exposure,
+        )
+        intelligence['governor_deployment_floor'] = target_floor
+        if target_floor > current_allowed:
+            intelligence['legacy_allowed_exposure'] = current_allowed
+            intelligence['allowed_exposure'] = target_floor
+            print(
+                "   🏛️ Governor deployment floor applied: "
+                f"{current_allowed:.1%} -> {target_floor:.1%}"
+            )
+        return intelligence
     
     def load_market_intelligence(self):
         """Load market state and AI intelligence with dual engine coordination"""
@@ -92,9 +502,9 @@ class PortfolioGovernor:
         intelligence = {
             'market_state': {},
             'ai_intelligence': {},
-            'regime': 'neutral',
-            'allowed_exposure': 0.6,
-            'risk_on_prob': 0.5,
+            'regime': self._load_canonical_regime_label(),
+            'allowed_exposure': self.default_allowed_exposure,
+            'risk_on_prob': self.default_risk_on_prob,
             'ai_active': False,
             'strategy_performance': {},
             'capital_allocations': {},
@@ -104,7 +514,7 @@ class PortfolioGovernor:
             'engine_allocation': None,
             'engine_recommended_regime': None,
             'engine_recommended_exposure': None,
-            'regime_authority': 'intelligent_market_state',
+            'regime_authority': 'research_regime_labels',
             'regime_alignment': 'unknown',
             'crisis_engine_active': False,
             'trend_engine_active': False
@@ -116,15 +526,14 @@ class PortfolioGovernor:
             if not market_df.empty:
                 latest_market = market_df.iloc[-1]
                 intelligence['market_state'] = latest_market.to_dict()
-                intelligence['regime'] = latest_market.get('regime', 'neutral')
                 
                 # Read allowed_exposure from canonical source.
                 # Some upstream artifacts store as [0,1], others as [0,100].
                 allowed_exposure = pd.to_numeric(
-                    latest_market.get('allowed_exposure', 0.6), errors='coerce'
+                    latest_market.get('allowed_exposure', self.default_allowed_exposure), errors='coerce'
                 )
                 if pd.isna(allowed_exposure):
-                    allowed_exposure = 0.6
+                    allowed_exposure = self.default_allowed_exposure
                 allowed_exposure = float(allowed_exposure)
                 if allowed_exposure > 1.0:
                     allowed_exposure = allowed_exposure / 100.0
@@ -133,8 +542,12 @@ class PortfolioGovernor:
                     allowed_exposure = max(0.0, min(1.0, allowed_exposure))
                 
                 intelligence['allowed_exposure'] = allowed_exposure
-                intelligence['risk_on_prob'] = latest_market.get('risk_on', 0.5)
-                print(f"   ✅ Market state loaded: {intelligence['regime']} regime")
+                intelligence['risk_on_prob'] = self._as_float(
+                    latest_market.get('risk_on', self.default_risk_on_prob),
+                    self.default_risk_on_prob,
+                )
+                print(f"   ✅ Market state loaded (regime authority: {intelligence['regime_authority']})")
+                print(f"   🧭 Canonical regime: {intelligence['regime']}")
                 print(f"   📊 Allowed Exposure: {intelligence['allowed_exposure']:.1%}")
         except FileNotFoundError:
             print(f"   ⚠️ Market state file not found, using defaults")
@@ -168,7 +581,7 @@ class PortfolioGovernor:
 
                     regime_ai = latest_ai.get('regime_ai')
                     if isinstance(regime_ai, str) and regime_ai.strip():
-                        intelligence['regime'] = regime_ai.strip().lower()
+                        intelligence['ai_regime'] = regime_ai.strip().lower()
                     
                     # Override with AI recommendations if available
                     if intelligence['ai_active']:
@@ -209,8 +622,14 @@ class PortfolioGovernor:
                     intelligence['freeze_active'] = bool(freeze_state.get('freeze_active', False))
                     intelligence['freeze_actions'] = freeze_state.get('actions', {}) or {}
                     if intelligence['freeze_active']:
-                        cap = float(intelligence['freeze_actions'].get('target_max_exposure', 0.15) or 0.15)
-                        prev = float(intelligence.get('allowed_exposure', 0.6))
+                        cap = self._as_float(
+                            intelligence['freeze_actions'].get('target_max_exposure'),
+                            self.default_freeze_exposure_cap,
+                        )
+                        prev = self._as_float(
+                            intelligence.get('allowed_exposure'),
+                            self.default_allowed_exposure,
+                        )
                         intelligence['allowed_exposure'] = min(prev, cap)
                         print(
                             f"   🧊 Freeze active: allowed exposure "
@@ -274,7 +693,10 @@ class PortfolioGovernor:
                 print(f"      📈 Trend Engine: {engine_allocation.trend_allocation:.1%}")
         else:
             print(f"   ⚠️ No market data available for engine coordination")
-        
+
+        intelligence = self._apply_canonical_capital_structure(intelligence)
+        intelligence = self._apply_allocator_exposure_constraints(intelligence)
+        intelligence = self._apply_governor_deployment_floor(intelligence)
         return intelligence
 
     @staticmethod
@@ -345,12 +767,15 @@ class PortfolioGovernor:
         """Load current capital allocations across strategies"""
         
         allocations = {}
+        self.latest_capital_allocation_snapshot = {}
         
         try:
             alloc_file = 'data/processed/capital_allocations.json'
             if os.path.exists(alloc_file):
                 with open(alloc_file, 'r') as f:
                     data = json.load(f)
+                    if isinstance(data, dict):
+                        self.latest_capital_allocation_snapshot = data
                     allocations = data.get('allocations', {})
                     print(f"   ✅ Loaded capital allocations: {len(allocations)} strategies")
         except Exception as e:
@@ -368,11 +793,8 @@ class PortfolioGovernor:
             def _tag(df, source):
                 if df is None or df.empty:
                     return df
-                try:
-                    df.attrs['source'] = source
-                    df.attrs['synthetic'] = False
-                except Exception:
-                    pass
+                df.attrs['source'] = source
+                df.attrs['synthetic'] = False
                 return df
 
             # Source 1: explicit return series artifacts (already real returns).
@@ -407,8 +829,9 @@ class PortfolioGovernor:
                                     if not tmp.empty:
                                         market_data = _tag(tmp, f"returns:{file_path}")
                                 break
-                        except Exception as e:
-                            continue
+                        except Exception:
+                            logger.exception("Failed reading market-return source: %s", file_path)
+                            raise
 
             # Source 2: derive returns from trusted index close series.
             if market_data is None:
@@ -437,7 +860,8 @@ class PortfolioGovernor:
                             market_data = _tag(tmp, f"index:{idx_path}")
                             break
                     except Exception:
-                        continue
+                        logger.exception("Failed deriving returns from index source: %s", idx_path)
+                        raise
 
             if market_data is None:
                 print("   ⚠️ No real market-return series available for engine coordination")
@@ -457,6 +881,9 @@ class PortfolioGovernor:
         try:
             if os.path.exists(self.paths['scores']):
                 scores_df = pd.read_parquet(self.paths['scores'])
+                scores_df = scores_df.copy()
+                if 'ticker' in scores_df.columns:
+                    scores_df['ticker'] = scores_df['ticker'].astype(str).str.strip()
                 
                 # Ensure we have required columns
                 required_cols = ['ticker']
@@ -476,10 +903,80 @@ class PortfolioGovernor:
                 # Add company names if available
                 if 'Company Name' not in universe.columns:
                     universe['Company Name'] = universe['ticker']
+                else:
+                    company_name = universe['Company Name'].fillna('').astype(str).str.strip()
+                    universe['Company Name'] = company_name.where(company_name.ne(''), universe['ticker'].astype(str))
                 
                 # Add industry if available
                 if 'Industry' not in universe.columns:
-                    universe['Industry'] = 'Unknown'
+                    if 'sector' in universe.columns:
+                        universe['Industry'] = universe['sector']
+                    else:
+                        universe['Industry'] = 'Unknown'
+                universe['Industry'] = universe['Industry'].fillna('Unknown').astype(str)
+
+                # Enrich missing metadata from reference universe when scores are thin.
+                try:
+                    ref_path = Path('universe/nifty500.csv')
+                    if ref_path.exists():
+                        ref = pd.read_csv(ref_path)
+                        ticker_col = next((c for c in ['Symbol', 'ticker', 'Ticker', 'symbol'] if c in ref.columns), None)
+                        if ticker_col is not None:
+                            ref = ref.copy()
+                            ref['ticker'] = ref[ticker_col].astype(str).str.strip().str.upper()
+                            ref['ticker'] = ref['ticker'].map(
+                                lambda x: x if '.' in x else f"{x}.NS"
+                            )
+                            name_col = next(
+                                (c for c in ['Company Name', 'company_name', 'Security Name'] if c in ref.columns),
+                                None,
+                            )
+                            industry_col = next(
+                                (c for c in ['Industry', 'industry', 'Sector', 'sector', 'Industry Name'] if c in ref.columns),
+                                None,
+                            )
+                            keep_cols = ['ticker']
+                            if name_col is not None:
+                                keep_cols.append(name_col)
+                            if industry_col is not None:
+                                keep_cols.append(industry_col)
+                            ref = ref[keep_cols].drop_duplicates('ticker', keep='last')
+                            universe = universe.merge(ref, on='ticker', how='left', suffixes=('', '_ref'))
+                            if name_col is not None:
+                                ref_name_col = f'{name_col}_ref' if f'{name_col}_ref' in universe.columns else name_col
+                                base_name = universe['Company Name'].fillna('').astype(str).str.strip()
+                                ref_name = universe[ref_name_col].fillna('').astype(str).str.strip()
+                                universe['Company Name'] = base_name.where(base_name.ne(''), ref_name)
+                            if industry_col is not None:
+                                ref_industry_col = f'{industry_col}_ref' if f'{industry_col}_ref' in universe.columns else industry_col
+                                base_industry = universe['Industry'].fillna('').astype(str).str.strip()
+                                ref_industry = universe[ref_industry_col].fillna('Unknown').astype(str).str.strip()
+                                missing_industry = base_industry.eq('') | base_industry.eq('Unknown') | base_industry.eq('nan')
+                                universe['Industry'] = base_industry.where(~missing_industry, ref_industry)
+                            drop_cols = [c for c in universe.columns if c.endswith('_ref')]
+                            universe = universe.drop(columns=drop_cols, errors='ignore')
+                except Exception as exc:
+                    print(f"   ⚠️ Metadata enrichment skipped: {exc}")
+
+                universe = self._enrich_universe_with_research_signals(universe, score_col)
+                if 'selection_score' in universe.columns:
+                    overlay_cols = [
+                        col for col in ['cohesive_alpha_rank_score', 'valuation_signal']
+                        if col in universe.columns
+                    ]
+                    overlay_hits = int(universe[overlay_cols].notna().any(axis=1).sum()) if overlay_cols else 0
+                    if overlay_hits >= self.signal_min_overlay_coverage:
+                        score_col = 'selection_score'
+                        universe = universe.sort_values(score_col, ascending=False, kind='mergesort')
+                        print(
+                            f"   🧠 Research signal blend active: {overlay_hits}/{len(universe)} "
+                            "tickers with valuation/cohesive coverage"
+                        )
+                    else:
+                        print(
+                            f"   ⚠️ Research signal coverage too thin for ranking override: "
+                            f"{overlay_hits}/{len(universe)}"
+                        )
                 
                 print(f"   ✅ Universe loaded: {len(universe)} stocks")
                 return universe, score_col
@@ -507,6 +1004,141 @@ class PortfolioGovernor:
             print(f"   ⚠️ Could not load opportunity surface: {e}")
         
         return pd.DataFrame()
+
+    @staticmethod
+    def _cross_section_rank(series: pd.Series, neutral: float = 0.50) -> pd.Series:
+        values = pd.to_numeric(series, errors='coerce')
+        if values.notna().sum() <= 1:
+            return pd.Series(neutral, index=series.index, dtype=float)
+        ranked = values.rank(pct=True, method='average')
+        return ranked.fillna(neutral).clip(lower=0.0, upper=1.0)
+
+    def _load_research_signal_overlay(self) -> pd.DataFrame:
+        """Load cohesive alpha and valuation signals for stock-selection blending."""
+        frames = []
+
+        cohesive_path = Path('data/processed/cohesive_alpha_feed.parquet')
+        if cohesive_path.exists():
+            try:
+                cohesive = pd.read_parquet(cohesive_path)
+                if not cohesive.empty and 'ticker' in cohesive.columns:
+                    cohesive = cohesive.copy()
+                    cohesive['ticker'] = cohesive['ticker'].astype(str).str.strip()
+                    if 'cohesive_alpha_score' not in cohesive.columns:
+                        cohesive['cohesive_alpha_score'] = np.nan
+                    cohesive['cohesive_alpha_score'] = pd.to_numeric(
+                        cohesive['cohesive_alpha_score'], errors='coerce'
+                    )
+                    cohesive['cohesive_alpha_rank_score'] = self._cross_section_rank(
+                        cohesive['cohesive_alpha_score']
+                    )
+                    frames.append(
+                        cohesive[['ticker', 'cohesive_alpha_score', 'cohesive_alpha_rank_score']]
+                        .drop_duplicates('ticker', keep='last')
+                    )
+            except Exception as exc:
+                print(f"   ⚠️ Cohesive alpha overlay unavailable: {exc}")
+
+        valuation_path = Path('data/processed/valuation.parquet')
+        if valuation_path.exists():
+            try:
+                valuation = pd.read_parquet(valuation_path)
+                if not valuation.empty and 'ticker' in valuation.columns:
+                    valuation = valuation.copy()
+                    valuation['ticker'] = valuation['ticker'].astype(str).str.strip()
+                    mos_col = (
+                        'dcf_margin_of_safety_v2_pct'
+                        if 'dcf_margin_of_safety_v2_pct' in valuation.columns
+                        else 'margin_of_safety_pct'
+                    )
+                    if mos_col not in valuation.columns:
+                        valuation[mos_col] = np.nan
+                    valuation['margin_of_safety_pct'] = pd.to_numeric(
+                        valuation[mos_col], errors='coerce'
+                    ).clip(lower=0.0, upper=1.0)
+
+                    owner_yield_col = (
+                        'owner_earnings_yield_v2'
+                        if 'owner_earnings_yield_v2' in valuation.columns
+                        else 'owner_earnings_yield'
+                    )
+                    if owner_yield_col not in valuation.columns:
+                        valuation[owner_yield_col] = np.nan
+                    owner_yield = pd.to_numeric(valuation[owner_yield_col], errors='coerce')
+                    if owner_yield.notna().sum() > 5:
+                        lower = owner_yield.quantile(0.01)
+                        upper = owner_yield.quantile(0.99)
+                        owner_yield = owner_yield.clip(lower=lower, upper=upper)
+                    valuation['owner_earnings_yield_v2'] = owner_yield
+                    valuation['owner_earnings_rank_score'] = self._cross_section_rank(owner_yield)
+                    valuation['valuation_signal'] = (
+                        0.65 * valuation['margin_of_safety_pct'].fillna(0.50) +
+                        0.35 * valuation['owner_earnings_rank_score'].fillna(0.50)
+                    ).clip(lower=0.0, upper=1.0)
+                    keep_cols = [
+                        'ticker',
+                        'margin_of_safety_pct',
+                        'owner_earnings_yield_v2',
+                        'owner_earnings_rank_score',
+                        'valuation_signal',
+                    ]
+                    frames.append(valuation[keep_cols].drop_duplicates('ticker', keep='last'))
+            except Exception as exc:
+                print(f"   ⚠️ Valuation overlay unavailable: {exc}")
+
+        if not frames:
+            return pd.DataFrame()
+
+        overlay = frames[0]
+        for frame in frames[1:]:
+            overlay = overlay.merge(frame, on='ticker', how='outer', suffixes=('', '_dup'))
+            dup_cols = [c for c in overlay.columns if c.endswith('_dup')]
+            overlay = overlay.drop(columns=dup_cols, errors='ignore')
+        return overlay
+
+    def _enrich_universe_with_research_signals(self, universe: pd.DataFrame, score_col: str) -> pd.DataFrame:
+        if universe.empty or 'ticker' not in universe.columns:
+            return universe
+
+        overlay = self._load_research_signal_overlay()
+        enriched = universe.copy()
+        if overlay.empty:
+            enriched['base_score_rank'] = self._cross_section_rank(enriched[score_col])
+            enriched['selection_score'] = enriched['base_score_rank']
+            return enriched
+
+        enriched = enriched.merge(overlay, on='ticker', how='left')
+        if 'Industry_x' in enriched.columns or 'Industry_y' in enriched.columns:
+            base_col = 'Industry_x' if 'Industry_x' in enriched.columns else 'Industry'
+            overlay_col = 'Industry_y' if 'Industry_y' in enriched.columns else None
+            fallback_industry = enriched[base_col].fillna('Unknown').astype(str)
+            overlay_industry = (
+                enriched[overlay_col].fillna('Unknown').astype(str)
+                if overlay_col is not None
+                else pd.Series('Unknown', index=enriched.index)
+            )
+            missing = fallback_industry.eq('Unknown') | fallback_industry.eq('') | fallback_industry.eq('nan')
+            enriched['Industry'] = fallback_industry.where(~missing, overlay_industry)
+            enriched = enriched.drop(columns=['Industry_x', 'Industry_y'], errors='ignore')
+
+        enriched['base_score_rank'] = self._cross_section_rank(enriched[score_col])
+        cohesive_rank = pd.to_numeric(enriched.get('cohesive_alpha_rank_score'), errors='coerce').fillna(0.50)
+        valuation_rank = pd.to_numeric(enriched.get('valuation_signal'), errors='coerce').fillna(0.50)
+
+        total_weight = (
+            self.selection_base_weight +
+            self.selection_cohesive_weight +
+            self.selection_valuation_weight
+        )
+        base_w = self.selection_base_weight / total_weight
+        cohesive_w = self.selection_cohesive_weight / total_weight
+        valuation_w = self.selection_valuation_weight / total_weight
+        enriched['selection_score'] = (
+            base_w * enriched['base_score_rank'] +
+            cohesive_w * cohesive_rank +
+            valuation_w * valuation_rank
+        ).clip(lower=0.0, upper=1.0)
+        return enriched
 
     def load_macro_conditioned_snapshot(self):
         """
@@ -623,10 +1255,59 @@ class PortfolioGovernor:
                 # Add weighted contribution from this strategy
                 aligned_weights = weights.reindex(blended_weights.index).fillna(0)
                 blended_weights += allocation * aligned_weights
-        
-        # Filter to universe and normalize
-        universe_tickers = set(universe['ticker'])
-        blended_weights = blended_weights[blended_weights.index.isin(universe_tickers)]
+
+        # In blended mode the canonical strategy portfolios are already current live
+        # selections. Do not collapse them back to the thinner score universe; use
+        # score-universe metadata when present and fall back to the reference universe.
+        metadata = pd.DataFrame(columns=['ticker', 'Company Name', 'Industry'])
+        if isinstance(universe, pd.DataFrame) and not universe.empty and 'ticker' in universe.columns:
+            metadata = universe.copy()
+            metadata['ticker'] = metadata['ticker'].astype(str).str.strip()
+            if 'Company Name' not in metadata.columns:
+                metadata['Company Name'] = metadata['ticker']
+            else:
+                metadata['Company Name'] = (
+                    metadata['Company Name'].fillna('').astype(str).str.strip()
+                    .where(metadata['Company Name'].fillna('').astype(str).str.strip().ne(''), metadata['ticker'].astype(str))
+                )
+            if 'Industry' not in metadata.columns:
+                metadata['Industry'] = metadata.get('sector', 'Unknown')
+            metadata['Industry'] = metadata['Industry'].fillna('Unknown').astype(str)
+            metadata = metadata[['ticker', 'Company Name', 'Industry']].drop_duplicates('ticker', keep='first')
+
+        try:
+            ref_path = Path('universe/nifty500.csv')
+            if ref_path.exists():
+                ref = pd.read_csv(ref_path)
+                ticker_col = next((c for c in ['Symbol', 'ticker', 'Ticker', 'symbol'] if c in ref.columns), None)
+                if ticker_col is not None:
+                    ref = ref.copy()
+                    ref['ticker'] = ref[ticker_col].astype(str).str.strip().str.upper()
+                    ref['ticker'] = ref['ticker'].map(lambda x: x if '.' in x else f"{x}.NS")
+                    name_col = next(
+                        (c for c in ['Company Name', 'company_name', 'Security Name'] if c in ref.columns),
+                        None,
+                    )
+                    industry_col = next(
+                        (c for c in ['Industry', 'industry', 'Sector', 'sector', 'Industry Name'] if c in ref.columns),
+                        None,
+                    )
+                    ref_meta = pd.DataFrame({'ticker': ref['ticker']})
+                    ref_meta['Company Name'] = (
+                        ref[name_col].fillna('').astype(str)
+                        if name_col is not None
+                        else ref_meta['ticker']
+                    )
+                    ref_meta['Industry'] = (
+                        ref[industry_col].fillna('Unknown').astype(str)
+                        if industry_col is not None
+                        else 'Unknown'
+                    )
+                    metadata = pd.concat([metadata, ref_meta], ignore_index=True)
+                    metadata = metadata.drop_duplicates('ticker', keep='first')
+        except Exception as exc:
+            print(f"   ⚠️ Reference metadata enrichment skipped: {exc}")
+
         blended_weights = blended_weights[blended_weights > 0.001]  # Remove tiny weights
         
         if blended_weights.sum() > 0:
@@ -634,13 +1315,18 @@ class PortfolioGovernor:
         
         # Convert to portfolio format matching expected structure
         portfolio_data = []
+        metadata_lookup = (
+            metadata.set_index('ticker')[['Company Name', 'Industry']].to_dict('index')
+            if not metadata.empty and 'ticker' in metadata.columns
+            else {}
+        )
         for ticker, weight in blended_weights.items():
             if weight > 0.001:
-                company_info = universe[universe['ticker'] == ticker]
-                if not company_info.empty:
-                    row = company_info.iloc[0].to_dict()
-                    row['base_weight'] = weight
-                    portfolio_data.append(row)
+                row = {'ticker': ticker, 'Company Name': ticker, 'Industry': 'Unknown'}
+                if ticker in metadata_lookup:
+                    row.update(metadata_lookup[ticker])
+                row['base_weight'] = weight
+                portfolio_data.append(row)
         
         portfolio = pd.DataFrame(portfolio_data)
         
@@ -664,12 +1350,12 @@ class PortfolioGovernor:
         risk_on_prob = intelligence['risk_on_prob']
         
         # Adjust universe size based on market conditions
-        if risk_on_prob > 0.7:
-            max_positions = 25  # More concentrated in risk-on
-        elif risk_on_prob < 0.3:
-            max_positions = 40  # More diversified in risk-off
+        if risk_on_prob > self.risk_on_threshold:
+            max_positions = self.max_positions_risk_on
+        elif risk_on_prob < self.risk_off_threshold:
+            max_positions = self.max_positions_risk_off
         else:
-            max_positions = 30  # Balanced
+            max_positions = self.max_positions_neutral
         
         # Select top stocks
         top_stocks = universe.head(max_positions).copy()
@@ -679,7 +1365,9 @@ class PortfolioGovernor:
             scores = top_stocks[score_col].values
             
             # Adjust concentration based on risk-on probability
-            concentration_factor = 1.0 + (risk_on_prob - 0.5) * 2.0  # 0 to 2 range
+            concentration_factor = 1.0 + (
+                (risk_on_prob - self.concentration_center) * self.concentration_scale
+            )
             
             # Apply softmax
             scores_normalized = (scores - scores.mean()) / (scores.std() + 1e-8)
@@ -694,7 +1382,9 @@ class PortfolioGovernor:
         
         print(f"   ✅ Single strategy portfolio: {len(top_stocks)} positions")
         if score_col and score_col in top_stocks.columns:
-            concentration_factor = 1.0 + (risk_on_prob - 0.5) * 2.0
+            concentration_factor = 1.0 + (
+                (risk_on_prob - self.concentration_center) * self.concentration_scale
+            )
             print(f"   📊 Concentration factor: {concentration_factor:.2f}")
             print(f"   📊 Top position: {weights.max():.2%}")
         
@@ -728,8 +1418,8 @@ class PortfolioGovernor:
 
         # Legacy opportunity score from opportunity surface
         portfolio['legacy_opportunity_score'] = (
-            portfolio['mispricing'] * 0.6 +
-            portfolio['confirmation'] * 0.4
+            portfolio['mispricing'] * self.opp_mispricing_weight +
+            portfolio['confirmation'] * self.opp_confirmation_weight
         )
 
         # Merge macro-conditioned signal and convert to cross-sectional rank [0,1]
@@ -747,20 +1437,42 @@ class PortfolioGovernor:
                     pct=True, method='average'
                 )
             else:
-                portfolio['macro_signal_rank'] = 0.5
+                portfolio['macro_signal_rank'] = self.opp_macro_default_rank
         else:
             portfolio['macro_conditioned_signal'] = np.nan
-            portfolio['macro_signal_rank'] = 0.5
+            portfolio['macro_signal_rank'] = self.opp_macro_default_rank
 
         # Blend opportunity surface with macro-conditioned state signal
+        valuation_signal = (
+            pd.to_numeric(portfolio['valuation_signal'], errors='coerce')
+            if 'valuation_signal' in portfolio.columns
+            else pd.Series(0.50, index=portfolio.index, dtype=float)
+        ).fillna(0.50)
+        cohesive_rank = (
+            pd.to_numeric(portfolio['cohesive_alpha_rank_score'], errors='coerce')
+            if 'cohesive_alpha_rank_score' in portfolio.columns
+            else pd.Series(0.50, index=portfolio.index, dtype=float)
+        ).fillna(0.50)
+        total_weight = (
+            self.opp_legacy_weight +
+            self.opp_macro_weight +
+            self.opp_valuation_weight +
+            self.opp_cohesive_weight
+        )
         portfolio['opportunity_score'] = (
-            portfolio['legacy_opportunity_score'] * 0.75 +
-            portfolio['macro_signal_rank'].fillna(0.5) * 0.25
+            portfolio['legacy_opportunity_score'] * (self.opp_legacy_weight / total_weight) +
+            portfolio['macro_signal_rank'].fillna(self.opp_macro_default_rank) * (self.opp_macro_weight / total_weight) +
+            valuation_signal * (self.opp_valuation_weight / total_weight) +
+            cohesive_rank * (self.opp_cohesive_weight / total_weight)
         )
 
         # Apply opportunity multiplier (0.8x to 1.5x)
-        opp_multiplier = 0.8 + (portfolio['opportunity_score'] * 0.7)
-        opp_multiplier = np.clip(opp_multiplier, 0.8, 1.5)
+        opp_multiplier = self.opp_multiplier_base + (portfolio['opportunity_score'] * self.opp_multiplier_span)
+        opp_multiplier = np.clip(
+            opp_multiplier,
+            self.opp_multiplier_min,
+            self.opp_multiplier_max,
+        )
         
         portfolio['opportunity_weight'] = portfolio['base_weight'] * opp_multiplier
         
@@ -845,7 +1557,9 @@ class PortfolioGovernor:
                     prev_vec = np.array([float(prev_map.get(k, 0.0)) for k in keys], dtype=float)
                     cur_vec = np.array([float(cur_map.get(k, 0.0)) for k in keys], dtype=float)
                     turnover = 0.5 * float(np.abs(cur_vec - prev_vec).sum())
-                    max_turnover = float(self.constraints.get('max_turnover', 0.25))
+                    max_turnover = float(
+                        self.constraints.get('max_turnover', self._as_float(None, 0.25))
+                    )
                     if turnover > max_turnover and turnover > 1e-12:
                         blend = max_turnover / turnover
                         adj_vec = prev_vec + blend * (cur_vec - prev_vec)
@@ -1042,8 +1756,8 @@ class PortfolioGovernor:
         strategy_performance = intelligence.get('strategy_performance', {})
         
         # Calculate risk-scaled exposure based on portfolio volatility
-        estimated_portfolio_vol = 0.20  # 20% annualized volatility estimate
-        target_vol = 0.15  # 15% target volatility
+        estimated_portfolio_vol = self.estimated_portfolio_vol
+        target_vol = self.target_portfolio_vol
         
         risk_scaled_result = self.exposure_calculator.calculate_risk_scaled_exposure(
             portfolio_volatility=estimated_portfolio_vol,
@@ -1062,7 +1776,10 @@ class PortfolioGovernor:
         # Freeze-state hard clamp for capital preservation.
         freeze_state = intelligence.get('freeze_state', {}) or {}
         if bool(freeze_state.get('freeze_active', False)):
-            freeze_cap = float((freeze_state.get('actions') or {}).get('target_max_exposure', 0.15) or 0.15)
+            freeze_cap = self._as_float(
+                (freeze_state.get('actions') or {}).get('target_max_exposure'),
+                self.default_freeze_exposure_cap,
+            )
             if final_exposure > freeze_cap:
                 print(f"   🧊 Freeze exposure clamp: {final_exposure:.1%} -> {freeze_cap:.1%}")
             final_exposure = min(final_exposure, freeze_cap)
@@ -1073,7 +1790,7 @@ class PortfolioGovernor:
         # Apply regime-specific adjustments
         if regime in ['crisis', 'slowdown', 'hostile', 'panic']:
             # Favor quality and defensives
-            quality_boost = 1.2
+            quality_boost = self.crisis_quality_boost
             defensive_sectors = ['Utilities', 'Consumer Staples', 'Healthcare']
             
             for sector in defensive_sectors:
@@ -1083,7 +1800,7 @@ class PortfolioGovernor:
         
         elif regime in ['boom', 'expansion', 'supportive']:
             # Favor growth and cyclicals
-            growth_boost = 1.1
+            growth_boost = self.expansion_growth_boost
             cyclical_sectors = ['Technology', 'Industrials', 'Materials']
             
             for sector in cyclical_sectors:
@@ -1207,12 +1924,20 @@ class PortfolioGovernor:
         analytics['intelligence_integration'] = {
             'regime': intelligence['regime'],
             'allowed_exposure': intelligence['allowed_exposure'],
+            'legacy_allowed_exposure': intelligence.get('legacy_allowed_exposure'),
+            'governor_deployment_floor': float(intelligence.get('governor_deployment_floor', 0.0) or 0.0),
             'capital_allocator_exposure': float(sum((intelligence.get('capital_allocations') or {}).values())),
+            'capital_allocator_exposure_cap': float(intelligence.get('capital_allocator_effective_exposure_cap') or 0.0),
             'risk_on_probability': intelligence['risk_on_prob'],
             'ai_active': intelligence['ai_active'],
             'freeze_active': bool(intelligence.get('freeze_active', False)),
             'regime_authority': intelligence.get('regime_authority', 'unknown'),
             'regime_alignment': intelligence.get('regime_alignment', 'unknown'),
+            'capital_structure_regime': intelligence.get('capital_structure_regime', 'UNKNOWN'),
+            'equity_budget_inr': float(intelligence.get('equity_budget_inr', 0.0) or 0.0),
+            'options_budget_inr': float(intelligence.get('options_budget_inr', 0.0) or 0.0),
+            'cash_reserve_inr': float(intelligence.get('cash_reserve_inr', 0.0) or 0.0),
+            'governor_primary_rationale': intelligence.get('governor_primary_rationale', ''),
             'market_state_compliance': abs(total_exposure - intelligence['allowed_exposure']) < 0.05
         }
         
@@ -1259,7 +1984,9 @@ class PortfolioGovernor:
             # Prepare output columns
             output_cols = [
                 'ticker', 'Company Name', 'Industry', 'final_weight', 
-                'position_role', 'base_weight', 'opportunity_weight'
+                'position_role', 'base_weight', 'opportunity_weight',
+                'selection_score', 'cohesive_alpha_score', 'margin_of_safety_pct',
+                'owner_earnings_yield_v2', 'valuation_signal'
             ]
             output_cols = [c for c in output_cols if c in portfolio.columns]
             
@@ -1287,7 +2014,8 @@ class PortfolioGovernor:
                                 "preserving existing canonical portfolio_weights.parquet"
                             )
             except Exception:
-                pass
+                logger.exception("Failed during zero-exposure guardrail evaluation")
+                raise
 
             if not skip_portfolio_write:
                 try:
@@ -1309,7 +2037,8 @@ class PortfolioGovernor:
                     ew = pd.to_numeric(existing["weight"], errors="coerce").fillna(0.0)
                     preserve_existing = int((ew > 0).sum()) >= 5 and float(ew.sum()) > 0.01
             except Exception:
-                preserve_existing = False
+                logger.exception("Failed evaluating existing portfolio preservation condition")
+                raise
 
             if preserve_existing:
                 print("   ⚠️ Empty portfolio generated; preserving existing canonical portfolio weights")

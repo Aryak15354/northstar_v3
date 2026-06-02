@@ -19,9 +19,19 @@ class AlternativeFeatureBuilder:
     FEATURE_GROUPS = {
         "bulk_deals": [
             "bulk_net_volume_5d",
+            "bulk_net_volume_21d",
             "bulk_buy_count_5d",
             "bulk_deal_value_pct_mcap",
             "institutional_buy_flag",
+            "bulk_net_pressure_5d",
+            "bulk_net_pressure_21d",
+            "bulk_net_pressure_float_21d",
+            "bulk_net_fii_21d",
+            "bulk_net_dii_21d",
+            "bulk_net_promoter_21d",
+            "bulk_net_institutional_21d",
+            "bulk_net_retail_21d",
+            "bulk_net_unknown_21d",
         ],
         "pledge": [
             "pledge_pct",

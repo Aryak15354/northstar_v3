@@ -25,6 +25,7 @@ from scripts.kaggle.week_2026_03_29.common import (
     build_feature_unit_registry,
     derive_size_rank,
     infer_feature_unit_kind,
+    load_export_artifacts,
     prepare_runtime_project,
     resolve_export_dir,
     select_feature_columns,
@@ -209,6 +210,61 @@ def test_build_feature_coverage_audit_flags_dead_features():
     assert "low_unique_values" in str(audit.loc["dead_feature", "dead_reason"])
     assert bool(audit.loc["mostly_null_feature", "likely_dead"]) is True
     assert "high_null_rate" in str(audit.loc["mostly_null_feature", "dead_reason"])
+
+
+def test_repair_dead_quality_factor_families_uses_live_valuation_proxies():
+    frame = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2026-01-02", "2026-01-02", "2026-01-09", "2026-01-09"]),
+            "ticker": ["AAA.NS", "BBB.NS", "AAA.NS", "BBB.NS"],
+            "earnings_quality_ratio": [0.0, 0.0, 0.0, 0.0],
+            "earnings_quality_ratio_cs_z": [0.0, 0.0, 0.0, 0.0],
+            "earnings_quality_ratio_cs_rank": [0.001, 0.001, 0.001, 0.001],
+            "accruals_ratio": [0.0, 0.0, 0.0, 0.0],
+            "accruals_ratio_cs_z": [0.0, 0.0, 0.0, 0.0],
+            "accruals_ratio_cs_rank": [0.0, 0.0, 0.0, 0.0],
+            "val_earnings_quality_score_zscore": [0.8, -0.3, 0.6, -0.4],
+            "val_accruals_ratio_zscore": [-0.7, 0.2, -0.5, 0.4],
+        }
+    )
+
+    repaired, repairs = weekly_common.repair_dead_quality_factor_families(frame)
+
+    assert repaired["earnings_quality_ratio_cs_z"].nunique(dropna=True) > 1
+    assert repaired["earnings_quality_ratio_cs_rank"].abs().max() > 0.0
+    assert repaired["accruals_ratio_cs_z"].nunique(dropna=True) > 1
+    assert repaired["accruals_ratio_cs_rank"].abs().max() > 0.0
+    assert {row["family"] for row in repairs} == {"earnings_quality_ratio", "accruals_ratio"}
+
+
+def test_repair_missing_revision_factor_family_derives_live_revision_columns():
+    frame = pd.DataFrame(
+        {
+            "date": pd.to_datetime(
+                [
+                    "2026-01-02",
+                    "2026-01-09",
+                    "2026-01-16",
+                    "2026-01-23",
+                    "2026-01-30",
+                    "2026-02-06",
+                    "2026-02-13",
+                    "2026-02-20",
+                ]
+            ),
+            "ticker": ["AAA.NS"] * 8,
+            "eps_sue": [0.1, 0.1, 0.3, 0.3, 0.9, 0.9, 1.8, 1.8],
+            "rev_sue": [0.05, 0.05, 0.15, 0.15, 0.4, 0.4, 0.8, 0.8],
+        }
+    )
+
+    repaired, repairs = weekly_common.repair_missing_revision_factor_families(frame)
+
+    assert "eps_revision_accel" in repaired.columns
+    assert "combined_revision_score_cs_z" in repaired.columns
+    assert repaired["combined_revision_score"].notna().sum() > 0
+    assert repaired["combined_revision_score_cs_rank"].notna().sum() > 0
+    assert repairs and repairs[0]["family"] == "eps_revision"
 
 
 def test_prune_dead_features_keeps_sparse_feature_with_real_ic_signal():
@@ -402,3 +458,36 @@ def test_resolve_export_dir_missing_message_mentions_rerun(tmp_path: Path, monke
 
     with pytest.raises(FileNotFoundError, match="rerun build_weekly_feature_export.py first"):
         resolve_export_dir(missing_export)
+
+
+def test_load_export_artifacts_reconstructs_missing_splits_and_regimes(tmp_path: Path):
+    export_dir = tmp_path / "augmented_only_export"
+    export_dir.mkdir(parents=True, exist_ok=True)
+    dates = pd.date_range("2019-01-04", periods=140, freq="W-FRI")
+    features = pd.DataFrame(
+        {
+            "date": dates,
+            "ticker": ["AAA.NS"] * len(dates),
+            "close": [100.0 + idx for idx in range(len(dates))],
+            "target_weekly_return": [0.01] * len(dates),
+        }
+    )
+    metadata = pd.DataFrame(
+        {
+            "date": dates,
+            "ticker": ["AAA.NS"] * len(dates),
+            "broad_sector": ["Financial Services"] * len(dates),
+        }
+    )
+    features.to_parquet(export_dir / "northstar_features.parquet", index=False)
+    metadata.to_parquet(export_dir / "northstar_metadata.parquet", index=False)
+
+    resolved = resolve_export_dir(export_dir)
+    loaded_features, splits, regimes, loaded_metadata = load_export_artifacts(export_dir)
+
+    assert resolved.export_dir == export_dir.resolve()
+    assert not loaded_features.empty
+    assert not loaded_metadata.empty
+    assert len(splits) > 0
+    assert not regimes.empty
+    assert "plan_regime_id" in regimes.columns

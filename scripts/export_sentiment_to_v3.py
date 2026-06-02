@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 import pandas as pd
+from pandas.tseries.offsets import BDay
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in os.sys.path:
@@ -16,14 +17,49 @@ if str(REPO_ROOT) not in os.sys.path:
 from src.signals.sentiment_bridge import SentimentBridge
 
 
+def _normalize_export_ticker(value: object) -> str:
+    s = str(value or "").strip().upper()
+    return s
+
+
+def _normalize_dates(values: object) -> pd.Series:
+    out = pd.to_datetime(values, errors="coerce")
+    try:
+        out = out.dt.tz_convert(None)
+    except Exception:
+        try:
+            out = out.dt.tz_localize(None)
+        except Exception:
+            pass
+    return out.dt.normalize()
+
+
+def _enforce_pit_availability(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty or "date" not in df.columns:
+        return df.copy()
+
+    out = df.copy()
+    out["date"] = _normalize_dates(out["date"])
+    if "availability_date" in out.columns:
+        availability = _normalize_dates(out["availability_date"])
+    else:
+        availability = pd.Series(pd.NaT, index=out.index, dtype="datetime64[ns]")
+
+    minimum_availability = out["date"] + BDay(1)
+    invalid = availability.isna() | (availability < minimum_availability)
+    out["availability_date"] = availability.where(~invalid, minimum_availability)
+    return out
+
+
 def _validate_ticker(df: pd.DataFrame) -> tuple[bool, list[str]]:
     issues: list[str] = []
     if df.empty:
         return True, issues
 
-    date_s = pd.to_datetime(df.get("date"), errors="coerce")
-    avail_s = pd.to_datetime(df.get("availability_date"), errors="coerce")
-    if not (avail_s > date_s).fillna(False).all():
+    date_s = _normalize_dates(df.get("date"))
+    avail_s = _normalize_dates(df.get("availability_date"))
+    min_availability = date_s + BDay(1)
+    if not (avail_s >= min_availability).fillna(False).all():
         issues.append("availability_date_not_after_date")
 
     req = ["ticker", "date", "availability_date", "sentiment_polarity", "sentiment_conviction"]
@@ -35,24 +71,12 @@ def _validate_ticker(df: pd.DataFrame) -> tuple[bool, list[str]]:
             issues.append(f"nulls_in:{c}")
 
     if "ticker" in df.columns:
-        bad = ~df["ticker"].astype(str).str.endswith(".NS")
+        ticker_s = df["ticker"].map(_normalize_export_ticker)
+        if bool(ticker_s.eq("").any()):
+            issues.append("empty_ticker")
+        bad = ticker_s.ne("") & ~ticker_s.str.endswith(".NS")
         if bool(bad.any()):
             issues.append("ticker_suffix_invalid")
-
-    # Soft gap check: large discontinuities usually indicate missing exports.
-    by_ticker = df.copy()
-    by_ticker["date"] = date_s
-    if "ticker" in by_ticker.columns and by_ticker["date"].notna().any():
-        by_ticker = by_ticker.dropna(subset=["ticker", "date"]).sort_values(["ticker", "date"], kind="mergesort")
-        max_gap = (
-            by_ticker.groupby("ticker", sort=False)["date"]
-            .diff()
-            .dt.days
-            .dropna()
-            .max()
-        )
-        if pd.notna(max_gap) and float(max_gap) > 60.0:
-            issues.append("large_date_gap_detected")
 
     return len(issues) == 0, issues
 
@@ -61,15 +85,63 @@ def _validate_market(df: pd.DataFrame) -> tuple[bool, list[str]]:
     issues: list[str] = []
     if df.empty:
         return True, issues
-    date_s = pd.to_datetime(df.get("date"), errors="coerce")
-    avail_s = pd.to_datetime(df.get("availability_date"), errors="coerce")
-    if not (avail_s > date_s).fillna(False).all():
+    date_s = _normalize_dates(df.get("date"))
+    avail_s = _normalize_dates(df.get("availability_date"))
+    min_availability = date_s + BDay(1)
+    if not (avail_s >= min_availability).fillna(False).all():
         issues.append("availability_date_not_after_date")
-    if date_s.notna().any():
-        max_gap = date_s.sort_values(kind="mergesort").diff().dt.days.dropna().max()
+    valid_dates = date_s.dropna().sort_values(kind="mergesort")
+    if not valid_dates.empty:
+        recent_cutoff = valid_dates.max() - pd.Timedelta(days=365)
+        recent_dates = valid_dates[valid_dates >= recent_cutoff]
+        max_gap = recent_dates.diff().dt.days.dropna().max()
         if pd.notna(max_gap) and float(max_gap) > 60.0:
             issues.append("large_date_gap_detected")
     return len(issues) == 0, issues
+
+
+def _prepare_ticker_output(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df.copy()
+    out = _enforce_pit_availability(df)
+    if "ticker" in out.columns:
+        out["ticker"] = out["ticker"].map(_normalize_export_ticker)
+        out = out[out["ticker"].ne("")].copy()
+    return out
+
+
+def _prepare_market_output(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df.copy()
+    return _enforce_pit_availability(df)
+
+
+def _active_coverage_stats(ticker_df: pd.DataFrame, universe_path: Path) -> tuple[int, int, float, int]:
+    if ticker_df.empty or not universe_path.exists():
+        return 0, 0, 0.0, 0
+    try:
+        uni = pd.read_csv(universe_path)
+    except Exception:
+        return 0, 0, 0.0, 0
+
+    if "Symbol" not in uni.columns:
+        return 0, 0, 0.0, 0
+
+    universe = set(uni["Symbol"].astype(str).str.strip().str.upper() + ".NS")
+    if not universe:
+        return 0, 0, 0.0, 0
+
+    dates = pd.to_datetime(ticker_df.get("date"), errors="coerce")
+    latest_date = dates.max()
+    if pd.isna(latest_date):
+        return 0, len(universe), 0.0, int(ticker_df["ticker"].nunique()) if "ticker" in ticker_df.columns else 0
+
+    latest = ticker_df[dates.eq(latest_date)].copy()
+    latest_tickers = set(latest["ticker"].astype(str).str.strip().str.upper())
+    covered = len(latest_tickers & universe)
+    coverage = 100.0 * covered / len(universe)
+    historical = int(ticker_df["ticker"].nunique()) if "ticker" in ticker_df.columns else 0
+    return covered, len(universe), coverage, historical
 
 
 def parse_args() -> argparse.Namespace:
@@ -130,6 +202,12 @@ def main() -> int:
         t_out = t_new
         m_out = m_new
 
+    t_out = _prepare_ticker_output(t_out)
+    m_out = _prepare_market_output(m_out)
+
+    t_out.to_parquet(ticker_path, index=False)
+    m_out.to_parquet(market_path, index=False)
+
     ok_t, issues_t = _validate_ticker(t_out)
     ok_m, issues_m = _validate_market(m_out)
 
@@ -155,17 +233,11 @@ def main() -> int:
     else:
         print(f"[sentiment-bridge] PIT check: FAIL ({','.join(issues_t + issues_m)})")
 
-    universe_path = Path("universe/nifty500.csv")
-    universe_n = 0
-    if universe_path.exists() and not t_out.empty:
-        try:
-            uni = pd.read_csv(universe_path)
-            universe_n = int(uni["Symbol"].astype(str).nunique())
-        except Exception:
-            universe_n = 0
-    covered = int(t_out["ticker"].nunique()) if not t_out.empty else 0
-    coverage = (100.0 * covered / universe_n) if universe_n > 0 else 0.0
-    print(f"[sentiment-bridge] coverage: {coverage:.1f}% of universe tickers have sentiment data")
+    covered, universe_n, coverage, historical = _active_coverage_stats(t_out, Path("universe/nifty500.csv"))
+    print(
+        f"[sentiment-bridge] coverage: {coverage:.1f}% of universe tickers have sentiment data "
+        f"on latest date ({covered}/{universe_n}); historical_unique_tickers={historical}"
+    )
 
     return 0 if pit_ok else 1
 

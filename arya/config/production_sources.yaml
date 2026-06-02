@@ -1,0 +1,40 @@
+# Arya corpus source configuration.
+#
+# These are intentionally conservative defaults. Increase limits gradually and
+# run corpus gates after every large collection pass.
+
+raw_root: data/arya/raw
+clean_root: data/arya/clean
+split_root: data/arya/splits
+
+collectors:
+  nse:
+    enabled: true
+    index: equities
+    delay_sec: 1.5
+  rbi:
+    enabled: true
+    limit_per_run: 100
+  sebi:
+    enabled: true
+    limit_per_run: 100
+    fetch_articles: true
+  news:
+    enabled: true
+    per_feed_limit: 100
+    fetch_articles: false
+    feeds:
+      moneycontrol: https://www.moneycontrol.com/rss/business.xml
+      livemint_markets: https://www.livemint.com/rss/markets
+      economic_times_markets: https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms
+  wikipedia:
+    enabled: true
+    limit_per_run: null
+
+gates:
+  min_est_tokens: 500000000
+  min_avg_doc_words: 100
+  max_source_fraction: 0.60
+  tokeniser_vocab_size: 32768
+  heldout_coverage: 0.98
+

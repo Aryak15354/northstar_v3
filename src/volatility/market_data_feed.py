@@ -88,11 +88,10 @@ class MarketDataFeed:
                 instrument_key = self.stock_loader.get_instrument_key(symbol)
                 if not instrument_key:
                     raise ValueError(f"Unknown symbol: {symbol}")
-                
-                # Fetch from market quote API
-                # Note: This requires implementing stock price fetch in adapter
-                logger.warning(f"Stock price fetch not yet implemented for {symbol}, using mock data")
-                return 100.0  # Mock price
+                raise NotImplementedError(
+                    f"Stock price fetch is not implemented for {symbol}. "
+                    "Configure a real stock market data source before using the volatility engine."
+                )
         
         except Exception as e:
             logger.error(f"Error fetching price for {symbol}: {e}")

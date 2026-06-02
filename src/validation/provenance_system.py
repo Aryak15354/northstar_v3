@@ -872,7 +872,7 @@ def main():
     print("=" * 60)
     
     # Initialize provenance system
-    provenance = ProvenanceSystem(base_dir="data/test_metadata")
+    provenance = ProvenanceSystem(base_dir="data/testing/metadata")
     
     # Create run manifest
     manifest = provenance.create_run_manifest(

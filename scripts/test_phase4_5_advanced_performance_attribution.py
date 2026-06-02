@@ -223,7 +223,7 @@ def test_institutional_report_generator():
     
     try:
         # Create output directory for test
-        test_output_dir = "data/test_institutional_reports"
+        test_output_dir = "data/testing/institutional_reports"
         Path(test_output_dir).mkdir(parents=True, exist_ok=True)
         
         generator = InstitutionalReportGenerator(test_output_dir)
@@ -401,7 +401,7 @@ def main():
     print("=" * 80)
     
     # Create test directories
-    Path("data/test_institutional_reports").mkdir(parents=True, exist_ok=True)
+    Path("data/testing/institutional_reports").mkdir(parents=True, exist_ok=True)
     Path("data/performance/enhanced").mkdir(parents=True, exist_ok=True)
     
     # Run all tests

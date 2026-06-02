@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.options.config_loader import get_config
-from src.options.regime_detector import RegimeDetector, Regime
+from src.options.options_regime_detector import RegimeDetector, Regime
 
 def create_sample_option_chain(spot: float, iv_level: float = 0.15) -> pd.DataFrame:
     """Create sample option chain data"""

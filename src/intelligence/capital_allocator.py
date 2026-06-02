@@ -35,6 +35,33 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+try:
+    from src.intelligence.strategy_surface_policy import (
+        is_archived_strategy,
+        is_feature_only_strategy,
+        is_standalone_strategy,
+        overlay_config,
+        strategy_family_override,
+        strategy_max_allocation,
+        strategy_overlay_parent,
+        strategy_overlay_weight,
+        strategy_role,
+        strategy_surface_mode,
+    )
+except Exception:
+    from intelligence.strategy_surface_policy import (  # type: ignore
+        is_archived_strategy,
+        is_feature_only_strategy,
+        is_standalone_strategy,
+        overlay_config,
+        strategy_family_override,
+        strategy_max_allocation,
+        strategy_overlay_parent,
+        strategy_overlay_weight,
+        strategy_role,
+        strategy_surface_mode,
+    )
+
 class CapitalAllocator:
     """
     Bayesian Capital Allocation Engine with Regret Minimization
@@ -62,6 +89,8 @@ class CapitalAllocator:
             'edge_half_life': 'data/processed/edge_half_life.json',
             'model_freeze_state': 'data/processed/model_freeze_state.json',
             'parameter_version': 'data/processed/parameter_version.json',
+            'feature_overlays': 'data/processed/strategy_feature_overlays.json',
+            'unified_state': 'data/state/unified_state.json',
         }
         
         # Allocation parameters
@@ -93,6 +122,7 @@ class CapitalAllocator:
             'freeze_max_exposure': 0.15,
         }
         self.last_optimizer_diagnostics = {}
+        self._latest_feature_overlays = {}
         
         # Regime boosts
         self.regime_boosts = {
@@ -120,6 +150,14 @@ class CapitalAllocator:
                 'low_vol': 1.4, 'value_tilt': 1.3, 'quality_tilt': 1.2,
                 'mom_6m': 0.7, 'dual_momentum': 0.8
             }
+        }
+        self.family_regime_boosts = {
+            'crisis': {'sentiment': 0.90, 'alternative': 0.92, 'ownership': 0.95},
+            'boom': {'sentiment': 1.10, 'alternative': 1.12, 'ownership': 1.05},
+            'expansion': {'sentiment': 1.12, 'alternative': 1.08, 'ownership': 1.08},
+            'late-expansion': {'sentiment': 1.02, 'alternative': 1.10, 'ownership': 1.12},
+            'slowdown': {'sentiment': 0.96, 'alternative': 1.05, 'ownership': 1.08},
+            'tightening': {'sentiment': 0.94, 'alternative': 1.00, 'ownership': 1.06},
         }
 
     def load_weekly_fabric_insights(self):
@@ -187,6 +225,300 @@ class CapitalAllocator:
             metrics['fabric_multiplier'] = effective_mult
 
         return health_scores
+
+    @staticmethod
+    def _iter_open_option_positions(payload):
+        if isinstance(payload, dict):
+            positions = payload.get('open_positions', {})
+            if isinstance(positions, dict):
+                return [dict(pos or {}) for pos in positions.values()]
+            if isinstance(positions, list):
+                return [dict(pos or {}) for pos in positions]
+        return []
+
+    def _get_options_notional_deployed(self) -> float:
+        """Read current options notional to prevent double-counting capital."""
+        path = PROJECT_ROOT / "data/options/live/options_runtime_state.json"
+        if not path.exists():
+            return 0.0
+        try:
+            payload = json.loads(path.read_text())
+            total = 0.0
+            for position in self._iter_open_option_positions(payload):
+                for key in ("notional", "max_loss", "current_value", "entry_credit_debit"):
+                    value = pd.to_numeric(position.get(key), errors='coerce')
+                    if pd.notna(value):
+                        total += float(abs(value))
+                        break
+            return float(total)
+        except Exception as e:
+            print(f"   ⚠️ Could not read options notional: {e}")
+            return 0.0
+
+    @staticmethod
+    def _tailwind_multiplier(raw_score):
+        """Map legacy or alpha-OS tailwind scales into a neutral-around-1 multiplier."""
+        try:
+            score = float(raw_score)
+        except Exception:
+            return 1.0
+        if not np.isfinite(score):
+            return 1.0
+        if -0.50 <= score <= 0.50:
+            score = 1.0 + score
+        return float(np.clip(score, 0.70, 1.50))
+
+    @staticmethod
+    def _safe_float(value, default=0.0):
+        try:
+            parsed = float(value)
+        except Exception:
+            return float(default)
+        if not np.isfinite(parsed):
+            return float(default)
+        return float(parsed)
+
+    @staticmethod
+    def _tailwind_family_for_strategy(strategy_name: str) -> str:
+        override = strategy_family_override(strategy_name)
+        if override:
+            return override
+        s = str(strategy_name or "").strip().lower()
+        if any(token in s for token in ["ownership", "shareholding", "promoter"]):
+            return "ownership"
+        if any(token in s for token in ["sentiment", "news"]):
+            return "sentiment"
+        if any(token in s for token in ["alternative", "ownership", "shareholding", "pledge", "bulk", "announcement"]):
+            return "alternative"
+        if any(token in s for token in ["mom", "momentum", "northstar", "sector_tilt", "dual_"]):
+            return "momentum"
+        if any(token in s for token in ["quality"]):
+            return "quality"
+        if any(token in s for token in ["value"]):
+            return "value"
+        if any(token in s for token in ["low_vol", "risk_parity", "sector_neutral", "defensive"]):
+            return "defensive"
+        return "composite"
+
+    def _feature_overlay_signal(self, metrics):
+        sharpe = self._safe_float(metrics.get('sharpe', 0.0), 0.0)
+        ann_return = self._safe_float(metrics.get('ann_return', 0.0), 0.0)
+        total_return = self._safe_float(metrics.get('total_return', 0.0), 0.0)
+        signal = (
+            0.55 * np.tanh(sharpe / 3.0) +
+            0.30 * np.tanh(ann_return / 0.20) +
+            0.15 * np.tanh(total_return / 0.20)
+        )
+        cap = self._safe_float(overlay_config().get('signal_cap', 1.0), 1.0)
+        cap = max(0.1, cap)
+        return float(np.clip(signal, -cap, cap))
+
+    def _build_feature_overlays(self, feature_metrics):
+        cfg = overlay_config()
+        max_impact = self._safe_float(cfg.get('max_abs_score_impact', 0.12), 0.12)
+        by_parent = {}
+
+        for strategy, metrics in feature_metrics.items():
+            parent = strategy_overlay_parent(strategy)
+            weight = strategy_overlay_weight(strategy)
+            signal = self._feature_overlay_signal(metrics)
+            by_parent.setdefault(parent, []).append({
+                'strategy': strategy,
+                'weight': weight,
+                'signal': signal,
+                'family': self._tailwind_family_for_strategy(strategy),
+                'sharpe': self._safe_float(metrics.get('sharpe', 0.0), 0.0),
+                'ann_return': self._safe_float(metrics.get('ann_return', 0.0), 0.0),
+                'total_return': self._safe_float(metrics.get('total_return', 0.0), 0.0),
+                'observations': int(self._safe_float(metrics.get('n_observations', 0), 0)),
+            })
+
+        payload = {}
+        for parent, rows in by_parent.items():
+            total_weight = sum(max(0.0, self._safe_float(row.get('weight', 0.0), 0.0)) for row in rows)
+            if total_weight <= 0:
+                continue
+            raw_signal = sum(
+                self._safe_float(row.get('weight', 0.0), 0.0) * self._safe_float(row.get('signal', 0.0), 0.0)
+                for row in rows
+            ) / total_weight
+            overlay_score = float(np.clip(raw_signal * max_impact, -max_impact, max_impact))
+            positive_share = sum(
+                self._safe_float(row.get('weight', 0.0), 0.0)
+                for row in rows
+                if self._safe_float(row.get('signal', 0.0), 0.0) > 0.0
+            ) / total_weight
+            payload[parent] = {
+                'parent_strategy': parent,
+                'component_count': len(rows),
+                'raw_signal': float(raw_signal),
+                'overlay_score': overlay_score,
+                'positive_share': float(np.clip(positive_share, 0.0, 1.0)),
+                'components': rows,
+            }
+        return payload
+
+    def _load_saved_feature_overlays(self):
+        path = self.paths.get('feature_overlays')
+        if not path or not os.path.exists(path):
+            return {}
+        try:
+            with open(path, 'r') as f:
+                payload = json.load(f)
+            overlays = payload.get('overlays', payload)
+            return overlays if isinstance(overlays, dict) else {}
+        except Exception:
+            return {}
+
+    def _apply_policy_caps(self, allocations, exposure_cap):
+        if not allocations:
+            return allocations
+
+        adjusted = {str(k): float(v) for k, v in allocations.items()}
+        headroom = 0.0
+        capped = set()
+
+        for strategy, weight in list(adjusted.items()):
+            max_share = strategy_max_allocation(strategy)
+            if max_share is None:
+                continue
+            cap_value = float(exposure_cap) * float(max_share)
+            if weight > cap_value:
+                headroom += weight - cap_value
+                adjusted[strategy] = cap_value
+                capped.add(strategy)
+
+        if headroom <= 1e-12:
+            return adjusted
+
+        recipients = {
+            strategy: weight for strategy, weight in adjusted.items()
+            if strategy not in capped and weight > 0.0
+        }
+        if not recipients:
+            return adjusted
+
+        recipient_total = sum(recipients.values())
+        if recipient_total <= 1e-12:
+            return adjusted
+
+        for strategy, weight in recipients.items():
+            max_share = strategy_max_allocation(strategy, default=1.0)
+            cap_value = float(exposure_cap) * float(max_share if max_share is not None else 1.0)
+            increment = headroom * (weight / recipient_total)
+            adjusted[strategy] = min(cap_value, adjusted[strategy] + increment)
+
+        total = sum(adjusted.values())
+        if total > exposure_cap and total > 1e-12:
+            scale = exposure_cap / total
+            adjusted = {k: float(v * scale) for k, v in adjusted.items()}
+
+        return adjusted
+
+    def _regime_boost_for_strategy(self, strategy_name: str, current_regime: str) -> float:
+        regime_key = str(current_regime or "").strip().lower()
+        exact = self.regime_boosts.get(regime_key, {}).get(strategy_name)
+        if exact is not None:
+            return float(exact)
+        family = self._tailwind_family_for_strategy(strategy_name)
+        return float(self.family_regime_boosts.get(regime_key, {}).get(family, 1.0))
+
+    def _normalize_tailwind_frame(self, tailwind_df: pd.DataFrame) -> dict[str, dict]:
+        """Normalize heterogeneous tailwind schemas into allocator-ready records."""
+        if tailwind_df is None or tailwind_df.empty:
+            return {}
+
+        df = tailwind_df.copy()
+        normalized: dict[str, dict] = {}
+
+        def _safe_float(value, default=0.0):
+            parsed = pd.to_numeric(value, errors="coerce")
+            return float(default if pd.isna(parsed) else parsed)
+
+        if {"strategy", "combined_score"}.issubset(df.columns):
+            if "date" in df.columns:
+                df["date"] = pd.to_datetime(df["date"], errors="coerce")
+                latest = df.sort_values("date").groupby("strategy", dropna=False).tail(1)
+            else:
+                latest = df.groupby("strategy", dropna=False).tail(1)
+            for _, row in latest.iterrows():
+                strategy = str(row.get("strategy", "") or "").strip()
+                if not strategy:
+                    continue
+                combined_score = self._tailwind_multiplier(row.get("combined_score", 1.0))
+                regime_tailwind = self._tailwind_multiplier(row.get("regime_tailwind", combined_score))
+                normalized[strategy] = {
+                    "combined_score": combined_score,
+                    "sharpe": _safe_float(row.get("sharpe", 0.0), 0.0),
+                    "regime_tailwind": regime_tailwind,
+                    "regime": row.get("regime"),
+                }
+            if normalized:
+                return normalized
+
+        if {"strategy_id", "tailwind_score"}.issubset(df.columns):
+            as_of_col = next((c for c in ["as_of_date", "timestamp", "date"] if c in df.columns), None)
+            if as_of_col:
+                df[as_of_col] = pd.to_datetime(df[as_of_col], errors="coerce")
+                latest = df.sort_values(as_of_col).groupby("strategy_id", dropna=False).tail(1)
+            else:
+                latest = df.groupby("strategy_id", dropna=False).tail(1)
+            for _, row in latest.iterrows():
+                strategy = str(row.get("strategy_id", "") or "").strip()
+                if not strategy:
+                    continue
+                combined_score = self._tailwind_multiplier(row.get("tailwind_score", 1.0))
+                record = {
+                    "combined_score": combined_score,
+                    "sharpe": _safe_float(row.get("tailwind_score", 0.0), 0.0),
+                    "regime_tailwind": combined_score,
+                    "regime": row.get("regime"),
+                }
+                normalized[strategy] = record
+                family = str(row.get("strategy_family", "") or "").strip().lower()
+                if family:
+                    normalized.setdefault(f"__family__:{family}", record)
+                if family == "composite" or strategy.startswith("strategy_recommendations_"):
+                    normalized.setdefault("__default__", record)
+            if normalized:
+                return normalized
+
+        if {"strategy_family", "tailwind_score"}.issubset(df.columns):
+            as_of_col = next((c for c in ["as_of_date", "timestamp", "date"] if c in df.columns), None)
+            if as_of_col:
+                df[as_of_col] = pd.to_datetime(df[as_of_col], errors="coerce")
+                latest = df.sort_values(as_of_col).groupby("strategy_family", dropna=False).tail(1)
+            else:
+                latest = df.groupby("strategy_family", dropna=False).tail(1)
+
+            default_record = None
+            for _, row in latest.iterrows():
+                family = str(row.get("strategy_family", "") or "").strip().lower() or "composite"
+                multiplier = self._tailwind_multiplier(row.get("tailwind_score", 0.0))
+                record = {
+                    "combined_score": multiplier,
+                    "sharpe": _safe_float(row.get("sharpe", 0.0), 0.0),
+                    "regime_tailwind": multiplier,
+                    "regime": row.get("regime"),
+                }
+                normalized[f"__family__:{family}"] = record
+                if family == "composite" or default_record is None:
+                    default_record = record
+
+            if default_record is not None:
+                normalized["__default__"] = default_record
+
+        return normalized
+
+    def _resolve_tailwind_for_strategy(self, strategy_name: str, tailwinds: dict[str, dict] | None) -> dict:
+        if not isinstance(tailwinds, dict) or not tailwinds:
+            return {}
+        if strategy_name in tailwinds:
+            return tailwinds[strategy_name]
+        family_key = f"__family__:{self._tailwind_family_for_strategy(strategy_name)}"
+        if family_key in tailwinds:
+            return tailwinds[family_key]
+        return tailwinds.get("__default__", {})
 
     def load_model_freeze_state(self):
         """Load automatic freeze-state controls from institutional hardening layer."""
@@ -389,6 +721,43 @@ class CapitalAllocator:
             'avg_strategy_turnover': float(np.mean(avg_turnover)) if avg_turnover else 0.0,
         }
         return target
+
+    def _compute_strategy_metrics(self, frame, *, include_returns=False):
+        """Compute stable strategy metrics from a backtest frame."""
+        if frame is None or len(frame) <= 1:
+            return {}
+        if "daily_return" not in frame.columns or "equity" not in frame.columns:
+            return {}
+
+        work = frame.copy()
+        returns = pd.to_numeric(work["daily_return"], errors="coerce")
+        equity = pd.to_numeric(work["equity"], errors="coerce")
+        valid = returns.notna() & equity.notna()
+        work = work.loc[valid].copy()
+        returns = returns.loc[valid]
+        equity = equity.loc[valid]
+        if len(work) <= 1:
+            return {}
+
+        total_return = float(equity.iloc[-1] / equity.iloc[0] - 1.0)
+        ann_return = float((equity.iloc[-1] / equity.iloc[0]) ** (252 / len(work)) - 1.0)
+        volatility = float(returns.std() * np.sqrt(252))
+        sharpe = float(ann_return / volatility) if volatility > 0 else 0.0
+        out = {
+            "total_return": total_return,
+            "ann_return": ann_return,
+            "volatility": volatility,
+            "sharpe": sharpe,
+            "max_drawdown": float(pd.to_numeric(work.get("drawdown"), errors="coerce").min()),
+            "win_rate": float((returns > 0).mean()),
+            "avg_exposure": float(pd.to_numeric(work.get("exposure"), errors="coerce").mean()),
+            "avg_turnover": float(pd.to_numeric(work.get("turnover"), errors="coerce").mean()),
+            "n_observations": int(len(work)),
+            "last_equity": float(equity.iloc[-1]),
+        }
+        if include_returns:
+            out["recent_returns"] = returns.tolist()
+        return out
     
     def load_strategy_performance(self):
         """Load recent strategy performance data"""
@@ -396,51 +765,37 @@ class CapitalAllocator:
         print("📊 Loading strategy performance data...")
         
         strategy_data = {}
+        feature_metrics = {}
         
         # Load backtest results
         if os.path.exists(self.paths['backtests']):
             for file in os.listdir(self.paths['backtests']):
                 if file.endswith('.parquet'):
                     strategy_name = file.replace('.parquet', '')
+                    if is_archived_strategy(strategy_name):
+                        continue
                     try:
                         df = pd.read_parquet(os.path.join(self.paths['backtests'], file))
                         if not df.empty:
-                            # Get recent performance
                             recent_df = df.tail(self.params['lookback_days'])
-                            
-                            if len(recent_df) > 1:
-                                returns = recent_df['daily_return']
-                                equity = recent_df['equity']
-                                
-                                # Calculate metrics
-                                total_return = equity.iloc[-1] / equity.iloc[0] - 1
-                                ann_return = (equity.iloc[-1] / equity.iloc[0]) ** (252 / len(recent_df)) - 1
-                                volatility = returns.std() * np.sqrt(252)
-                                sharpe = ann_return / volatility if volatility > 0 else 0
-                                max_dd = recent_df['drawdown'].min()
-                                
-                                # Win rate and other metrics
-                                win_rate = (returns > 0).mean()
-                                avg_exposure = recent_df['exposure'].mean()
-                                avg_turnover = recent_df['turnover'].mean()
-                                
-                                strategy_data[strategy_name] = {
-                                    'total_return': total_return,
-                                    'ann_return': ann_return,
-                                    'volatility': volatility,
-                                    'sharpe': sharpe,
-                                    'max_drawdown': max_dd,
-                                    'win_rate': win_rate,
-                                    'avg_exposure': avg_exposure,
-                                    'avg_turnover': avg_turnover,
-                                    'n_observations': len(recent_df),
-                                    'last_equity': equity.iloc[-1],
-                                    'recent_returns': returns.tolist()
-                                }
+                            recent_metrics = self._compute_strategy_metrics(recent_df, include_returns=True)
+                            if recent_metrics:
+                                full_metrics = self._compute_strategy_metrics(df, include_returns=False)
+                                payload = dict(recent_metrics)
+                                for key, value in full_metrics.items():
+                                    payload[f'full_{key}'] = value
+                                payload['n_full_observations'] = int(len(df))
+                                if is_feature_only_strategy(strategy_name):
+                                    feature_metrics[strategy_name] = payload
+                                else:
+                                    strategy_data[strategy_name] = payload
                     except Exception as e:
                         print(f"   ⚠️ Error loading {strategy_name}: {e}")
-        
-        print(f"   ✅ Loaded performance for {len(strategy_data)} strategies")
+
+        self._latest_feature_overlays = self._build_feature_overlays(feature_metrics)
+        print(f"   ✅ Loaded performance for {len(strategy_data)} standalone strategies")
+        if feature_metrics:
+            print(f"   🔗 Folded {len(feature_metrics)} legacy sleeves into capped core overlays")
         return strategy_data
     
     def load_market_regime(self):
@@ -530,6 +885,11 @@ class CapitalAllocator:
 
                 # Get latest beliefs for each strategy
                 latest_beliefs = beliefs_df.sort_values('date').groupby('strategy').tail(1)
+                latest_beliefs = latest_beliefs[
+                    ~latest_beliefs['strategy'].astype(str).map(
+                        lambda s: is_feature_only_strategy(s) or is_archived_strategy(s)
+                    )
+                ].copy()
                 
                 for _, row in latest_beliefs.iterrows():
                     beliefs[row['strategy']] = {
@@ -594,23 +954,15 @@ class CapitalAllocator:
                 
         except Exception as e:
             print(f"   ⚠️ Error loading tailwinds: {e}")
-            
-            # Fallback: try to load directly from file
+
+        if not tailwinds:
             try:
                 tailwind_file = 'data/intelligence/strategy_tailwinds.parquet'
                 if os.path.exists(tailwind_file):
                     tailwind_df = pd.read_parquet(tailwind_file)
-                    
-                    for _, row in tailwind_df.iterrows():
-                        tailwinds[row['strategy']] = {
-                            'combined_score': float(row['combined_score']),
-                            'sharpe': float(row['sharpe']),
-                            'regime_tailwind': float(row['regime_tailwind']),
-                            'regime': row['regime']
-                        }
-                    
-                    print(f"   ✅ Loaded tailwinds from file for {len(tailwinds)} strategies")
-                    
+                    tailwinds = self._normalize_tailwind_frame(tailwind_df)
+                    if tailwinds:
+                        print(f"   ✅ Loaded compatible tailwinds from file for {len(tailwinds)} keys")
             except Exception as e2:
                 print(f"   ⚠️ Fallback loading also failed: {e2}")
         
@@ -701,7 +1053,9 @@ class CapitalAllocator:
             from intelligence.no_edge_detector import NoEdgeDetector
             
             detector = NoEdgeDetector()
-            current_state = detector.get_current_state()
+            current_state = detector.detect_no_edge_state()
+            if not isinstance(current_state, dict) or not current_state:
+                current_state = detector.get_current_state()
             
             print(f"   📊 Current state: {current_state['state']}")
             print(f"   📊 Exposure cap: {current_state['exposure_cap']:.0%}")
@@ -758,6 +1112,59 @@ class CapitalAllocator:
                 'reasons': [],
                 'date': datetime.now().date()
             }
+
+    def load_governor_state(self):
+        """Load canonical governor budget so allocator respects the unified equity envelope."""
+        print("🏛️ Loading governor state...")
+
+        try:
+            state_path = PROJECT_ROOT / self.paths['unified_state']
+            if not state_path.exists():
+                print("   ⚠️ Unified state snapshot missing")
+                return {}
+
+            payload = json.loads(state_path.read_text(encoding='utf-8'))
+            governor_state = payload.get('governor_state', {}) if isinstance(payload, dict) else {}
+            if not isinstance(governor_state, dict):
+                return {}
+
+            equity_fraction = pd.to_numeric(governor_state.get('equity_fraction'), errors='coerce')
+            regime = str(governor_state.get('capital_structure_regime', '') or '')
+            total_capital = pd.to_numeric(governor_state.get('total_capital_inr'), errors='coerce')
+            if pd.isna(equity_fraction) or float(equity_fraction) <= 0 or regime.upper() == 'UNKNOWN':
+                print("   ⚠️ Governor state unavailable or still defaulted")
+                return {}
+
+            options_fraction = pd.to_numeric(governor_state.get('options_fraction'), errors='coerce')
+            cash_fraction = pd.to_numeric(governor_state.get('cash_fraction'), errors='coerce')
+            options_notional_deployed = self._get_options_notional_deployed()
+            available_equity_fraction = float(np.clip(float(equity_fraction), 0.0, 1.0))
+            total_capital_value = float(0.0 if pd.isna(total_capital) else total_capital)
+            if total_capital_value > 0.0 and options_notional_deployed > 0.0:
+                available_equity_fraction = max(
+                    0.0,
+                    available_equity_fraction - (options_notional_deployed / total_capital_value),
+                )
+            result = {
+                'capital_structure_regime': regime,
+                'equity_fraction': float(np.clip(float(equity_fraction), 0.0, 1.0)),
+                'available_equity_fraction': float(available_equity_fraction),
+                'options_fraction': float(np.clip(0.0 if pd.isna(options_fraction) else float(options_fraction), 0.0, 1.0)),
+                'cash_fraction': float(np.clip(0.0 if pd.isna(cash_fraction) else float(cash_fraction), 0.0, 1.0)),
+                'total_capital_inr': total_capital_value,
+                'options_notional_deployed': float(options_notional_deployed),
+                'primary_rationale': str(governor_state.get('primary_rationale', '') or ''),
+                'last_morning_decision': governor_state.get('last_morning_decision'),
+            }
+            print(
+                f"   ✅ Governor budget loaded: {result['capital_structure_regime']} "
+                f"(equity={result['equity_fraction']:.1%}, available={result['available_equity_fraction']:.1%})"
+            )
+            return result
+        except Exception as e:
+            print(f"   ⚠️ Error loading governor state: {e}")
+            return {}
+
     def calculate_regret(self, strategy_data):
         """Calculate and update regret for each strategy"""
         
@@ -816,7 +1223,10 @@ class CapitalAllocator:
             # Get beliefs data
             belief_data = beliefs.get(strategy, {})
             regret_data = regret.get(strategy, {})
-            tailwind_data = tailwinds.get(strategy, {})
+            tailwind_data = self._resolve_tailwind_for_strategy(strategy, tailwinds)
+            feature_overlay = (self._latest_feature_overlays or {}).get(strategy, {})
+            if not feature_overlay:
+                feature_overlay = self._load_saved_feature_overlays().get(strategy, {})
             
             # Skip if strategy is not ACTIVE or FADING
             if belief_data.get('status') not in ['ACTIVE', 'FADING']:
@@ -859,6 +1269,9 @@ class CapitalAllocator:
             # Performance metrics
             sharpe = data.get('sharpe', 0)
             ann_return = data.get('ann_return', 0)
+            full_sharpe = data.get('full_sharpe', sharpe)
+            full_ann_return = data.get('full_ann_return', ann_return)
+            family = self._tailwind_family_for_strategy(strategy)
             
             # Calculate final score using beliefs + regret + tailwinds
             base_score = (
@@ -870,10 +1283,12 @@ class CapitalAllocator:
             # Apply tailwind boost (30% weight on tailwinds)
             tailwind_boost = 0.3 * (tailwind_score - 1.0)  # Neutral tailwind = 1.0
             final_score = base_score + tailwind_boost
+            feature_overlay_score = self._safe_float(feature_overlay.get('overlay_score', 0.0), 0.0)
+            final_score += feature_overlay_score
             
             # Apply legacy regime boost (for backward compatibility)
             current_regime = regime.get('macro_regime', 'neutral')
-            legacy_regime_boost = self.regime_boosts.get(current_regime, {}).get(strategy, 1.0)
+            legacy_regime_boost = self._regime_boost_for_strategy(strategy, current_regime)
             final_score *= legacy_regime_boost
             
             # Determine if strategy is alive (enhanced criteria with tailwinds)
@@ -886,13 +1301,38 @@ class CapitalAllocator:
                 ) or
                 (
                     sharpe > 1.25 and tailwind_score >= 0.95
+                ) or
+                (
+                    ann_return > 0.03 and
+                    sharpe >= 0.35 and
+                    skill_prob >= 0.50 and
+                    confidence >= 0.60 and
+                    tailwind_score >= 0.95
+                ) or
+                (
+                    final_score >= 0.0 and
+                    skill_prob >= 0.50 and
+                    confidence >= 0.90 and
+                    tailwind_score >= 0.95 and
+                    family in {"quality", "value", "defensive"}
+                ) or
+                (
+                    family in {"quality", "value", "defensive", "ownership", "alternative", "sentiment"} and
+                    full_ann_return >= 0.05 and
+                    full_sharpe >= 0.60 and
+                    confidence >= 0.90 and
+                    tailwind_score >= 0.95
                 )
             )
 
             health_scores[strategy] = {
+                'family': family,
                 'health_score': final_score,
                 'base_score': base_score,
                 'tailwind_boost': tailwind_boost,
+                'feature_overlay_score': feature_overlay_score,
+                'feature_overlay_components': int(self._safe_float(feature_overlay.get('component_count', 0), 0)),
+                'feature_overlay_positive_share': self._safe_float(feature_overlay.get('positive_share', 0.0), 0.0),
                 'effective_skill': effective_skill,
                 'skill_prob': skill_prob,
                 'confidence': confidence,
@@ -904,6 +1344,8 @@ class CapitalAllocator:
                 'regime_tailwind': regime_tailwind,
                 'sharpe': sharpe,
                 'ann_return': ann_return,
+                'full_sharpe': full_sharpe,
+                'full_ann_return': full_ann_return,
                 'drawdown': drawdown,
                 'status': belief_data.get('status', 'ACTIVE'),
                 'alive': is_alive
@@ -922,16 +1364,27 @@ class CapitalAllocator:
         
         return health_scores
     
-    def allocate_capital(self, health_scores, no_edge_state, edge_health=None, strategy_data=None, freeze_state=None):
+    def allocate_capital(self, health_scores, no_edge_state, edge_health=None, strategy_data=None, freeze_state=None, governor_state=None):
         """Allocate capital using risk-normalized optimization with turnover governance."""
         
         print("🎯 Allocating capital across strategies...")
         edge_health = edge_health or {}
         strategy_data = strategy_data or {}
         freeze_state = freeze_state or {'freeze_active': False, 'actions': {}}
+        governor_state = governor_state or {}
         
         # Apply NO_EDGE exposure capping
         exposure_cap = float(no_edge_state.get('exposure_cap', 0.8))
+        governor_equity_cap = pd.to_numeric(
+            (governor_state or {}).get('available_equity_fraction', (governor_state or {}).get('equity_fraction')),
+            errors='coerce',
+        )
+        if pd.notna(governor_equity_cap):
+            governor_equity_cap = float(np.clip(float(governor_equity_cap), 0.0, 1.0))
+            if governor_equity_cap > 0.0:
+                if governor_equity_cap < exposure_cap:
+                    print(f"   🏛️ Governor equity cap: {exposure_cap:.0%} -> {governor_equity_cap:.0%}")
+                exposure_cap = min(exposure_cap, governor_equity_cap)
         if freeze_state.get('freeze_active'):
             freeze_cap = float((freeze_state.get('actions') or {}).get(
                 'target_max_exposure',
@@ -965,7 +1418,23 @@ class CapitalAllocator:
                 ),
                 reverse=True,
             )
-            alive_strategies = dict(ranked[:max_live])
+            diversified_ranked = []
+            selected_names = set()
+            for family in ["momentum", "quality", "value", "defensive", "sentiment", "alternative", "ownership", "composite"]:
+                family_candidates = [item for item in ranked if self._tailwind_family_for_strategy(item[0]) == family]
+                if family_candidates:
+                    diversified_ranked.append(family_candidates[0])
+                    selected_names.add(family_candidates[0][0])
+                if len(diversified_ranked) >= max_live:
+                    break
+            for item in ranked:
+                if item[0] in selected_names:
+                    continue
+                diversified_ranked.append(item)
+                selected_names.add(item[0])
+                if len(diversified_ranked) >= max_live:
+                    break
+            alive_strategies = dict(diversified_ranked[:max_live])
             print(f"   🎯 High-conviction concentration: keeping top {len(alive_strategies)} strategies")
         
         if not alive_strategies:
@@ -1035,7 +1504,41 @@ class CapitalAllocator:
             if total_alloc > 0:
                 scale_factor = min(1.0, exposure_cap / total_alloc)
                 allocations = {k: v * scale_factor for k, v in allocations.items()}
-        
+
+            diversification_candidates = [
+                strategy
+                for strategy, metrics in alive_strategies.items()
+                if self._tailwind_family_for_strategy(strategy) in {"quality", "value", "defensive", "ownership"}
+                and (
+                    float(metrics.get("health_score", 0.0) or 0.0) >= 0.0
+                    or float(metrics.get("full_sharpe", 0.0) or 0.0) >= 0.60
+                    or float(metrics.get("full_ann_return", 0.0) or 0.0) >= 0.05
+                )
+            ]
+            if diversification_candidates:
+                total_alloc = sum(allocations.values())
+                headroom = max(0.0, exposure_cap - total_alloc)
+                floor_target = min(0.015, headroom / max(1, len(diversification_candidates)))
+                if floor_target > 0.0:
+                    for strategy in diversification_candidates:
+                        allocations[strategy] = max(float(allocations.get(strategy, 0.0) or 0.0), floor_target)
+
+                    total_alloc = sum(allocations.values())
+                    if total_alloc > exposure_cap:
+                        excess = total_alloc - exposure_cap
+                        reducible = {
+                            strategy: float(weight)
+                            for strategy, weight in allocations.items()
+                            if strategy not in diversification_candidates and float(weight) > 0.0
+                        }
+                        reducible_total = sum(reducible.values())
+                        if reducible_total > 0.0:
+                            reduction_scale = min(1.0, excess / reducible_total)
+                            for strategy, weight in reducible.items():
+                                allocations[strategy] = max(0.0, weight * (1.0 - reduction_scale))
+
+        allocations = self._apply_policy_caps(allocations, exposure_cap)
+
         final_exposure = sum(allocations.values())
         print(f"   ✅ Allocated capital across {len(allocations)} strategies")
         print(f"   📊 Total exposure: {final_exposure:.1%} (cap: {exposure_cap:.0%})")
@@ -1045,7 +1548,7 @@ class CapitalAllocator:
         
         return allocations
     
-    def save_allocations(self, allocations, regime, health_scores, no_edge_state, freeze_state=None):
+    def save_allocations(self, allocations, regime, health_scores, no_edge_state, freeze_state=None, governor_state=None):
         """Save capital allocations and history with NO_EDGE state"""
         
         timestamp = datetime.now()
@@ -1065,9 +1568,33 @@ class CapitalAllocator:
             'date': timestamp.date().isoformat(),
             'regime': regime,
             'no_edge_state': no_edge_state,
+            'governor_state': governor_state or {},
             'freeze_state': freeze_state,
             'allocations': allocations,
             'strategy_health': {k: v['health_score'] for k, v in health_scores.items()},
+            'strategy_diagnostics': {
+                k: {
+                    'family': self._tailwind_family_for_strategy(k),
+                    'policy_mode': strategy_surface_mode(k),
+                    'policy_role': strategy_role(k),
+                    'alive': bool(v.get('alive', False)),
+                    'status': str(v.get('status', 'UNKNOWN')),
+                    'health_score': float(v.get('health_score', 0.0) or 0.0),
+                    'skill_prob': float(v.get('skill_prob', 0.0) or 0.0),
+                    'confidence': float(v.get('confidence', 0.0) or 0.0),
+                    'tailwind_score': float(v.get('tailwind_score', 0.0) or 0.0),
+                    'regime_boost': float(v.get('regime_boost', 1.0) or 1.0),
+                    'sharpe': float(v.get('sharpe', 0.0) or 0.0),
+                    'ann_return': float(v.get('ann_return', 0.0) or 0.0),
+                    'full_sharpe': float(v.get('full_sharpe', 0.0) or 0.0),
+                    'full_ann_return': float(v.get('full_ann_return', 0.0) or 0.0),
+                    'drawdown': float(v.get('drawdown', 0.0) or 0.0),
+                    'feature_overlay_score': float(v.get('feature_overlay_score', 0.0) or 0.0),
+                    'feature_overlay_components': int(v.get('feature_overlay_components', 0) or 0),
+                }
+                for k, v in health_scores.items()
+            },
+            'feature_overlays': self._latest_feature_overlays,
             'strategy_fabric_multipliers': {k: float(v.get('fabric_multiplier', 1.0)) for k, v in health_scores.items()},
             'edge_health': self.load_edge_half_life(),
             'optimizer_diagnostics': self.last_optimizer_diagnostics,
@@ -1080,6 +1607,22 @@ class CapitalAllocator:
             'total_exposure': sum(allocations.values()),
             'exposure_cap': no_edge_state.get('exposure_cap', 0.8)
         }
+        governor_equity = pd.to_numeric((governor_state or {}).get('equity_fraction'), errors='coerce')
+        allocation_data['effective_exposure_cap'] = min(
+            float(no_edge_state.get('exposure_cap', 0.8) or 0.8),
+            float(
+                pd.to_numeric(
+                    (governor_state or {}).get('available_equity_fraction', governor_equity),
+                    errors='coerce',
+                )
+            ) if pd.notna(
+                pd.to_numeric(
+                    (governor_state or {}).get('available_equity_fraction', governor_equity),
+                    errors='coerce',
+                )
+            ) else 1.0,
+        )
+        allocation_data['enforce_total_exposure_as_cap'] = False
         
         # Save current allocations
         with open(self.paths['capital_allocations'], 'w') as f:
@@ -1128,6 +1671,7 @@ class CapitalAllocator:
         tailwinds = self.load_strategy_tailwinds()
         fabric_insights = self.load_weekly_fabric_insights()
         no_edge_state = self.load_no_edge_state()
+        governor_state = self.load_governor_state()
         edge_health = self.load_edge_half_life()
         freeze_state = self.load_model_freeze_state()
 
@@ -1158,11 +1702,19 @@ class CapitalAllocator:
             edge_health,
             strategy_data=strategy_data,
             freeze_state=freeze_state,
+            governor_state=governor_state,
         )
         
         # Save results
         if allocations:
-            self.save_allocations(allocations, regime, health_scores, no_edge_state, freeze_state=freeze_state)
+            self.save_allocations(
+                allocations,
+                regime,
+                health_scores,
+                no_edge_state,
+                freeze_state=freeze_state,
+                governor_state=governor_state,
+            )
             
             # Print fully enhanced summary
             print(f"\n📊 FULLY ENHANCED CAPITAL ALLOCATION SUMMARY (WITH NO_EDGE)")

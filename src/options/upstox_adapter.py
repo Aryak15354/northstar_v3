@@ -80,6 +80,14 @@ class UpstoxAdapter:
         except Exception:
             self.network_error_backoff_seconds = 180.0
         self.network_down_until: float = 0.0
+        try:
+            self.auth_refresh_backoff_seconds = max(
+                30.0,
+                float(os.getenv("UPSTOX_AUTH_REFRESH_BACKOFF_SECONDS", "180")),
+            )
+        except Exception:
+            self.auth_refresh_backoff_seconds = 180.0
+        self.auth_refresh_blocked_until: float = 0.0
         
         # Instrument key mapping for all supported indices
         self.instrument_key_map = {
@@ -120,6 +128,12 @@ class UpstoxAdapter:
         self.network_down_until = max(
             self.network_down_until,
             time.time() + float(self.network_error_backoff_seconds),
+        )
+
+    def _mark_auth_refresh_blocked(self) -> None:
+        self.auth_refresh_blocked_until = max(
+            self.auth_refresh_blocked_until,
+            time.time() + float(self.auth_refresh_backoff_seconds),
         )
 
     def is_network_available(self) -> bool:
@@ -174,6 +188,11 @@ class UpstoxAdapter:
             raise requests.ConnectionError(
                 f"Upstox network backoff active ({remaining:.0f}s remaining)"
             )
+        if time.time() < float(self.auth_refresh_blocked_until):
+            remaining = max(0.0, float(self.auth_refresh_blocked_until) - time.time())
+            raise requests.ConnectionError(
+                f"Upstox auth refresh backoff active ({remaining:.0f}s remaining)"
+            )
 
         self.rate_limiter.wait_if_needed()
         
@@ -193,7 +212,18 @@ class UpstoxAdapter:
                 if e.response.status_code == 401:
                     # Token expired, try to refresh
                     logger.warning("Access token expired, attempting refresh")
-                    self.refresh_token()
+                    try:
+                        self.refresh_token()
+                    except Exception as refresh_exc:
+                        self._mark_auth_refresh_blocked()
+                        logger.warning(
+                            "Upstox auth refresh unavailable; entering backoff for %.0fs: %s",
+                            self.auth_refresh_backoff_seconds,
+                            refresh_exc,
+                        )
+                        raise requests.ConnectionError(
+                            f"Upstox auth refresh backoff active ({self.auth_refresh_backoff_seconds:.0f}s)"
+                        ) from refresh_exc
                     continue
                 
                 elif e.response.status_code == 429:
@@ -259,12 +289,11 @@ class UpstoxAdapter:
             )
 
         if new_token == self.config.access_token:
-            # We still return the token for caller compatibility, but surface
-            # clear guidance that a fresh token is required after a 401.
             logger.warning("Access token refresh requested but token did not change")
-            return new_token
+            raise RuntimeError("Upstox access token did not rotate")
 
         self.config.access_token = new_token
+        self.auth_refresh_blocked_until = 0.0
         self.session.headers.update({'Authorization': f'Bearer {new_token}'})
         logger.info("Upstox access token refreshed from local credentials source")
         return new_token

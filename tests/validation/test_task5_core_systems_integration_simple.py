@@ -17,6 +17,7 @@ warnings.filterwarnings('ignore')
 
 # Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+fixtures_root = os.path.join(project_root, "tests", "fixtures")
 
 
 from src.cohesion.configuration_manager import ConfigurationManager
@@ -39,7 +40,7 @@ def test_core_systems_integration():
     try:
         # 1. Initialize Configuration System
         print("\n📋 Testing Configuration System...")
-        config_manager = ConfigurationManager("test_simple_config")
+        config_manager = ConfigurationManager(os.path.join(fixtures_root, "test_simple_config"))
         config_manager.create_default_configs()
         
         market_config = config_manager.load_config("market")
@@ -86,7 +87,7 @@ def test_core_systems_integration():
         
         # 4. Initialize Schema Validation System
         print("\n📋 Testing Schema Validation System...")
-        schema_registry = SchemaRegistry("test_simple_schemas")
+        schema_registry = SchemaRegistry(os.path.join(fixtures_root, "test_simple_schemas"))
         schema_validator = SchemaValidator(schema_registry)
         
         # Create simple schema

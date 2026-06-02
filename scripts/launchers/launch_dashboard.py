@@ -5,9 +5,8 @@
 This script exists for backward compatibility with older docs that referenced
 `python scripts/launchers/launch_dashboard.py`.
 
-It delegates to the repo-root `launch_dashboard.py`, which:
-- uses `python -m streamlit` (no `streamlit` CLI required)
-- auto-detects a working Python interpreter (handles broken venvs)
+It delegates to the repo-root `launch_dashboard.py`, which is now the single
+Python compatibility wrapper around the canonical `launch_dashboard.sh`.
 """
 
 from __future__ import annotations
@@ -30,4 +29,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

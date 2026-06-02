@@ -136,6 +136,8 @@ class NewsSentimentBuilder:
     - data/processed/sentiment/top_bottom_weekly.parquet
     """
 
+    NEWS_KEY_COLUMNS = ["date", "ticker", "headline", "url", "source_type"]
+
     def __init__(
         self,
         *,
@@ -159,10 +161,12 @@ class NewsSentimentBuilder:
 
         self.gdelt_dir = self.raw_dir / "gdelt"
         self.rss_dir = self.raw_dir / "rss"
-        self.bse_dir = self.raw_dir / "bse"
+        self.exchange_dir = self.raw_dir / "nse"
+        # Backward-compatible alias for older code paths that still reference bse_dir.
+        self.bse_dir = self.exchange_dir
         self.gdelt_dir.mkdir(parents=True, exist_ok=True)
         self.rss_dir.mkdir(parents=True, exist_ok=True)
-        self.bse_dir.mkdir(parents=True, exist_ok=True)
+        self.exchange_dir.mkdir(parents=True, exist_ok=True)
 
         # GDELT public endpoint enforces low request frequency.
         self._gdelt_rate_lock = threading.Lock()
@@ -184,6 +188,13 @@ class NewsSentimentBuilder:
     @staticmethod
     def _normalize_text(value: object) -> str:
         return re.sub(r"\s+", " ", str(value or "").strip())
+
+    @staticmethod
+    def _canonicalize_source_type(value: object) -> str:
+        normalized = re.sub(r"\s+", "_", str(value or "").strip().lower())
+        if normalized == "bse_announcements":
+            return "nse_announcements"
+        return normalized
 
     def _load_universe(self) -> pd.DataFrame:
         if not self.universe_path.exists():
@@ -498,7 +509,7 @@ class NewsSentimentBuilder:
         if len(df) == 0 and rate_limited > 0:
             print(
                 "[news][gdelt] warning: high rate-limit pressure and zero rows so far. "
-                "Use --sources bse,rss for immediate completion, or run gdelt alone overnight."
+                "Use --sources nse,rss for immediate completion, or run gdelt alone overnight."
             )
         return df
 
@@ -614,24 +625,35 @@ class NewsSentimentBuilder:
     ) -> pd.DataFrame:
         parts: list[pd.DataFrame] = []
 
-        ann_path = Path("data/processed/alternative/announcements_all.csv")
-        if ann_path.exists():
-            try:
-                ann = pd.read_csv(ann_path)
-            except Exception:
-                ann = pd.DataFrame()
-            if not ann.empty:
-                a = pd.DataFrame()
-                a["date"] = pd.to_datetime(ann.get("date"), errors="coerce").dt.normalize()
-                a["company"] = ann.get("company_name", "").astype(str)
-                a["ticker"] = ann.get("nse_ticker", "").map(self._normalize_ticker)
-                a["headline"] = ann.get("headline", "").astype(str)
-                a["summary"] = ann.get("announcement_text", "").astype(str)
-                a["url"] = ""
-                a["source"] = "bse"
-                a["source_type"] = "bse_announcements"
-                a = a.dropna(subset=["date"])
-                parts.append(a)
+        def _read_alt_frame(*candidates: str) -> pd.DataFrame:
+            for candidate in candidates:
+                path = Path(candidate)
+                if not path.exists():
+                    continue
+                try:
+                    if path.suffix.lower() == ".parquet":
+                        return pd.read_parquet(path)
+                    return pd.read_csv(path)
+                except Exception:
+                    continue
+            return pd.DataFrame()
+
+        ann = _read_alt_frame(
+            "data/processed/alternative/announcements_all.parquet",
+            "data/processed/alternative/announcements_all.csv",
+        )
+        if not ann.empty:
+            a = pd.DataFrame()
+            a["date"] = pd.to_datetime(ann.get("date"), errors="coerce").dt.normalize()
+            a["company"] = ann.get("company_name", "").astype(str)
+            a["ticker"] = ann.get("nse_ticker", "").map(self._normalize_ticker)
+            a["headline"] = ann.get("headline", "").astype(str)
+            a["summary"] = ann.get("announcement_text", "").astype(str)
+            a["url"] = ""
+            a["source"] = "nse"
+            a["source_type"] = "nse_announcements"
+            a = a.dropna(subset=["date"])
+            parts.append(a)
 
         earn_path = Path("data/processed/alternative/earnings_dates_all.csv")
         if earn_path.exists():
@@ -653,60 +675,60 @@ class NewsSentimentBuilder:
                 e = e.dropna(subset=["date"])
                 parts.append(e)
 
-        rating_path = Path("data/processed/alternative/credit_ratings_all.csv")
-        if rating_path.exists():
-            try:
-                rat = pd.read_csv(rating_path)
-            except Exception:
-                rat = pd.DataFrame()
-            if not rat.empty:
-                r = pd.DataFrame()
-                r["date"] = pd.to_datetime(rat.get("date"), errors="coerce").dt.normalize()
-                r["company"] = rat.get("company_name", "").astype(str)
-                r["ticker"] = rat.get("nse_ticker", "").map(self._normalize_ticker)
-                r["headline"] = (
-                    rat.get("agency", "").astype(str)
-                    + " "
-                    + rat.get("action_type", "").astype(str)
-                    + " "
-                    + rat.get("new_rating", "").astype(str)
-                ).str.strip()
-                r["summary"] = rat.get("instrument_type", "").astype(str)
-                r["url"] = ""
-                r["source"] = rat.get("agency", "ratings").astype(str).str.lower()
-                r["source_type"] = "credit_ratings"
-                r = r.dropna(subset=["date"])
-                parts.append(r)
+        rat = _read_alt_frame(
+            "data/processed/alternative/credit_ratings_nse_all.parquet",
+            "data/processed/alternative/credit_ratings_nse_all.csv",
+            "data/processed/alternative/credit_ratings_all.csv",
+        )
+        if not rat.empty:
+            r = pd.DataFrame()
+            r["date"] = pd.to_datetime(
+                rat.get("date", rat.get("DATE OF CREDIT RATING")), errors="coerce"
+            ).dt.normalize()
+            r["company"] = rat.get("company_name", "").astype(str)
+            r["ticker"] = rat.get("nse_ticker", rat.get("ticker", "")).map(self._normalize_ticker)
+            r["headline"] = (
+                rat.get("agency", "").astype(str)
+                + " "
+                + rat.get("action_type", rat.get("rating_action", "")).astype(str)
+                + " "
+                + rat.get("new_rating", rat.get("rating", "")).astype(str)
+            ).str.strip()
+            r["summary"] = rat.get("instrument_type", "").astype(str)
+            r["url"] = ""
+            r["source"] = rat.get("agency", "ratings").astype(str).str.lower()
+            r["source_type"] = "credit_ratings"
+            r = r.dropna(subset=["date"])
+            parts.append(r)
 
         if include_bulk_deals:
-            bulk_path = Path("data/processed/alternative/bulk_deals_all.csv")
-            if bulk_path.exists():
-                try:
-                    bulk = pd.read_csv(bulk_path)
-                except Exception:
-                    bulk = pd.DataFrame()
-                if not bulk.empty:
-                    b = pd.DataFrame()
-                    b["date"] = pd.to_datetime(bulk.get("date"), errors="coerce").dt.normalize()
-                    b["company"] = bulk.get("scrip_name", "").astype(str)
-                    b["ticker"] = bulk.get("nse_ticker", "").map(self._normalize_ticker)
-                    b["headline"] = (
-                        "Bulk "
-                        + bulk.get("deal_type", "").astype(str)
-                        + " by "
-                        + bulk.get("client_name", "").astype(str)
-                    ).str.strip()
-                    b["summary"] = (
-                        "Qty="
-                        + bulk.get("quantity", "").astype(str)
-                        + " Price="
-                        + bulk.get("price", "").astype(str)
-                    )
-                    b["url"] = ""
-                    b["source"] = "bse"
-                    b["source_type"] = "bulk_deals"
-                    b = b.dropna(subset=["date"])
-                    parts.append(b)
+            bulk = _read_alt_frame(
+                "data/processed/alternative/bulk_deals_nse_all.parquet",
+                "data/processed/alternative/bulk_deals_nse_all.csv",
+                "data/processed/alternative/bulk_deals_all.csv",
+            )
+            if not bulk.empty:
+                b = pd.DataFrame()
+                b["date"] = pd.to_datetime(bulk.get("date"), errors="coerce").dt.normalize()
+                b["company"] = bulk.get("company_name", bulk.get("scrip_name", "")).astype(str)
+                b["ticker"] = bulk.get("nse_ticker", "").map(self._normalize_ticker)
+                b["headline"] = (
+                    "Bulk "
+                    + bulk.get("deal_type", "").astype(str)
+                    + " by "
+                    + bulk.get("client_name", "").astype(str)
+                ).str.strip()
+                b["summary"] = (
+                    "Qty="
+                    + bulk.get("quantity", "").astype(str)
+                    + " Price="
+                    + bulk.get("price", "").astype(str)
+                )
+                b["url"] = ""
+                b["source"] = "nse"
+                b["source_type"] = "bulk_deals"
+                b = b.dropna(subset=["date"])
+                parts.append(b)
 
         out = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
         if out.empty:
@@ -730,16 +752,16 @@ class NewsSentimentBuilder:
             out["summary"] = out["summary"].map(self._normalize_text)
             out["url"] = out["url"].map(self._normalize_text)
             out["source"] = out["source"].map(self._normalize_text).str.lower()
-            out["source_type"] = out["source_type"].map(self._normalize_text)
+            out["source_type"] = out["source_type"].map(self._normalize_text).map(self._canonicalize_source_type)
             out = out.dropna(subset=["date"])
             out = out[out["headline"] != ""].copy()
             out = out.drop_duplicates(subset=["date", "ticker", "headline", "source_type"], keep="last")
             out = out.sort_values(["date", "ticker"], kind="mergesort").reset_index(drop=True)
 
-        out_path = self.bse_dir / "bse_events.csv"
+        out_path = self.exchange_dir / "nse_events.csv"
         out.to_csv(out_path, index=False)
         print(
-            f"[news][bse] completed rows={len(out)} tickers={out['ticker'].nunique() if not out.empty else 0} "
+            f"[news][nse] completed rows={len(out)} tickers={out['ticker'].nunique() if not out.empty else 0} "
             f"path={out_path}"
         )
         return out
@@ -885,7 +907,9 @@ class NewsSentimentBuilder:
     ) -> pd.DataFrame:
         if df.empty:
             return df.copy()
-        out = df.copy()
+        # Scoring helpers return fresh RangeIndex series; keep the working frame on the
+        # same index so boolean masks and aligned assignments remain valid in resume mode.
+        out = df.copy().reset_index(drop=True)
         out["headline"] = out["headline"].map(self._normalize_text)
         out["summary"] = out.get("summary", "").map(self._normalize_text)
         out["keywords"] = (out["headline"].fillna("") + " " + out["summary"].fillna("")).map(self._extract_keywords)
@@ -902,17 +926,29 @@ class NewsSentimentBuilder:
             for st, txt in zip(out.get("source_type", pd.Series(index=out.index, dtype=object)), text_for_score)
         ]
         event_prior_s = pd.Series(event_prior, index=out.index, dtype=float)
-        base_pol = pd.to_numeric(pol, errors="coerce").fillna(0.0).clip(-1.0, 1.0)
-        combined = base_pol.copy()
-        neutral_mask = combined.abs() < 1e-9
-        combined.loc[neutral_mask] = event_prior_s.loc[neutral_mask]
-        combined.loc[~neutral_mask] = (
-            0.7 * combined.loc[~neutral_mask] + 0.3 * event_prior_s.loc[~neutral_mask]
+        event_prior_arr = event_prior_s.to_numpy(dtype=float, copy=False)
+
+        # Rebuild scored outputs explicitly on the working frame index so incremental/resume
+        # runs cannot hit pandas alignment errors when the scorer returns fresh RangeIndex series.
+        base_pol = pd.Series(
+            pd.to_numeric(pol, errors="coerce").to_numpy(),
+            index=out.index,
+            dtype=float,
+        ).fillna(0.0).clip(-1.0, 1.0)
+        combined_arr = base_pol.to_numpy(dtype=float, copy=True)
+        neutral_mask = np.abs(combined_arr) < 1e-9
+        combined_arr[neutral_mask] = event_prior_arr[neutral_mask]
+        combined_arr[~neutral_mask] = (
+            0.7 * combined_arr[~neutral_mask] + 0.3 * event_prior_arr[~neutral_mask]
         )
 
-        out["sentiment"] = pd.to_numeric(combined, errors="coerce").fillna(0.0).clip(-1.0, 1.0)
-        base_conv = pd.to_numeric(conv, errors="coerce").fillna(0.0).clip(0.0, 1.0)
-        out["sentiment_conviction"] = np.maximum(base_conv.to_numpy(), event_prior_s.abs().to_numpy() * 0.8)
+        out["sentiment"] = pd.Series(combined_arr, index=out.index, dtype=float).clip(-1.0, 1.0)
+        base_conv = pd.Series(
+            pd.to_numeric(conv, errors="coerce").to_numpy(),
+            index=out.index,
+            dtype=float,
+        ).fillna(0.0).clip(0.0, 1.0)
+        out["sentiment_conviction"] = np.maximum(base_conv.to_numpy(), np.abs(event_prior_arr) * 0.8)
         out["sentiment_conviction"] = pd.to_numeric(out["sentiment_conviction"], errors="coerce").fillna(0.0).clip(0.0, 1.0)
         out["sentiment_label"] = np.where(
             out["sentiment"] > 0.05,
@@ -936,12 +972,62 @@ class NewsSentimentBuilder:
         out["summary"] = out.get("summary", "").map(self._normalize_text)
         out["url"] = out.get("url", "").map(self._normalize_text)
         out["source"] = out.get("source", "").map(self._normalize_text).str.lower()
-        out["source_type"] = out.get("source_type", "news").map(self._normalize_text).str.lower()
+        out["source_type"] = (
+            out.get("source_type", "news")
+            .map(self._normalize_text)
+            .str.lower()
+            .map(self._canonicalize_source_type)
+        )
+        source_fix_mask = out["source"].eq("bse") & out["source_type"].isin(["nse_announcements", "bulk_deals"])
+        out.loc[source_fix_mask, "source"] = "nse"
         out = out.dropna(subset=["date"])
         out = out[out["headline"] != ""].copy()
         out = out.drop_duplicates(subset=["date", "ticker", "headline", "url", "source_type"], keep="last")
         out = out.sort_values(["date", "ticker"], kind="mergesort").reset_index(drop=True)
         return out
+
+    def _load_existing_scored_dataset(self) -> pd.DataFrame:
+        news_parquet = self.processed_news_dir / "news_dataset.parquet"
+        news_csv = self.processed_news_dir / "news_dataset.csv"
+        existing = pd.DataFrame()
+
+        if news_parquet.exists():
+            try:
+                existing = pd.read_parquet(news_parquet)
+            except Exception:
+                existing = pd.DataFrame()
+        elif news_csv.exists():
+            try:
+                existing = pd.read_csv(news_csv)
+            except Exception:
+                existing = pd.DataFrame()
+
+        if existing.empty:
+            return existing
+
+        for col in ["headline", "summary", "ticker", "url", "source_type", "source"]:
+            if col not in existing.columns:
+                existing[col] = ""
+
+        existing["date"] = pd.to_datetime(existing.get("date"), errors="coerce").dt.normalize()
+        existing["headline"] = existing["headline"].map(self._normalize_text)
+        existing["summary"] = existing["summary"].map(self._normalize_text)
+        existing["ticker"] = existing["ticker"].map(self._normalize_ticker)
+        existing["url"] = existing["url"].map(self._normalize_text)
+        existing["source_type"] = (
+            existing["source_type"]
+            .map(self._normalize_text)
+            .str.lower()
+            .map(self._canonicalize_source_type)
+        )
+        existing["source"] = existing["source"].map(self._normalize_text).str.lower()
+        source_fix_mask = existing["source"].eq("bse") & existing["source_type"].isin(["nse_announcements", "bulk_deals"])
+        existing.loc[source_fix_mask, "source"] = "nse"
+        existing = existing.dropna(subset=["date"])
+        existing = existing[existing["headline"] != ""].copy()
+        existing = existing.drop_duplicates(subset=self.NEWS_KEY_COLUMNS, keep="last")
+        existing = existing.sort_values(["date", "ticker"], kind="mergesort").reset_index(drop=True)
+        return existing
 
     def _build_processed_sentiment(self, scored: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         if scored.empty:
@@ -978,6 +1064,7 @@ class NewsSentimentBuilder:
         work["sentiment"] = pd.to_numeric(work.get("sentiment"), errors="coerce")
         work["sentiment_conviction"] = pd.to_numeric(work.get("sentiment_conviction"), errors="coerce")
         work = work.dropna(subset=["date", "ticker"])
+        work = work[work["ticker"] != ""].copy()
         if work.empty:
             return self._build_processed_sentiment(pd.DataFrame())
 
@@ -1054,7 +1141,7 @@ class NewsSentimentBuilder:
         start_year: int = 2010,
         end_year: int = date.today().year,
         resume: bool = True,
-        sources: tuple[str, ...] = ("bse", "gdelt", "rss"),
+        sources: tuple[str, ...] = ("nse", "gdelt", "rss"),
         workers: int = 4,
         gdelt_max_records: int = 250,
         delay_min: float = 0.2,
@@ -1082,11 +1169,11 @@ class NewsSentimentBuilder:
                 f"elapsed_s={elapsed:.1f}"
             )
 
-        if "bse" in source_set:
+        if "nse" in source_set or "bse" in source_set:
             t0 = time.monotonic()
             bse_df = self.collect_bse_events(include_bulk_deals=include_bulk_deals)
             frames.append(bse_df)
-            _record_source("bse", t0, bse_df)
+            _record_source("nse" if "nse" in source_set else "bse", t0, bse_df)
         if "gdelt" in source_set:
             t0 = time.monotonic()
             gdelt_df = self.collect_gdelt(
@@ -1139,7 +1226,30 @@ class NewsSentimentBuilder:
                 for k, v in source_stats.items()
             }
             print(f"[news] source_summary={summary}")
-        scored = self.score_sentiment(combined, model=sentiment_model)
+
+        existing_scored = self._load_existing_scored_dataset() if resume else pd.DataFrame()
+        to_score = combined
+        if resume and not existing_scored.empty and not combined.empty:
+            existing_keys = existing_scored[self.NEWS_KEY_COLUMNS].drop_duplicates().assign(_existing=1)
+            merged = combined.merge(existing_keys, on=self.NEWS_KEY_COLUMNS, how="left")
+            to_score = merged[merged["_existing"].isna()].drop(columns=["_existing"])
+
+        print(
+            f"[news] resume scored_existing_rows={len(existing_scored)} "
+            f"new_rows_to_score={len(to_score)}"
+        )
+
+        new_scored = self.score_sentiment(to_score, model=sentiment_model) if not to_score.empty else pd.DataFrame()
+        if resume and not existing_scored.empty:
+            scored = pd.concat([existing_scored, new_scored], ignore_index=True, sort=False)
+            scored = scored.drop_duplicates(subset=self.NEWS_KEY_COLUMNS, keep="last")
+            scored = scored.sort_values(["date", "ticker"], kind="mergesort").reset_index(drop=True)
+        else:
+            scored = new_scored
+
+        print(
+            f"[news] scored_rows_total={len(scored)} newly_scored_rows={len(new_scored)}"
+        )
         ticker_daily, market_daily, weekly_rank = self._build_processed_sentiment(scored)
 
         news_parquet = self.processed_news_dir / "news_dataset.parquet"

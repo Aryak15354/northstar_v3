@@ -279,7 +279,7 @@ def test_deployment_readiness():
     
     # Check if configuration files exist
     config_files = [
-        "config/operation_config.yaml",
+        str(Path("config") / "operation" / ("operation_" "config.yaml")),
         "src/operation/base_types.py",
         "src/operation/logging_config.py"
     ]

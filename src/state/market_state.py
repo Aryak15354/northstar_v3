@@ -96,6 +96,17 @@ MARKET_STATE_SCHEMA = {
     'brain_active': 'bool'
 }
 
+
+def _normalize_exposure_ratio(value, default: float = 0.50) -> float:
+    """Coerce exposure inputs to decimal ratios during the unit migration."""
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return float(default)
+    if numeric > 1.5:
+        numeric /= 100.0
+    return float(np.clip(numeric, 0.0, 1.0))
+
 # =========================== MARKET STATE ENGINE ===========================
 
 class MarketStateEngine:
@@ -121,12 +132,12 @@ class MarketStateEngine:
         
         # Regime exposure limits - THE LAW
         self.regime_limits = {
-            'boom': 90,
-            'expansion': 70, 
-            'late expansion': 55,
-            'neutral': 40,
-            'slowdown': 25,
-            'crisis': 10
+            'boom': 0.90,
+            'expansion': 0.70,
+            'late expansion': 0.55,
+            'neutral': 0.40,
+            'slowdown': 0.25,
+            'crisis': 0.10
         }
     
     def safe_read_parquet(self, path, default_columns=None):
@@ -503,29 +514,43 @@ class MarketStateEngine:
         # Base exposure from regime
         regime = macro_state['macro_regime']
         regime_key = regime.replace('-', ' ').strip().lower()
-        base_exposure = self.regime_limits.get(regime_key, 55)
+        base_exposure = self.regime_limits.get(regime_key, 0.55)
         
-        # Adjust for momentum
-        momentum_adj = 1.0 + (macro_state['macro_momentum'] * 0.1)  # ±10% for momentum
-        momentum_adj = max(0.7, min(1.3, momentum_adj))
+        # Risk-on should be a meaningful top-down input, but not an on/off switch.
+        risk_on_adj = 0.70 + (float(risk_on_prob) * 0.60)  # 0.70x to 1.30x
+        risk_on_adj = max(0.65, min(1.20, risk_on_adj))
+
+        # Keep momentum influence bounded so it tilts exposure instead of dominating it.
+        momentum_adj = 1.0 + (macro_state['macro_momentum'] * 0.08)  # ±8% for momentum
+        momentum_adj = max(0.80, min(1.15, momentum_adj))
         
-        # Adjust for market health
-        health_adj = 0.5 + (health_state['health_score'] * 0.5)  # 50% to 100% based on health
+        # Decent market health should not collapse exposure into defensive territory.
+        health_adj = 0.65 + (health_state['health_score'] * 0.55)  # 65% to 120%
+        health_adj = max(0.65, min(1.20, health_adj))
         
-        # Adjust for volatility
-        vol_adj = 1.0 - (vol_state['stress_level'] * 0.3)  # Reduce up to 30% for high vol
+        # Volatility remains the main top-down brake.
+        vol_adj = 1.0 - (vol_state['stress_level'] * 0.45)  # Reduce up to 45% for high stress
+        vol_adj = max(0.60, min(1.05, vol_adj))
         
-        # Adjust for opportunity density
-        opp_adj = 0.7 + (opp_state['opportunity_density'] * 0.6)  # 70% to 130% based on opportunities
-        opp_adj = max(0.7, min(1.3, opp_adj))
+        # Opportunity density should modulate conviction, not punish the book excessively
+        # when the surface is merely selective rather than empty.
+        opp_density = float(opp_state.get('opportunity_density', 0.0) or 0.0)
+        opp_signal = max(0.0, min(1.0, opp_density / 0.18))
+        opp_adj = 0.85 + (opp_signal * 0.25)  # 85% to 110%
+        opp_adj = max(0.85, min(1.10, opp_adj))
         
         # Final allowed exposure
-        allowed_exposure = base_exposure * momentum_adj * health_adj * vol_adj * opp_adj
+        allowed_exposure = base_exposure * risk_on_adj * momentum_adj * health_adj * vol_adj * opp_adj
         
         # Hard limits
-        allowed_exposure = max(5, min(95, allowed_exposure))  # Never below 5% or above 95%
+        allowed_exposure = max(0.05, min(0.95, allowed_exposure))  # Never below 5% or above 95%
         
         return allowed_exposure
+
+    def _regime_minimum_exposure(self, regime: str) -> float:
+        regime_key = str(regime or "neutral").replace('-', ' ').strip().lower()
+        base = float(self.regime_limits.get(regime_key, 0.55) or 0.55)
+        return float(np.clip(base * 0.70, 0.05, 0.95))
 
     def integrate_sentiment_intelligence(self, base_market_state):
         """
@@ -571,25 +596,26 @@ class MarketStateEngine:
         sentiment_headwind = 0.0
 
         if bool(sentiment.get("available", False)):
-            sentiment_headwind = (
-                min(0.45, event_shock * 0.55)
+            raw_headwind = (
+                min(0.35, event_shock * 0.40)
                 + min(0.18, max(0.0, -polarity) * 0.25)
                 + min(0.12, uncertainty * 0.20)
                 + min(0.08, conflict * 0.20)
-                + min(0.08, max(0.0, news_signal) * 0.22)
-                + min(0.08, negative_count / 120.0)
-                + min(0.08, event_count / 180.0)
+                + min(0.05, max(0.0, news_signal) * 0.14)
+                + min(0.06, negative_count / 120.0)
             )
+            if alert_level in {"elevated", "high", "critical"} or negative_count > 0:
+                raw_headwind += min(0.04, event_count / 250.0)
             if alert_level == "critical":
-                sentiment_headwind += 0.10
+                raw_headwind += 0.10
             elif alert_level == "high":
-                sentiment_headwind += 0.06
+                raw_headwind += 0.06
             elif alert_level == "elevated":
-                sentiment_headwind += 0.03
+                raw_headwind += 0.03
 
-            sentiment_headwind = float(0.75 * np.tanh(float(sentiment_headwind) / 0.75))
-            risk_multiplier = float(np.clip(1.0 - (sentiment_headwind * 0.95), 0.30, 1.10))
-            exposure_multiplier = float(np.clip(1.0 - (sentiment_headwind * 0.85), 0.20, 1.10))
+            sentiment_headwind = float(0.75 * np.tanh(float(raw_headwind) / 0.75))
+            risk_multiplier = float(np.clip(1.0 - (sentiment_headwind * 0.85), 0.40, 1.10))
+            exposure_multiplier = float(np.clip(1.0 - (sentiment_headwind * 0.70), 0.45, 1.10))
 
             # Allow a small upside adjustment only when downside stress is low.
             if event_shock < 0.25 and polarity > 0.0 and uncertainty < 0.45 and conflict < 0.45:
@@ -598,11 +624,15 @@ class MarketStateEngine:
                 exposure_multiplier = min(1.10, exposure_multiplier + tailwind)
 
         base_risk_on = float(state.get("risk_on_probability", state.get("risk_on", 0.5)) or 0.5)
-        base_exposure = float(state.get("allowed_exposure", 55.0) or 55.0)
+        base_exposure = _normalize_exposure_ratio(state.get("allowed_exposure", 0.55), 0.55)
         base_confidence = float(state.get("confidence", 0.5) or 0.5)
 
         adjusted_risk_on = max(0.0, min(1.0, base_risk_on * risk_multiplier))
-        adjusted_exposure = max(5.0, min(95.0, base_exposure * exposure_multiplier))
+        adjusted_exposure = max(0.05, min(0.95, base_exposure * exposure_multiplier))
+        adjusted_exposure = max(
+            adjusted_exposure,
+            self._regime_minimum_exposure(state.get("macro_regime", "neutral")),
+        )
 
         # Conservative confidence dampener during high shock/uncertainty.
         confidence_penalty = min(0.18, event_shock * 0.12 + uncertainty * 0.08 + conflict * 0.05)
@@ -647,7 +677,7 @@ class MarketStateEngine:
             "   🧠 Sentiment integration: "
             f"alert={alert_level}, shock={event_shock:.2f}, "
             f"risk_on={base_risk_on:.2f}->{adjusted_risk_on:.2f}, "
-            f"exposure={base_exposure:.1f}%->{adjusted_exposure:.1f}%"
+            f"exposure={base_exposure:.1%}->{adjusted_exposure:.1%}"
         )
         return state
     
@@ -849,7 +879,7 @@ class MarketStateEngine:
         brain_adjusted_exposure = original_exposure * exposure_multiplier
         
         # Ensure it doesn't exceed original limits
-        state['allowed_exposure'] = max(5, min(original_exposure, brain_adjusted_exposure))
+        state['allowed_exposure'] = max(0.05, min(original_exposure, brain_adjusted_exposure))
         
         # 2. Adjust risk-on probability based on pulse intensity and regime
         pulse_intensity = state.get('pulse_intensity', 0.5)
@@ -873,7 +903,7 @@ class MarketStateEngine:
             state['stress_level'] = max(state['stress_level'], 0.6)
         
         print(f"   🧠 Brain adjustments applied:")
-        print(f"      Exposure: {original_exposure:.1f}% → {state['allowed_exposure']:.1f}%")
+        print(f"      Exposure: {original_exposure:.1%} → {state['allowed_exposure']:.1%}")
         print(f"      Survival mode: {survival_mode}")
         print(f"      Regime similarity: {regime_similarity:.3f}")
         
@@ -899,7 +929,7 @@ class MarketStateEngine:
             warnings.append("⚠️ CONTRADICTION: Low risk-on probability but broad market")
         
         # Check exposure limits
-        if state['allowed_exposure'] > 80 and state['stress_level'] > 0.6:
+        if state['allowed_exposure'] > 0.80 and state['stress_level'] > 0.6:
             warnings.append("⚠️ CONTRADICTION: High exposure allowed despite high stress")
         
         # Print warnings
@@ -920,7 +950,7 @@ class MarketStateEngine:
                 'macro_score': state.get('macro_score', 0.0),
                 'breadth_pct': state.get('breadth_pct', 50.0),
                 'stress_level': state.get('stress_level', 0.2),
-                'allowed_exposure': state.get('allowed_exposure', 50.0),
+                'allowed_exposure': state.get('allowed_exposure', 0.50),
                 'warnings': warnings
             }
             # Coherence score: start at 1.0, subtract 0.15 per warning (min 0)
@@ -1012,7 +1042,7 @@ class MarketStateEngine:
         print(f"Macro Score: {state['macro_score']:+.2f}")
         print(f"Regime: {state['macro_regime'].title()}")
         print(f"Risk-On Probability: {state['risk_on_probability']:.1%}")
-        print(f"Allowed Exposure: {state['allowed_exposure']:.1f}%")
+        print(f"Allowed Exposure: {state['allowed_exposure']:.1%}")
         print(f"Market Health: {state['health_score']:.1%}")
         print(f"Breadth: {state['breadth_pct']:.0f}%")
         print(f"Volatility: {state['volatility_regime'].title()}")
@@ -1037,7 +1067,7 @@ def load_latest_market_state():
                 latest = df.iloc[-1].to_dict()  # TEMPORAL PROTECTED
                 # Ensure required keys with defaults
                 latest.setdefault('stress_level', 0.2)
-                latest.setdefault('allowed_exposure', 50.0)
+                latest['allowed_exposure'] = _normalize_exposure_ratio(latest.get('allowed_exposure', 0.50), 0.50)
                 latest.setdefault('breadth_pct', 50.0)
                 latest.setdefault('participation_score', 50.0)
                 latest.setdefault('macro_score', 0.0)
@@ -1060,7 +1090,7 @@ def load_latest_market_state():
         'health_score': 0.5,
         'opportunity_density': 0.2,
         'risk_on_probability': 0.5,
-        'allowed_exposure': 50.0,
+        'allowed_exposure': 0.50,
         'confidence': 0.5
     }
 
@@ -1242,14 +1272,14 @@ class IntelligentMarketStateEngine(MarketStateEngine):
         ai_actions = intelligence_result.get('actions', {})
         if 'exposure_recommendation' in ai_actions:
             ai_exposure = ai_actions['exposure_recommendation']['target_exposure']
-            intelligence_layer['ai_allowed_exposure'] = ai_exposure
+            intelligence_layer['ai_allowed_exposure'] = _normalize_exposure_ratio(ai_exposure, 0.55)
             
             # Blend AI recommendation with base calculation
-            base_exposure = base_state.get('allowed_exposure', 55)
+            base_exposure = _normalize_exposure_ratio(base_state.get('allowed_exposure', 0.55), 0.55)
             ai_weight = intelligence_layer['conviction']  # Higher conviction = more AI weight
             
             blended_exposure = (
-                ai_weight * ai_exposure + 
+                ai_weight * intelligence_layer['ai_allowed_exposure'] +
                 (1 - ai_weight) * base_exposure
             )
             
@@ -1289,8 +1319,8 @@ class IntelligentMarketStateEngine(MarketStateEngine):
             ai_exposure = state['ai_allowed_exposure']
             final_exposure = state['allowed_exposure']
             
-            if abs(ai_exposure - final_exposure) > 20:
-                warnings.append(f"⚠️ LARGE AI OVERRIDE: AI recommends {ai_exposure:.1f}% vs base {final_exposure:.1f}%")
+            if abs(ai_exposure - final_exposure) > 0.20:
+                warnings.append(f"⚠️ LARGE AI OVERRIDE: AI recommends {ai_exposure:.1%} vs base {final_exposure:.1%}")
         
         # Check conviction vs uncertainty
         conviction = state.get('conviction', 0.5)
@@ -1437,8 +1467,8 @@ class IntelligentMarketStateEngine(MarketStateEngine):
                 print(f"AI Primary Action: {actions['primary_action']}")
             
             if 'ai_allowed_exposure' in state:
-                print(f"AI Recommended Exposure: {state['ai_allowed_exposure']:.1f}%")
-                print(f"Final Blended Exposure: {state['allowed_exposure']:.1f}%")
+                print(f"AI Recommended Exposure: {state['ai_allowed_exposure']:.1%}")
+                print(f"Final Blended Exposure: {state['allowed_exposure']:.1%}")
             
             system_health = state.get('system_health', {})
             if 'grade' in system_health:

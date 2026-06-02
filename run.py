@@ -455,6 +455,18 @@ def run_health_mode(verbose: bool = False) -> bool:
             print(f"ERROR: py_compile failed for {path}")
             return False
 
+    integrity_checks = [
+        PROJECT_ROOT / "scripts/ci/check_active_python_parse.py",
+        PROJECT_ROOT / "scripts/ci/check_no_local_paths.py",
+        PROJECT_ROOT / "scripts/ci/check_no_tracked_deadweight.py",
+        PROJECT_ROOT / "scripts/ci/check_no_secrets.py",
+    ]
+    for check in integrity_checks:
+        ok = _run_subprocess([sys.executable, str(check)], verbose=verbose)
+        if not ok:
+            print(f"ERROR: integrity check failed: {check}")
+            return False
+
     report = _summarize_health_checks(_collect_health_checks(verbose=verbose))
     print(json.dumps(report, indent=2))
     return report["exit_code"] == 0

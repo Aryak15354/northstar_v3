@@ -813,7 +813,7 @@ def main():
     print("=" * 60)
     
     # Initialize model
-    model = ExecutionRealismModel(base_dir="data/test_execution")
+    model = ExecutionRealismModel(base_dir="data/testing/execution")
     
     # Create sample trades
     trades = [

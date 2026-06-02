@@ -1,0 +1,9 @@
+experiment:
+  run_id: "v3_run_00# Run 008 - Fix regime gate + eps_sue_decay NaN handling
+
+experiment:
+  run_id: "v3_run_008_20260402"
+  description: "Fix eps_sue_decay NaN inflation of train/test ratio. Tighten regime boundaries."
+  based_on: "run_007"
+  hypothesis: "eps_sue_decay ffill will reduce train/test ratio below 2.50x. Regime boundary fix will recover mean exposure above 25%."
+  falsification: "If train/test ratio stays above .0x after ffill, the NaN hypothesis is wrong and missing-value handling needs deep

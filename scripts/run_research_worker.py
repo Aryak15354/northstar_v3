@@ -146,6 +146,11 @@ def main() -> int:
     parser.add_argument("--config", type=Path, default=PROJECT_ROOT / "config/research_policy.yaml")
     parser.add_argument("--interval-seconds", type=int, default=1800)
     parser.add_argument("--once", action="store_true")
+    parser.add_argument(
+        "--manual-run",
+        action="store_true",
+        help="Mark the cycle as operator-triggered so research can run even when scheduled burn-in gating is active.",
+    )
     parser.add_argument("--log-level", default="INFO")
     args = parser.parse_args()
 
@@ -170,7 +175,7 @@ def main() -> int:
     engine = ResearchEngine(config_path=args.config)
     runtime_path = PROJECT_ROOT / "data/options/live/options_runtime_state.json"
     market_data_path = PROJECT_ROOT / "data/options/live/market_data_latest.json"
-    hb_path = PROJECT_ROOT / "data/research/research_worker_heartbeat.json"
+    hb_path = PROJECT_ROOT / "data/results/research/state/research_worker_heartbeat.json"
     cycle = 0
 
     while True:
@@ -185,6 +190,10 @@ def main() -> int:
         _write_heartbeat(hb_path, status="alive", phase="cycle_start")
         market_data = _load_json(market_data_path)
         system_state = _load_json(runtime_path)
+        if args.manual_run:
+            system_state = dict(system_state)
+            system_state["manual_run"] = True
+            system_state["trigger_source"] = "cli"
         try:
             result = engine.run_research_cycle(market_data=market_data, system_state=system_state)
         except Exception as exc:

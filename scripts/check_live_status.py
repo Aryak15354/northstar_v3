@@ -184,7 +184,7 @@ def main():
     elif running and state:
         print("⚠️  System is PARTIALLY OPERATIONAL")
         print("   - Engine running")
-        print("   - Dashboard not running (start with: streamlit run dashboard/volatility_dashboard.py)")
+        print("   - Dashboard not running (start with: ./launch_dashboard.sh --port 8501)")
     elif running:
         print("⚠️  System is STARTING")
         print("   - Engine running but no data yet")

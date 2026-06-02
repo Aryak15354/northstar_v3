@@ -37,25 +37,43 @@ class TimeVaryingBetaKalman:
     - Regime transition detection
     - Structural break identification
     - Adaptive macro exposure
+    
+    GAP 3 INTEGRATION: Now supports alternative data observations (GST, power)
     """
     
     def __init__(
         self,
         Q_scale: float = 0.001,  # State noise (how fast betas change)
         R_scale: float = 0.01,   # Observation noise
-        initial_P_scale: float = 1.0  # Initial uncertainty
+        initial_P_scale: float = 1.0,  # Initial uncertainty
+        use_alternative_data: bool = True,  # GAP 3: Enable alternative data
+        registry=None,  # GAP 3: IngestionRegistry for alternative data
+        config: dict = None  # GAP 3: Configuration dict
     ):
         self.Q_scale = Q_scale
         self.R_scale = R_scale
         self.initial_P_scale = initial_P_scale
+        self.use_alternative_data = use_alternative_data
         
         # Results storage
         self.beta_trajectories = {}
         self.P_trajectories = {}
         
+        # GAP 3: Initialize alternative data bridge
+        self.macro_bridge = None
+        if use_alternative_data and registry is not None:
+            try:
+                from src.alternative_data import MacroAlternativeBridge
+                self.macro_bridge = MacroAlternativeBridge(registry, config or {})
+                print(f"🟢 Alternative data bridge initialized for Kalman filter")
+            except Exception as e:
+                print(f"⚠️ Could not initialize alternative data bridge: {e}")
+                self.use_alternative_data = False
+        
         print(f"🟢 Time-Varying Beta Kalman Filter initialized")
         print(f"   State noise (Q): {Q_scale}")
         print(f"   Observation noise (R): {R_scale}")
+        print(f"   Alternative data: {'ENABLED' if self.use_alternative_data else 'DISABLED'}")
     
     def fit_single_company(
         self,
@@ -73,7 +91,16 @@ class TimeVaryingBetaKalman:
         
         Returns:
             Dict with beta trajectories and diagnostics
+        
+        GAP 3 INTEGRATION: Now augments macro_df with alternative data observations
         """
+        # GAP 3: Augment macro_df with alternative data if available
+        if self.use_alternative_data and self.macro_bridge is not None:
+            try:
+                macro_df = self._augment_with_alternative_data(macro_df)
+            except Exception as e:
+                print(f"⚠️ Could not augment with alternative data: {e}")
+        
         # Align + clean data (missing rows can otherwise poison the full recursion).
         frame = pd.concat(
             [
@@ -423,3 +450,48 @@ class TimeVaryingBetaKalman:
             'pct_time_significantly_different': pct_different,
             'current_beta': beta_series.iloc[-1]
         }
+    
+    def _augment_with_alternative_data(self, macro_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        GAP 3: Augment macro DataFrame with alternative data observations.
+        
+        Adds GST and power consumption signals as additional macro variables
+        that the Kalman filter can track.
+        
+        Args:
+            macro_df: Original macro DataFrame with index as dates
+            
+        Returns:
+            Augmented DataFrame with alternative data columns
+        """
+        if self.macro_bridge is None:
+            return macro_df
+        
+        augmented_df = macro_df.copy()
+        
+        # Add alternative data for each date in macro_df
+        alt_data_rows = []
+        for date in macro_df.index:
+            try:
+                # Get Kalman observation vector for this date
+                obs = self.macro_bridge.get_kalman_observation_vector(date)
+                alt_data_rows.append({
+                    'date': date,
+                    'gst_activity': obs.get('composite_activity_score', 0.0),
+                    'power_industrial': obs.get('power_industrial_proxy', 0.0)
+                })
+            except Exception as e:
+                # Graceful degradation: use zeros if data unavailable
+                alt_data_rows.append({
+                    'date': date,
+                    'gst_activity': 0.0,
+                    'power_industrial': 0.0
+                })
+        
+        # Create alternative data DataFrame
+        alt_df = pd.DataFrame(alt_data_rows).set_index('date')
+        
+        # Merge with original macro_df
+        augmented_df = pd.concat([macro_df, alt_df], axis=1)
+        
+        return augmented_df

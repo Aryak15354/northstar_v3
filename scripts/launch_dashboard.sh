@@ -1,13 +1,19 @@
 #!/bin/bash
-# Launch Northstar Command Bridge Dashboard
+# Launch the canonical Northstar V3 integrated dashboard
 
-echo "🧭 Launching Northstar Command Bridge..."
-echo "=========================================="
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+echo "📊 Launching Northstar V3 Canonical Dashboard..."
+echo "==============================================="
 echo ""
-echo "Dashboard will open in your browser at:"
+echo "Dashboard will open at:"
 echo "http://localhost:8501"
 echo ""
 echo "Press Ctrl+C to stop the dashboard"
 echo ""
 
-streamlit run src/dashboard/northstar_command_bridge.py
+python3 -m streamlit run src/dashboard/app.py --server.port 8501 --server.address localhost

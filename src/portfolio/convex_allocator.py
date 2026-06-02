@@ -239,7 +239,17 @@ class ConvexPortfolioAllocator:
         manifold_distance: Mapping[str, Mapping[str, float]] | None = None,
         manifold_penalty_eta: float = 0.0,
         manifold_diversity_delta: float = 0.0,
+        equity_capital_budget_inr: float | None = None,
+        total_nav_inr: float | None = None,
     ) -> ConvexAllocationResult:
+        # CRITICAL: Apply capital budget from Portfolio Governor
+        if equity_capital_budget_inr is not None and total_nav_inr is not None and total_nav_inr > 0:
+            budget_fraction = float(equity_capital_budget_inr / total_nav_inr)
+            leverage_limit = float(min(leverage_limit, budget_fraction))
+            # Log the capital constraint
+            print(f"   💰 Capital Budget Applied: ₹{equity_capital_budget_inr:,.0f} / ₹{total_nav_inr:,.0f} = {budget_fraction:.1%}")
+            print(f"   📊 Effective Leverage Limit: {leverage_limit:.2%}")
+        
         if not strategy_ids:
             return ConvexAllocationResult(
                 weights={},

@@ -1,0 +1,59 @@
+news_brain:
+  enabled: true
+  cycle_interval_minutes: 15
+  stale_threshold_minutes: 30
+  freshness:
+    company_max_age_minutes: 4320
+    market_max_age_minutes: 2880
+    macro_max_age_minutes: 64800
+  company_layer:
+    sentiment_negative_threshold: -0.30
+    sentiment_positive_threshold: 0.30
+    sentiment_conviction_threshold: 0.60
+    bellwether_tickers:
+      - RELIANCE
+      - HDFCBANK
+      - ICICIBANK
+      - TCS
+      - INFY
+      - HDFC
+      - BHARTIARTL
+      - AXISBANK
+      - LT
+      - KOTAKBANK
+      - SBIN
+      - BAJFINANCE
+  market_layer:
+    fii_outflow_threshold_crores: 3000
+    fii_high_severity_crores: 8000
+    breadth_stress_threshold: 0.30
+  macro_layer:
+    crude_spike_threshold_pct: 5.0
+    crude_disruption_threshold_pct: 15.0
+    inr_depreciation_threshold_pct: 1.5
+    vix_elevated_threshold: 18
+    vix_high_threshold: 25
+    vix_extreme_threshold: 35
+
+shock_response:
+  enabled: true
+  min_severity_to_act: MODERATE
+  rebalance:
+    max_daily_adv_pct: 10.0
+    reduction_factor_moderate: 0.30
+    reduction_factor_high: 0.50
+    reduction_factor_severe: 0.75
+  options:
+    max_hedge_cost_pct_of_portfolio: 3.0
+    auto_hedge_on_severity: HIGH
+    crisis_alpha_on_severity: SEVERE
+
+strategy_library:
+  default_expiry_preference: nearest_monthly
+  max_concurrent_strategies: 5
+  min_iv_rank_for_sell_strategies: 40
+  max_iv_rank_for_buy_strategies: 65
+  vix_spike_trigger: 25.0
+  position_sizing:
+    max_per_strategy_pct: 2.0
+    max_total_options_pct: 8.0

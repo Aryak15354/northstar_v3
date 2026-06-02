@@ -1,0 +1,37 @@
+# Gap 5 P&L System Configuration
+
+pnl:
+  # NAV Calculator Configuration
+  nav:
+    starting_capital_inr: 10000000  # ₹1 crore starting capital
+    inception_date: "2024-09-01"    # Paper fund inception date
+    nav_unit_size: 1000             # Each unit represents ₹1000
+    benchmark: "NIFTY500_TR"        # Total return benchmark
+    risk_free_rate_pct: 6.5         # India 10yr government bond rate
+  
+  # Paper Fund Configuration
+  paper_fund:
+    inception_date: "2024-09-01"
+    starting_capital_inr: 10000000
+    fund_name: "Northstar V3 Paper Fund"
+    benchmark: "NIFTY500_TR"
+    target_monthly_return_pct: 2.0      # 24% annualized target
+    max_acceptable_drawdown_pct: -15.0  # Maximum acceptable drawdown
+    min_sharpe_ratio: 1.2               # Minimum acceptable Sharpe ratio
+  
+  # Reconciliation Configuration
+  reconciliation:
+    equity_options_tolerance_inr: 100      # ±₹100 tolerance for balance
+    live_shadow_threshold_pct: 0.5         # 0.5% of NAV threshold
+    legacy_tolerance_inr: 1000             # ±₹1000 for legacy comparison
+  
+  # Execution Quality Configuration
+  execution_quality:
+    max_acceptable_slippage_bps: 10        # 10 bps max slippage
+    alert_on_deteriorating_trend: true
+    trend_window_days: 7
+  
+  # Attribution Configuration
+  attribution:
+    min_strategy_capital_pct: 1.0          # Min 1% capital for attribution
+    cost_breakdown_enabled: true

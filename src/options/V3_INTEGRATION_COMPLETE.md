@@ -1,8 +1,8 @@
-# Options Trading V3 Integration - Complete
+# Options Trading V3 Integration - Partial / In Progress
 
 ## Overview
 
-The options trading system is now fully integrated with Northstar V3 as a **first-class organ** in the V3 nervous system, not a bolt-on sidecar. This integration provides institutional-grade risk management, event-driven architecture, and comprehensive audit trails.
+The options trading system is integrated with important Northstar V3 surfaces, but the end-to-end V3 risk-coordinator dependency is not fully available in this workspace. Treat this document as an integration status note, not as proof of production completeness.
 
 ## Integration Components
 

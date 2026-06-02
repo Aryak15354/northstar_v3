@@ -662,7 +662,7 @@ def main() -> int:
         regimes_to_run = [None]
 
     run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_dir = PROJECT_ROOT / "data/research/full_stack_runs"
+    run_dir = PROJECT_ROOT / "data/results/research/full_stack_runs" / run_ts[:4] / run_ts[4:6]
     run_dir.mkdir(parents=True, exist_ok=True)
     summary: Dict[str, Any] = {
         "started_at": datetime.now().isoformat(),
@@ -680,7 +680,10 @@ def main() -> int:
     for horizon_days in horizons_to_run:
         for regime in regimes_to_run:
             for phase in phase_list:
-                before_cycles = glob.glob(str(PROJECT_ROOT / "data/research/research_cycle_*.json"))
+                before_cycles = glob.glob(
+                    str(PROJECT_ROOT / "data/results/research/cycles/**/research_cycle_*.json"),
+                    recursive=True,
+                )
                 phase_cfg = copy.deepcopy(base_cfg)
                 if regime is not None:
                     phase_cfg = _apply_regime_window(
@@ -731,7 +734,10 @@ def main() -> int:
                 proc = subprocess.run(cmd, cwd=str(PROJECT_ROOT), env=env, check=False)
                 elapsed = float(time.time() - t0)
 
-                after_cycles = glob.glob(str(PROJECT_ROOT / "data/research/research_cycle_*.json"))
+                after_cycles = glob.glob(
+                    str(PROJECT_ROOT / "data/results/research/cycles/**/research_cycle_*.json"),
+                    recursive=True,
+                )
                 cycle_file = _collect_cycle_file(before_cycles, after_cycles)
                 cycle_metrics = _extract_cycle_metrics(cycle_file)
                 item = {

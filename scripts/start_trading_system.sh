@@ -40,7 +40,7 @@ echo "Press Ctrl+C to stop both engine and dashboard"
 echo ""
 
 # Start dashboard (foreground)
-streamlit run dashboard/volatility_dashboard.py
+python3 launch_dashboard.py --port 8501
 
 # When dashboard stops, kill the engine
 echo ""

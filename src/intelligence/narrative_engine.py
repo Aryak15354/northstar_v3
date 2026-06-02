@@ -81,9 +81,13 @@ class NarrativeEngine:
             'very_low': 0.1     # Complete chaos
         }
     
-    def generate_market_narrative(self, market_data=None):
+    def generate_market_narrative(self, market_data=None, sentiment_input=None):
         """
         Generate complete market narrative from 5 jurors
+        
+        Args:
+            market_data: Market data dict
+            sentiment_input: Optional SentimentNarrativeInput for sentiment context
         
         Returns comprehensive narrative with votes, conviction, and implications
         """
@@ -117,9 +121,9 @@ class NarrativeEngine:
         # Calculate conviction (agreement between jurors)
         conviction = self.calculate_conviction(juror_votes, juror_details)
         
-        # Generate narrative text
+        # Generate narrative text (with sentiment if available)
         narrative_text = self.synthesize_narrative(
-            juror_votes, juror_details, total_votes, conviction
+            juror_votes, juror_details, total_votes, conviction, sentiment_input
         )
         
         # Determine market stance
@@ -146,7 +150,8 @@ class NarrativeEngine:
             'narrative_text': narrative_text,
             'exposure_recommendation': exposure_recommendation,
             'agreement_analysis': self.analyze_agreement(juror_votes),
-            'key_themes': self.extract_key_themes(juror_details)
+            'key_themes': self.extract_key_themes(juror_details),
+            'sentiment_context': sentiment_input  # Store sentiment context
         }
     
     def calculate_conviction(self, votes, details):
@@ -206,8 +211,8 @@ class NarrativeEngine:
         else:
             return 'Very Low'
     
-    def synthesize_narrative(self, votes, details, total_votes, conviction):
-        """Synthesize human-readable narrative from juror votes"""
+    def synthesize_narrative(self, votes, details, total_votes, conviction, sentiment_input=None):
+        """Synthesize human-readable narrative from juror votes with optional sentiment context"""
         
         # Overall market assessment
         if total_votes >= 2:
@@ -222,6 +227,15 @@ class NarrativeEngine:
         
         # Start narrative
         narrative = f"Market narrative: {overall} with {conviction_level.upper()} conviction. "
+        
+        # Add sentiment context if available
+        if sentiment_input and sentiment_input.is_fresh:
+            if sentiment_input.key_narrative_flag == "SENTIMENT_CRISIS":
+                narrative += f"News sentiment has deteriorated sharply into {sentiment_input.regime_label} territory, suggesting fear is driving price action beyond what fundamentals justify. "
+            elif sentiment_input.is_diverging_from_price:
+                narrative += f"Sentiment is diverging from price action: {sentiment_input.divergence_description}. This divergence warrants caution. "
+            else:
+                narrative += f"News sentiment is {sentiment_input.regime_label} and {sentiment_input.trend_label.lower()}, broadly consistent with current market direction. "
         
         # Vote breakdown
         bullish_jurors = [name for name, vote in votes.items() if vote > 0]

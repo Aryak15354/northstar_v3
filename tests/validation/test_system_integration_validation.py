@@ -38,7 +38,7 @@ from src.volatility.risk_authority import UnifiedRiskAuthority as RiskAuthority 
 from src.volatility.intelligence_engine import UnifiedIntelligenceEngine as IntelligenceEngine
 from src.cohesion.error_handler import ErrorHandler, ErrorSeverity, ErrorCategory
 from src.cohesion.cache_manager import IntelligentCacheManager
-from src.cohesion.health_monitor import ComprehensiveHealthMonitor
+from src.cohesion.cohesion_health_monitor import ComprehensiveHealthMonitor
 
 
 class TestSystemIntegrationValidation:

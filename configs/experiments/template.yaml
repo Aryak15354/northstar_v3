@@ -1,0 +1,17 @@
+# Template for a new Kaggle experiment.
+
+experiment:
+  run_id: "v3_run_009_YYYYMMDD"
+  description: "Describe the exact change being tested."
+  based_on: "run_008"
+  hypothesis: "State a falsifiable hypothesis."
+  falsification: "State what result would prove the hypothesis wrong."
+
+features:
+  mode: "full"
+
+preprocessing:
+  eps_sue_decay_ffill: true
+  eps_sue_decay_availability_flag: true
+
+regime_config_version: "v2_tight_boundaries"

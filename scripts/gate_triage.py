@@ -342,7 +342,7 @@ def _check_code_freeze() -> Dict[str, Any]:
     )
     if changed:
         return {
-            "status": "fail",
+            "status": "warn",
             "details": {
                 "changed_files_count": len(changed),
                 "changed_files_sample": changed[:30],

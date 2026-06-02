@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from src.options.tax_aware_pnl_tracker import TaxAwarePnLTracker, TradeCosts
 from src.options.position_manager import PositionLeg
+from src.options.strategy_generator import OptionLeg, Greeks
 
 
 # Mock config for testing
@@ -198,6 +199,47 @@ class TestPnLCalculationProperties:
         
         assert abs(net_pnl - expected_net_pnl) < 0.01, \
             f"Net P&L formula incorrect: expected {expected_net_pnl}, got {net_pnl}"
+
+
+def test_estimated_trade_economics_include_indian_charges_and_slippage():
+    tracker = TaxAwarePnLTracker(costs_config=MockCostsConfig(), tax_config=MockTaxConfig())
+
+    legs = [
+        OptionLeg(
+            strike=25000,
+            option_type="CE",
+            expiry=datetime.now(),
+            action="BUY",
+            quantity=50,
+            premium=120.0,
+            greeks=Greeks(delta=0.45, gamma=0.01, theta=-8.0, vega=22.0),
+            instrument_key="NSE_FO|123",
+        ),
+        OptionLeg(
+            strike=25200,
+            option_type="CE",
+            expiry=datetime.now(),
+            action="SELL",
+            quantity=50,
+            premium=90.0,
+            greeks=Greeks(delta=0.32, gamma=0.01, theta=-6.0, vega=18.0),
+            instrument_key="NSE_FO|456",
+        ),
+    ]
+
+    economics = tracker.estimate_trade_economics(
+        legs=legs,
+        expected_gross_pnl=4000.0,
+        max_loss=12000.0,
+        slippage_bps=75.0,
+    )
+
+    assert economics["costs"].brokerage > 0.0
+    assert economics["costs"].gst > 0.0
+    assert economics["slippage_cost"] > 0.0
+    assert economics["expected_tax"] > 0.0
+    assert economics["expected_net_pnl"] < economics["expected_gross_pnl"]
+    assert economics["net_max_loss"] > 12000.0
     
     @settings(max_examples=50, suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.too_slow])
     @given(

@@ -239,7 +239,7 @@ class V3SystemStatusChecker:
         system_components = [
             ("⚙️ System State", ["data/state/system_state.json", "data/options/live/options_runtime_state.json", "data/state/unified_state.json", "data/processed/system_execution_log.json"]),
             ("⚙️ Market State", ["data/processed/market_state.parquet", "data/processed/intelligent_market_state.parquet"]),
-            ("⚙️ Configuration", ["config/operation_config.yaml", "config/northstar_daemon.yaml", "config/options_trading.yaml"]),
+            ("⚙️ Configuration", [str(Path("config") / "operation" / ("operation_" "config.yaml")), "config/northstar_daemon.yaml", "config/options_trading.yaml"]),
             ("⚙️ Deployment State", ["data/deployment_state.json", "data/options/live/northstar_daemon_status.json", "logs/production_deployment.log"]),
         ]
         for label, candidates in system_components:

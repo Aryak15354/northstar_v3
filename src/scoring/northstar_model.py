@@ -11,6 +11,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import os
 import sys
+from pathlib import Path
+import logging
+import yaml
+
+from src.data.loaders import load_fundamentals, load_prices
+
+logger = logging.getLogger(__name__)
 
 # Add src directory to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,12 +28,10 @@ if src_dir not in sys.path:
     
     def load_standard_data(data_type, validate=True):
         """Fallback data loader"""
-        file_map = {
-            'prices': 'data/processed/prices.parquet',
-            'fundamentals': 'data/processed/fundamentals.parquet'
-        }
-        if data_type in file_map:
-            return pd.read_parquet(file_map[data_type])
+        if data_type == "prices":
+            return load_prices()
+        if data_type == "fundamentals":
+            return load_fundamentals()
         raise FileNotFoundError(f"No fallback for data type: {data_type}")
     
     def save_standard_data(df, data_type, validate=True):
@@ -45,6 +50,15 @@ if src_dir not in sys.path:
         """Fallback standardizer"""
         return df
 
+if "save_standard_data" not in globals():
+    def save_standard_data(df, data_type, validate=True):
+        file_map = {'scores': 'data/processed/scores.parquet'}
+        if data_type not in file_map:
+            raise ValueError(f"No fallback for data type: {data_type}")
+        os.makedirs(os.path.dirname(file_map[data_type]), exist_ok=True)
+        df.to_parquet(file_map[data_type])
+        print(f"✅ Saved {data_type} data: {file_map[data_type]}")
+
 # Input files
 FUND_FILE = "data/processed/fundamentals.parquet"
 VAL_FILE = "data/processed/valuation.parquet"
@@ -53,16 +67,149 @@ PRICE_FILE = "data/processed/prices.parquet"
 UNIVERSE_FILE = "universe/nifty500.csv"
 OUTPUT_FILE = "data/processed/scores.parquet"
 
+
+def _load_live_scoring_config(config_path: str = "config/research_policy.yaml") -> dict:
+    """Load live scoring policy overrides from research_policy.yaml."""
+    cfg_path = Path(os.getenv("NS_POLICY_CONFIG", config_path))
+    if not cfg_path.exists():
+        return {}
+    try:
+        payload = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        logger.exception("Failed to parse live scoring config from %s", cfg_path)
+        raise
+    if not isinstance(payload, dict):
+        return {}
+    live_scoring = payload.get("live_scoring", {})
+    if not isinstance(live_scoring, dict):
+        return {}
+    northstar_cfg = live_scoring.get("northstar_model", {})
+    return northstar_cfg if isinstance(northstar_cfg, dict) else {}
+
 # Scoring model parameters
-FACTOR_WEIGHTS = {
+DEFAULT_FACTOR_WEIGHTS = {
     'quality': 0.30,      # Business quality
     'value': 0.25,        # Valuation attractiveness
     'momentum': 0.20,     # Price momentum
     'growth': 0.15,       # Earnings growth
     'profitability': 0.10 # Profitability metrics
 }
+LIVE_SCORING_CONFIG = _load_live_scoring_config()
 
-RISK_PENALTY_WEIGHT = 0.15  # Risk penalty applied to final score
+FACTOR_WEIGHTS = dict(DEFAULT_FACTOR_WEIGHTS)
+cfg_factor_weights = LIVE_SCORING_CONFIG.get("factor_weights", {})
+if isinstance(cfg_factor_weights, dict):
+    for factor in DEFAULT_FACTOR_WEIGHTS:
+        val = cfg_factor_weights.get(factor)
+        if isinstance(val, (int, float)):
+            FACTOR_WEIGHTS[factor] = float(val)
+
+RISK_PENALTY_WEIGHT = float(LIVE_SCORING_CONFIG.get("risk_penalty_weight", 0.15))
+EFFECTIVE_RISK_WEIGHT = float(LIVE_SCORING_CONFIG.get("effective_risk_weight", 0.50))
+FUNDAMENTALS_LAG_DAYS = int(LIVE_SCORING_CONFIG.get("fundamentals_lag_days", 60))
+
+
+def _scale_series_0_100(values: pd.Series, neutral: float = 50.0) -> pd.Series:
+    """Scale a series to 0-100 with a stable fallback for constant inputs."""
+    series = pd.to_numeric(values, errors="coerce")
+    if series.empty:
+        return pd.Series(dtype=float)
+    min_val = float(series.min())
+    max_val = float(series.max())
+    if not np.isfinite(min_val) or not np.isfinite(max_val) or abs(max_val - min_val) < 1e-9:
+        return pd.Series(np.full(len(series), neutral, dtype=float), index=series.index)
+    return ((series - min_val) / (max_val - min_val) * 100.0).fillna(neutral)
+
+
+def _compute_pca_quality_score(
+    quality_df: pd.DataFrame,
+    reference_col: str = "roe",
+) -> pd.Series:
+    """Compute PCA quality score with explained-variance and sign checks."""
+    clean = quality_df.apply(pd.to_numeric, errors="coerce")
+    clean = clean.fillna(clean.median()).fillna(0.0)
+
+    scaler = StandardScaler()
+    X = scaler.fit_transform(clean)
+    pca = PCA(n_components=1)
+    pc1 = pd.Series(pca.fit_transform(X).squeeze(), index=clean.index, dtype=float)
+    explained = float(pca.explained_variance_ratio_[0])
+
+    if explained < 0.40:
+        logger.warning(
+            "Quality PCA explained variance %.1f%% below threshold; falling back to simple average",
+            explained * 100.0,
+        )
+        return _scale_series_0_100(clean.mean(axis=1))
+
+    if reference_col in clean.columns:
+        ref = pd.to_numeric(clean[reference_col], errors="coerce").fillna(0.0)
+        correlation = np.corrcoef(pc1, ref)[0, 1] if len(pc1) > 1 else 1.0
+        if np.isfinite(correlation) and correlation < 0:
+            logger.info(
+                "Quality PCA negatively correlated with %s (corr=%.2f); flipping sign",
+                reference_col,
+                correlation,
+            )
+            pc1 = -pc1
+
+    logger.info("Quality PCA active with explained variance %.1f%%", explained * 100.0)
+    return _scale_series_0_100(pc1)
+
+
+def apply_partial_sector_neutralization(
+    scores: pd.Series,
+    sectors: pd.Series,
+    sector_weight: float = 0.60,
+) -> pd.Series:
+    """
+    Blend within-sector and cross-sector ranking so sector context is reduced, not erased.
+    """
+    raw_score = _scale_series_0_100(scores)
+    sector_z = scores.groupby(sectors).transform(
+        lambda x: (x - x.mean()) / (x.std() + 1e-9)
+    ).clip(-3, 3)
+    sector_score = _scale_series_0_100(sector_z)
+    return (sector_weight * sector_score + (1.0 - sector_weight) * raw_score).clip(0, 100)
+
+def apply_fundamental_availability_filter(
+    fundamentals: pd.DataFrame,
+    as_of_date: pd.Timestamp | None = None,
+    lag_days: int | None = None,
+) -> pd.DataFrame:
+    """Enforce PIT-safe availability cutoffs on fundamentals."""
+    if fundamentals is None or fundamentals.empty:
+        return fundamentals
+
+    as_of = pd.Timestamp(as_of_date if as_of_date is not None else pd.Timestamp.today()).normalize()
+    out = fundamentals.copy()
+
+    if "availability_date" in out.columns:
+        avail = pd.to_datetime(out["availability_date"], errors="coerce")
+    else:
+        base_col = None
+        for cand in ["period_end_date", "report_date", "date", "fiscal_period_end", "fiscal_date"]:
+            if cand in out.columns:
+                base_col = cand
+                break
+        if base_col is None:
+            print(
+                "   ⚠️ Fundamentals PIT filter skipped: no availability/report/period date column found"
+            )
+            return out
+
+        base_dates = pd.to_datetime(out[base_col], errors="coerce")
+        lag = int(lag_days) if lag_days is not None else FUNDAMENTALS_LAG_DAYS
+        avail = base_dates + pd.to_timedelta(lag, unit="D")
+        out["availability_date"] = avail
+
+    mask = pd.to_datetime(avail, errors="coerce") <= as_of
+    filtered = out.loc[mask.fillna(False)].copy()
+    print(
+        f"   🕒 PIT filter applied on fundamentals: kept {len(filtered)}/{len(out)} rows "
+        f"(availability_date <= {as_of.date()})"
+    )
+    return filtered
 
 def load_and_validate_data():
     """Load and validate all required data sources"""
@@ -73,7 +220,8 @@ def load_and_validate_data():
     
     # Load fundamentals
     try:
-        data['fundamentals'] = load_standard_data('fundamentals', validate=False)
+        data['fundamentals'] = load_fundamentals()
+        data['fundamentals'] = apply_fundamental_availability_filter(data['fundamentals'])
         print(f"   ✅ Fundamentals: {len(data['fundamentals'])} records")
     except FileNotFoundError:
         print(f"   ❌ Fundamentals not found: {FUND_FILE}")
@@ -97,7 +245,7 @@ def load_and_validate_data():
     
     # Load prices
     try:
-        data['prices'] = load_standard_data('prices', validate=False)
+        data['prices'] = load_prices()
         print(f"   ✅ Prices: {len(data['prices'])} records")
     except FileNotFoundError:
         print(f"   ❌ Prices not found: {PRICE_FILE}")
@@ -209,23 +357,11 @@ def calculate_quality_score(df):
                    if col in df.columns and df[col].notna().sum() > 10]
     
     if len(quality_cols) >= 3:
-        quality_data = df[quality_cols].fillna(0)
-        scaler = StandardScaler()
-        quality_scaled = scaler.fit_transform(quality_data)
-        
-        # Use first principal component
-        pca = PCA(n_components=1)
-        quality_pca = pca.fit_transform(quality_scaled)
-        df['quality_score'] = quality_pca.flatten()
-        
-        # Convert to 0-100 scale
-        df['quality_score'] = ((df['quality_score'] - df['quality_score'].min()) / 
-                              (df['quality_score'].max() - df['quality_score'].min()) * 100)
-        
-        print(f"   📊 Quality PCA explained variance: {pca.explained_variance_ratio_[0]:.2%}")
+        df['quality_score'] = _compute_pca_quality_score(df[quality_cols], reference_col='roe')
+        print("   📊 Quality PCA applied with orientation check")
     else:
         # Fallback to simple average
-        df['quality_score'] = df[quality_cols].fillna(0).mean(axis=1) * 100
+        df['quality_score'] = _scale_series_0_100(df[quality_cols].fillna(0).mean(axis=1))
     
     return df
 
@@ -443,17 +579,10 @@ def apply_sector_neutralization(df):
     # Calculate sector-neutral scores
     for score_col in ['quality_score', 'value_score', 'momentum_score', 'growth_score', 'profitability_score']:
         if score_col in df.columns:
-            # Calculate sector means
-            sector_means = df.groupby('Industry')[score_col].transform('mean')
-            sector_stds = df.groupby('Industry')[score_col].transform('std')
-            
-            # Z-score within sector
-            df[f'{score_col}_sector_neutral'] = (df[score_col] - sector_means) / (sector_stds + 1e-8)
-            
-            # Convert back to 0-100 scale
-            col_name = f'{score_col}_sector_neutral'
-            df[col_name] = ((df[col_name] - df[col_name].min()) / 
-                           (df[col_name].max() - df[col_name].min()) * 100).fillna(50)
+            df[f'{score_col}_sector_neutral'] = apply_partial_sector_neutralization(
+                pd.to_numeric(df[score_col], errors='coerce').fillna(50.0),
+                df['Industry'].fillna('Unknown'),
+            )
     
     return df
 
@@ -536,9 +665,7 @@ def calculate_final_score(df):
     print(f"   📊 Risk penalty range: {df['risk_penalty'].min():.1f} - {df['risk_penalty'].max():.1f}")
     print(f"   📊 Risk penalty std: {df['risk_penalty'].std():.2f}")
     
-    # FIXED: Apply meaningful risk penalty
-    # Increase risk penalty weight to make it more impactful
-    EFFECTIVE_RISK_WEIGHT = 0.5  # Increased from 0.15
+    # Apply configurable risk penalty weight from policy config.
     df['northstar_score'] = df['raw_score'] - (df['risk_penalty'] * EFFECTIVE_RISK_WEIGHT)
 
     # Ensure scores are in reasonable range but allow for full distribution

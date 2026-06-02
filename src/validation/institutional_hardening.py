@@ -155,10 +155,11 @@ def build_parameter_version(project_root: Path) -> Dict[str, Any]:
         config_files.extend(config_dir.rglob("*.json"))
 
     key_code_files = [
+        project_root / "run.py",
         project_root / "src/intelligence/capital_allocator.py",
         project_root / "src/portfolio/portfolio_governor.py",
         project_root / "scripts/runners/refresh_v3_artifacts.py",
-        project_root / "run_complete_v3_system.py",
+        project_root / "scripts/run_complete_v3_system.py",
     ]
 
     config_hash = _hash_many(config_files, project_root=project_root)

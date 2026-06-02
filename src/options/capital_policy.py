@@ -58,8 +58,17 @@ class CapitalPolicyManager:
         """Get capital allocation for a tier"""
         return self.base_capital * tier.value
     
-    def get_current_capital(self) -> float:
-        """Get current tier capital allocation"""
+    def get_current_capital(self, options_capital_budget_inr: float | None = None) -> float:
+        """Get current tier capital allocation
+        
+        Args:
+            options_capital_budget_inr: Optional budget from Portfolio Governor.
+                                       If provided, this overrides the tier-based capital.
+        """
+        if options_capital_budget_inr is not None:
+            print(f"   💰 Options Capital Budget from Governor: ₹{options_capital_budget_inr:,.0f}")
+            return float(options_capital_budget_inr)
+        
         return self.get_tier_capital(self.current_tier)
     
     def evaluate_descaling_triggers(self, system_state: Dict[str, Any]) -> Dict[str, Any]:

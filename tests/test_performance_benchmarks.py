@@ -219,7 +219,7 @@ class TestStateUpdateBenchmarks:
         
         Baseline: P95 < 100ms
         """
-        engine = VolatilityStateEngine(persistence_dir="data/test_benchmark")
+        engine = VolatilityStateEngine(persistence_dir="data/testing/benchmark")
         
         # Warm-up
         test_greeks = StatePortfolioGreeks(delta=100.0, gamma=5.0, vega=200.0)
@@ -389,7 +389,7 @@ class TestPerformanceRegression:
             )
         
         # Test state updates
-        engine = VolatilityStateEngine(persistence_dir="data/test_regression")
+        engine = VolatilityStateEngine(persistence_dir="data/testing/regression")
         test_greeks = StatePortfolioGreeks(delta=100.0, gamma=5.0, vega=200.0)
         engine.update_portfolio_greeks(test_greeks)
         

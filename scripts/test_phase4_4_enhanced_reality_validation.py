@@ -179,7 +179,7 @@ def test_diagnostic_reporter(fidelity_result, statistical_result):
     
     try:
         # Create output directory for test
-        test_output_dir = "data/test_diagnostics"
+        test_output_dir = "data/testing/diagnostics"
         Path(test_output_dir).mkdir(parents=True, exist_ok=True)
         
         reporter = DiagnosticReporter(test_output_dir)
@@ -216,7 +216,7 @@ def test_enhanced_reality_check_engine():
     
     try:
         # Create output directory for test
-        test_output_dir = "data/test_enhanced_validation"
+        test_output_dir = "data/testing/enhanced_validation"
         Path(test_output_dir).mkdir(parents=True, exist_ok=True)
         
         engine = EnhancedRealityCheckEngine(test_output_dir)
@@ -360,8 +360,8 @@ def main():
     print("=" * 80)
     
     # Create test directories
-    Path("data/test_diagnostics").mkdir(parents=True, exist_ok=True)
-    Path("data/test_enhanced_validation").mkdir(parents=True, exist_ok=True)
+    Path("data/testing/diagnostics").mkdir(parents=True, exist_ok=True)
+    Path("data/testing/enhanced_validation").mkdir(parents=True, exist_ok=True)
     
     # Run all tests
     integration_success = run_integration_test()

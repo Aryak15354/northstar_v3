@@ -22,7 +22,7 @@ from src.options.trade_eligibility_validator import (
     ValidationResult,
     ValidationRule
 )
-from src.options.regime_detector import Regime, RegimeState, RegimeMetrics
+from src.options.options_regime_detector import Regime, RegimeState, RegimeMetrics
 from src.options.strategy_generator import (
     OptionStrategy,
     StrategyType,

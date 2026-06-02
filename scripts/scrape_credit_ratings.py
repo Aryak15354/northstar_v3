@@ -18,7 +18,14 @@ import requests
 try:
     from scripts.utils.progress_resume import ResumeState, iter_progress
 except ModuleNotFoundError:  # direct script execution: python3 scripts/...
-    from utils.progress_resume import ResumeState, iter_progress
+    try:
+        from utils.progress_resume import ResumeState, iter_progress
+    except ModuleNotFoundError:
+        # Fallback: simple progress without resume
+        ResumeState = None
+        def iter_progress(items, **kwargs):
+            for item in items:
+                yield item
 
 
 CRISIL_URL = "https://www.crisil.com/en/home/our-businesses/ratings/credit-rating-news.html"
@@ -83,26 +90,75 @@ def _similarity(a: str, b: str) -> float:
 
 
 def _load_universe_names() -> list[tuple[str, str]]:
+    """Load universe of companies with tickers for matching."""
     rows: list[tuple[str, str]] = []
-    p = Path("universe/nifty500.csv")
-    if p.exists():
-        df = pd.read_csv(p)
-        for r in df.to_dict("records"):
-            name = str(r.get("Company Name") or "").strip()
-            tk = _normalize_ticker(r.get("Symbol"))
-            if name and tk:
-                rows.append((name, tk))
+    
+    # Try multiple possible paths for the universe file
+    universe_paths = [
+        Path("universe/nifty500.csv"),
+        Path(__file__).parent.parent / "universe" / "nifty500.csv",
+        Path("data/universe/nifty500.csv"),
+    ]
+    
+    for p in universe_paths:
+        if p.exists():
+            try:
+                df = pd.read_csv(p)
+                for r in df.to_dict("records"):
+                    name = str(r.get("Company Name") or "").strip()
+                    tk = _normalize_ticker(r.get("Symbol"))
+                    if name and tk:
+                        rows.append((name, tk))
+                if rows:
+                    print(f"[universe] Loaded {len(rows)} companies from {p}")
+                    break
+            except Exception as e:
+                print(f"[universe] Error loading {p}: {e}")
+    
+    if not rows:
+        print("[universe] Warning: No universe file found, ticker matching will be disabled")
+    
     return rows
 
 
 def _match_ticker(name: str, universe: list[tuple[str, str]]) -> str:
+    """
+    Match company name to ticker using fuzzy matching.
+    
+    Uses multiple strategies:
+    1. Exact match on normalized name
+    2. Fuzzy match with threshold (lowered to 0.70 for better coverage)
+    3. Partial match on key tokens
+    """
     n = _norm_company(name)
+    
+    if not universe:
+        return ""
+    
+    # Strategy 1: Exact match
+    for cname, tk in universe:
+        if _norm_company(cname) == n:
+            return tk
+    
+    # Strategy 2: Fuzzy match with lowered threshold
     best = (0.0, "")
     for cname, tk in universe:
         s = _similarity(n, _norm_company(cname))
         if s > best[0]:
             best = (s, tk)
-    return best[1] if best[0] >= 0.82 else ""
+    
+    if best[0] >= 0.70:  # Lowered from 0.82
+        return best[1]
+    
+    # Strategy 3: Check if company name contains key tokens
+    name_tokens = set(n.split())
+    for cname, tk in universe:
+        cname_tokens = set(_norm_company(cname).split())
+        # If 2+ tokens match, consider it a match
+        if len(name_tokens & cname_tokens) >= 2:
+            return tk
+    
+    return ""
 
 
 def _safe_get(session: requests.Session, url: str, params: dict | None = None, retries: int = 5) -> str:
@@ -250,6 +306,8 @@ def _parse_crisil(session: requests.Session) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+CARE_RATING_URL = "https://www.careratings.com/credit-rating-news.htm"
+
 def _extract_icra_rational_list(html: str) -> list[dict]:
     if not html:
         return []
@@ -299,6 +357,43 @@ def _parse_icra(session: requests.Session) -> pd.DataFrame:
                 }
             )
 
+    return pd.DataFrame(rows)
+
+
+def _parse_care(session: requests.Session) -> pd.DataFrame:
+    """Parse CARE ratings from their website."""
+    html = _safe_get(session, CARE_RATING_URL)
+    if not html or "not acceptable" in html.lower() or "blocked" in html.lower():
+        return pd.DataFrame()
+
+    # Search for rating-like patterns in HTML
+    text = re.sub(r"<[^>]+>", " ", html)
+    chunks = [re.sub(r"\s+", " ", c).strip() for c in text.split("\n") if "rating" in c.lower() or "care" in c.lower()]
+    rows: list[dict] = []
+    
+    for c in chunks:
+        # Try to extract date
+        m = re.search(r"(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})", c)
+        dt = pd.to_datetime(m.group(1), errors="coerce") if m else pd.NaT
+        if pd.isna(dt):
+            continue
+            
+        old_rating, new_rating, outlook = _extract_ratings(c)
+        rows.append(
+            {
+                "date": dt,
+                "company_name": _extract_company_name(c),
+                "agency": "CARE",
+                "instrument_type": _infer_instrument_type(c),
+                "old_rating": old_rating,
+                "new_rating": new_rating,
+                "action_type": _parse_action_type(c),
+                "outlook": outlook,
+                "raw_text": c,
+            }
+        )
+    
+    print(f"[care] Parsed {len(rows)} rating actions from CARE website")
     return pd.DataFrame(rows)
 
 
@@ -432,12 +527,12 @@ def _finalize(df: pd.DataFrame, universe: list[tuple[str, str]]) -> pd.DataFrame
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Scrape credit rating actions.")
-    p.add_argument("--start-year", type=int, default=2010)
+    p.add_argument("--start-year", type=int, default=2020)  # Changed default to 2020 for recent data
     p.add_argument("--end-year", type=int, default=date.today().year)
     p.add_argument("--resume", action="store_true", default=True)
     p.add_argument("--no-resume", action="store_false", dest="resume")
-    p.add_argument("--delay-min", type=float, default=2.0)
-    p.add_argument("--delay-max", type=float, default=5.0)
+    p.add_argument("--delay-min", type=float, default=1.0)  # Faster scraping
+    p.add_argument("--delay-max", type=float, default=3.0)
     p.add_argument("--max-chunks", type=int, default=0, help="Probe mode: cap agency-year chunks (0 = all).")
     p.add_argument("--max-pages", type=int, default=0, help="Probe mode: cap pages per BSE query (0 = all).")
     p.add_argument("--page-log-every", type=int, default=25, help="Print BSE fallback page heartbeat every N pages.")
@@ -448,12 +543,18 @@ def parse_args() -> argparse.Namespace:
         default=False,
         help="Skip BSE announcement fallback source (faster, but fewer historical rows).",
     )
+    p.add_argument(
+        "--bse-only",
+        action="store_true",
+        default=False,
+        help="Use only BSE announcements (more reliable, captures all agencies)",
+    )
     return p.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    raw_dir = Path("data/raw/alternative/credit_ratings")
+    raw_dir = Path("data/raw/shared/alternative/credit_ratings")
     raw_dir.mkdir(parents=True, exist_ok=True)
     state = ResumeState(raw_dir / ".resume_state.json")
     universe = _load_universe_names()
@@ -526,14 +627,15 @@ def main() -> int:
     session = requests.Session()
     session.headers.update(HEADERS)
 
-    direct_crisil = _parse_crisil(session)
-    print(f"[ratings] direct_source CRISIL rows={len(direct_crisil)}")
-    direct_icra = _parse_icra(session)
-    print(f"[ratings] direct_source ICRA rows={len(direct_icra)}")
+    # BSE fallback is the MOST RELIABLE source - it captures all 3 agencies
+    # Direct agency website scraping is unreliable (blocks, CAPTCHAs, etc.)
+    # So we prioritize BSE and use agency websites as supplement
+    
     if bool(args.skip_bse_fallback):
         bse_fallback = pd.DataFrame(columns=empty_cols + ["raw_text"])
         print("[ratings] fallback_source BSE skipped (--skip-bse-fallback)")
     else:
+        print("[ratings] Fetching from BSE announcements (PRIMARY SOURCE)...")
         bse_fallback = _fetch_bse_rating_announcements(
             session,
             needed_years,
@@ -541,8 +643,23 @@ def main() -> int:
             page_log_every=int(args.page_log_every),
         )
         print(f"[ratings] fallback_source BSE rows={len(bse_fallback)}")
+    
+    # Only scrape agency websites if BSE didn't give us enough data
+    if len(bse_fallback) < 100 and not args.bse_only:
+        print("[ratings] BSE data limited, supplementing with agency websites...")
+        direct_crisil = _parse_crisil(session)
+        print(f"[ratings] direct_source CRISIL rows={len(direct_crisil)}")
+        direct_icra = _parse_icra(session)
+        print(f"[ratings] direct_source ICRA rows={len(direct_icra)}")
+        direct_care = _parse_care(session)
+        print(f"[ratings] direct_source CARE rows={len(direct_care)}")
+    else:
+        direct_crisil = pd.DataFrame(columns=empty_cols + ["raw_text"])
+        direct_icra = pd.DataFrame(columns=empty_cols + ["raw_text"])
+        direct_care = pd.DataFrame(columns=empty_cols + ["raw_text"])
+        print("[ratings] Using BSE data only (sufficient coverage)")
 
-    source_frames = [f for f in [direct_crisil, direct_icra, bse_fallback] if isinstance(f, pd.DataFrame) and len(f) > 0]
+    source_frames = [f for f in [bse_fallback, direct_crisil, direct_icra, direct_care] if isinstance(f, pd.DataFrame) and len(f) > 0]
     combined = pd.concat(source_frames, ignore_index=True) if source_frames else pd.DataFrame(columns=empty_cols)
     finalized = _finalize(combined, universe)
     print(f"[ratings] finalized rows={len(finalized)}")

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import sqlite3
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -12,7 +14,9 @@ from src.runtime import (
     build_certification_snapshot,
 )
 from src.runtime.contracts import BudgetDecision, CapitalDecision
+from src.runtime.hash_utils import canonical_hash, canonical_json_dumps
 from src.runtime.rebalance_trigger import RebalanceTriggerEngine
+from src.runtime.state import Holding, PortfolioState, state_hash_payload
 
 
 def _make_prs(tmp_path):
@@ -238,6 +242,172 @@ def test_truth_drift_monitor_detects_mismatch(tmp_path):
     incident = prs.run_truth_drift_check(shadow_state={"state_hash": "bad_hash"}, extra_derived_paths=[])
     assert incident is not None
     assert incident["breach_count"] >= 1
+
+
+def test_portfolio_state_hash_ignores_snapshot_timestamp():
+    state = PortfolioState.initialize(1000.0)
+    state.holdings["NIFTY"] = Holding(
+        symbol="NIFTY",
+        instrument_type="option",
+        quantity=2.0,
+        avg_price=100.0,
+        last_price=110.0,
+        sector="financial services",
+        strategy_id="s1",
+        origin="options_alpha",
+        greek_delta_per_unit=0.25,
+    )
+    state.realized_pnl = 5.0
+    state.last_event_id = 7
+    state._refresh_derived()
+
+    snap_a = state.to_snapshot(timestamp=datetime(2026, 3, 19, 9, 0, tzinfo=timezone.utc))
+    snap_b = state.to_snapshot(timestamp=datetime(2026, 3, 19, 15, 0, tzinfo=timezone.utc))
+
+    assert snap_a.timestamp_utc != snap_b.timestamp_utc
+    assert snap_a.state_hash == snap_b.state_hash
+
+
+def test_replay_matches_legacy_snapshot_hash_payload(tmp_path):
+    prs, snap, ctx = _make_prs(tmp_path)
+    proposal = TradeProposal(
+        proposal_id="prop_replay_legacy_1",
+        origin=ProposalOrigin.OPTIONS_ALPHA,
+        strategy_id="legacy_replay",
+        signal_id="sig_replay_legacy_1",
+        alpha_type="vol",
+        expected_edge=0.1,
+        risk_score=0.2,
+        regime_context={},
+        instrument_plan={
+            "symbol": "NIFTY",
+            "side": "buy",
+            "price": 10.0,
+            "quantity": 5.0,
+            "lifecycle_action": "open",
+            "position_key": "legacy_replay_pos_1",
+        },
+        requested_notional=50.0,
+        certification_snapshot_hash=snap.snapshot_hash,
+        decision_mode=DecisionMode.AUTO,
+        trigger_reason_code="proposal.runtime.default",
+    )
+    prs.process_proposal(
+        proposal,
+        market_liquidity_snapshot={
+            "adv_notional": 100000.0,
+            "spread_bps": 2.0,
+            "depth_qty": 1000.0,
+            "estimated_slippage_bps": 2.0,
+        },
+        risk_snapshot={"signal_entropy": 0.9, "risk_budget_ratio": 0.1},
+        certification_context=ctx,
+    )
+
+    latest = prs.store.latest_snapshot()
+    assert latest is not None
+    latest_payload = json.loads(str(latest.get("state_json", "{}") or "{}"))
+    legacy_hash = canonical_hash(
+        {
+            "timestamp_utc": latest_payload.get("timestamp_utc"),
+            **state_hash_payload(latest_payload),
+        }
+    )
+    latest_payload["state_hash"] = legacy_hash
+
+    conn = sqlite3.connect(prs.store.db_path)
+    with conn:
+        conn.execute(
+            """
+            UPDATE portfolio_snapshots
+            SET state_hash = ?, state_json = ?
+            WHERE snapshot_id = (SELECT MAX(snapshot_id) FROM portfolio_snapshots)
+            """,
+            (legacy_hash, canonical_json_dumps(latest_payload)),
+        )
+    conn.close()
+
+    replay = prs.replay()
+    assert replay["deterministic_match"] is True
+
+
+def test_replay_infers_starting_cash_and_latest_snapshot_boundary(tmp_path):
+    db = tmp_path / "portfolio_runtime.db"
+    out = tmp_path / "derived"
+    prs, snap, ctx = _make_prs(tmp_path)
+
+    filled = TradeProposal(
+        proposal_id="prop_replay_boundary_fill",
+        origin=ProposalOrigin.OPTIONS_ALPHA,
+        strategy_id="boundary_fill",
+        signal_id="sig_boundary_fill",
+        alpha_type="vol",
+        expected_edge=0.1,
+        risk_score=0.2,
+        regime_context={},
+        instrument_plan={
+            "symbol": "NIFTY",
+            "side": "buy",
+            "price": 10.0,
+            "quantity": 5.0,
+            "lifecycle_action": "open",
+            "position_key": "boundary_fill_pos",
+        },
+        requested_notional=50.0,
+        certification_snapshot_hash=snap.snapshot_hash,
+        decision_mode=DecisionMode.AUTO,
+        trigger_reason_code="proposal.runtime.default",
+    )
+    prs.process_proposal(
+        filled,
+        market_liquidity_snapshot={
+            "adv_notional": 100000.0,
+            "spread_bps": 2.0,
+            "depth_qty": 1000.0,
+            "estimated_slippage_bps": 2.0,
+        },
+        risk_snapshot={"signal_entropy": 0.9, "risk_budget_ratio": 0.1},
+        certification_context=ctx,
+    )
+
+    prs.set_global_freeze(True, reason="test.freeze")
+    rejected = TradeProposal(
+        proposal_id="prop_replay_boundary_reject",
+        origin=ProposalOrigin.OPTIONS_ALPHA,
+        strategy_id="boundary_reject",
+        signal_id="sig_boundary_reject",
+        alpha_type="vol",
+        expected_edge=0.1,
+        risk_score=0.2,
+        regime_context={},
+        instrument_plan={"symbol": "BANKNIFTY", "side": "buy", "price": 10.0, "quantity": 1.0},
+        requested_notional=10.0,
+        certification_snapshot_hash=snap.snapshot_hash,
+        decision_mode=DecisionMode.AUTO,
+        trigger_reason_code="proposal.runtime.default",
+    )
+    res = prs.process_proposal(
+        rejected,
+        market_liquidity_snapshot={
+            "adv_notional": 100000.0,
+            "spread_bps": 2.0,
+            "depth_qty": 1000.0,
+            "estimated_slippage_bps": 2.0,
+        },
+        risk_snapshot={"signal_entropy": 0.9, "risk_budget_ratio": 0.1},
+        certification_context=ctx,
+    )
+    assert not res.approved
+    prs.close()
+
+    prs2 = PortfolioRuntimeService(db_path=str(db), materialized_output_dir=str(out), starting_cash=5000.0)
+    replay = prs2.replay()
+    assert replay["deterministic_match"] is True
+    assert replay["inferred_starting_cash"] == 1000.0
+    assert replay["replayed_to_event_id"] < max(
+        int(row["event_id"]) for row in prs2.store.list_events(since_event_id=0)
+    )
+    prs2.close()
 
 
 def test_runtime_freeze_blocks_open_allows_close_only(tmp_path):

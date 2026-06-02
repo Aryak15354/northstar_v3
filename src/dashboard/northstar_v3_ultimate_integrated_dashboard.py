@@ -70,6 +70,7 @@ THEME = {
     "panel2": "#111c33",
     "text": "#e5e7eb",
     "muted": "#9ca3af",
+    "text_muted": "#9ca3af",
     "grid": "rgba(148, 163, 184, 0.15)",
     "blue": "#3B82F6",
     "green": "#22c55e",
@@ -765,8 +766,8 @@ def _first_record_payload(blob: Any, expected_type: Optional[str] = None) -> Opt
 
 @st.cache_data(ttl=300)
 def _load_research_cycle_outputs(limit_files: int = 360) -> pd.DataFrame:
-    root = PROJECT_ROOT / "data/research"
-    files = sorted(root.glob("research_cycle_*.json"))
+    root = PROJECT_ROOT / "data/results/research/cycles"
+    files = sorted(root.rglob("research_cycle_*.json"))
     if limit_files > 0:
         files = files[-int(limit_files):]
     rows: List[dict] = []
@@ -948,7 +949,7 @@ def _load_architecture_policy_history() -> pd.DataFrame:
 
 @st.cache_data(ttl=300)
 def _load_latest_cluster_analysis() -> Dict[str, Any]:
-    cluster_dir = PROJECT_ROOT / "data/clustering"
+    cluster_dir = PROJECT_ROOT / "data/results/analysis/clustering"
     files = sorted(cluster_dir.glob("cluster_analysis_*.json"))
     if not files:
         return {}
@@ -1416,21 +1417,21 @@ def _load_core_data_sources() -> Dict[str, Any]:
         "valuation_validation_regime": hub._read_parquet("data/processed/valuation_validation_regime.parquet"),
         "opportunity_surface": hub._read_parquet("data/processed/opportunity_surface.parquet"),
         "research_opportunity_surface": hub._read_parquet("data/processed/research_opportunity_surface.parquet"),
-        "research_returns_partition": hub._read_json("data/research/returns_partition.json"),
-        "research_awareness": hub._read_json("data/research/research_awareness.json"),
-        "research_options_opportunities": hub._read_json("data/research/options_research_opportunities.json"),
-        "research_weekend_sweep": hub._read_json("data/research/weekend_research_sweep.json"),
-        "research_kernel_status": hub._read_json("data/research/research_kernel_status.json"),
-        "research_allocator_bridge": hub._read_json("data/research/research_allocator_bridge.json"),
-        "research_governor_bridge": hub._read_json("data/research/research_governor_bridge.json"),
-        "research_model_training_results": hub._read_json("data/research/model_training_results.json"),
-        "research_capital_simulation_report": hub._read_json("data/research/capital_simulation_report.json"),
-        "research_parameter_search_results": hub._read_json("data/research/parameter_search_results.json"),
-        "research_strategy_stability": hub._read_json("data/research/strategy_stability.json"),
-        "research_regime_candidate_scores": hub._read_json("data/research/regime_candidate_scores.json"),
-        "research_monte_carlo_report": hub._read_json("data/research/monte_carlo_report.json"),
-        "research_memory": hub._read_json("data/research/research_memory.json"),
-        "research_experiments": _read_ndjson_df(PROJECT_ROOT / "data/research/experiments.ndjson"),
+        "research_returns_partition": hub._read_json("data/results/research/state/returns_partition.json"),
+        "research_awareness": hub._read_json("data/results/research/state/research_awareness.json"),
+        "research_options_opportunities": hub._read_json("data/results/research/state/options_research_opportunities.json"),
+        "research_weekend_sweep": hub._read_json("data/results/research/state/weekend_research_sweep.json"),
+        "research_kernel_status": hub._read_json("data/results/research/state/research_kernel_status.json"),
+        "research_allocator_bridge": hub._read_json("data/results/research/state/research_allocator_bridge.json"),
+        "research_governor_bridge": hub._read_json("data/results/research/state/research_governor_bridge.json"),
+        "research_model_training_results": hub._read_json("data/results/research/state/model_training_results.json"),
+        "research_capital_simulation_report": hub._read_json("data/results/research/state/capital_simulation_report.json"),
+        "research_parameter_search_results": hub._read_json("data/results/research/state/parameter_search_results.json"),
+        "research_strategy_stability": hub._read_json("data/results/research/state/strategy_stability.json"),
+        "research_regime_candidate_scores": hub._read_json("data/results/research/state/regime_candidate_scores.json"),
+        "research_monte_carlo_report": hub._read_json("data/results/research/state/monte_carlo_report.json"),
+        "research_memory": hub._read_json("data/results/research/state/research_memory.json"),
+        "research_experiments": _read_ndjson_df(PROJECT_ROOT / "data/results/research/trackers/experiments.ndjson"),
         "research_policy": _read_yaml(PROJECT_ROOT / "config/research_policy.yaml"),
         "daemon_policy": _read_yaml(PROJECT_ROOT / "config/northstar_daemon.yaml"),
         "options_policy": _read_yaml(PROJECT_ROOT / "config/options_trading.yaml"),
@@ -1846,7 +1847,7 @@ class NorthstarV3UltimateIntegratedDashboard:
             return set(self._structural_constant_exemptions)
 
         out: set[str] = set()
-        path = PROJECT_ROOT / "reports/research/formula_lineage_and_unit_integrity_latest.json"
+        path = PROJECT_ROOT / "data/results/research/reports/formula_lineage_and_unit_integrity_latest.json"
         try:
             if path.exists():
                 payload = json.loads(path.read_text())
@@ -4376,7 +4377,7 @@ class NorthstarV3UltimateIntegratedDashboard:
                     cols = [c for c in ["timestamp", "best_model", "candidate_score", "outputs_count", "freeze_active"] if c in df.columns]
                     st.dataframe(df.sort_values("timestamp", ascending=False).head(20)[cols], width="stretch", hide_index=True)
         else:
-            st.info("No experiments tracker data found (`data/research/experiments.ndjson`).")
+            st.info("No experiments tracker data found (`data/results/research/trackers/experiments.ndjson`).")
 
         t_train, t_cap, t_mc, t_param = st.tabs(["Model Validation", "Capital Simulation", "Monte Carlo", "Parameter Search"])
 

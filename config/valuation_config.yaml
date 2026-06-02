@@ -1,0 +1,5 @@
+valuation:
+  features_enabled: true
+  feature_columns: zscore_only
+  reporting_lag_days: 75
+  quarterly_reporting_lag_days: 45

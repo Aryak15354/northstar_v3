@@ -58,7 +58,7 @@ def _load_research_policy(project_root: Path, policy_path: str) -> Dict[str, Any
 
 
 def _latest_research_cycle(project_root: Path) -> Tuple[Optional[Path], Dict[str, Any]]:
-    cycles = sorted((project_root / "data/research").glob("research_cycle_*.json"))
+    cycles = sorted((project_root / "data/results/research/cycles").rglob("research_cycle_*.json"))
     if not cycles:
         return None, {}
     latest = cycles[-1]
@@ -94,7 +94,7 @@ def _extract_integrity_payload(cycle_blob: Mapping[str, Any], project_root: Path
                 return dict(data)
 
     # Fallback to latest structured output if available.
-    structured = _read_json(project_root / "data/research/integrity_summary.json")
+    structured = _read_json(project_root / "data/results/research/state/integrity_summary.json")
     entries = structured.get("data") if isinstance(structured, Mapping) else None
     if isinstance(entries, Sequence):
         for row in reversed(entries):
@@ -117,7 +117,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=str,
-        default="reports/research/formula_lineage_and_unit_integrity_latest.json",
+        default="data/results/research/reports/formula_lineage_and_unit_integrity_latest.json",
         help="Canonical latest output path relative to project root",
     )
     parser.add_argument(

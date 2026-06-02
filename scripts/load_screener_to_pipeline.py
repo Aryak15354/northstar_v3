@@ -11,12 +11,19 @@ from typing import Any, Optional
 
 import pandas as pd
 
-DEFAULT_RAW_DIR = Path("data/raw/screener")
+DEFAULT_RAW_DIR = Path("data/raw/vendors/screener")
 DEFAULT_OUTPUT_DIR = Path("data/processed")
 
 
 def _clean_text(value: Any) -> str:
-    return re.sub(r"\s+", " ", str(value or "")).strip()
+    if value is None:
+        return ""
+    try:
+        if pd.isna(value):
+            return ""
+    except Exception:
+        pass
+    return re.sub(r"\s+", " ", str(value)).strip()
 
 
 def _normalize_ticker(raw: Any) -> str:
@@ -124,6 +131,10 @@ def _build_annual(financials_dir: Path) -> pd.DataFrame:
 
     work = long_df.copy()
     work["fiscal_year"] = work["period"].map(_parse_fiscal_year)
+    work["period_end"] = work["period"].map(_parse_quarter_end)
+    missing_fy = work["fiscal_year"].isna() & work["period_end"].notna()
+    if bool(missing_fy.any()):
+        work.loc[missing_fy, "fiscal_year"] = work.loc[missing_fy, "period_end"].dt.year
     work = work.dropna(subset=["fiscal_year"]).copy()
     if work.empty:
         return pd.DataFrame(columns=["ticker", "fiscal_year", "availability_date"])
@@ -141,11 +152,18 @@ def _build_annual(financials_dir: Path) -> pd.DataFrame:
         .sort_values(["ticker", "fiscal_year"])
     )
     wide.columns.name = None
-    wide["availability_date"] = (
-        pd.to_datetime(wide["fiscal_year"].astype(str) + "-12-31", errors="coerce") + pd.Timedelta(days=60)
+    period_end_map = (
+        work.dropna(subset=["period_end"])
+        .sort_values(["ticker", "fiscal_year", "period_end"], kind="mergesort")
+        .drop_duplicates(subset=["ticker", "fiscal_year"], keep="last")[["ticker", "fiscal_year", "period_end"]]
     )
+    wide = wide.merge(period_end_map, on=["ticker", "fiscal_year"], how="left")
+    fallback_period_end = pd.to_datetime(wide["fiscal_year"].astype(str) + "-03-31", errors="coerce")
+    wide["period_end"] = pd.to_datetime(wide["period_end"], errors="coerce").fillna(fallback_period_end)
+    wide["report_date"] = wide["period_end"]
+    wide["availability_date"] = pd.to_datetime(wide["period_end"], errors="coerce") + pd.Timedelta(days=75)
 
-    core = ["ticker", "fiscal_year", "availability_date"]
+    core = ["ticker", "fiscal_year", "report_date", "availability_date"]
     others = sorted([c for c in wide.columns if c not in core])
     return wide[core + others]
 

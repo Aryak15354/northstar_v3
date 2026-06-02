@@ -65,7 +65,8 @@ class RegimeMemorySystem:
             'lookback_weeks': 52,        # 1 year lookback for regime analysis
             'feature_columns': [         # Market state features for fingerprints
                 'macro_score', 'vol_regime_score', 'liquidity_score',
-                'risk_on_probability', 'market_stress', 'sector_breadth'
+                'risk_on_probability', 'market_stress', 'sector_breadth',
+                'sentiment_regime_numeric', 'sentiment_zscore'  # Sentiment dimension
             ]
         }
         
@@ -149,6 +150,12 @@ class RegimeMemorySystem:
         # Add available macro components
         macro_components = ['Contrib_G', 'Contrib_I', 'Contrib_L', 'Contrib_S', 'TrueStress']
         for col in macro_components:
+            if col in combined_df.columns:
+                feature_cols.append(col)
+        
+        # Add sentiment features if available
+        sentiment_features = ['sentiment_regime_numeric', 'sentiment_zscore', 'sentiment_polarity']
+        for col in sentiment_features:
             if col in combined_df.columns:
                 feature_cols.append(col)
         

@@ -1,0 +1,63 @@
+# Northstar V3 - Historical wide regime config kept for regression testing.
+
+version: "v1_wide_boundaries"
+description: "Historical wide regime boundaries retained only for comparison and regression tests."
+
+validation:
+  max_r7_r8_windows: 99
+  warn_if_r7_r8_exceeds: 10
+
+regime_boundaries:
+  R7_rate_event:
+    label: "R7|Rate-Event"
+    event_type: "point_event_window"
+    window_weeks_before: 8
+    window_weeks_after: 8
+    event_dates:
+      - "2022-05-04"
+      - "2022-06-08"
+      - "2022-08-05"
+      - "2022-09-30"
+      - "2022-12-07"
+      - "2023-02-08"
+      - "2023-04-06"
+      - "2023-06-08"
+      - "2023-08-10"
+      - "2023-10-06"
+      - "2023-12-08"
+      - "2024-02-08"
+      - "2024-04-05"
+      - "2024-06-07"
+      - "2024-08-08"
+      - "2024-10-09"
+      - "2024-12-06"
+      - "2025-02-07"
+      - "2025-04-09"
+      - "2025-06-06"
+
+  R8_election_binary:
+    label: "R8|Election/Binary"
+    event_type: "point_event_window"
+    window_weeks_before: 8
+    window_weeks_after: 12
+    event_dates:
+      - "2019-05-23"
+      - "2024-06-04"
+
+exposure_caps:
+  "R7|Rate-Event": 0.05
+  "R8|Election/Binary": 0.05
+  "R4|High-Vol Bear": 0.15
+  "R9|External Shock": 0.25
+  "default": 0.40
+
+priority_order:
+  - "R7|Rate-Event"
+  - "R8|Election/Binary"
+  - "R4|High-Vol Bear"
+  - "R9|External Shock"
+  - "R2|High-Vol Bull"
+  - "R5|Recovery"
+  - "R6|Sideways"
+  - "R3|Low-Vol Bear"
+  - "R1|Low-Vol Bull"

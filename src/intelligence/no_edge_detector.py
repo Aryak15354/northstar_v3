@@ -26,6 +26,7 @@ import pandas as pd
 import numpy as np
 import os
 import json
+import argparse
 from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
@@ -51,7 +52,8 @@ class NoEdgeDetector:
             'strategy_tailwinds': 'data/intelligence/strategy_tailwinds.parquet',
             'market_state': 'data/processed/market_state.parquet',
             'no_edge_state': 'data/intelligence/no_edge_state.parquet',
-            'no_edge_log': 'data/intelligence/no_edge_transitions.json'
+            'no_edge_log': 'data/intelligence/no_edge_transitions.json',
+            'no_edge_status_json': 'data/intelligence/no_edge_detector.json',
         }
         
         # Configuration
@@ -61,14 +63,224 @@ class NoEdgeDetector:
             'confidence_threshold': 0.6,           # Minimum confidence
             'no_edge_exposure_cap': 0.20,          # 20% max exposure in NO_EDGE
             'normal_exposure_cap': 0.80,           # 80% max exposure normally
+            'tailwind_good_threshold': 1.03,       # Neutral canonical tailwind = 1.0
+            'min_good_tailwind_ratio': 0.25,       # Need at least 25% of live strategies above neutral
             'min_strategies_for_conflict': 3,      # Need 3+ strategies to detect conflict
-            'lookback_periods': 5                  # Look at last 5 periods for stability
+            'lookback_periods': 5,                 # Look at last 5 periods for stability
+            'auto_recovery_enabled': True,
+            'auto_recovery_tailwind_ratio': 0.30,
+            'auto_recovery_confidence_threshold': 0.60,
+            'auto_recovery_risk_on_floor': 0.35,
+            'auto_recovery_allowed_exposure_floor': 0.30,
         }
         
         # State tracking
         self.current_state = 'NORMAL'
         self.state_history = []
         self.no_edge_reasons = []
+
+    @staticmethod
+    def _normalize_tailwind_frame(tailwinds: pd.DataFrame) -> pd.DataFrame:
+        if tailwinds is None or tailwinds.empty:
+            return pd.DataFrame()
+
+        df = tailwinds.copy()
+        if 'strategy' not in df.columns and 'strategy_id' in df.columns:
+            df['strategy'] = df['strategy_id'].astype(str)
+        if 'combined_score' not in df.columns and 'tailwind_score' in df.columns:
+            df['combined_score'] = pd.to_numeric(df['tailwind_score'], errors='coerce')
+        if 'regime_tailwind' not in df.columns and 'tailwind_score' in df.columns:
+            df['regime_tailwind'] = pd.to_numeric(df['tailwind_score'], errors='coerce')
+        if 'date' not in df.columns and 'as_of_date' in df.columns:
+            df['date'] = pd.to_datetime(df['as_of_date'], errors='coerce')
+        elif 'date' in df.columns:
+            df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        if 'combined_score' in df.columns:
+            df['combined_score'] = df['combined_score'].apply(NoEdgeDetector._tailwind_multiplier)
+        if 'regime_tailwind' in df.columns:
+            df['regime_tailwind'] = df['regime_tailwind'].apply(NoEdgeDetector._tailwind_multiplier)
+        return df
+
+    @staticmethod
+    def _tailwind_multiplier(raw_score):
+        """Normalize heterogeneous tailwind scores to a neutral-around-1 multiplier."""
+        parsed = pd.to_numeric(raw_score, errors='coerce')
+        if pd.isna(parsed):
+            return np.nan
+        score = float(parsed)
+        if -0.50 <= score <= 0.50:
+            score = 1.0 + score
+        return float(np.clip(score, 0.70, 1.50))
+
+    @staticmethod
+    def _normalize_regime_label(label: str) -> str:
+        s = str(label or "").replace("_", " ").replace("-", " ").strip().lower()
+        return " ".join(s.split()) if s else "unknown"
+
+    def _current_regime_label(self) -> str:
+        """Best-effort current regime resolution for filtering tailwind rows."""
+        try:
+            if os.path.exists(self.paths['market_state']):
+                market_state = pd.read_parquet(self.paths['market_state'])
+                if not market_state.empty:
+                    latest = market_state.iloc[-1]
+                    for key in ('regime', 'regime_name', 'macro_regime'):
+                        val = latest.get(key)
+                        if val not in (None, '', 'None'):
+                            return self._normalize_regime_label(val)
+        except Exception:
+            pass
+
+        try:
+            if os.path.exists(self.paths['regime_memory']):
+                regime_memory = pd.read_parquet(self.paths['regime_memory'])
+                if not regime_memory.empty and 'Regime' in regime_memory.columns:
+                    return self._normalize_regime_label(regime_memory.iloc[-1].get('Regime'))
+        except Exception:
+            pass
+
+        return "unknown"
+
+    def _select_live_tailwind_rows(self, tailwinds: pd.DataFrame) -> pd.DataFrame:
+        """
+        Reduce tailwinds to one live row per strategy.
+
+        Canonical tailwind files may contain one row per strategy/regime pair. The
+        detector should judge today's live regime, not every regime scenario at once.
+        """
+        df = self._normalize_tailwind_frame(tailwinds)
+        if df.empty:
+            return df
+
+        current_regime = self._current_regime_label()
+        if 'regime' in df.columns and current_regime != "unknown":
+            regime_mask = (
+                df['regime']
+                .astype(str)
+                .map(self._normalize_regime_label)
+                .eq(current_regime)
+            )
+            if bool(regime_mask.any()):
+                df = df.loc[regime_mask].copy()
+
+        if 'strategy' in df.columns:
+            if 'date' in df.columns:
+                df = df.sort_values('date').groupby('strategy', dropna=False).tail(1)
+            else:
+                df = df.groupby('strategy', dropna=False).tail(1)
+
+        return df.reset_index(drop=True)
+
+    def _regime_consistency_score(self):
+        try:
+            if not os.path.exists(self.paths['regime_memory']):
+                return None
+            regime_memory = pd.read_parquet(self.paths['regime_memory'])
+            if regime_memory.empty or 'Regime' not in regime_memory.columns:
+                return None
+            recent_regimes = regime_memory['Regime'].tail(self.config['lookback_periods'])
+            if len(recent_regimes) < 2:
+                return None
+            most_common_regime = (
+                recent_regimes.mode().iloc[0]
+                if not recent_regimes.mode().empty
+                else recent_regimes.iloc[-1]
+            )
+            return float((recent_regimes == most_common_regime).mean())
+        except Exception:
+            return None
+
+    def _tailwind_good_ratio(self):
+        try:
+            if not os.path.exists(self.paths['strategy_tailwinds']):
+                return None
+            tailwinds = self._select_live_tailwind_rows(pd.read_parquet(self.paths['strategy_tailwinds']))
+            if tailwinds.empty or 'combined_score' not in tailwinds.columns:
+                return None
+            live_scores = pd.to_numeric(tailwinds['combined_score'], errors='coerce').dropna()
+            if len(live_scores) < 2:
+                return None
+            good_threshold = float(self.config['tailwind_good_threshold'])
+            return float((live_scores >= good_threshold).mean())
+        except Exception:
+            return None
+
+    def _market_recovery_snapshot(self):
+        try:
+            if not os.path.exists(self.paths['market_state']):
+                return {}
+            market_state = pd.read_parquet(self.paths['market_state'])
+            if market_state.empty:
+                return {}
+            latest = market_state.iloc[-1]
+            risk_on = pd.to_numeric(
+                latest.get('risk_on_probability', latest.get('risk_on')), errors='coerce'
+            )
+            allowed_exposure = pd.to_numeric(latest.get('allowed_exposure'), errors='coerce')
+            if pd.notna(allowed_exposure) and float(allowed_exposure) > 1.0:
+                allowed_exposure = float(allowed_exposure) / 100.0
+            return {
+                'risk_on_probability': float(risk_on) if pd.notna(risk_on) else None,
+                'allowed_exposure': float(allowed_exposure) if pd.notna(allowed_exposure) else None,
+                'regime': latest.get('regime'),
+            }
+        except Exception:
+            return {}
+
+    def _maybe_auto_recover(self, latest_state: dict):
+        """Auto-reset NO_EDGE once live evidence shows the system has regained edge."""
+        if not bool(self.config.get('auto_recovery_enabled', True)):
+            return None
+        if str(latest_state.get('state', 'NORMAL')).upper() != 'NO_EDGE':
+            return None
+
+        tailwind_ratio = self._tailwind_good_ratio()
+        regime_consistency = self._regime_consistency_score()
+        market_snapshot = self._market_recovery_snapshot()
+        risk_on_prob = market_snapshot.get('risk_on_probability')
+        allowed_exposure = market_snapshot.get('allowed_exposure')
+
+        if tailwind_ratio is None:
+            return None
+        if tailwind_ratio < float(self.config['auto_recovery_tailwind_ratio']):
+            return None
+        if regime_consistency is not None and regime_consistency < float(
+            self.config['auto_recovery_confidence_threshold']
+        ):
+            return None
+
+        risk_signal_ok = False
+        if risk_on_prob is not None and risk_on_prob >= float(self.config['auto_recovery_risk_on_floor']):
+            risk_signal_ok = True
+        if allowed_exposure is not None and allowed_exposure >= float(
+            self.config['auto_recovery_allowed_exposure_floor']
+        ):
+            risk_signal_ok = True
+        if not risk_signal_ok:
+            return None
+
+        reason_bits = [f"auto_recovered_good_tailwinds:{tailwind_ratio:.3f}"]
+        if regime_consistency is not None:
+            reason_bits.append(f"regime_consistency:{regime_consistency:.3f}")
+        if risk_on_prob is not None:
+            reason_bits.append(f"risk_on:{risk_on_prob:.3f}")
+        if allowed_exposure is not None:
+            reason_bits.append(f"allowed_exposure:{allowed_exposure:.3f}")
+        reason = ", ".join(reason_bits)
+
+        self.log_state_transition('NO_EDGE', 'NORMAL', [reason])
+        self.save_no_edge_state(
+            'NORMAL',
+            self.config['normal_exposure_cap'],
+            [reason],
+            True,
+        )
+        return {
+            'state': 'NORMAL',
+            'exposure_cap': self.config['normal_exposure_cap'],
+            'reasons': [reason],
+            'date': datetime.now().date(),
+        }
     
     def detect_regime_similarity_issue(self):
         """Detect if current regime similarity is too low"""
@@ -140,15 +352,15 @@ class NoEdgeDetector:
                 print("   ⚠️ No tailwind data found")
                 return True, "No tailwind data available"
             
-            tailwinds = pd.read_parquet(self.paths['strategy_tailwinds'])
+            tailwinds = self._select_live_tailwind_rows(pd.read_parquet(self.paths['strategy_tailwinds']))
             
             if tailwinds.empty or len(tailwinds) < self.config['min_strategies_for_conflict']:
                 print("   ⚠️ Insufficient tailwind data")
                 return True, "Insufficient tailwind data"
             
             # Analyze tailwind distribution
-            combined_scores = tailwinds['combined_score']
-            regime_tailwinds = tailwinds['regime_tailwind']
+            combined_scores = pd.to_numeric(tailwinds['combined_score'], errors='coerce').dropna()
+            regime_tailwinds = pd.to_numeric(tailwinds['regime_tailwind'], errors='coerce').dropna()
             
             # Calculate statistics
             score_std = combined_scores.std()
@@ -204,18 +416,27 @@ class NoEdgeDetector:
             
             # Check tailwind confidence
             if os.path.exists(self.paths['strategy_tailwinds']):
-                tailwinds = pd.read_parquet(self.paths['strategy_tailwinds'])
+                tailwinds = self._select_live_tailwind_rows(pd.read_parquet(self.paths['strategy_tailwinds']))
                 
                 if not tailwinds.empty:
-                    # Check if we have reasonable number of strategies with good tailwinds
-                    good_tailwinds = (tailwinds['combined_score'] > 1.2).sum()
+                    live_scores = pd.to_numeric(tailwinds['combined_score'], errors='coerce').dropna()
+                    if len(live_scores) < 2:
+                        print("   ⚠️ Insufficient live tailwind rows for confidence check")
+                        return False, None
+
+                    # Canonical tailwind scores are neutral around 1.0.
+                    good_threshold = float(self.config['tailwind_good_threshold'])
+                    good_tailwinds = (live_scores >= good_threshold).sum()
                     total_strategies = len(tailwinds)
                     
                     good_ratio = good_tailwinds / total_strategies if total_strategies > 0 else 0
                     
-                    print(f"   📊 Good tailwind ratio: {good_ratio:.3f} ({good_tailwinds}/{total_strategies})")
+                    print(
+                        f"   📊 Good tailwind ratio: {good_ratio:.3f} "
+                        f"({good_tailwinds}/{total_strategies}, threshold={good_threshold:.2f})"
+                    )
                     
-                    if good_ratio < 0.3:  # Less than 30% of strategies have good tailwinds
+                    if good_ratio < float(self.config['min_good_tailwind_ratio']):
                         reason = f"Low tailwind quality: {good_ratio:.3f} good ratio"
                         print(f"   🚨 {reason}")
                         return True, reason
@@ -358,8 +579,40 @@ class NoEdgeDetector:
         # Save state history
         os.makedirs(os.path.dirname(self.paths['no_edge_state']), exist_ok=True)
         state_df.to_parquet(self.paths['no_edge_state'], index=False)
+        self._write_status_json(state, exposure_cap, reasons, state_changed)
         
         print(f"   💾 Saved NO_EDGE state to {self.paths['no_edge_state']}")
+
+    def _write_status_json(self, state, exposure_cap, reasons, state_changed):
+        """Write a JSON compatibility surface for operators and runtime checks."""
+        payload = {
+            'timestamp': datetime.now().isoformat(),
+            'date': datetime.now().date().isoformat(),
+            'state': str(state),
+            'no_edge_active': str(state).upper() == 'NO_EDGE',
+            'exposure_cap': float(exposure_cap),
+            'reasons': list(reasons or []),
+            'state_changed': bool(state_changed),
+        }
+        os.makedirs(os.path.dirname(self.paths['no_edge_status_json']), exist_ok=True)
+        with open(self.paths['no_edge_status_json'], 'w') as f:
+            json.dump(payload, f, indent=2, default=str)
+
+    def force_reset(self, reason: str) -> dict:
+        """
+        Force-reset NO_EDGE state after a material system repair or stale-state event.
+        """
+        previous = self.get_current_state()
+        state_changed = previous.get('state') == 'NO_EDGE'
+        if state_changed:
+            self.log_state_transition('NO_EDGE', 'NORMAL', [reason])
+        self.save_no_edge_state(
+            'NORMAL',
+            self.config['normal_exposure_cap'],
+            [reason],
+            state_changed,
+        )
+        return self.get_current_state()
     
     def get_current_state(self):
         """Get current NO_EDGE state"""
@@ -385,12 +638,14 @@ class NoEdgeDetector:
                                     'reasons': [f"stale_no_edge_state:{age_days}d"],
                                     'date': datetime.now().date()
                                 }
-                        return {
+                        current_state = {
                             'state': state_val,
                             'exposure_cap': float(latest.get('exposure_cap', self.config['normal_exposure_cap'])),
                             'reasons': reasons,
                             'date': latest.get('date')
                         }
+                        auto_recovered = self._maybe_auto_recover(current_state)
+                        return auto_recovered or current_state
 
                     # Legacy schema compatibility:
                     # [date, state, edge_strength, confidence, last_trigger]
@@ -405,12 +660,14 @@ class NoEdgeDetector:
                     exposure_cap = self.config['no_edge_exposure_cap'] if state_val == 'NO_EDGE' else self.config['normal_exposure_cap']
                     reason = latest.get('last_trigger', None)
                     reasons = [str(reason)] if reason not in (None, '', 'None') else []
-                    return {
+                    current_state = {
                         'state': state_val,
                         'exposure_cap': exposure_cap,
                         'reasons': reasons,
                         'date': latest.get('date')
                     }
+                    auto_recovered = self._maybe_auto_recover(current_state)
+                    return auto_recovered or current_state
             
             # Default state
             return {
@@ -452,9 +709,15 @@ class NoEdgeDetector:
 
 def main():
     """Detect NO_EDGE state"""
-    
+    parser = argparse.ArgumentParser(description="Detect NO_EDGE state")
+    parser.add_argument("--recalculate", action="store_true", help="Accepted for compatibility; detection is always fresh.")
+    parser.add_argument("--date", default=None, help="Optional as-of date for operator traceability.")
+    args = parser.parse_args()
+
     detector = NoEdgeDetector()
     result = detector.detect_no_edge_state()
+    if args.date:
+        result['requested_date'] = args.date
     
     print(f"\n🎯 NO_EDGE Detection Complete!")
     print(f"   Current State: {result['state']}")

@@ -9,8 +9,8 @@ import pandas as pd
 
 from src.research.feature_factory import FeatureFactory
 from src.signals.macro.cea_power import apply_power_pit_lag
-from src.signals.macro.macro_regime import MacroRegimeBuilder
-from src.signals.macro.sector_mapper import SectorMapper
+from src.signals.macro.macro_signal_regime import MacroRegimeBuilder
+from src.signals.macro.macro_sector_mapper import SectorMapper
 
 
 def _repo_root() -> Path:
@@ -86,8 +86,8 @@ def test_module_structure_exists() -> None:
         root / "src/signals/macro/__init__.py",
         root / "src/signals/macro/gst_ewaybill.py",
         root / "src/signals/macro/cea_power.py",
-        root / "src/signals/macro/macro_regime.py",
-        root / "src/signals/macro/sector_mapper.py",
+        root / "src/signals/macro/macro_signal_regime.py",
+        root / "src/signals/macro/macro_sector_mapper.py",
     ]
     for path in expected:
         assert path.exists(), f"missing expected macro module: {path}"

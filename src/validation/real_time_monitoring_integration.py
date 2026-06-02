@@ -25,7 +25,7 @@ from src.validation.alert_and_diagnostic_system import AlertAndDiagnosticSystem
 from src.core.events import EventBus
 from src.core.state import UnifiedState
 from src.core.health_monitor import HealthMonitor
-from src.cohesion.health_monitor import HealthMonitor as CohesionHealthMonitor
+from src.cohesion.cohesion_health_monitor import HealthMonitor as CohesionHealthMonitor
 
 logger = logging.getLogger(__name__)
 

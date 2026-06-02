@@ -23,7 +23,7 @@ Subsystems Coordinated:
 7. State Manager (Unified State)
 """
 
-from cohesion.dependency_container import get_dependency_container
+from src.cohesion.dependency_container import get_dependency_container
 
 import os
 import sys

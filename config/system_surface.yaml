@@ -1,0 +1,84 @@
+canonical:
+  entrypoints:
+    runner: scripts/run_complete_v3_system.py
+    root_runner_wrapper: run_complete_v3_system.py
+    dashboard_app: src/dashboard/app.py
+    dashboard_launcher_py: launch_dashboard.py
+    dashboard_launcher_sh: launch_dashboard.sh
+    runtime_entrypoint: run.py
+    status_report: scripts/system_status_report.py
+  state_artifacts:
+    - data/state/unified_state.json
+    - data/processed/market_state.parquet
+    - data/processed/portfolio_weights.parquet
+    - data/processed/risk_state.parquet
+
+surface_classification:
+  primary:
+    - src/
+    - scripts/
+    - tests/
+    - config/
+    - docs/operations/
+    - ns_uso/
+  secondary:
+    - deployment/
+    - examples/
+    - data_dictionary/
+  generated_active:
+    - data/
+    - logs/
+    - models/
+    - universe/
+  quarantined:
+    - _cold_archive/
+    - archive/
+    - data/results/analysis/
+    - reports/
+    - snapshots/
+    - fund_grade_reports/
+  deprecated:
+    - dashboard/  # replaced by src/dashboard/app.py
+    - northstar/  # replaced by ns_uso/
+    - system/  # scripts moved to scripts/, state to data/state/
+
+operational_surfaces:
+  - run.py
+  - run_complete_v3_system.py
+  - run_daily_v3.py
+  - launch_dashboard.py
+  - launch_dashboard.sh
+  - launch_old_dashboard.sh
+  - START_LIVE_SYSTEM.sh
+  - START_OPTIONS_SYSTEM.sh
+  - scripts/run_complete_v3_system.py
+  - scripts/run_complete_v3_system.sh
+  - scripts/run_trading_day_orchestrator.py
+  - scripts/northstar_daily_scheduler.py
+  - scripts/start_dashboard.sh
+  - scripts/start_trading_system.sh
+  - scripts/check_live_status.py
+  - scripts/check_system_status.py
+  - scripts/launchers/launch_dashboard.py
+
+deprecated_patterns:
+  - name: legacy_volatility_dashboard
+    kind: literal
+    pattern: dashboard/volatility_dashboard.py
+  - name: legacy_root_runner_reference
+    kind: regex
+    pattern: (?<!scripts/)run_complete_v3_system\\.py
+    allow_in:
+      - run_complete_v3_system.py
+
+retention:
+  - path: data/processed/backups
+    patterns:
+      - "*.parquet"
+      - "*.json"
+    keep_latest_per_prefix: 4
+  - path: data/pnl/backup_before_rebuild
+    patterns:
+      - "*.parquet"
+      - "*.json"
+    keep_latest_per_prefix: 3

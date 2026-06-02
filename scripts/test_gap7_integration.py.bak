@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""
+Test Gap 7 State Management Integration
+
+Verifies that StateAuthority, StateReconciler, and bridges are properly integrated.
+"""
+
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from datetime import datetime
+from src.core.state import UnifiedState
+from src.core.state_authority import StateAuthority, StateUpdate, WritePriority
+from src.core.state_reconciler import StateReconciler
+from src.core.state_bridges.shadow_bridge import ShadowStateBridge
+from src.core.state_bridges.valuation_bridge import ValuationStateBridge
+from src.core.state_bridges.runtime_bridge import RuntimeStateBridge
+
+
+def test_state_authority_registration():
+    """Test that StateAuthority is properly initialized and writers are registered"""
+    print("=" * 80)
+    print("TEST 1: StateAuthority Registration")
+    print("=" * 80)
+    
+    state = UnifiedState()
+    state_authority = StateAuthority(state, config={'dev_mode': True})
+    
+    # Register a test writer
+    state_authority.register_writer(
+        'test_writer',
+        allowed_sections=['portfolio_state'],
+        priority=WritePriority.LIVE_TRADING
+    )
+    
+    # Verify registration
+    if 'test_writer' not in state_authority.registered_writers:
+        print("   ✗ FAIL: Writer not registered")
+        return False
+    
+    print("   ✓ PASS: StateAuthority initialized and writer registered")
+    return True
+
+
+def test_state_update_flow():
+    """Test that state updates flow through StateAuthority"""
+    print("\n" + "=" * 80)
+    print("TEST 2: State Update Flow")
+    print("=" * 80)
+    
+    state = UnifiedState()
+    state_authority = StateAuthority(state, config={'dev_mode': True})
+    
+    # Register writer
+    state_authority.register_writer(
+        'test_writer',
+        allowed_sections=['portfolio_state'],
+        priority=WritePriority.LIVE_TRADING
+    )
+    
+    # Create update
+    update = StateUpdate(
+        writer_id='test_writer',
+        section='portfolio_state',
+        field_path='total_positions',
+        new_value=10,
+        priority=WritePriority.LIVE_TRADING,
+        source='LIVE',
+        reason='Test update'
+    )
+    
+    # Apply update
+    success = state_authority.update(update)
+    
+    if not success:
+        print("   ✗ FAIL: Update not applied")
+        return False
+    
+    # Verify update
+    if state.portfolio.total_positions != 10:
+        print(f"   ✗ FAIL: Value not updated (got {state.portfolio.total_positions})")
+        return False
+    
+    print("   ✓ PASS: State update applied successfully")
+    return True
+
+
+def test_reconciler_initialization():
+    """Test that StateReconciler can be initialized"""
+    print("\n" + "=" * 80)
+    print("TEST 3: StateReconciler Initialization")
+    print("=" * 80)
+    
+    state = UnifiedState()
+    state_authority = StateAuthority(state)
+    
+    # Initialize bridges
+    shadow_bridge = ShadowStateBridge(state_authority)
+    valuation_bridge = ValuationStateBridge(state_authority)
+    runtime_bridge = RuntimeStateBridge(state_authority)
+    
+    # Initialize reconciler
+    try:
+        reconciler = StateReconciler(
+            unified_state=state,
+            options_bridge=None,  # Optional
+            shadow_bridge=shadow_bridge,
+            valuation_bridge=valuation_bridge,
+            runtime_bridge=runtime_bridge,
+            state_authority=state_authority
+        )
+        
+        print("   ✓ PASS: StateReconciler initialized successfully")
+        return True
+        
+    except Exception as e:
+        print(f"   ✗ FAIL: StateReconciler initialization failed: {e}")
+        return False
+
+
+def test_reconciliation_run():
+    """Test that reconciliation can run"""
+    print("\n" + "=" * 80)
+    print("TEST 4: Reconciliation Run")
+    print("=" * 80)
+    
+    state = UnifiedState()
+    state_authority = StateAuthority(state)
+    
+    # Initialize bridges
+    shadow_bridge = ShadowStateBridge(state_authority)
+    valuation_bridge = ValuationStateBridge(state_authority)
+    runtime_bridge = RuntimeStateBridge(state_authority)
+    
+    # Initialize reconciler
+    reconciler = StateReconciler(
+        unified_state=state,
+        options_bridge=None,
+        shadow_bridge=shadow_bridge,
+        valuation_bridge=valuation_bridge,
+        runtime_bridge=runtime_bridge,
+        state_authority=state_authority
+    )
+    
+    # Run reconciliation
+    try:
+        report = reconciler.run_full_reconciliation(datetime.now())
+        
+        print(f"   Status: {report.overall_status}")
+        print(f"   Can Trade: {report.can_trade}")
+        
+        print("   ✓ PASS: Reconciliation completed")
+        return True
+        
+    except Exception as e:
+        print(f"   ✗ FAIL: Reconciliation failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+def main():
+    """Run all integration tests"""
+    print("=" * 80)
+    print("GAP 7 STATE MANAGEMENT INTEGRATION TESTS")
+    print("=" * 80)
+    
+    results = []
+    
+    # Test 1: StateAuthority registration
+    try:
+        results.append(("StateAuthority Registration", test_state_authority_registration()))
+    except Exception as e:
+        print(f"\n✗ Test 1 failed with exception: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(("StateAuthority Registration", False))
+    
+    # Test 2: State update flow
+    try:
+        results.append(("State Update Flow", test_state_update_flow()))
+    except Exception as e:
+        print(f"\n✗ Test 2 failed with exception: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(("State Update Flow", False))
+    
+    # Test 3: StateReconciler initialization
+    try:
+        results.append(("StateReconciler Initialization", test_reconciler_initialization()))
+    except Exception as e:
+        print(f"\n✗ Test 3 failed with exception: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(("StateReconciler Initialization", False))
+    
+    # Test 4: Reconciliation run
+    try:
+        results.append(("Reconciliation Run", test_reconciliation_run()))
+    except Exception as e:
+        print(f"\n✗ Test 4 failed with exception: {e}")
+        import traceback
+        traceback.print_exc()
+        results.append(("Reconciliation Run", False))
+    
+    # Summary
+    print("\n" + "=" * 80)
+    print("TEST SUMMARY")
+    print("=" * 80)
+    
+    passed = sum(1 for _, result in results if result)
+    total = len(results)
+    
+    for test_name, result in results:
+        status = "✓ PASS" if result else "✗ FAIL"
+        print(f"{status}: {test_name}")
+    
+    print(f"\n{passed}/{total} tests passed")
+    
+    if passed == total:
+        print("\n✅ Gap 7 integration is WORKING")
+        print("   StateAuthority, StateReconciler, and bridges are operational")
+        return 0
+    else:
+        print(f"\n✗ {total - passed} integration tests failed")
+        print("   State management is not fully integrated")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

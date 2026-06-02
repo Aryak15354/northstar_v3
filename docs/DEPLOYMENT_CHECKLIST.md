@@ -221,7 +221,7 @@
 ### Monitoring
 
 - [ ] **Dashboard**
-  - [ ] Dashboard accessible: `streamlit run dashboard/volatility_dashboard.py`
+  - [ ] Dashboard accessible: `streamlit run src/dashboard/app.py`
   - [ ] All panels displaying correctly
   - [ ] Real-time updates working
   - [ ] Charts rendering properly

@@ -76,7 +76,7 @@ def _normalize_ticker(value: object) -> str:
 
 def _load_bse_map() -> dict[str, str]:
     out: dict[str, str] = {}
-    meta_dir = Path("data/raw/screener/metadata")
+    meta_dir = Path("data/raw/vendors/screener/metadata")
     for p in meta_dir.glob("*_metadata.json"):
         try:
             d = json.loads(p.read_text())
@@ -300,7 +300,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    out_dir = Path("data/raw/alternative/order_announcements")
+    out_dir = Path("data/raw/exchanges/bse/alternative/order_announcements")
     out_dir.mkdir(parents=True, exist_ok=True)
     state = ResumeState(out_dir / ".resume_state.json")
 

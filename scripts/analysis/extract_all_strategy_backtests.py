@@ -8,8 +8,11 @@ import pandas as pd
 import numpy as np
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
+
+OUTPUT_DIR = Path("data/results/analysis/backtests")
 
 def extract_all_strategy_backtests():
     """Extract all individual strategy backtests from real data"""
@@ -94,12 +97,12 @@ def extract_all_strategy_backtests():
             print(f"      - {strategy}: {count} observations")
         
         # Save to CSV
-        output_file = 'northstar_all_strategies_3year_backtest.csv'
+        output_file = OUTPUT_DIR / 'northstar_all_strategies_3year_backtest.csv'
         combined_data.to_csv(output_file, index=False)
         
         # Generate comprehensive summary
         summary_stats = generate_strategy_summary(combined_data)
-        summary_file = 'northstar_all_strategies_summary.csv'
+        summary_file = OUTPUT_DIR / 'northstar_all_strategies_summary.csv'
         summary_stats.to_csv(summary_file, index=False)
         
         print(f"\n🎯 All Strategy Results Saved:")
@@ -232,3 +235,4 @@ if __name__ == "__main__":
         print(f"\n🎯 All Strategy Extraction Complete! {len(results)} total observations")
     else:
         print("\n❌ Strategy extraction failed")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

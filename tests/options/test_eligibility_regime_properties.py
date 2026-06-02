@@ -21,7 +21,7 @@ from typing import Any, List, Dict
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.options.trade_eligibility_validator import TradeEligibilityValidator
-from src.options.regime_detector import RegimeDetector, Regime, RegimeMetrics, RegimeState
+from src.options.options_regime_detector import RegimeDetector, Regime, RegimeMetrics, RegimeState
 from src.options.strategy_generator import StrategyGenerator, StrategyType, OptionStrategy, OptionLeg, Greeks
 from src.options.backtest_simulation_engine import BacktestSimulationEngine
 

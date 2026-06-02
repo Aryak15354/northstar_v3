@@ -9,11 +9,14 @@ import numpy as np
 import os
 import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
 # Add src to path
 sys.path.append('src')
+
+OUTPUT_DIR = Path("data/results/analysis/backtests")
 
 def generate_3year_backtest():
     """Generate comprehensive 3-year backtest results"""
@@ -93,12 +96,12 @@ def generate_3year_backtest():
         combined_results = create_mock_backtest_results()
     
     # Save to CSV
-    output_file = 'northstar_3year_backtest_results.csv'
+    output_file = OUTPUT_DIR / 'northstar_3year_backtest_results.csv'
     combined_results.to_csv(output_file, index=False)
     
     # Generate summary statistics
     summary_stats = generate_backtest_summary(combined_results)
-    summary_file = 'northstar_3year_backtest_summary.csv'
+    summary_file = OUTPUT_DIR / 'northstar_3year_backtest_summary.csv'
     summary_stats.to_csv(summary_file, index=False)
     
     print(f"\n🎯 Results saved:")
@@ -325,3 +328,4 @@ def generate_backtest_summary(results_df):
 if __name__ == "__main__":
     results = generate_3year_backtest()
     print("\n🎯 3-Year Backtest Generation Complete!")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

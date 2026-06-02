@@ -32,6 +32,9 @@ from track_a_runner import (
     nn,
 )
 
+if os.environ.get("PYTORCH_CUDA_ALLOC_CONF") is None:
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 
 def _safe_spearman(left: np.ndarray, right: np.ndarray) -> float:
     left_arr = np.asarray(left, dtype=float)
@@ -399,13 +402,17 @@ class TrackBRunner(TrackARunner):
 
     def _load_patchtst_results(self) -> dict[str, Any]:
         payload = self._load_json_payload("patchtst_final.json")
+        result_source = "artifact"
         if payload is None:
             print("WARNING: patchtst_final.json not found; using the known-good fallback payload.", flush=True)
             payload = json.loads(json.dumps(self.PATCHTST_FALLBACK))
+            result_source = "fallback"
         normalized = self._normalize_frontier_summary(dict(payload.get("summary", {})))
+        normalized["result_source"] = result_source
         payload["summary"] = normalized
         payload.setdefault("stability", {})
         payload.setdefault("windows", [])
+        payload["result_source"] = result_source
         return payload
 
     def _load_track_a_payload(self) -> dict[str, Any] | None:
@@ -431,6 +438,25 @@ class TrackBRunner(TrackARunner):
             torch.cuda.manual_seed_all(seed)
 
     @staticmethod
+    def _predict_numpy_in_batches(model, array: np.ndarray, device: str, prediction_getter, batch_size: int) -> np.ndarray:
+        values = np.asarray(array, dtype=np.float32)
+        if len(values) == 0:
+            return np.empty(0, dtype=np.float32)
+        batch = max(1, int(batch_size))
+        preds: list[np.ndarray] = []
+        model.eval()
+        with torch.no_grad():
+            for start in range(0, len(values), batch):
+                stop = min(start + batch, len(values))
+                xb = torch.tensor(values[start:stop], dtype=torch.float32, device=device)
+                pred = prediction_getter(model, xb).detach().cpu().numpy()
+                preds.append(np.asarray(pred, dtype=np.float32).reshape(-1))
+                del xb
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        return np.concatenate(preds, axis=0) if preds else np.empty(0, dtype=np.float32)
+
+    @staticmethod
     def _train_val_split(X_train: np.ndarray, y_train: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if len(y_train) < 3:
             return X_train, X_train, y_train, y_train
@@ -448,11 +474,11 @@ class TrackBRunner(TrackARunner):
         prediction_getter,
     ):
         X_tr, X_val, y_tr, y_val = self._train_val_split(X_train, y_train)
-        X_tr_t = torch.tensor(X_tr, dtype=torch.float32, device=config["device"])
-        y_tr_t = torch.tensor(y_tr, dtype=torch.float32, device=config["device"])
-        X_val_t = torch.tensor(X_val, dtype=torch.float32, device=config["device"])
+        X_tr_np = np.asarray(X_tr, dtype=np.float32)
+        X_val_np = np.asarray(X_val, dtype=np.float32)
+        y_tr_np = np.asarray(y_tr, dtype=np.float32)
         y_val_np = np.asarray(y_val, dtype=float)
-        batch_size = min(config["batch_size"], len(y_tr_t))
+        batch_size = min(int(config["batch_size"]), len(y_tr_np))
         max_attempts = int(config.get("max_attempts", 1))
         progress_every = int(config.get("progress_every", 250))
         best_overall = None
@@ -477,8 +503,9 @@ class TrackBRunner(TrackARunner):
             patience_counter = 0
             model.train()
             for step in range(config["max_steps"]):
-                idx = torch.randperm(len(y_tr_t), device=config["device"])[:batch_size]
-                xb, yb = X_tr_t[idx], y_tr_t[idx]
+                idx = np.random.permutation(len(y_tr_np))[:batch_size]
+                xb = torch.tensor(X_tr_np[idx], dtype=torch.float32, device=config["device"])
+                yb = torch.tensor(y_tr_np[idx], dtype=torch.float32, device=config["device"])
                 optimizer.zero_grad(set_to_none=True)
                 preds = prediction_getter(model, xb)
                 loss = listnet_loss(preds, yb)
@@ -486,10 +513,15 @@ class TrackBRunner(TrackARunner):
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
                 scheduler.step()
+                del xb, yb, preds, loss
 
-                model.eval()
-                with torch.no_grad():
-                    val_preds = prediction_getter(model, X_val_t).detach().cpu().numpy()
+                val_preds = self._predict_numpy_in_batches(
+                    model,
+                    X_val_np,
+                    config["device"],
+                    prediction_getter,
+                    batch_size=min(batch_size, 256),
+                )
                 val_ic = _safe_spearman(val_preds, y_val_np)
                 model.train()
 
@@ -515,9 +547,13 @@ class TrackBRunner(TrackARunner):
             if best_state is not None:
                 model.load_state_dict(best_state)
 
-            model.eval()
-            with torch.no_grad():
-                final_val_preds = prediction_getter(model, X_val_t).detach().cpu().numpy()
+            final_val_preds = self._predict_numpy_in_batches(
+                model,
+                X_val_np,
+                config["device"],
+                prediction_getter,
+                batch_size=min(batch_size, 256),
+            )
             final_val_ic = _safe_spearman(final_val_preds, y_val_np)
             if final_val_ic > best_overall_ic:
                 best_overall_ic = final_val_ic
@@ -577,14 +613,25 @@ class TrackBRunner(TrackARunner):
 
         def tft_factory(X_train, y_train, X_test, feature_names, config):
             model = train_tft(X_train, y_train, config)
-            X_train_t = torch.tensor(X_train, dtype=torch.float32, device=config["device"])
-            X_test_t = torch.tensor(X_test, dtype=torch.float32, device=config["device"])
+            train_preds = self._predict_numpy_in_batches(
+                model,
+                X_train,
+                config["device"],
+                lambda current_model, batch: current_model(batch)[0],
+                batch_size=min(int(config["batch_size"]), 256),
+            )
+            test_preds = self._predict_numpy_in_batches(
+                model,
+                X_test,
+                config["device"],
+                lambda current_model, batch: current_model(batch)[0],
+                batch_size=min(int(config["batch_size"]), 256),
+            )
+            sample = torch.tensor(X_test[: min(len(X_test), 512)], dtype=torch.float32, device=config["device"])
             model.eval()
             with torch.no_grad():
-                train_preds, _ = model(X_train_t)
-                test_preds, _ = model(X_test_t)
-                importance = model.get_selection_weights(X_test_t[: min(len(X_test_t), 2048)])
-            return train_preds.cpu().numpy(), test_preds.cpu().numpy(), importance.cpu().numpy()
+                importance = model.get_selection_weights(sample)
+            return train_preds, test_preds, importance.cpu().numpy()
 
         def train_itransformer(X_train: np.ndarray, y_train: np.ndarray, config: dict[str, Any]):
             if torch.cuda.is_available():
@@ -617,12 +664,21 @@ class TrackBRunner(TrackARunner):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
             model = train_itransformer(X_train, y_train, config)
-            X_train_t = torch.tensor(X_train, dtype=torch.float32, device=config["device"])
-            X_test_t = torch.tensor(X_test, dtype=torch.float32, device=config["device"])
-            model.eval()
-            with torch.no_grad():
-                train_preds = model(X_train_t).cpu().numpy()
-                test_preds = model(X_test_t).cpu().numpy()
+            train_preds = self._predict_numpy_in_batches(
+                model,
+                X_train,
+                config["device"],
+                lambda current_model, batch: current_model(batch),
+                batch_size=min(int(config["batch_size"]), 128),
+            )
+            test_preds = self._predict_numpy_in_batches(
+                model,
+                X_test,
+                config["device"],
+                lambda current_model, batch: current_model(batch),
+                batch_size=min(int(config["batch_size"]), 128),
+            )
+            X_test_t = torch.tensor(X_test[: min(len(X_test), 512)], dtype=torch.float32, device=config["device"])
             model.train()
             importance = model.get_feature_attention_weights(X_test_t[: min(len(X_test_t), 1024)]).cpu().numpy()
             return train_preds, test_preds, importance

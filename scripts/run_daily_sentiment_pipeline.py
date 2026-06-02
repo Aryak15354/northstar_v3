@@ -103,7 +103,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--include-news-builder", action="store_true", default=False)
     p.add_argument("--news-start-year", type=int, default=2010)
     p.add_argument("--news-end-year", type=int, default=date.today().year)
-    p.add_argument("--news-sources", type=str, default="bse,rss")
+    p.add_argument("--news-sources", type=str, default="nse,rss")
     p.add_argument("--news-workers", type=int, default=4)
     p.add_argument("--news-delay-min", type=float, default=0.2)
     p.add_argument("--news-delay-max", type=float, default=0.8)

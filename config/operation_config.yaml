@@ -1,3 +1,6 @@
+# DEPRECATED: this file is no longer the canonical operation config.
+# Canonical path: config/operation/operation_config.yaml
+# Keep this file only for short-term compatibility while references are updated.
 # Northstar V3 Comprehensive Operation System Configuration
 
 # System Settings

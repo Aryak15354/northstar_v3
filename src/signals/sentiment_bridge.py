@@ -232,12 +232,17 @@ class SentimentBridge:
             df["sentiment_conviction"] = pd.to_numeric(df["sentiment_conviction"], errors="coerce").clip(0.0, 1.0)
         else:
             df["sentiment_conviction"] = pd.to_numeric(df["sentiment_polarity"], errors="coerce").abs().clip(0.0, 1.0)
-        df["sentiment_surprise"] = pd.to_numeric(df.get("sentiment_surprise"), errors="coerce").fillna(0.0).clip(0.0, 1.0)
-        df["sentiment_uncertainty"] = (
-            pd.to_numeric(df.get("sentiment_uncertainty"), errors="coerce")
-            .fillna(1.0 - pd.to_numeric(df["sentiment_conviction"], errors="coerce"))
-            .clip(0.0, 1.0)
-        )
+        
+        if "sentiment_surprise" in df.columns:
+            df["sentiment_surprise"] = pd.to_numeric(df["sentiment_surprise"], errors="coerce").fillna(0.0).clip(0.0, 1.0)
+        else:
+            df["sentiment_surprise"] = 0.0
+        
+        if "sentiment_uncertainty" in df.columns:
+            df["sentiment_uncertainty"] = pd.to_numeric(df["sentiment_uncertainty"], errors="coerce").fillna(1.0 - pd.to_numeric(df["sentiment_conviction"], errors="coerce")).clip(0.0, 1.0)
+        else:
+            df["sentiment_uncertainty"] = (1.0 - pd.to_numeric(df["sentiment_conviction"], errors="coerce")).clip(0.0, 1.0)
+        
         if "headline" in df.columns:
             df["news_volume"] = 1
         else:

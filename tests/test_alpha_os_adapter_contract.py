@@ -110,3 +110,29 @@ def test_adapter_runs_with_canonical_inputs_only(tmp_path) -> None:
     assert "drift" in intent.diagnostics
     assert "survival_core" in intent.diagnostics
     assert "shadow_divergence_index" in intent.diagnostics
+
+
+def test_returns_by_strategy_filters_short_regime_flip_churn(tmp_path) -> None:
+    _write_canonical_artifacts(tmp_path)
+    adapter = AlphaOSAdapter(project_root=tmp_path, config=_config())
+
+    returns = adapter._returns_by_strategy(
+        [
+            {
+                "strategy_type": "bear_put_spread",
+                "realized_pnl": -1200.0,
+                "max_loss": 4000.0,
+                "exit_reason": "regime_flip",
+                "hold_duration_minutes": 5.0,
+            },
+            {
+                "strategy_type": "bear_put_spread",
+                "realized_pnl": 800.0,
+                "max_loss": 4000.0,
+                "exit_reason": "target_hit",
+                "hold_duration_minutes": 90.0,
+            },
+        ]
+    )
+
+    assert returns == {"bear_put_spread": [0.2]}

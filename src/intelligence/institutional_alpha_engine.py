@@ -58,9 +58,12 @@ try:
 except ImportError:
     from bayesian_capital_tribunal import BayesianCapitalTribunal
 try:
-    from .portfolio_governor import PortfolioGovernor
+    from src.portfolio.portfolio_governor import PortfolioGovernor
 except ImportError:
-    from PortfolioGovernor import PortfolioGovernor
+    try:
+        from .portfolio_governor import PortfolioGovernor
+    except ImportError:
+        from PortfolioGovernor import PortfolioGovernor
 try:
     from .signal_health_monitor import SignalHealthMonitor
 except ImportError:
@@ -206,6 +209,26 @@ class InstitutionalAlphaEngine:
         )
         
         self.logger = logging.getLogger('InstitutionalAlphaEngine')
+
+    @staticmethod
+    def _compute_real_crowding(market_data: Dict[str, Any]) -> float:
+        for key in ("crowding", "crowding_index", "market_crowding"):
+            value = market_data.get(key)
+            if value is not None:
+                return float(value)
+        raise NotImplementedError(
+            "Real crowding data is not available in market_data; synthetic crowding is disabled."
+        )
+
+    @staticmethod
+    def _compute_real_decay(market_data: Dict[str, Any]) -> float:
+        for key in ("decay", "decay_rate", "signal_decay"):
+            value = market_data.get(key)
+            if value is not None:
+                return float(value)
+        raise NotImplementedError(
+            "Real decay data is not available in market_data; synthetic decay is disabled."
+        )
     
     def _initialize_components(self):
         """Initialize all alpha engine components"""
@@ -518,23 +541,98 @@ class InstitutionalAlphaEngine:
             for specialist_name, signal_list in specialist_signals.items():
                 tribunal_signals[specialist_name] = signal_list  # signal_list is already a list of SpecialistSignal objects
             
-            # Apply portfolio governor
-            portfolio_positions = self.portfolio_governor.compute_portfolio_aware_positions(
-                allocation_objects, tribunal_signals, market_data, current_time
-            )
-            
-            # Convert to simple dict format
-            position_dict = {}
-            for position in portfolio_positions:
-                position_dict[position.symbol] = position.final_position_size  # Use final_position_size, not weight
-            
-            self.logger.debug(f"✅ Sized {len(position_dict)} positions")
-            
-            return position_dict
+            if hasattr(self.portfolio_governor, 'compute_portfolio_aware_positions'):
+                portfolio_positions = self.portfolio_governor.compute_portfolio_aware_positions(
+                    allocation_objects, tribunal_signals, market_data, current_time
+                )
+
+                # Convert to simple dict format
+                position_dict = {}
+                for position in portfolio_positions:
+                    position_dict[position.symbol] = position.final_position_size
+
+                self.logger.debug(f"✅ Sized {len(position_dict)} positions")
+                return position_dict
+
+            self.logger.debug("Portfolio governor lacks legacy walk-forward sizing API; using compatibility fallback")
+            return self._fallback_position_sizing(capital_allocations, tribunal_signals)
             
         except Exception as e:
             self.logger.error(f"❌ Position sizing failed: {e}")
             return {}
+
+    def _fallback_position_sizing(self, capital_allocations: Dict[str, float],
+                                  specialist_signals: Dict[str, Any]) -> Dict[str, float]:
+        """Compatibility sizing path for legacy walk-forward validation."""
+
+        raw_weights = defaultdict(float)
+
+        for specialist_name, allocation in capital_allocations.items():
+            signal_list = specialist_signals.get(specialist_name) or []
+            scored_signals = []
+            for signal in signal_list:
+                symbol = None
+                strength = 1.0
+                if isinstance(signal, dict):
+                    symbol = (
+                        signal.get('symbol')
+                        or signal.get('ticker')
+                        or signal.get('stock_symbol')
+                    )
+                    strength = float(
+                        signal.get('signal_strength')
+                        or signal.get('conviction')
+                        or signal.get('score')
+                        or 1.0
+                    )
+                else:
+                    symbol = (
+                        getattr(signal, 'symbol', None)
+                        or getattr(signal, 'ticker', None)
+                        or getattr(signal, 'stock_symbol', None)
+                    )
+                    strength = float(
+                        getattr(signal, 'signal_strength', None)
+                        or getattr(signal, 'conviction', None)
+                        or getattr(signal, 'score', None)
+                        or 1.0
+                    )
+                symbol = str(symbol or '').strip()
+                if not symbol:
+                    continue
+                scored_signals.append((symbol, max(strength, 0.0)))
+
+            if not scored_signals:
+                continue
+
+            total_strength = sum(score for _, score in scored_signals) or float(len(scored_signals))
+            for symbol, score in scored_signals:
+                raw_weights[symbol] += float(allocation) * float(score / total_strength)
+
+        if not raw_weights:
+            return {}
+
+        gross = sum(abs(weight) for weight in raw_weights.values())
+        if gross <= 0:
+            return {}
+
+        target_gross = max(0.0, 1.0 - float(self.config.min_cash_buffer))
+        scaled = {
+            symbol: float(weight / gross) * target_gross
+            for symbol, weight in raw_weights.items()
+        }
+
+        capped = {
+            symbol: float(np.sign(weight) * min(abs(weight), self.config.max_individual_weight))
+            for symbol, weight in scaled.items()
+        }
+
+        capped_gross = sum(abs(weight) for weight in capped.values())
+        if capped_gross > target_gross and capped_gross > 0:
+            scale = target_gross / capped_gross
+            capped = {symbol: float(weight * scale) for symbol, weight in capped.items()}
+
+        return capped
     
     def _apply_risk_management(self, portfolio_positions: Dict[str, float], 
                              market_data: Dict[str, Any]) -> Dict[str, float]:
@@ -576,6 +674,8 @@ class InstitutionalAlphaEngine:
         try:
             # Prepare data for health monitoring
             specialists_data = {}
+            crowding_index = self._compute_real_crowding(market_data)
+            decay_rate = self._compute_real_decay(market_data)
             
             for specialist_name, signal_list in specialist_signals.items():
                 # signal_list is now a list of SpecialistSignal objects
@@ -588,8 +688,8 @@ class InstitutionalAlphaEngine:
                 
                 specialists_data[specialist_name] = {
                     'ic': 0.05,  # Mock IC for now
-                    'decay_rate': 0.02,  # Mock decay rate
-                    'crowding_index': 0.3,  # Mock crowding
+                    'decay_rate': decay_rate,
+                    'crowding_index': crowding_index,
                     'regime_fit': avg_regime_fit,
                     'regime_confidence': market_data.get('regime_confidence', 0.0),
                     'recent_performance': avg_confidence  # Use confidence as performance proxy
@@ -686,6 +786,8 @@ class InstitutionalAlphaEngine:
         try:
             # Prepare reporting data
             specialists_data = {}
+            crowding = self._compute_real_crowding(market_data)
+            decay = self._compute_real_decay(market_data)
             
             for specialist_name, signal_list in specialist_signals.items():
                 # signal_list is now a list of SpecialistSignal objects
@@ -710,8 +812,8 @@ class InstitutionalAlphaEngine:
                         'evidence': {
                             'ic_score': 0.05,  # Mock IC
                             'regime_fit': avg_regime_fit,
-                            'crowding': 0.3,  # Mock crowding
-                            'decay': 0.02  # Mock decay
+                            'crowding': crowding,
+                            'decay': decay
                         }
                     }
                 }

@@ -1,0 +1,12 @@
+name: "xgboost_regression"
+model: "xgboost"
+params:
+  mode: "regression"
+  objective: "reg:squarederror"
+  max_depth: 4
+  min_child_weight: 20
+  reg_lambda: 3.0
+  subsample: 0.7
+  colsample_bytree: 0.6
+  n_estimators: 300
+  learning_rate: 0.05

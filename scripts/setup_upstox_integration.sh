@@ -109,7 +109,7 @@ if [ $? -eq 0 ]; then
     echo "Next steps:"
     echo "1. Review configuration: config/production_upstox.yaml"
     echo "2. Start the engine: python scripts/start_engine.py --config config/production_upstox.yaml"
-    echo "3. Launch dashboard: streamlit run dashboard/volatility_dashboard.py"
+    echo "3. Launch dashboard: streamlit run src/dashboard/app.py"
     echo ""
     echo "Important notes:"
     echo "- Upstox access tokens expire daily - update UPSTOX_ACCESS_TOKEN in .env.options daily"

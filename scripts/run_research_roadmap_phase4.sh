@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
 BASE_CONFIG="${1:-config/research_policy.yaml}"
-OUT_ROOT="${ROADMAP_OUT_ROOT:-reports/research/roadmap}"
+OUT_ROOT="${ROADMAP_OUT_ROOT:-data/results/research/reports/roadmap}"
 PHASE="phase4"
 PHASE_DIR="${OUT_ROOT}/${PHASE}"
 PHASE3_GATE_PATH="${ROADMAP_PHASE3_GATE_PATH:-${OUT_ROOT}/phase3/phase3_gate.json}"

@@ -1,0 +1,12 @@
+name: "catboost_v1"
+model: "catboost"
+params:
+  depth: 4
+  min_data_in_leaf: 40
+  l2_leaf_reg: 15.0
+  iterations: 800
+  learning_rate: 0.02
+  loss_function: "YetiRank"
+  boosting_type: "Ordered"
+  verbose: 0
+  cat_features: ["sector"]

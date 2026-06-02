@@ -459,7 +459,7 @@ def main() -> int:
     ap.add_argument("--dispersion-col", type=str, default="ret_1d")
     ap.add_argument(
         "--output-json",
-        default="reports/research/regime_ic_split_latest.json",
+        default="data/results/research/reports/regime_ic_split_latest.json",
         help="Where to store structured output JSON",
     )
     args = ap.parse_args()

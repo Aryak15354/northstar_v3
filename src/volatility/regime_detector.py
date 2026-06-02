@@ -4,7 +4,7 @@ Unified Regime Detection Engine for Volatility Trading
 Consolidates regime detection from:
 - src/processing/market_regime.py: Market breadth, participation, correlation
 - src/processing/options_regime.py: Options-specific regime classification
-- src/options/regime_detector.py: IV-based regime detection with percentile ranks
+- src/options/options_regime_detector.py: IV-based regime detection with percentile ranks
 - src/intelligence/regime_aware_specialists.py: Macro regime detection
 
 Provides single authoritative regime classification for the unified volatility engine.

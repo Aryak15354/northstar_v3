@@ -41,7 +41,7 @@ class WeeklyResearchReviewer:
         self.capital_policy = CapitalPolicyManager()
         
         # Output directory
-        self.output_dir = PROJECT_ROOT / "data/research/weekly_reviews"
+        self.output_dir = PROJECT_ROOT / "data/results/research/weekly_reviews"
         self.output_dir.mkdir(parents=True, exist_ok=True)
     
     def run_weekly_review(self) -> Dict[str, Any]:
@@ -176,12 +176,12 @@ class WeeklyResearchReviewer:
         }
         
         try:
-            research_dir = PROJECT_ROOT / "data/research"
+            research_dir = PROJECT_ROOT / "data/results/research/cycles"
             
             if research_dir.exists():
                 # Find research cycle files from the week
                 research_files = []
-                for file in research_dir.glob("research_cycle_*.json"):
+                for file in research_dir.rglob("research_cycle_*.json"):
                     file_time = datetime.fromtimestamp(file.stat().st_mtime)
                     if self.week_start <= file_time <= self.review_date:
                         research_files.append(file)
@@ -519,7 +519,8 @@ class WeeklyResearchReviewer:
     def save_review_report(self, review_report: Dict[str, Any]):
         """Save review report to file"""
         timestamp = self.review_date.strftime('%Y%m%d_%H%M%S')
-        report_file = self.output_dir / f"weekly_review_{timestamp}.json"
+        report_file = self.output_dir / timestamp[:4] / timestamp[4:6] / f"weekly_review_{timestamp}.json"
+        report_file.parent.mkdir(parents=True, exist_ok=True)
         
         with open(report_file, 'w') as f:
             json.dump(review_report, f, indent=2, default=str)

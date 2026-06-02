@@ -32,7 +32,7 @@ HEADERS = {
     "Connection": "keep-alive",
 }
 
-DEFAULT_OUTPUT_DIR = Path("data/raw/screener")
+DEFAULT_OUTPUT_DIR = Path("data/raw/vendors/screener")
 LOG_COLUMNS = [
     "ticker",
     "url_used",

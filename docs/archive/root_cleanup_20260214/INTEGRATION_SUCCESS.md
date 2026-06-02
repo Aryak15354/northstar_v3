@@ -91,8 +91,8 @@ Watch for:
 
 ### Your Credentials (Saved)
 
-✅ API Key: d54cd69b-6ced-4003-a5e3-b25e5608b660  
-✅ API Secret: jxmubrf4nd  
+✅ API Key: your_upstox_api_key_here  
+✅ API Secret: your_upstox_api_secret_here  
 ✅ Access Token: Configured (expires daily at 3:30 AM IST)
 
 **Location**: `.env.options`

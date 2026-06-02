@@ -10,7 +10,7 @@ Philosophy: Disciplined position management with clear exit rules.
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
-from typing import List, Dict, Optional, Tuple
+from typing import Any, List, Dict, Optional, Tuple
 from enum import Enum
 import pandas as pd
 
@@ -98,6 +98,7 @@ class Position:
     entry_greeks: Optional[Greeks] = None
     exit_time: Optional[datetime] = None
     exit_reason: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
     
     def is_open(self) -> bool:
         """Check if position is still open"""
@@ -188,6 +189,10 @@ class PositionManager:
         # Position tracking
         self.open_positions: Dict[str, Position] = {}
         self.closed_positions: List[Position] = []
+        
+        
+        # Gap 7: State bridge for syncing to UnifiedState
+        self.options_bridge = None
         
         logger.info("PositionManager initialized")
     
@@ -361,7 +366,10 @@ class PositionManager:
         self,
         position: Position,
         current_regime: VolatilityRegime,
-        current_date: date
+        current_date: date,
+        current_time: Optional[datetime] = None,
+        regime_flip_exit_allowed: bool = True,
+        minimum_hold_minutes: float = 0.0,
     ) -> Optional[ExitSignal]:
         """
         Check if position should be exited based on exit rules
@@ -378,6 +386,20 @@ class PositionManager:
             return None
         
         exit_signals = []
+        effective_regime_flip_exit_allowed = bool(regime_flip_exit_allowed)
+        if effective_regime_flip_exit_allowed and minimum_hold_minutes > 0.0 and current_time is not None:
+            entry_time = position.entry_time
+            comparison_time = current_time
+            if getattr(entry_time, "tzinfo", None) is None and getattr(comparison_time, "tzinfo", None) is not None:
+                tz = comparison_time.tzinfo
+                if hasattr(tz, "localize"):
+                    entry_time = tz.localize(entry_time)
+                else:
+                    entry_time = entry_time.replace(tzinfo=tz)
+            elif getattr(entry_time, "tzinfo", None) is not None and getattr(comparison_time, "tzinfo", None) is None:
+                comparison_time = comparison_time.replace(tzinfo=entry_time.tzinfo)
+            held_minutes = max((comparison_time - entry_time).total_seconds() / 60.0, 0.0)
+            effective_regime_flip_exit_allowed = held_minutes >= float(minimum_hold_minutes)
         
         # 1. Stop Loss (highest priority)
         stop_loss_threshold = -abs(position.max_loss * self.exit_config.stop_loss_pct)
@@ -401,7 +423,7 @@ class PositionManager:
                         details=f"Gamma spike ({position.greeks.gamma:.2f}) + negative theta",
                         priority=ExitSignal.get_priority(ExitReason.GAMMA_ESCALATION)
                     ))
-                elif current_regime != position.regime_at_entry:  # Regime flip
+                elif current_regime != position.regime_at_entry and effective_regime_flip_exit_allowed:  # Regime flip
                     exit_signals.append(ExitSignal(
                         should_exit=True,
                         reason=ExitReason.GAMMA_ESCALATION,
@@ -410,7 +432,7 @@ class PositionManager:
                     ))
         
         # 3. Regime Flip
-        if current_regime != position.regime_at_entry:
+        if current_regime != position.regime_at_entry and effective_regime_flip_exit_allowed:
             exit_signals.append(ExitSignal(
                 should_exit=True,
                 reason=ExitReason.REGIME_FLIP,

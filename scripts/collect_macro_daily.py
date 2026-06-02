@@ -16,8 +16,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in os.sys.path:
     os.sys.path.insert(0, str(REPO_ROOT))
 
-from src.signals.macro.macro_regime import MacroRegimeBuilder
-from src.signals.macro.sector_mapper import SectorMapper
+from src.signals.macro.macro_signal_regime import MacroRegimeBuilder
+from src.signals.macro.macro_sector_mapper import SectorMapper
 
 
 def parse_args() -> argparse.Namespace:

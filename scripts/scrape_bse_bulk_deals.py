@@ -185,7 +185,7 @@ def _load_ticker_lookup() -> tuple[dict[str, str], dict[str, str], dict[str, str
     code_lookup.update(bse_code_map)
     name_lookup.update(bse_name_map)
 
-    meta_dir = Path("data/raw/screener/metadata")
+    meta_dir = Path("data/raw/vendors/screener/metadata")
     if meta_dir.exists():
         for p in meta_dir.glob("*_metadata.json"):
             try:
@@ -463,7 +463,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    out_dir = Path("data/raw/alternative/bulk_deals")
+    out_dir = Path("data/raw/exchanges/bse/alternative/bulk_deals")
     out_dir.mkdir(parents=True, exist_ok=True)
     state = ResumeState(out_dir / ".resume_state.json")
 
@@ -557,6 +557,10 @@ def main() -> int:
         )
         return 2
 
+    # Ensure nse_ticker column exists before accessing it
+    if "nse_ticker" not in all_df.columns:
+        all_df["nse_ticker"] = ""
+    
     mapped_mask = all_df["nse_ticker"].astype(str).str.upper().str.endswith(".NS")
     mapped_rows = int(mapped_mask.sum())
     mapped_tickers = int(all_df.loc[mapped_mask, "nse_ticker"].nunique())

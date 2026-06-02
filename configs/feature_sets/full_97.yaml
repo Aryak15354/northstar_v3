@@ -1,0 +1,4 @@
+name: "full_97"
+description: "Use all model-facing features from the attached export manifest when present."
+selection:
+  source: "export_manifest"

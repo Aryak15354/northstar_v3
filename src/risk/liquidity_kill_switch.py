@@ -56,6 +56,8 @@ class LiquidityRiskAssessor:
             df = df.rename(columns={"date": "Date"})
         if "ticker" not in df.columns and "Symbol" in df.columns:
             df = df.rename(columns={"Symbol": "ticker"})
+        if "ticker" not in df.columns and "Ticker" in df.columns:
+            df = df.rename(columns={"Ticker": "ticker"})
         if "ticker" in df.columns:
             # Many portfolio artifacts store symbols without `.NS` while prices use `.NS`.
             df["symbol_base"] = df["ticker"].astype(str).str.strip().str.replace(".NS", "", regex=False)

@@ -196,13 +196,13 @@ def _build_markdown(rows: List[Dict[str, Any]], source_glob: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Generate detailed report from regime IC run JSON files")
-    ap.add_argument("--glob", default="data/research/regime_ic_runs/*.json")
-    ap.add_argument("--output-md", default="data/research/reports/regime_ic_experiment_report_latest.md")
-    ap.add_argument("--output-csv", default="data/research/reports/regime_ic_experiment_summary_latest.csv")
-    ap.add_argument("--output-regime-csv", default="data/research/reports/regime_ic_experiment_regime_rows_latest.csv")
+    ap.add_argument("--glob", default="data/results/research/regime_ic_runs/**/*.json")
+    ap.add_argument("--output-md", default="data/results/research/reports/regime_ic/regime_ic_experiment_report_latest.md")
+    ap.add_argument("--output-csv", default="data/results/research/reports/regime_ic/regime_ic_experiment_summary_latest.csv")
+    ap.add_argument("--output-regime-csv", default="data/results/research/reports/regime_ic/regime_ic_experiment_regime_rows_latest.csv")
     args = ap.parse_args()
 
-    paths = [Path(p) for p in sorted(glob.glob(args.glob))]
+    paths = [Path(p) for p in sorted(glob.glob(args.glob, recursive=True))]
     rows: List[Dict[str, Any]] = []
     for p in paths:
         try:
@@ -280,4 +280,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

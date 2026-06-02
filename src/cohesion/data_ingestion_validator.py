@@ -460,7 +460,7 @@ class DataIngestionValidator:
                        df: pd.DataFrame, 
                        source_name: str, 
                        validation_result: IngestionValidationResult,
-                       quarantine_dir: str = "data/quarantine") -> str:
+                       quarantine_dir: str = "data/runtime/quarantine") -> str:
         """Quarantine bad data with detailed logging"""
         
         os.makedirs(quarantine_dir, exist_ok=True)

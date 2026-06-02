@@ -844,7 +844,7 @@ class DataQualityGate:
     def __init__(self, quality_rules: List[QualityRule]):
         self.quality_rules = quality_rules
         self.quality_history: List[QualityResult] = []
-        self.quarantine_dir = "data/quarantine"
+        self.quarantine_dir = "data/runtime/quarantine"
         os.makedirs(self.quarantine_dir, exist_ok=True)
         
         # Quality statistics

@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "description": "Single cohesive strategy layer policy. Legacy sleeves can be standalone, folded into the core as bounded feature overlays, or archived as construction shells.",
+  "overlay": {
+    "default_parent": "northstar",
+    "max_abs_score_impact": 0.12,
+    "signal_cap": 1.0
+  },
+  "strategies": {
+    "northstar": {
+      "mode": "standalone",
+      "role": "core",
+      "family": "composite",
+      "max_allocation": 0.7
+    },
+    "alternative_event": {
+      "mode": "standalone",
+      "role": "satellite",
+      "family": "alternative",
+      "max_allocation": 0.12
+    },
+    "ownership_accumulation": {
+      "mode": "standalone",
+      "role": "satellite",
+      "family": "ownership",
+      "max_allocation": 0.1
+    },
+    "sentiment_trend": {
+      "mode": "standalone",
+      "role": "satellite",
+      "family": "sentiment",
+      "max_allocation": 0.1
+    },
+    "mom_6m": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "momentum",
+      "overlay_weight": 1.0
+    },
+    "mom_12m": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "momentum",
+      "overlay_weight": 1.0
+    },
+    "mom_3m_6m_12m": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "momentum",
+      "overlay_weight": 1.0
+    },
+    "dual_momentum": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "momentum",
+      "overlay_weight": 1.0
+    },
+    "mom_vol_adj": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "momentum",
+      "overlay_weight": 0.9
+    },
+    "sector_tilt_mom": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "momentum",
+      "overlay_weight": 0.75
+    },
+    "quality_tilt": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "quality",
+      "overlay_weight": 0.8
+    },
+    "value_tilt": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "value",
+      "overlay_weight": 0.8
+    },
+    "quality_value_combo": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "quality",
+      "overlay_weight": 0.75
+    },
+    "low_vol": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "defensive",
+      "overlay_weight": 0.7
+    },
+    "regime_conditional": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "macro",
+      "overlay_weight": 0.7
+    },
+    "momentum": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "momentum",
+      "overlay_weight": 0.6
+    },
+    "value": {
+      "mode": "feature_only",
+      "parent": "northstar",
+      "family": "value",
+      "overlay_weight": 0.6
+    },
+    "sector_neutral_eq": {
+      "mode": "archived",
+      "family": "construction"
+    },
+    "equal_weight": {
+      "mode": "archived",
+      "family": "construction"
+    },
+    "equal_weight_top": {
+      "mode": "archived",
+      "family": "construction"
+    },
+    "liquidity_weighted": {
+      "mode": "archived",
+      "family": "construction"
+    },
+    "risk_parity_vol": {
+      "mode": "archived",
+      "family": "construction"
+    }
+  }
+}

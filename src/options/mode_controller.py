@@ -239,6 +239,11 @@ class ModeController:
         
         logger.warning(f"Mode transition: {old_mode.value} → {new_mode.value} | Reasons: {reasons}")
         
+        # Sync to UnifiedState via bridge
+        if self.options_bridge:
+            self.options_bridge.push_mode_update(new_mode=self.current_mode, reason='MODE_TRANSITION')
+
+        
         return {
             'transitioned': True,
             'from_mode': old_mode.value,

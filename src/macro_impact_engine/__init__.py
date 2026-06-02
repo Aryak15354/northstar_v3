@@ -32,7 +32,7 @@ Output:
 __version__ = "1.0.0"
 __author__ = "Northstar V3 Research Team"
 
-from .data_loader import MacroDataLoader
+from .macro_engine_data_loader import MacroDataLoader
 from .preprocessing import MacroPreprocessor
 from .lagged_regression import LaggedRegressionEngine
 from .granger_tests import GrangerCausalityTester
@@ -41,7 +41,23 @@ from .stability_tests import StabilityAnalyzer
 from .sector_aggregation import SectorAggregator
 from .report_generator import MacroImpactReportGenerator
 
+
+class MacroImpactEngine:
+    """Lightweight compatibility facade for the macro impact subsystem."""
+
+    def __init__(self):
+        self.data_loader = MacroDataLoader
+        self.preprocessor = MacroPreprocessor
+        self.regression_engine = LaggedRegressionEngine
+        self.granger_tester = GrangerCausalityTester
+        self.rolling_beta_estimator = RollingBetaEstimator
+        self.stability_analyzer = StabilityAnalyzer
+        self.sector_aggregator = SectorAggregator
+        self.report_generator = MacroImpactReportGenerator
+
+
 __all__ = [
+    'MacroImpactEngine',
     'MacroDataLoader',
     'MacroPreprocessor',
     'LaggedRegressionEngine',

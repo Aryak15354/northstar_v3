@@ -27,6 +27,13 @@ class EnhancedStrategyGeneratorV3:
         self.config = config
         logger.info("Enhanced strategy generator V3 initialized")
 
+    def _min_eligible_days_to_expiry(self) -> int:
+        eligibility = getattr(self.config, "eligibility", None)
+        try:
+            return max(1, int(getattr(eligibility, "min_days_to_expiry", 5) or 5))
+        except Exception:
+            return 5
+
     def generate_strategy(
         self,
         regime: Any,
@@ -57,14 +64,46 @@ class EnhancedStrategyGeneratorV3:
 
         spot = self._resolve_spot(chain, spot_price)
         regime_key = self._normalize_regime(regime)
-        near_expiry = self._select_expiry(chain, min_days=5, max_days=28, target_days=14)
-        far_expiry = self._select_expiry(chain, min_days=18, max_days=70, target_days=35)
+        min_eligible_days = self._min_eligible_days_to_expiry()
+        near_expiry = self._select_expiry(
+            chain,
+            min_days=min_eligible_days,
+            max_days=max(28, min_eligible_days + 23),
+            target_days=max(14, min_eligible_days + 9),
+            allow_any_future_fallback=False,
+        )
+        far_expiry = self._select_expiry(
+            chain,
+            min_days=max(18, min_eligible_days + 13),
+            max_days=70,
+            target_days=max(35, min_eligible_days + 20),
+            allow_any_future_fallback=False,
+        )
 
         if near_expiry is None:
-            near_expiry = self._select_expiry(chain, min_days=1, max_days=80, target_days=10)
+            near_expiry = self._select_expiry(
+                chain,
+                min_days=min_eligible_days,
+                max_days=120,
+                target_days=max(21, min_eligible_days + 10),
+                allow_any_future_fallback=False,
+            )
         if far_expiry is None:
-            far_expiry = self._select_expiry(chain, min_days=1, max_days=90, target_days=40)
+            far_expiry = self._select_expiry(
+                chain,
+                min_days=max(10, min_eligible_days + 7),
+                max_days=120,
+                target_days=max(40, min_eligible_days + 25),
+                allow_any_future_fallback=False,
+            )
 
+        if near_expiry is None:
+            near_expiry = self._select_expiry(
+                chain,
+                min_days=1,
+                max_days=120,
+                target_days=max(10, min_eligible_days),
+            )
         if near_expiry is None:
             return []
 
@@ -224,6 +263,7 @@ class EnhancedStrategyGeneratorV3:
         min_days: int,
         max_days: int,
         target_days: int,
+        allow_any_future_fallback: bool = True,
     ) -> Optional[date]:
         today = datetime.now().date()
         expiries = sorted(pd.to_datetime(chain["expiry"], errors="coerce").dropna().dt.date.unique().tolist())
@@ -237,6 +277,8 @@ class EnhancedStrategyGeneratorV3:
                 candidates.append((exp, dte))
 
         if not candidates:
+            if not allow_any_future_fallback:
+                return None
             # fallback to nearest future expiry if window is empty
             futures = [exp for exp in expiries if (exp - today).days >= 1]
             if not futures:

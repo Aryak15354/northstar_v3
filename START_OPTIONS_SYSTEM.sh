@@ -44,7 +44,7 @@ echo ""
 # Ask user what they want to do
 echo "What would you like to do?"
 echo ""
-echo "1) Run full V3 system (equity + options + dashboard)"
+echo "1) Run canonical V3 refresh + dashboard"
 echo "2) Run options engine only (standalone)"
 echo "3) Run options engine in aggressive mode"
 echo "4) Launch volatility dashboard only"
@@ -56,13 +56,16 @@ read -p "Enter choice [1-6]: " choice
 case $choice in
     1)
         echo ""
-        echo "🚀 Starting full V3 system..."
+        echo "🚀 Starting canonical V3 refresh..."
         echo "   This includes:"
-        echo "   - Equity portfolio management"
-        echo "   - Options trading engine"
-        echo "   - Integrated dashboard"
+        echo "   - Canonical data + state refresh"
+        echo "   - Canonical dashboard launch"
+        echo "   - Options engine remains a separate launcher"
         echo ""
-        python3 run_complete_v3_system.py --quick
+        python3 scripts/run_complete_v3_system.py --quick
+        if [ $? -eq 0 ]; then
+            ./launch_dashboard.sh --port 8517
+        fi
         ;;
     2)
         echo ""
@@ -89,10 +92,10 @@ case $choice in
         ;;
     4)
         echo ""
-        echo "🚀 Launching volatility dashboard..."
-        echo "   Visit: http://localhost:8502"
+        echo "🚀 Launching canonical dashboard..."
+        echo "   Visit: http://localhost:8501"
         echo ""
-        python3 scripts/run_live_engine.py
+        ./launch_dashboard.sh --port 8501
         ;;
     5)
         echo ""

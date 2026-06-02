@@ -34,8 +34,11 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import os
+import logging
 import warnings
 warnings.filterwarnings('ignore')
+
+logger = logging.getLogger(__name__)
 
 # =========================== CONFIDENCE CALCULATION FRAMEWORK ===========================
 
@@ -315,6 +318,29 @@ class ConfidenceEngine:
             'signal_strength': abs(effective_signal),
             'actionable': confidence >= 0.4  # Only act on signals with 40%+ confidence
         }
+    
+    def calculate_sentiment_confidence(self, sentiment_state):
+        """
+        Calculate confidence modifier based on sentiment clarity.
+        
+        High confidence when: sentiment regime is clear (not at a boundary),
+        sentiment is fresh, and sentiment aligns with price action.
+        
+        Low confidence when: sentiment is stale, or sentiment strongly
+        contradicts what price action is saying (divergence).
+        
+        Args:
+            sentiment_state: SentimentState object
+            
+        Returns:
+            float: Confidence score between 0.1 and 1.0
+        """
+        try:
+            from src.intelligence.sentiment_integration import compute_sentiment_confidence
+            return compute_sentiment_confidence(sentiment_state)
+        except Exception as e:
+            logger.warning(f"Could not compute sentiment confidence: {e}")
+            return 0.5  # Neutral fallback
 
 # =========================== SPECIALIZED CONFIDENCE CALCULATORS ===========================
 

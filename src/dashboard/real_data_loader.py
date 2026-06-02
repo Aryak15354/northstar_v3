@@ -65,9 +65,9 @@ class RealDataLoader:
     def load_backtests(self) -> Dict[str, pd.DataFrame]:
         backtests: Dict[str, pd.DataFrame] = {}
         for rel in [
-            "analysis_results/backtests/northstar_3year_backtest_real_data.csv",
-            "analysis_results/backtests/northstar_3year_backtest_results.csv",
-            "analysis_results/backtests/northstar_all_strategies_3year_backtest.csv",
+            "data/results/analysis/backtests/northstar_3year_backtest_real_data.csv",
+            "data/results/analysis/backtests/northstar_3year_backtest_results.csv",
+            "data/results/analysis/backtests/northstar_all_strategies_3year_backtest.csv",
         ]:
             df = self._read_csv(rel)
             if not df.empty:

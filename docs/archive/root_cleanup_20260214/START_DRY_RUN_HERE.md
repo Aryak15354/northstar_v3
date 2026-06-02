@@ -36,8 +36,8 @@ python scripts/dry_run_options_system.py \
 ## Your API Credentials
 
 Already configured in the script:
-- **API Key**: d54cd69b-6ced-4003-a5e3-b25e5608b660
-- **API Secret**: jxmubrf4nd
+- **API Key**: your_upstox_api_key_here
+- **API Secret**: your_upstox_api_secret_here
 - **Access Token**: (expires daily - regenerate from Upstox)
 
 ⚠️ **Token expires daily** - generate new one from Upstox dashboard each day

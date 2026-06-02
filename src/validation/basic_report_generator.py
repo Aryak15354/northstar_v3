@@ -834,7 +834,7 @@ def main():
     print("=" * 60)
     
     # Initialize generator
-    generator = BasicReportGenerator(output_dir="data/test_reports")
+    generator = BasicReportGenerator(output_dir="data/testing/reports")
     
     # Create mock performance data
     np.random.seed(42)
