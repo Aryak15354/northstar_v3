@@ -1,0 +1,51 @@
+# Northstar V3 options trading configuration.
+# Calendar last verified: 2026-06-03.
+
+calendar:
+  timezone: Asia/Kolkata
+  source_notes:
+    rbi_mpc_2026_2027: "RBI Bulletin/press schedule for FY 2026-27; Apr 6-8, Jun 3-5, Aug 3-5, Oct 5-7, Dec 2-4, Feb 3-5."
+    nse_expiry_policy: "NSE index derivatives use Tuesday expiries for NIFTY weekly/monthly contracts from the 2026 cycle."
+  rbi_mpc_meetings:
+    - name: FY27_MPC_1
+      start: 2026-04-06
+      end: 2026-04-08
+      decision: 2026-04-08
+    - name: FY27_MPC_2
+      start: 2026-06-03
+      end: 2026-06-05
+      decision: 2026-06-05
+    - name: FY27_MPC_3
+      start: 2026-08-03
+      end: 2026-08-05
+      decision: 2026-08-05
+    - name: FY27_MPC_4
+      start: 2026-10-05
+      end: 2026-10-07
+      decision: 2026-10-07
+    - name: FY27_MPC_5
+      start: 2026-12-02
+      end: 2026-12-04
+      decision: 2026-12-04
+    - name: FY27_MPC_6
+      start: 2027-02-03
+      end: 2027-02-05
+      decision: 2027-02-05
+  event_risk_windows:
+    pre_event_business_days: 2
+    post_event_business_days: 1
+    block_new_short_gamma: true
+    require_hedge_review: true
+
+expiry_policy:
+  default_underlying: NIFTY
+  weekly_expiry_weekday: Tuesday
+  monthly_expiry_rule: last_tuesday
+  min_days_to_expiry: 5
+  avoid_expiry_day_entries: true
+
+strategy_generation:
+  canonical_generator: src.options.enhanced_strategy_generator_v3.EnhancedStrategyGeneratorV3
+  deprecated_generators:
+    - src.options.enhanced_strategy_generator.EnhancedStrategyGenerator
+    - src.options.enhanced_strategy_generator_v2.EnhancedStrategyGeneratorV2

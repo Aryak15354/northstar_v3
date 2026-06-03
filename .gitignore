@@ -1,0 +1,56 @@
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.env
+*.env.*
+*.bak
+*.bak_*
+*.backup
+*.secret
+*.key
+*.pem
+
+# Runtime logs and process artifacts
+*.log
+*.pid
+nohup.out
+logs/
+catboost_info/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# OS/editor state
+.DS_Store
+.vscode/
+.idea/
+
+# Generated, archived, and scratch artifacts
+_cold_archive/
+archive/
+backups/
+tmp/
+dist/
+build/
+snapshots/
+kaggle_results/
+northstar_ratio_campaign_fresh/
+northstar_sector_regime_campaign_fresh/
+
+# Live data and local run outputs
+data/
+reports/daily_operations_report_*.json
+reports/
+notebooks/
+ns_uso/
+universe/
