@@ -233,6 +233,10 @@ NEW_VISUAL_SPECS = [
           "The paper fund's real daily equity exposure vs the governor's intended gross and the cash floor. Replaces the dead unified_daily exposure charts.",
           "Market", "Exposure Policy", PRIMARY, _vx.exposure_truth,
           "data/pnl/nav_history.parquet + data/processed/portfolio_weights.parquet"),
+    _spec("market_state_panel", "Market State Panel — the tape at a glance",
+          "Risk-on, stress, macro, breadth, participation, correlation, health and allowed exposure — current value + 60-obs sparkline, all in one view. Consolidates eight single-metric charts.",
+          "Market", "Market State", PRIMARY, _vx.market_state_panel,
+          "data/processed/market_state.parquet", wide=True),
     _spec("universe_treemap", "Universe Map (treemap)",
           "Sector × name, sized by weight and coloured by v3 score — the whole book at a glance.",
           "Market", "Watchlist", SECONDARY, _vx.universe_treemap, "data/processed/scores.parquet"),
@@ -460,6 +464,15 @@ RETIRED_VISUAL_IDS: frozenset[str] = frozenset({
     "Sentiment & Alternative Data:daily_sentiment:conviction_mean",      # duplicates canonical market gauges
     "Sentiment & Alternative Data:daily_sentiment:uncertainty_mean",
     "Sentiment & Alternative Data:daily_sentiment:headline_count",
+    # 8 single-metric market_state line charts -> consolidated into market_state_panel
+    "Market & Regime:market_state:risk_on_probability",
+    "Market & Regime:market_state:stress_score",
+    "Market & Regime:market_state:macro_score",
+    "Market & Regime:market_state:breadth_pct",
+    "Market & Regime:market_state:participation_score",
+    "Market & Regime:market_state:correlation",
+    "Market & Regime:market_state:allowed_exposure",
+    "Market & Regime:market_state:health_score",
 })
 
 # Visuals disabled for now (alpha/strategy-driven — parked until the Kaggle

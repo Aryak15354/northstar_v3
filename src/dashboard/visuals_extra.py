@@ -145,6 +145,61 @@ def data_truth_panel(bundle: dict[str, Any]) -> Optional[go.Figure]:
 
 
 # --------------------------------------------------------------------------- #
+# MARKET STATE PANEL — the whole tape in one view (replaces 8 single-metric charts)
+# --------------------------------------------------------------------------- #
+def market_state_panel(bundle: dict[str, Any]) -> Optional[go.Figure]:
+    """All the key market-state vitals at a glance: current value + 60-obs
+    sparkline for each, in one small-multiples grid. Replaces eight separate
+    one-number line charts so the market can be read in a single look."""
+    df = _read_parquet("data/processed/market_state.parquet")
+    if df.empty:
+        b = bundle.get("market_state") if isinstance(bundle, dict) else None
+        if isinstance(b, pd.DataFrame) and not b.empty:
+            df = b
+        else:
+            return None
+    df = df.copy()
+    dc = next((c for c in ("date", "Date", "timestamp") if c in df.columns), None)
+    if dc:
+        df[dc] = pd.to_datetime(df[dc], errors="coerce")
+        df = df.dropna(subset=[dc]).sort_values(dc)
+    metrics = [
+        ("risk_on_probability", "Risk-On Prob", "%", 100),
+        ("stress_score", "Stress", "", 1),
+        ("macro_score", "Macro", "", 1),
+        ("breadth_pct", "Breadth", "%", 1),
+        ("participation_score", "Participation", "", 1),
+        ("correlation", "Correlation", "", 1),
+        ("health_score", "Health", "", 1),
+        ("allowed_exposure", "Allowed Exposure", "%", 100),
+    ]
+    present = [(c, lbl, u, m) for c, lbl, u, m in metrics if c in df.columns]
+    if not present:
+        return None
+    ncol = 4
+    nrow = (len(present) + ncol - 1) // ncol
+    titles = []
+    for c, lbl, unit, mult in present:
+        s = pd.to_numeric(df[c], errors="coerce").dropna()
+        val = float(s.iloc[-1]) * mult if len(s) else float("nan")
+        titles.append(f"{lbl}: {val:,.1f}{unit}")
+    fig = make_subplots(rows=nrow, cols=ncol, subplot_titles=titles,
+                        vertical_spacing=0.14, horizontal_spacing=0.06)
+    for i, (c, lbl, unit, mult) in enumerate(present):
+        r, cc = i // ncol + 1, i % ncol + 1
+        s = pd.to_numeric(df[c], errors="coerce").ffill()
+        tail = s.tail(60) * mult
+        x = df[dc].tail(60) if dc else list(range(len(tail)))
+        fig.add_trace(go.Scatter(x=x, y=tail, mode="lines",
+                                 line=dict(color=TERM["cyan"], width=1.6),
+                                 showlegend=False), row=r, col=cc)
+    fig.update_layout(title="Market State Panel — the tape at a glance (60-obs sparklines)",
+                      height=180 * nrow, margin=dict(l=6, r=6, t=54, b=6))
+    fig.update_xaxes(showticklabels=False)
+    return fig
+
+
+# --------------------------------------------------------------------------- #
 # EXPOSURE TRUTH — governor intent vs paper-fund actual vs cash floor.
 # --------------------------------------------------------------------------- #
 def exposure_truth(bundle: dict[str, Any]) -> Optional[go.Figure]:
