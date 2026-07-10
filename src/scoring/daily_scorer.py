@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from src.research.dataset_manager import DatasetManager
-from src.research.regime_conditional_trainer import RegimeConditionalTrainer
+from src.research.regime_conditional_trainer import ModelNotAvailableError, RegimeConditionalTrainer
 from src.research.regime_engine import RegimeEngine
 from src.signals.sentiment_overlay import SentimentOverlay
 
@@ -93,24 +93,30 @@ def apply_turnover_constraint(
     n_turnover = top_n - n_prev_in_result
     max_allowed_turnover = int(top_n * max_turnover)
     
-    # If we exceeded turnover limit, force more holds
+    # If we exceeded the turnover limit, SWAP the lowest-scored new picks for the
+    # best prev holdings we hadn't kept, until turnover is within the cap.
+    # The previous implementation was a no-op: result.drop(idx[:0]) drops nothing
+    # (empty slice) and used work-indexed labels against a reset-index result, so
+    # the turnover cap was never actually enforced in this branch. We key on
+    # ticker identity and evict the weakest NEW names.
     if n_turnover > max_allowed_turnover:
-        # Need to keep more from prev
         extra_holds_needed = n_turnover - max_allowed_turnover
-        
-        # Find prev holdings that we didn't keep but are in top keep_threshold + buffer
+
         prev_not_kept = work[(work["is_prev_holding"]) & (~work["keep_from_prev"])]
         prev_not_kept = prev_not_kept.sort_values("rank").head(extra_holds_needed)
-        
-        # Remove lowest ranked new picks
-        result = result.drop(prev_not_kept.index[:0], errors="ignore")
-        
-        # Add the extra holds
+
         if len(prev_not_kept) > 0:
+            # Drop the N lowest-scored NEW (non-prev) names currently in result.
+            new_in_result = result[~result["is_prev_holding"].astype(bool)]
+            drop_tickers = set(
+                new_in_result.sort_values("final_score", ascending=True)
+                .head(len(prev_not_kept))["ticker"].astype(str)
+            )
+            result = result[~result["ticker"].astype(str).isin(drop_tickers)]
             result = pd.concat([result, prev_not_kept], ignore_index=True)
             result = result.sort_values("final_score", ascending=False).reset_index(drop=True)
             result = result.head(top_n)
-    
+
     return result
 
 
@@ -896,9 +902,22 @@ class DailyScorer:
     ) -> pd.Series:
         # Get max_weekly_turnover from config
         max_turnover = float(self.config.get("max_weekly_turnover", 0.30) or 0.30)
-        top_n = 20  # Target portfolio size
-        
-        # Apply turnover constraint if enabled and we have previous portfolio
+        top_n = int(self.config.get("portfolio_top_n", 20) or 20)  # Target portfolio size
+
+        mode = str(mandate or "long_only").strip().lower()
+        if mode not in {"long_only", "long_short"}:
+            mode = "long_only"
+
+        w = pd.Series(0.0, index=frame.index, dtype=float)
+        score = pd.to_numeric(frame.get("final_score"), errors="coerce").fillna(-np.inf)
+
+        # ---- LONG BOOK: the turnover-constrained top-N selection ----
+        # NOTE: this selection is the WHOLE POINT of the turnover constraint.
+        # Previously apply_turnover_constraint() was called and then discarded —
+        # only a keep_from_prev flag was copied back — and weights were spread
+        # across ALL of quintile 5 (~100 names of a 500-name universe), turning
+        # the intended concentrated top-N book into a closet index and making the
+        # turnover cap a no-op. We now weight exactly the selected book.
         if apply_turnover:
             prev_portfolio = self._load_prev_portfolio()
             constrained = apply_turnover_constraint(
@@ -908,36 +927,25 @@ class DailyScorer:
                 top_n=top_n,
                 keep_threshold=35,
             )
-            # Mark which positions are kept from prev
-            frame = frame.copy()
-            frame["keep_from_prev"] = False
-            if "keep_from_prev" in constrained.columns:
-                for idx in constrained.index:
-                    if idx in frame.index:
-                        frame.loc[idx, "keep_from_prev"] = constrained.loc[idx, "keep_from_prev"]
-        
-        q = frame["quintile"].astype(int)
-        w = pd.Series(0.0, index=frame.index, dtype=float)
+            long_idx = [idx for idx in constrained.index if idx in frame.index]
+        else:
+            # No turnover memory (e.g. backtest cold start): take the top-N names
+            # by final_score directly.
+            long_idx = score.nlargest(top_n).index.tolist()
 
-        mode = str(mandate or "long_only").strip().lower()
-        if mode not in {"long_only", "long_short"}:
-            mode = "long_only"
-
-        top = q.eq(5)
-        bottom = q.eq(1)
-
+        n_long = len(long_idx)
         if mode == "long_only":
-            n_top = int(top.sum())
-            if n_top > 0:
-                w.loc[top] = float(exposure_scale) / float(n_top)
+            if n_long > 0:
+                w.loc[long_idx] = float(exposure_scale) / float(n_long)
             return w
 
-        n_top = int(top.sum())
-        n_bot = int(bottom.sum())
-        if n_top > 0:
-            w.loc[top] = 0.5 * float(exposure_scale) / float(n_top)
-        if n_bot > 0:
-            w.loc[bottom] = -0.5 * float(exposure_scale) / float(n_bot)
+        # ---- LONG/SHORT: long the selected top-N, short the symmetric bottom-N ----
+        short_idx = [idx for idx in score.nsmallest(top_n).index.tolist() if idx not in set(long_idx)]
+        n_short = len(short_idx)
+        if n_long > 0:
+            w.loc[long_idx] = 0.5 * float(exposure_scale) / float(n_long)
+        if n_short > 0:
+            w.loc[short_idx] = -0.5 * float(exposure_scale) / float(n_short)
         return w
 
     def score(self, as_of_date):
@@ -987,9 +995,45 @@ class DailyScorer:
                 )
                 preds = np.asarray([], dtype=float)
         if len(preds) == 0:
-            preds = self.trainer.predict(frame[use_feats], regime=regime)
+            try:
+                preds = self.trainer.predict(frame[use_feats], regime=regime)
+            except ModelNotAvailableError as exc:
+                # No Alpha OS active model AND no regime-conditional model
+                # resolved -- there is no real model to score with today.
+                # Previously this fell through to np.zeros(), which produced
+                # a full, plausible-looking score DataFrame with no signal
+                # that it was fabricated. Fail the same way frame.empty
+                # already does (empty result), so existing callers that
+                # check `.empty` and raise (e.g. run_morning_pipeline.py)
+                # correctly treat this as "no score produced today" instead
+                # of silently trading on flat scores.
+                logger.critical(
+                    "[daily-scorer] no model available for regime=%s as_of=%s: %s. "
+                    "Returning empty score set rather than fabricating zero scores.",
+                    regime, dt, exc,
+                )
+                return pd.DataFrame(
+                    columns=[
+                        "ticker",
+                        "model_score",
+                        "regime",
+                        "sentiment_multiplier",
+                        "final_score",
+                        "suggested_weight",
+                        "quintile",
+                    ]
+                )
         if len(preds) != len(frame):
-            preds = np.resize(preds, len(frame)) if len(preds) > 0 else np.zeros(len(frame), dtype=float)
+            # A model that returns a different number of predictions than there are
+            # rows is a real backend bug. The old code np.resize()'d preds to fit,
+            # which TILES the prediction vector cyclically — silently attaching the
+            # wrong ticker's score to most names. Fail loudly instead of trading on
+            # misassigned scores.
+            raise RuntimeError(
+                f"daily_scorer_prediction_length_mismatch: model returned {len(preds)} "
+                f"predictions for {len(frame)} names (regime={regime}). Refusing to "
+                f"resize/tile predictions onto mismatched tickers."
+            )
 
         raw_scores = pd.to_numeric(pd.Series(preds), errors="coerce").fillna(0.0)
         model_scores = self.transform_model_scores(raw_scores)
@@ -1050,11 +1094,21 @@ class DailyScorer:
             out = self.overlay.apply_macro_overlay(out, as_of_date=dt)
             out["sentiment_multiplier"] = pd.to_numeric(out["sentiment_multiplier"], errors="coerce").fillna(1.0)
 
-        out["final_score"] = (
-            pd.to_numeric(out["model_score"], errors="coerce").fillna(0.0)
-            * pd.to_numeric(out["sentiment_multiplier"], errors="coerce").fillna(1.0)
-            * float(exposure_scale)
-        )
+        # Apply the sentiment damper to score MAGNITUDE while preserving direction.
+        # model_score is a SIGNED z-score; the old form
+        #   final = model_score * multiplier
+        # inverted semantics for negative (bearish) names: bad news (multiplier<1)
+        # made a negative score LESS negative, i.e. floated the worst-news weak
+        # names UP the ranking (corrupting quintile-1 ordering and the options
+        # SHORT candidate selection that consumes these scores). Instead, dampen
+        # bullish scores and DEEPEN bearish scores by the same factor: for a
+        # negative score, a multiplier of m acts as (2 - m). Clipped ≥0 so
+        # sentiment can never flip a score's sign.
+        _ms = pd.to_numeric(out["model_score"], errors="coerce").fillna(0.0)
+        _mult = pd.to_numeric(out["sentiment_multiplier"], errors="coerce").fillna(1.0)
+        _signed_mult = np.where(_ms.to_numpy() >= 0.0, _mult.to_numpy(), 2.0 - _mult.to_numpy())
+        _signed_mult = np.clip(_signed_mult, 0.0, None)
+        out["final_score"] = _ms.to_numpy() * _signed_mult * float(exposure_scale)
 
         out["quintile"] = self._assign_quintiles(out["final_score"])
         mandate = str(self.config.get("portfolio_mandate", "long_only") or "long_only").strip().lower()

@@ -14,7 +14,7 @@ Each engine has confidence weighting.
 
 Usage:
     try:
-    from intelligence.valuation_engines import ValuationEngineStack
+    from src.intelligence.valuation_engines import ValuationEngineStack
 except ImportError:
     from ValuationEngineStack import ValuationEngineStack
     
@@ -35,7 +35,7 @@ warnings.filterwarnings('ignore')
 
 # Temporal protection
 try:
-    from intelligence.temporal_signal_engine import TemporalSignalEngine
+    from src.intelligence.temporal_signal_engine import TemporalSignalEngine
 except ImportError:
     from TemporalSignalEngine import TemporalSignalEngine
 except ImportError:
@@ -86,7 +86,7 @@ class FundamentalValueEngine:
             if os.path.exists(fund_path):
                 df = pd.read_parquet(fund_path)
                 if not df.empty and ticker in df['ticker'].values:
-                    return df[df['ticker'] == ticker]# TEMPORAL CHECK NEEDED: .iloc[-1]
+                    return df[df['ticker'] == ticker].iloc[-1]  # most recent row for this ticker
         except Exception as e:
             pass
         
@@ -96,7 +96,7 @@ class FundamentalValueEngine:
             if os.path.exists(scores_path):
                 df = pd.read_parquet(scores_path)
                 if not df.empty and ticker in df['ticker'].values:
-                    return df[df['ticker'] == ticker]# TEMPORAL CHECK NEEDED: .iloc[-1]
+                    return df[df['ticker'] == ticker].iloc[-1]  # most recent row for this ticker
         except Exception as e:
             pass
         
@@ -256,7 +256,7 @@ class MacroAdjustedValueEngine:
             if os.path.exists(self.macro_data_path):
                 df = pd.read_parquet(self.macro_data_path)
                 if not df.empty:
-                    latest = df# TEMPORAL CHECK NEEDED: .iloc[-1]
+                    latest = df.iloc[-1]  # most recent macro reading
                     return {
                         'macro_score': latest.get('MacroScore', 0.0),
                         'growth': latest.get('Contrib_G', 0.0),
@@ -697,7 +697,7 @@ class MarketImpliedValueEngine:
                 'status': 'no_price_data'
             }
         
-        current_price = price_df['Close']# TEMPORAL CHECK NEEDED: .iloc[-1]
+        current_price = price_df['Close'].iloc[-1]  # most recent close
         
         signals = {}
         z_scores = []
@@ -914,70 +914,118 @@ class ValuationEngineStack:
     
     def compute_universe_valuations(self, tickers=None):
         """
-        Compute valuations for entire universe
-        
-        This creates the institutional-grade valuation database
+        Compute valuations for the entire universe, VECTORIZED, from the
+        already-computed per-industry valuation surface (data/processed/
+        valuation.parquet).
+
+        Why this replaced the old per-ticker loop: the previous implementation
+        called compute_all_valuations() -> each engine's safe_read_data(), which
+        read data/processed/fundamentals.parquet / scores.parquet. Those files
+        carry NO pe/pb/roe/debt ratio columns, so every ratio lookup missed,
+        every engine fell through to its neutral default, and the entire 497-name
+        output collapsed to a single universe-wide constant (composite_z =
+        0.164677 for every stock, identical "fairly valued" narrative) — an
+        authoritative-looking table with zero stock-specific information. It also
+        used hard-coded universal anchors (P/E median 20 for every sector) and a
+        percent-vs-fraction ROE unit mismatch.
+
+        valuation.parquet already contains sector-aware, per-industry percentile
+        ranks and composite scores (institutional_value_score,
+        buffett_quality_score, margin_of_safety, pe_pct/pb_pct/ev_ebitda_pct).
+        We map the four "brains" onto four genuinely distinct, real, per-stock
+        signals and cross-sectionally standardize each, so the output varies per
+        stock (guarded by scripts/ci/check_live_artifact_invariants.py:
+        valuation_engines_nondegenerate).
+
+        Convention (matches main()): composite_z > 0 = undervalued/cheap.
         """
-        
-        if tickers is None:
-            # Load universe from scores
-            try:
-                scores_df = pd.read_parquet('data/processed/scores.parquet')
-                if not scores_df.empty:
-                    tickers = scores_df['ticker'].unique()[:50]  # Limit for testing
-                else:
-                    tickers = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'HINDUNILVR']
-            except:
-                tickers = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'HINDUNILVR']
-        
-        print(f"🧠 Computing valuations for {len(tickers)} stocks...")
-        
-        all_results = []
-        
-        for i, ticker in enumerate(tickers):
-            print(f"  Processing {ticker} ({i+1}/{len(tickers)})...")
-            
-            try:
-                result = self.compute_all_valuations(ticker)
-                
-                # Flatten for DataFrame storage
-                flat_result = {
-                    'ticker': ticker,
-                    'date': result['date'],
-                    'fundamental_z': result['engines']['fundamental']['z_score'],
-                    'fundamental_confidence': result['engines']['fundamental']['confidence'],
-                    'macro_adjusted_z': result['engines']['macro_adjusted']['z_score'],
-                    'macro_confidence': result['engines']['macro_adjusted']['confidence'],
-                    'relative_z': result['engines']['relative']['z_score'],
-                    'relative_confidence': result['engines']['relative']['confidence'],
-                    'market_implied_z': result['engines']['market_implied']['z_score'],
-                    'implied_confidence': result['engines']['market_implied']['confidence'],
-                    'composite_z': result['synthesis']['composite_z_score'],
-                    'composite_confidence': result['synthesis']['composite_confidence'],
-                    'agreement': result['synthesis']['agreement'],
-                    'narrative': result['synthesis']['narrative']
-                }
-                
-                all_results.append(flat_result)
-                
-            except Exception as e:
-                print(f"    Error processing {ticker}: {e}")
-                continue
-        
-        if all_results:
-            # Save to parquet
-            df = pd.DataFrame(all_results)
-            
-            # Ensure directory exists
-            os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
-            
-            df.to_parquet(self.output_path, index=False)
-            print(f"💾 Saved {len(all_results)} valuations to {self.output_path}")
-            
-            return df
-        else:
-            print("❌ No successful valuations computed")
+        val_path = 'data/processed/valuation.parquet'
+        if not os.path.exists(val_path):
+            print(f"❌ {val_path} missing — cannot compute valuations")
             return pd.DataFrame()
+        val = pd.read_parquet(val_path)
+        if val.empty:
+            print("❌ valuation.parquet is empty")
+            return pd.DataFrame()
+        if 'date' in val.columns:
+            val = val.sort_values('date').groupby('ticker', as_index=False).tail(1)
+        val = val.reset_index(drop=True)
+
+        if tickers is not None:
+            want = {str(t) for t in tickers}
+            tk = val['ticker'].astype(str)
+            val = val[tk.isin(want)
+                      | (tk + '.NS').isin(want)
+                      | tk.str.replace('.NS', '', regex=False).isin(want)].reset_index(drop=True)
+        if val.empty:
+            print("❌ No valuation rows after ticker filter")
+            return pd.DataFrame()
+
+        print(f"🧠 Computing valuations for {len(val)} stocks (vectorized from valuation surface)...")
+
+        def zc(col: str) -> pd.Series:
+            """Cross-sectional z-score of a real signal, NaN->median, clipped."""
+            s = pd.to_numeric(val.get(col), errors='coerce')
+            s = s.fillna(s.median())
+            mu, sd = s.mean(), s.std(ddof=0)
+            if not np.isfinite(sd) or sd < 1e-9:
+                return pd.Series(0.0, index=val.index)
+            return ((s - mu) / sd).clip(-3.0, 3.0)
+
+        # Sector-relative cheapness (low valuation percentile within industry = cheap).
+        val['_rel_base'] = (
+            (1.0 - pd.to_numeric(val.get('pe_pct'), errors='coerce'))
+            + (1.0 - pd.to_numeric(val.get('pb_pct'), errors='coerce'))
+            + (1.0 - pd.to_numeric(val.get('ev_ebitda_pct'), errors='coerce'))
+        ) / 3.0
+
+        out = pd.DataFrame({'ticker': val['ticker'].astype(str).values})
+        out['date'] = pd.Timestamp.now()
+        # Four distinct real brains:
+        out['fundamental_z'] = zc('institutional_value_score').values   # cheapness + quality composite
+        out['macro_adjusted_z'] = zc('buffett_quality_score').values    # durability / macro-resilient quality
+        out['relative_z'] = zc('_rel_base').values                      # cheap vs sector peers
+        out['market_implied_z'] = zc('margin_of_safety').values         # intrinsic vs market price
+
+        cov_cols = ['institutional_value_score', 'buffett_quality_score', '_rel_base', 'margin_of_safety']
+        coverage = val[cov_cols].apply(lambda c: pd.to_numeric(c, errors='coerce')).notna().mean(axis=1).to_numpy()
+        base_conf = 0.4 + 0.5 * coverage
+        out['fundamental_confidence'] = base_conf
+        out['macro_confidence'] = base_conf
+        out['relative_confidence'] = base_conf
+        out['implied_confidence'] = base_conf
+
+        zmat = out[['fundamental_z', 'macro_adjusted_z', 'relative_z', 'market_implied_z']].to_numpy(float)
+        cmat = out[['fundamental_confidence', 'macro_confidence', 'relative_confidence', 'implied_confidence']].to_numpy(float)
+        wsum = cmat.sum(axis=1)
+        composite = (zmat * cmat).sum(axis=1) / np.where(wsum > 0, wsum, 1.0)
+        out['composite_z'] = composite
+        out['composite_confidence'] = cmat.mean(axis=1)
+        zstd = zmat.std(axis=1)
+        zmabs = np.abs(zmat).mean(axis=1)
+        out['agreement'] = np.clip(1.0 - zstd / (zmabs + 0.5), 0.0, 1.0)
+
+        def _narrative(z: float) -> str:
+            if z > 0.75:
+                lvl = 'materially undervalued'
+            elif z > 0.25:
+                lvl = 'modestly undervalued'
+            elif z < -0.75:
+                lvl = 'materially overvalued'
+            elif z < -0.25:
+                lvl = 'modestly overvalued'
+            else:
+                lvl = 'fairly valued'
+            return (f"Composite z={z:+.2f}: {lvl} vs sector on fundamentals, "
+                    f"quality, relative multiples and intrinsic value.")
+
+        out['narrative'] = [_narrative(z) for z in composite]
+
+        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        out.to_parquet(self.output_path, index=False)
+        print(f"💾 Saved {len(out)} valuations to {self.output_path} "
+              f"(composite_z std={float(np.std(composite)):.3f})")
+        return out
     
     def load_latest_valuations(self):
         """Load latest valuation results"""
