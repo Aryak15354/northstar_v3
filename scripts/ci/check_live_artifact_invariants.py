@@ -182,6 +182,43 @@ def inv_scores_have_spread() -> Result:
     return Result(name, "FAIL", f"flat cross-section: {col} std={std:.2e}", {"n": int(len(df))})
 
 
+def inv_scores_book_is_top_ranked() -> Result:
+    """The scorer's suggested book must actually hold TOP-RANKED names.
+
+    Guards the index-identity regression where _build_weights intersected an
+    ignore_index RangeIndex with the frame's labels and silently weighted the
+    first ~20 tickers in universe order (score ranks 101-496) instead of the
+    turnover-constrained top-N. Count/gross checks alone cannot see rank quality
+    — this asserts the held names' median score percentile is genuinely high.
+    """
+    name = "scores_book_is_top_ranked"
+    path = D / "processed/scores.parquet"
+    df = _read(path)
+    if df is None:
+        return _skip(name, "scores.parquet missing")
+    if "suggested_weight" not in df.columns or "final_score" not in df.columns:
+        return _skip(name, "no suggested_weight/final_score columns")
+    w = pd.to_numeric(df["suggested_weight"], errors="coerce").fillna(0.0)
+    held = df[w > 1e-9]
+    if held.empty:
+        return _skip(name, "no held names in book")
+    pct = pd.to_numeric(df["final_score"], errors="coerce").rank(pct=True)
+    held_pct = pct.loc[held.index]
+    median_pct = float(held_pct.median())
+    # A top-N-of-~500 long book should sit near the top of the ranking. The
+    # turnover constraint legitimately retains a few slipped names (rank<=35),
+    # so require median >= 0.70 rather than a razor-thin bound.
+    if median_pct >= 0.70:
+        return Result(name, "PASS",
+                      f"{len(held)} held names, median score pct {median_pct:.2f}",
+                      {"held": int(len(held)), "median_pct": round(median_pct, 3)})
+    return Result(name, "FAIL",
+                  f"book is NOT top-ranked: median score pct {median_pct:.2f} "
+                  f"across {len(held)} held names (min {held_pct.min():.2f})",
+                  {"held": int(len(held)), "median_pct": round(median_pct, 3),
+                   "min_pct": round(float(held_pct.min()), 3)})
+
+
 def inv_portfolio_weights_sane() -> Result:
     """The live book must be a concentrated book, not the whole quintile.
 
@@ -366,6 +403,7 @@ INVARIANTS: tuple[Callable[[], Result], ...] = (
     inv_valuation_engines_nondegenerate,
     inv_stock_roles_nondegenerate,
     inv_scores_have_spread,
+    inv_scores_book_is_top_ranked,
     inv_portfolio_weights_sane,
     inv_nav_no_backfill,
     inv_refresh_scheduler_healthy,

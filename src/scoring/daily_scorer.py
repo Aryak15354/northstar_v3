@@ -927,7 +927,19 @@ class DailyScorer:
                 top_n=top_n,
                 keep_threshold=35,
             )
-            long_idx = [idx for idx in constrained.index if idx in frame.index]
+            # IDENTITY MUST BE KEYED ON TICKER, NEVER INDEX: apply_turnover_constraint
+            # concatenates its result with ignore_index=True, so constrained.index is
+            # a fresh RangeIndex 0..N-1 that has NOTHING to do with frame's labels.
+            # A previous version intersected those positional labels with frame.index
+            # and silently weighted the FIRST N rows of the frame (the first ~20
+            # tickers in universe order, score ranks 101-496) instead of the selected
+            # book — caught by the Fable-5 verification pass on live scores.parquet.
+            constrained_tickers = set(constrained["ticker"].astype(str))
+            long_mask = frame["ticker"].astype(str).isin(constrained_tickers)
+            long_idx = frame.index[long_mask].tolist()
+            if len(long_idx) > top_n:
+                # Safety: the mandate is top_n names; never hold more.
+                long_idx = score.loc[long_idx].nlargest(top_n).index.tolist()
         else:
             # No turnover memory (e.g. backtest cold start): take the top-N names
             # by final_score directly.

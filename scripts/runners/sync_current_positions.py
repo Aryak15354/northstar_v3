@@ -36,6 +36,28 @@ from src.core.state import UnifiedState
 from src.core.state_authority import StateAuthority, StateUpdate, WritePriority
 from src.pnl.nav_calculator import NAVCalculator
 
+PNL_CONFIG_PATH = PROJECT_ROOT / "config" / "pnl_config.yaml"
+
+
+def _fund_starting_capital(fallback: float = 10_000_000.0) -> float:
+    """The fund's single fixed capital base (config/pnl_config.yaml).
+
+    This used to be a bare 10_000_000.0 literal that never read the fund
+    config, so after the paper fund was resized to Rs.100cr this script kept
+    "funding" the ledger with the OLD Rs.1cr default while netting >Rs.75cr of
+    real trades against it — producing a -Rs.56.7cr cash balance and a negative
+    portfolio.total_value in production (2026-07-06)."""
+    try:
+        import yaml
+        if PNL_CONFIG_PATH.exists():
+            cfg = yaml.safe_load(PNL_CONFIG_PATH.read_text(encoding="utf-8")) or {}
+            val = (cfg.get("pnl", {}) or {}).get("nav", {}).get("starting_capital_inr")
+            if val:
+                return float(val)
+    except Exception:
+        pass
+    return float(fallback)
+
 
 WEIGHTS_PATH = PROJECT_ROOT / "data/processed/portfolio_weights.parquet"
 PRICES_PATH = PROJECT_ROOT / "data/processed/prices.parquet"
@@ -1136,10 +1158,13 @@ def _sync_portfolio_state(
     authority.checkpoint(force=True)
 
 
-def build_current_positions(default_capital: float = 10_000_000.0) -> Tuple[Dict[str, Any], pd.DataFrame]:
+def build_current_positions(default_capital: float | None = None) -> Tuple[Dict[str, Any], pd.DataFrame]:
+    if default_capital is None:
+        default_capital = _fund_starting_capital()
     runtime_payload = _safe_json(RUNTIME_PATH)
     runtime_holdings_df, runtime_meta = _load_runtime_holdings_frame()
 
+    advisory_empty_reason: str | None = None
     if runtime_holdings_df.empty:
         reason = str(runtime_meta.get("reason") or "runtime_holdings_unavailable")
         options_only_runtime = bool(runtime_meta.get("allow_empty_positions"))
@@ -1150,9 +1175,17 @@ def build_current_positions(default_capital: float = 10_000_000.0) -> Tuple[Dict
                 and len(open_options) > 0
             )
         if not options_only_runtime:
-            raise RuntimeError(
-                "Runtime holdings unavailable; refusing weights fallback "
-                f"(reason={reason})"
+            # A genuinely empty runtime book (advisory mode: nothing has been
+            # executed live) is a VALID state, not an error. We still refuse the
+            # weights fallback — synthesising positions from target weights was
+            # the fabrication the audit banned — but crashing here meant
+            # current_positions.json went stale (it froze for days), which then
+            # broke every consumer that compares against it. Publish an explicit,
+            # honest EMPTY book with the reason recorded instead.
+            advisory_empty_reason = reason
+            print(
+                f"⚠️ runtime holdings empty (reason={reason}) — publishing an "
+                f"explicit empty advisory book (no weights fabrication)."
             )
 
     holdings_df = runtime_holdings_df.copy()
@@ -1231,12 +1264,17 @@ def build_current_positions(default_capital: float = 10_000_000.0) -> Tuple[Dict
     }
     if runtime_meta:
         payload["runtime_snapshot"] = runtime_meta
+    if advisory_empty_reason is not None:
+        # Self-describing empty book: consumers (and humans) can distinguish
+        # "advisory mode, nothing executed" from "sync broken / file stale".
+        payload["position_source"] = "advisory_mode_empty"
+        payload["advisory_empty_reason"] = advisory_empty_reason
     return payload, holdings_df
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Sync current positions and dashboard-friendly history surfaces")
-    p.add_argument("--default-capital", type=float, default=10_000_000.0)
+    p.add_argument("--default-capital", type=float, default=_fund_starting_capital())
     p.add_argument("--output", type=str, default=str(CURRENT_POSITIONS_JSON_PATH))
     return p.parse_args()
 

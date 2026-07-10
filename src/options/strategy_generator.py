@@ -359,13 +359,22 @@ class StrategyGenerator:
             self._create_leg(long_put, 'BUY', lot_size)
         ]
         
-        # Calculate risk metrics
+        # Calculate risk metrics.
+        # Sign convention: leg.total_premium is BUY=+ / SELL=-, so for a net-credit
+        # structure sum(total_premium) is NEGATIVE. The credit actually received is
+        # its negation. Two long-standing bugs fixed here:
+        #   1. max_profit was set to the signed (negative) sum, so
+        #      risk_reward_ratio()'s `max_profit <= 0` branch returned inf for
+        #      EVERY iron condor — RR-based trade filtering was degenerate.
+        #   2. max_loss omitted the credit received, overstating risk:
+        #      IC max loss = wider wing width x lot size - credit received.
         call_spread_width = long_call['strike'] - short_call['strike']
         put_spread_width = short_put['strike'] - long_put['strike']
-        max_loss = max(call_spread_width, put_spread_width) * lot_size
-        
-        net_credit = sum(leg.total_premium for leg in legs)
-        max_profit = net_credit
+
+        net_credit = sum(leg.total_premium for leg in legs)   # signed: negative = credit
+        credit_received = max(0.0, -net_credit)
+        max_profit = credit_received
+        max_loss = max(0.0, max(call_spread_width, put_spread_width) * lot_size - credit_received)
         
         # Calculate portfolio Greeks
         portfolio_greeks = self._calculate_portfolio_greeks(legs)
