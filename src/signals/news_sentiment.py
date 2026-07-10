@@ -21,10 +21,24 @@ import pandas as pd
 import requests
 from pandas.tseries.offsets import BDay
 
+
+def _dominant_model(models: "pd.Series") -> str:
+    """Most-common sentiment model in a ticker-day group. Returns
+    'mixed:<a>+<b>' when a day used more than one model — a degradation signal
+    (e.g. FinBERT silently fell back to lexicon for part of the batch)."""
+    vals = models.dropna().astype(str)
+    vals = vals[vals != ""]
+    if vals.empty:
+        return "unknown"
+    counts = vals.value_counts()
+    if len(counts) == 1:
+        return str(counts.index[0])
+    return "mixed:" + "+".join(sorted(counts.index[:2]))
+
 try:
     from scripts.utils.progress_resume import Progress, ResumeState
 except ModuleNotFoundError:  # pragma: no cover
-    from utils.progress_resume import Progress, ResumeState
+    from src.utils.progress_resume import Progress, ResumeState
 
 
 GDELT_URL = "https://api.gdeltproject.org/api/v2/doc/doc"
@@ -864,15 +878,21 @@ class NewsSentimentBuilder:
         headlines: pd.Series,
         *,
         batch_size: int = 32,
-    ) -> tuple[pd.Series, pd.Series]:
+    ) -> tuple[pd.Series, pd.Series, str]:
+        """Returns (polarity, conviction, model_used). model_used is
+        'finbert:ProsusAI/finbert' when FinBERT actually ran, or 'lexicon' when
+        transformers is unavailable and we silently fell back — so a degraded run
+        is RECORDED per row rather than being indistinguishable from a real
+        FinBERT run (the mixed-model incident this provenance exists to catch)."""
         try:
             from transformers import pipeline  # type: ignore
         except Exception:
-            return self._score_lexicon(headlines)
+            pol, conv = self._score_lexicon(headlines)
+            return pol, conv, "lexicon"
 
         texts = headlines.fillna("").astype(str).tolist()
         if not texts:
-            return pd.Series(dtype=float), pd.Series(dtype=float)
+            return pd.Series(dtype=float), pd.Series(dtype=float), "finbert:ProsusAI/finbert"
 
         model = pipeline("sentiment-analysis", model="ProsusAI/finbert", tokenizer="ProsusAI/finbert")
         pol: list[float] = []
@@ -896,7 +916,7 @@ class NewsSentimentBuilder:
                     pol.append(float(np.clip(signed, -1.0, 1.0)))
                     conv.append(float(np.clip(abs(signed), 0.0, 1.0)))
                 p.update(len(chunk))
-        return pd.Series(pol, dtype=float), pd.Series(conv, dtype=float)
+        return pd.Series(pol, dtype=float), pd.Series(conv, dtype=float), "finbert:ProsusAI/finbert"
 
     def score_sentiment(
         self,
@@ -917,9 +937,13 @@ class NewsSentimentBuilder:
 
         use_finbert = str(model).strip().lower() in {"finbert", "auto"}
         if use_finbert:
-            pol, conv = self._score_finbert(out["headline"], batch_size=finbert_batch_size)
+            pol, conv, model_used = self._score_finbert(out["headline"], batch_size=finbert_batch_size)
         else:
             pol, conv = self._score_lexicon(text_for_score)
+            model_used = "lexicon"
+        # Record which model ACTUALLY scored these rows (finbert may have silently
+        # fallen back to lexicon). Propagated to news_dataset and the daily panels.
+        out["sentiment_model"] = model_used
 
         event_prior = [
             self._event_prior(st, txt)
@@ -1063,6 +1087,10 @@ class NewsSentimentBuilder:
         work["ticker"] = work["ticker"].map(self._normalize_ticker)
         work["sentiment"] = pd.to_numeric(work.get("sentiment"), errors="coerce")
         work["sentiment_conviction"] = pd.to_numeric(work.get("sentiment_conviction"), errors="coerce")
+        # Provenance: which model produced each headline's score (rows from
+        # pre-provenance runs are 'unknown'). Carried into the daily panel so a
+        # silent finbert->lexicon degradation is detectable downstream.
+        work["sentiment_model"] = work.get("sentiment_model", "unknown").fillna("unknown").astype(str)
         work = work.dropna(subset=["date", "ticker"])
         work = work[work["ticker"] != ""].copy()
         if work.empty:
@@ -1075,6 +1103,7 @@ class NewsSentimentBuilder:
                 sentiment_conviction=("sentiment_conviction", "mean"),
                 news_volume=("headline", "count"),
                 source=("source", "last"),
+                sentiment_model=("sentiment_model", _dominant_model),
             )
             .sort_values(["ticker", "date"], kind="mergesort")
         )

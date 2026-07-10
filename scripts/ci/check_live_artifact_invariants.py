@@ -274,6 +274,57 @@ def inv_consumed_feeds_fresh() -> Result:
     return Result(name, "PASS", f"{len(checked)} feeds fresh", {"checked": checked})
 
 
+def inv_sentiment_model_consistent() -> Result:
+    """The sentiment panel must not have silently DOWNGRADED its model.
+
+    company_sentiment_daily carries a sentiment_model provenance column
+    (finbert:... / lexicon / mixed:...). FinBERT can silently fall back to the
+    lexicon when transformers is unavailable, changing every sentiment signal
+    with no other trace — the mixed-model incident this guards against. FAIL if
+    the recent window's dominant model is weaker than the historical norm, or if
+    recent days are 'mixed'. SKIP on pre-provenance data (all 'unknown').
+    """
+    name = "sentiment_model_consistent"
+    path = D / "canonical/sentiment/company_sentiment_daily.parquet"
+    df = _read(path, columns=None)
+    if df is None or "sentiment_model" not in df.columns or "date" not in df.columns:
+        return _skip(name, "no sentiment_model provenance yet")
+    df = df[["date", "sentiment_model"]].copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["sentiment_model"] = df["sentiment_model"].astype(str)
+    df = df[(df["sentiment_model"] != "unknown") & df["date"].notna()]
+    if df.empty:
+        return _skip(name, "sentiment_model all unknown (pre-provenance)")
+
+    def _rank(model: str) -> int:  # higher = stronger
+        m = str(model).lower()
+        if m.startswith("finbert"):
+            return 2
+        if m.startswith("mixed"):
+            return 1
+        return 0  # lexicon / other
+
+    cutoff = df["date"].max() - pd.Timedelta(days=30)
+    recent = df[df["date"] >= cutoff]
+    history = df[df["date"] < cutoff]
+    if recent.empty:
+        return _skip(name, "no recent sentiment rows")
+    recent_dom = recent["sentiment_model"].value_counts().idxmax()
+    mixed_frac = float(recent["sentiment_model"].str.startswith("mixed").mean())
+    hist_dom = history["sentiment_model"].value_counts().idxmax() if not history.empty else recent_dom
+
+    problems = []
+    if _rank(recent_dom) < _rank(hist_dom):
+        problems.append(f"model downgraded: history={hist_dom} -> recent={recent_dom}")
+    if mixed_frac > 0.2:
+        problems.append(f"{mixed_frac:.0%} of recent days are mixed-model")
+    if problems:
+        return Result(name, "FAIL", "; ".join(problems),
+                      {"recent_dominant": recent_dom, "history_dominant": hist_dom,
+                       "mixed_frac": round(mixed_frac, 3)})
+    return Result(name, "PASS", f"recent model {recent_dom}", {"recent_dominant": recent_dom})
+
+
 def inv_nav_no_backfill() -> Result:
     """The paper-fund NAV must be an honest walk-forward record, not a backfill.
 
@@ -319,6 +370,7 @@ INVARIANTS: tuple[Callable[[], Result], ...] = (
     inv_nav_no_backfill,
     inv_refresh_scheduler_healthy,
     inv_consumed_feeds_fresh,
+    inv_sentiment_model_consistent,
 )
 
 
