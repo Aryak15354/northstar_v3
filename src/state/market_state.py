@@ -996,12 +996,18 @@ class MarketStateEngine:
         try:
             if os.path.exists(self.output_path):
                 existing_df = pd.read_parquet(self.output_path)
-                # Keep only last 90 days
-                cutoff_date = datetime.now() - timedelta(days=90)
+                # Retain 5 years of daily regime history (one tiny row/day):
+                # the 90-day window made long-run regime analysis impossible
+                # and left the dashboard's regime-history contract unservable.
+                cutoff_date = datetime.now() - timedelta(days=1825)
                 if 'date' in existing_df.columns:
                     existing_df['date'] = pd.to_datetime(existing_df['date'], errors='coerce')
                     existing_df = existing_df.dropna(subset=['date'])
                     existing_df = existing_df[existing_df['date'] >= cutoff_date]
+                    # Never re-absorb fabricated stub rows into history.
+                    if 'regime' in existing_df.columns:
+                        existing_df = existing_df[~existing_df['regime'].astype(str)
+                                                  .str.startswith(('ci_fast', 'ci_stub'))]
                 else:
                     # Legacy placeholder files (without date) are discarded.
                     existing_df = pd.DataFrame(columns=df.columns)
@@ -1490,27 +1496,27 @@ class IntelligentMarketStateEngine(MarketStateEngine):
         print(f"\n✅ Intelligent Market State operational")
         return state
 
-if __name__ == "__main__":
-    main()
-
 # =========================== MAIN EXECUTION ===========================
+# NOTE: a stray `if __name__ == "__main__": main()` used to sit HERE, before
+# main() was defined below, so running this module raised NameError('main') and
+# market_state could never be regenerated standalone. Removed; the real entry
+# point is the __main__ block at the end of the file.
 
 def main():
-    """Main execution with intelligence integration"""
-    
-    # Try intelligent engine first
+    """Main execution with intelligence integration."""
+    # Try the intelligent engine first; fall back to the basic engine.
+    # (These previously referenced non-existent class names —
+    # IntelligentUnifiedStateManager / UnifiedStateManager — so main() always
+    # NameError'd. The real classes are IntelligentMarketStateEngine and
+    # MarketStateEngine.)
     try:
-        intelligent_engine = IntelligentUnifiedStateManager()
-        state = intelligent_engine.run_intelligent_update()
-        return state
+        intelligent_engine = IntelligentMarketStateEngine()
+        return intelligent_engine.run_intelligent_update()
     except Exception as e:
         print(f"⚠️ Intelligent engine failed: {e}")
         print("🔄 Falling back to basic market state engine...")
-        
-        # Fallback to basic engine
-        basic_engine = UnifiedStateManager()
-        state = basic_engine.run()
-        return state
+        basic_engine = MarketStateEngine()
+        return basic_engine.run()
 
 if __name__ == "__main__":
     main()

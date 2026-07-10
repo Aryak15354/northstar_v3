@@ -362,6 +362,42 @@ def inv_sentiment_model_consistent() -> Result:
     return Result(name, "PASS", f"recent model {recent_dom}", {"recent_dominant": recent_dom})
 
 
+def inv_dashboard_freshness() -> Result:
+    """No more than a small fraction of active dashboard visuals may render stale
+    data. This is what turned "64% of panels silently frozen" into a hard signal:
+    the dashboard's own registry + freshness resolver decide truth, so a dead feed
+    or a repointing regression fails CI instead of quietly lying in a chart.
+    """
+    name = "dashboard_freshness"
+    try:
+        if str(PROJECT_ROOT) not in sys.path:
+            sys.path.insert(0, str(PROJECT_ROOT))
+        from src.dashboard.registry import VISUALS
+        from src.dashboard import freshness as F
+    except Exception as exc:
+        # streamlit or a dashboard dep may be absent in a bare CI image — SKIP,
+        # don't fail (the dashboard tab covers itself; this is a bonus gate).
+        return _skip(name, f"dashboard import unavailable: {type(exc).__name__}: {exc}")
+    total = 0
+    stale = []
+    for v in VISUALS:
+        fr = F.spec_freshness(v)
+        if fr["status"] in (F.STATUS_FRESH, F.STATUS_AGING, F.STATUS_STALE, F.STATUS_MISSING):
+            total += 1
+        if fr["status"] in (F.STATUS_STALE, F.STATUS_MISSING):
+            stale.append((v.visual_id, fr.get("detail")))
+    if total == 0:
+        return _skip(name, "no resolvable visuals")
+    frac = len(stale) / total
+    # Some genuinely-lagged upstreams (e.g. monthly GST) are acceptable; a
+    # widespread stale front is not. Threshold 15%.
+    if frac <= 0.15:
+        return Result(name, "PASS", f"{total - len(stale)}/{total} visuals fresh",
+                      {"stale": len(stale), "total": total})
+    return Result(name, "FAIL", f"{len(stale)}/{total} visuals stale ({frac:.0%})",
+                  {"stale_sample": stale[:8], "total": total})
+
+
 def inv_nav_no_backfill() -> Result:
     """The paper-fund NAV must be an honest walk-forward record, not a backfill.
 
@@ -409,6 +445,7 @@ INVARIANTS: tuple[Callable[[], Result], ...] = (
     inv_refresh_scheduler_healthy,
     inv_consumed_feeds_fresh,
     inv_sentiment_model_consistent,
+    inv_dashboard_freshness,
 )
 
 

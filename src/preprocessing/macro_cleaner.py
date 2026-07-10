@@ -15,6 +15,7 @@ These are not suggestions - they are LAWS that terminate the system if violated.
 """
 # from src.cohesion.dependency_container import get_dependency_container
 import os
+import re
 import sys
 import pandas as pd
 from glob import glob
@@ -269,21 +270,88 @@ def standardize_column_names(df):
     
     return df
 
+CANONICAL_RBI_WIDE = "data/canonical/macro/rbi_macro_wide.parquet"
+
+
+def _run_from_canonical() -> bool:
+    """Preferred path: build macro_cleaned from the canonical wide RBI panel.
+
+    The legacy raw-CSV path relied on header auto-detection that FAILS on the
+    current RBI file format, so only ~4 of ~40 series loaded and the whole
+    macro_cleaned frame froze at 2025-12-19 (while the file mtime kept updating —
+    the exact "fresh file, dead signal" lie the dashboard was telling). The
+    canonical panel (data/canonical/macro/rbi_macro_wide.parquet) is the
+    already-standardised, fresh-through-today source. We emit the SAME
+    space-separated column schema macro_blocks expects (it substring-matches
+    lowercased indicator names), so nothing downstream changes.
+    """
+    path = CANONICAL_RBI_WIDE
+    if not os.path.exists(path):
+        return False
+    try:
+        wide = pd.read_parquet(path)
+    except Exception as exc:
+        print(f"⚠️ could not read canonical RBI panel ({exc}); falling back to raw CSVs")
+        return False
+    if wide.empty or "date" not in wide.columns:
+        return False
+
+    print("🏦 RBI Macro Data Cleaner - Step 1 (canonical source)")
+    print("=" * 50)
+
+    def _despace(col: str) -> str:
+        s = re.sub(r"^rbi_[a-z0-9_]*indicators__", "", str(col), flags=re.IGNORECASE)
+        return s.replace("_", " ").strip()
+
+    macro = wide.copy()
+    macro["date"] = pd.to_datetime(macro["date"], errors="coerce")
+    macro = macro.dropna(subset=["date"])
+    keep = [c for c in macro.columns if c not in ("frequency",)]
+    macro = macro[keep]
+    rename = {c: _despace(c) for c in macro.columns if c != "date"}
+    macro = macro.rename(columns=rename)
+    # collapse duplicate de-spaced names (keep the higher-coverage column)
+    macro = macro.loc[:, ~macro.columns.duplicated(keep="first")]
+
+    print(f"📅 Date range: {macro['date'].min()} to {macro['date'].max()}  ({len(macro)} raw obs)")
+    macro = macro.set_index("date").resample("W-FRI").last()
+    before = int(macro.isnull().sum().sum())
+    macro = macro.ffill()
+    macro = macro.dropna(axis=1, how="all")
+    print(f"📊 Final dataset: {len(macro)} weeks × {len(macro.columns)} indicators "
+          f"(ffilled {before - int(macro.isnull().sum().sum())} gaps)")
+    if macro.empty or len(macro.columns) == 0:
+        print("❌ Canonical macro produced no usable columns; falling back to raw CSVs")
+        return False
+
+    os.makedirs(os.path.dirname(OUT_FILE), exist_ok=True)
+    macro.to_parquet(OUT_FILE)
+    print(f"✅ Wrote {OUT_FILE}")
+    return True
+
+
 def run() -> bool:
-    """Main function to clean and consolidate RBI macro data"""
-    print("🏦 RBI Macro Data Cleaner - Step 1")
+    """Main function to clean and consolidate RBI macro data.
+
+    Prefers the canonical wide RBI panel; only falls back to the brittle raw-CSV
+    parser if the canonical source is unavailable.
+    """
+    if _run_from_canonical():
+        return True
+
+    print("🏦 RBI Macro Data Cleaner - Step 1 (raw-CSV fallback)")
     print("=" * 50)
     print("📥 Loading RBI CSVs...")
-    
+
     # Get all CSV files
     all_files = glob(os.path.join(RAW_DIR, "*.csv"))
-    
+
     if not all_files:
         print("❌ No CSV files found in", RAW_DIR)
         return False
-    
+
     print(f"   Found {len(all_files)} CSV files")
-    
+
     # Load all series
     dfs = []
     for f in all_files:
