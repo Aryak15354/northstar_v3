@@ -28,6 +28,147 @@ from scripts.load_screener_to_pipeline import (  # noqa: E402
 from src.signals.credit_ratings import rating_to_numeric  # noqa: E402
 
 
+# 1 crore = 1e7 rupees. Screener quarterly values are reported in ₹ crores;
+# yfinance reports in absolute rupees, so its monetary fields are divided by
+# this to align units before the two sources are merged.
+_RUPEES_PER_CRORE = 1e7
+_YFINANCE_QUARTERLY_PATH = REPO_ROOT / "data/processed/fundamentals.parquet"
+# Indian quarterly results are filed ~45 days after quarter-end; screener rows
+# use exactly this lag for availability_date, so match it for yfinance rows.
+_QUARTERLY_REPORT_LAG_DAYS = 45
+
+# The native yfinance fundamentals panel is QUARTERLY. To build a true ANNUAL
+# figure we must aggregate the four fiscal-year quarters correctly: income-
+# statement / cash-flow FLOWS are summed over the year, while balance-sheet
+# STOCKS (and share counts) are point-in-time and take the fiscal-year-end
+# value. Treating the Jan–Mar quarter as "the year" (the historical bug)
+# understated every recent annual by ~4x and broke YoY growth.
+_NATIVE_FLOW_COLS = frozenset({
+    "revenue", "gross_profit", "cost_of_revenue", "ebitda", "operating_income",
+    "net_income", "tax_provision", "other_income", "restructuring_charges",
+    "impairment_charges", "bad_debt_expense", "operating_cash_flow", "capex",
+    "free_cash_flow", "depreciation_amortization", "depreciation", "amortization",
+    "interest_expense", "change_in_working_capital", "interest_paid_cfo",
+    "interest_received_cfo", "cash_dividends_paid",
+})
+_NATIVE_STOCK_COLS = frozenset({
+    "total_assets", "equity", "total_debt", "minority_interest",
+    "cash_and_equivalents", "receivables", "inventory", "payables",
+    "working_capital", "deferred_revenue", "lease_liabilities", "gross_ppe",
+    "shares_outstanding",
+})
+
+
+def _build_quarterly_yfinance(path: Path = _YFINANCE_QUARTERLY_PATH) -> "pd.DataFrame":
+    """Map the yfinance processed fundamentals (data/processed/fundamentals.parquet,
+    produced by src/processing/fundamental_processor.py) into the same
+    pre-normalization schema the screener quarterly path yields, so the two can
+    be merged in build_fundamentals_quarterly. Monetary fields are converted
+    from absolute rupees to ₹ crores; EPS is derived as net_income /
+    shares_outstanding (already ₹/share, no scaling). Returns empty if the file
+    is absent."""
+    if not path.exists():
+        return pd.DataFrame()
+    try:
+        raw = pd.read_parquet(path)
+    except Exception:
+        return pd.DataFrame()
+    if raw.empty or "ticker" not in raw.columns or "date" not in raw.columns:
+        return pd.DataFrame()
+
+    df = raw.copy()
+    qend = pd.to_datetime(df["date"], errors="coerce")
+    df = df[qend.notna()].copy()
+    qend = qend[qend.notna()]
+    # Keep only calendar quarter-ends (Mar/Jun/Sep/Dec) to align to screener quarters.
+    keep = qend.dt.month.isin([3, 6, 9, 12])
+    df = df[keep.values].copy()
+    qend = qend[keep.values]
+    if df.empty:
+        return pd.DataFrame()
+
+    qnum = ((qend.dt.month - 1) // 3 + 1).astype(int)
+    out = pd.DataFrame(index=df.index)
+    out["ticker"] = df["ticker"].map(_normalize_ticker)
+    out["quarter"] = ["Q%d-%d" % (q, y) for q, y in zip(qnum.values, qend.dt.year.values)]
+    out["availability_date"] = (qend + pd.to_timedelta(_QUARTERLY_REPORT_LAG_DAYS, unit="D")).dt.normalize().values
+
+    def _cr(col: str):
+        return pd.to_numeric(df[col], errors="coerce") / _RUPEES_PER_CRORE if col in df.columns else np.nan
+
+    out["revenue"] = _cr("revenue")
+    out["sales"] = _cr("revenue")
+    out["net_profit"] = _cr("net_income")
+    out["operating_profit"] = _cr("operating_income")
+    out["other_income"] = _cr("other_income")
+    out["interest"] = _cr("interest_expense")
+    out["depreciation"] = _cr("depreciation")
+
+    ni = pd.to_numeric(df.get("net_income"), errors="coerce")
+    sh = pd.to_numeric(df.get("shares_outstanding"), errors="coerce")
+    out["eps_in_rs"] = np.where((sh.notna()) & (sh != 0), ni / sh, np.nan)
+
+    out["record_origin"] = "yfinance"
+    out = out[out["ticker"] != ""].copy()
+    return out.reset_index(drop=True)
+
+
+def _annualize_native_quarterly(native_q: "pd.DataFrame") -> "pd.DataFrame":
+    """Aggregate the QUARTERLY native yfinance panel into true ANNUAL rows.
+
+    Indian fiscal year ends 31 March: quarters ending Jun/Sep/Dec of calendar
+    year Y-1 and Mar of year Y all belong to fiscal_year = Y. FLOW items are
+    summed over the year; STOCK (balance-sheet) items and share counts take the
+    fiscal-year-end (latest quarter in the FY) value. A flow is only emitted for
+    a COMPLETE fiscal year (all four quarter-ends present with values); an
+    incomplete recent year yields NaN flows rather than a partial-year
+    understatement — the caller then falls back to the screener annual or NaN.
+
+    Expects `native_q` already in ₹ crores (monetary) with a normalized
+    `report_date` (quarter-end) and normalized `ticker`.
+    """
+    if native_q is None or native_q.empty:
+        return pd.DataFrame(columns=["ticker", "fiscal_year", "report_date", "native_availability_date"])
+    work = native_q.dropna(subset=["ticker", "report_date"]).copy()
+    work = work[work["ticker"] != ""]
+    if work.empty:
+        return pd.DataFrame(columns=["ticker", "fiscal_year", "report_date", "native_availability_date"])
+    month = work["report_date"].dt.month
+    work["fiscal_year"] = (work["report_date"].dt.year + (month > 3).astype(int)).astype(int)
+    if "availability_date" in work.columns:
+        avail = _as_dates(work["availability_date"]).dt.normalize()
+    else:
+        avail = pd.Series(pd.NaT, index=work.index)
+    work["_avail"] = avail.fillna(work["report_date"] + pd.Timedelta(days=_QUARTERLY_REPORT_LAG_DAYS))
+
+    reserved = {"ticker", "report_date", "date", "availability_date", "fiscal_year", "_avail"}
+    value_cols = [c for c in work.columns if c not in reserved]
+    flow_cols = [c for c in value_cols if c in _NATIVE_FLOW_COLS]
+    # Anything not classified as a flow is treated as point-in-time (safe: never
+    # inflates by summing a balance). shares_outstanding sits here too.
+    stock_cols = [c for c in value_cols if c not in _NATIVE_FLOW_COLS]
+
+    rows: list[dict[str, Any]] = []
+    work = work.sort_values(["ticker", "fiscal_year", "report_date"], kind="mergesort")
+    for (ticker, fiscal_year), grp in work.groupby(["ticker", "fiscal_year"], sort=False):
+        n_quarters = int(grp["report_date"].dt.month.nunique())
+        complete_year = n_quarters >= 4
+        rec: dict[str, Any] = {
+            "ticker": ticker,
+            "fiscal_year": int(fiscal_year),
+            "report_date": pd.Timestamp(year=int(fiscal_year), month=3, day=31),
+            "native_availability_date": grp["_avail"].max(),
+        }
+        for col in flow_cols:
+            vals = pd.to_numeric(grp[col], errors="coerce")
+            rec[col] = float(vals.sum()) if (complete_year and int(vals.notna().sum()) >= 4) else np.nan
+        for col in stock_cols:
+            vals = pd.to_numeric(grp[col], errors="coerce").dropna()
+            rec[col] = float(vals.iloc[-1]) if len(vals) else np.nan
+        rows.append(rec)
+    return pd.DataFrame(rows)
+
+
 def _clean_text(value: Any) -> str:
     if value is None:
         return ""
@@ -514,6 +655,7 @@ class CanonicalDatasetBuilder:
         return backfill
 
     def build_prices(self) -> pd.DataFrame:
+        canonical_existing_path = REPO_ROOT / "data/canonical/prices/equity_prices_daily.parquet"
         primary_path = REPO_ROOT / "data/processed/prices.parquet"
         generated_delisted = self._build_delisted_price_backfill()
         delisted_candidates = [
@@ -522,9 +664,10 @@ class CanonicalDatasetBuilder:
             REPO_ROOT / "data/universe/delisted_prices.parquet",
         ]
         delisted_path = next((p for p in delisted_candidates if p.exists()), None)
+        self._record_source("prices_existing_canonical", canonical_existing_path if canonical_existing_path.exists() else None)
         self._record_source("prices", primary_path if primary_path.exists() else None)
         self._record_source("prices_delisted_backfill", delisted_path if delisted_path and delisted_path.exists() else None)
-        if not primary_path.exists() and delisted_path is None:
+        if not canonical_existing_path.exists() and not primary_path.exists() and delisted_path is None:
             self._warn("processed prices parquet missing")
             out = pd.DataFrame(columns=["date", "ticker", "open", "high", "low", "close", "volume", "availability_date", "source"])
             self._write_parquet("prices_daily", out, "prices/equity_prices_daily.parquet")
@@ -547,13 +690,22 @@ class CanonicalDatasetBuilder:
                 work[col] = _numeric(work.get(col))
             work = work.dropna(subset=["date"])
             work = work[work["ticker"] != ""].copy()
-            work["availability_date"] = work["date"]
-            work["source"] = str(source_label)
-            work["source_priority"] = 0 if str(source_label) == "processed_prices" else 1
+            if "availability_date" in work.columns:
+                availability = _as_dates(work.get("availability_date")).dt.normalize()
+                work["availability_date"] = availability.fillna(work["date"])
+            else:
+                work["availability_date"] = work["date"]
+            if "source" not in work.columns:
+                work["source"] = str(source_label)
+            work["source"] = work["source"].fillna(str(source_label)).astype(str)
+            priority = {"processed_prices": 0, "existing_canonical_prices": 1}.get(str(source_label), 2)
+            work["source_priority"] = priority
             keep = ["date", "ticker", "open", "high", "low", "close", "volume", "availability_date", "source"]
             return work[keep + ["source_priority"]].reset_index(drop=True)
 
         frames: list[pd.DataFrame] = []
+        if canonical_existing_path.exists():
+            frames.append(_standardize_price_frame(pd.read_parquet(canonical_existing_path), "existing_canonical_prices"))
         if primary_path.exists():
             frames.append(_standardize_price_frame(pd.read_parquet(primary_path), "processed_prices"))
         if not generated_delisted.empty:
@@ -584,15 +736,31 @@ class CanonicalDatasetBuilder:
         native = pd.read_parquet(native_path) if native_path.exists() else pd.DataFrame()
         if not native.empty:
             native = native.copy()
+            # CRITICAL UNIT ALIGNMENT: the native yfinance panel
+            # (data/processed/fundamentals.parquet) reports every monetary field
+            # in ABSOLUTE RUPEES, whereas the screener panel — and every
+            # downstream consumer of this annual panel — works in ₹ CRORES. The
+            # quarterly builder already converts via _build_quarterly_yfinance's
+            # _cr() helper; the annual path historically did NOT, so native rows
+            # entered the coalesced panel 1e7x larger than screener rows in the
+            # SAME columns (revenue/net_income/total_assets/…), corrupting every
+            # growth/margin/leverage factor at the native↔screener boundary
+            # (TCS FY2024=₹240,893cr → FY2025=6.4e11). Convert here, once, before
+            # the native_ prefix + coalesce so both sources share the ₹cr unit.
+            # shares_outstanding is a COUNT, not money — never scale it.
+            _native_non_monetary = {"ticker", "date", "availability_date", "shares_outstanding"}
+            for _col in native.columns:
+                if _col in _native_non_monetary:
+                    continue
+                _vals = pd.to_numeric(native[_col], errors="coerce")
+                if _vals.notna().any():
+                    native[_col] = _vals / _RUPEES_PER_CRORE
             native["ticker"] = native.get("ticker", "").map(_normalize_ticker)
             native["report_date"] = _as_dates(native.get("date")).dt.normalize()
-            native = native[native["report_date"].dt.month.eq(3)].copy()
-            native["fiscal_year"] = pd.to_datetime(native["report_date"], errors="coerce").dt.year
-            native["native_availability_date"] = _coalesce(
-                native,
-                "availability_date",
-                default=pd.to_datetime(native["report_date"], errors="coerce") + pd.Timedelta(days=60),
-            )
+            # The native panel is QUARTERLY. Aggregate it into true fiscal-year
+            # annuals (sum flows over the 4 quarters, take year-end balances)
+            # instead of the old bug of treating the Jan–Mar quarter as the year.
+            native = _annualize_native_quarterly(native)
             native = native.dropna(subset=["report_date", "fiscal_year"])
             native = native[native["ticker"] != ""].copy()
             native = native.sort_values(["ticker", "fiscal_year", "native_availability_date", "report_date"], kind="mergesort")
@@ -753,6 +921,24 @@ class CanonicalDatasetBuilder:
             delisted_label="delisted_screener",
         )
 
+        # Hybrid source: screener is the historical backbone; layer yfinance
+        # (data/processed/fundamentals.parquet) on top for recent quarters and
+        # its cleaner/richer fields. On any (ticker, quarter) present in both,
+        # yfinance wins (see the source-ranked dedup below).
+        yfinance_df = _build_quarterly_yfinance()
+        self._record_source(
+            "fundamentals_quarterly_yfinance",
+            _YFINANCE_QUARTERLY_PATH if not yfinance_df.empty else None,
+        )
+        if not yfinance_df.empty:
+            if df.empty:
+                df = yfinance_df
+            else:
+                if "record_origin" not in df.columns:
+                    df = df.copy()
+                    df["record_origin"] = "active_screener"
+                df = pd.concat([df, yfinance_df], ignore_index=True, sort=False)
+
         if df.empty:
             out = pd.DataFrame(columns=["ticker", "quarter", "quarter_end", "availability_date"])
             self._write_bundle("fundamentals_quarterly", out, "fundamentals/fundamentals_quarterly_panel")
@@ -774,7 +960,20 @@ class CanonicalDatasetBuilder:
         work["is_delisted"] = _coalesce(work, "is_delisted", default=False).fillna(False).astype(bool)
         work["record_origin"] = _coalesce(work, "record_origin", default="active_screener").fillna("active_screener").astype(str)
         work = work[(work["ticker"] != "") & work["quarter_end"].notna()].copy()
-        work = work.sort_values(["ticker", "quarter_end"], kind="mergesort").drop_duplicates(["ticker", "quarter_end"], keep="last")
+        # Field-level source coalescing for overlapping (ticker, quarter_end):
+        # yfinance (2) > delisted screener (1) > active screener (0). We sort by
+        # this rank ascending and take groupby.last() per column, which skips
+        # NaN -- so each field takes the highest-priority source that actually
+        # has a value. This is deliberately NOT a row-level replacement:
+        # yfinance's EPS is derivable only ~36% of the time, so wholesale row
+        # replacement would wipe screener's EPS on most overlapping quarters
+        # and corrupt eps_sue_decay. Coalescing keeps screener's value wherever
+        # yfinance is null.
+        _src_rank = {"yfinance": 2, "delisted_screener": 1, "active_screener": 0}
+        work["_src_rank"] = work["record_origin"].map(_src_rank).fillna(0).astype(int)
+        work = work.sort_values(["ticker", "quarter_end", "_src_rank"], kind="mergesort")
+        _agg_cols = [c for c in work.columns if c not in {"ticker", "quarter_end", "_src_rank"}]
+        work = work.groupby(["ticker", "quarter_end"], as_index=False, sort=False)[_agg_cols].last()
         self._write_bundle("fundamentals_quarterly", work.reset_index(drop=True), "fundamentals/fundamentals_quarterly_panel")
         return work
 
