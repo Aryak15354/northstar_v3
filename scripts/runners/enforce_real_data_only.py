@@ -18,7 +18,11 @@ from typing import List, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 STRICT_FILES = [
-    "run_complete_v3_system.py",
+    # NOTE: two paths here drifted (root script moved to scripts/, the narrative
+    # engine was renamed) and the resulting "missing strict file" hard-failed the
+    # entire daily canonical_rebuild (refresh_v3_artifacts exit 1) even though the
+    # core artifacts refreshed fine. Corrected to current locations 2026-07.
+    "scripts/run_complete_v3_system.py",
     "scripts/runners/refresh_v3_artifacts.py",
     "scripts/runners/run_institutional_hardening.py",
     "src/api/server.py",
@@ -26,7 +30,8 @@ STRICT_FILES = [
     "src/live/daily_shadow_trader.py",
     "src/risk/emergency_brake.py",
     "src/intelligence/market_brain/market_tensor.py",
-    "src/intelligence/strategy_narrative_engine.py",
+    "src/intelligence/narrative_intelligence_engine.py",
+    "src/intelligence/narrative_engine.py",
     "src/intelligence/strategy_beliefs.py",
     "src/scoring/northstar_model.py",
     "src/validation/universe_manager.py",

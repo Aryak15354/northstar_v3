@@ -36,6 +36,17 @@ def parse_args() -> argparse.Namespace:
         dest="asset_classes",
         help="Limit refresh to a specific asset class. Repeatable.",
     )
+    # Space-separated alias. The daily scheduler (config/refresh_cadence.yaml)
+    # invokes `--asset-classes forex commodities indices rates`; without this the
+    # single-value `--asset-class` above raised an argparse error (exit 2), which
+    # silently killed the cross-asset feed for ~7.5 weeks. Accept both forms.
+    parser.add_argument(
+        "--asset-classes",
+        nargs="+",
+        choices=["commodities", "forex", "indices", "rates"],
+        dest="asset_classes_multi",
+        help="Limit refresh to these asset classes (space-separated). Alias of repeated --asset-class.",
+    )
     parser.add_argument(
         "--symbol",
         action="append",
@@ -61,7 +72,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     raw_root = args.raw_root.expanduser().resolve()
-    asset_classes = args.asset_classes or ["commodities", "forex", "indices", "rates"]
+    # Merge the two accepted forms (repeated --asset-class and space-separated
+    # --asset-classes), de-duplicated; default to all four when neither given.
+    selected = list(args.asset_classes or []) + list(getattr(args, "asset_classes_multi", None) or [])
+    asset_classes = list(dict.fromkeys(selected)) or ["commodities", "forex", "indices", "rates"]
     discovered = discover_symbols(raw_root, asset_classes)
     explicit_symbols = {str(sym).strip() for sym in args.symbol if str(sym).strip()}
 
