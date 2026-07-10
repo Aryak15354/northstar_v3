@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Dict, Optional
 from pathlib import Path
+import json
 import pandas as pd
 import logging
 
@@ -193,9 +194,20 @@ class PnLReconciler:
         equity_df = df[df['book'] == 'EQUITY']
         if len(equity_df) > 0:
             # For long-only, all positions should be non-negative after aggregation
-            # (individual sells can be negative, but net position should be >= 0)
-            pass  # TODO: implement position-level check
-        
+            # (individual sells can be negative, but net position should be >= 0).
+            # Uses the full ledger history up to `date`, not just this single
+            # day's entries, since a net-negative position can only be
+            # detected by aggregating buys/sells across a ticker's whole
+            # history (get_open_positions already does this correctly).
+            equity_positions = self.ledger.get_open_positions(as_of_date=date, book=LedgerBook.EQUITY)
+            if not equity_positions.empty:
+                negative_positions = equity_positions[equity_positions['quantity'] < 0]
+                if not negative_positions.empty:
+                    tickers = ', '.join(negative_positions['ticker'].astype(str).tolist())
+                    failures.append(
+                        f"Long-only equity book has net negative position(s) as of {date.date()}: {tickers}"
+                    )
+
         # Check 2: Transaction costs must be negative
         positive_costs = df[df['transaction_cost'] > 0]
         if len(positive_costs) > 0:
@@ -212,9 +224,48 @@ class PnLReconciler:
         if abs((mtm_pnl + realized_pnl) - total_pnl) > 1.0:  # ₹1 tolerance for rounding
             failures.append(f"MTM + realized P&L doesn't match total: {mtm_pnl + realized_pnl:.2f} vs {total_pnl:.2f}")
         
-        # Check 4: Equity positions in ledger should match current_positions.json
-        # TODO: load current_positions.json and compare
-        
+        # Check 4: the immutable ledger and its POSITION MATERIALISATION must agree.
+        #
+        # Reconcile against data/pnl/current_positions.parquet — the authoritative
+        # materialisation of THIS ledger's book (written by the paper-fund engine
+        # from the same ledger). A per-ticker mismatch there is a real
+        # materialisation bug worth a CRITICAL.
+        #
+        # We deliberately do NOT reconcile against data/portfolio/
+        # current_positions.json here: that file is the LIVE/advisory runtime view
+        # (what is actually executed — 0 in advisory mode), a DIFFERENT book from
+        # the paper-fund simulation the ledger records. Comparing the simulated
+        # ledger against the (correctly empty / independently-updated) live tracker
+        # produced dozens of misleading "position mismatch" CRITICALs that were
+        # really just the sim-vs-live gap, not accounting corruption.
+        positions_parquet = Path("data/pnl/current_positions.parquet")
+        if positions_parquet.exists():
+            try:
+                materialised = pd.read_parquet(positions_parquet)
+            except Exception as e:
+                failures.append(f"Could not read current_positions.parquet for reconciliation: {e}")
+                materialised = None
+
+            if materialised is not None and "ticker" in materialised.columns:
+                mat_qty = dict(zip(
+                    materialised["ticker"].astype(str),
+                    pd.to_numeric(materialised.get("quantity"), errors="coerce").fillna(0.0),
+                ))
+                ledger_positions = self.ledger.get_open_positions(as_of_date=date, book=LedgerBook.EQUITY)
+                ledger_qty_by_ticker = (
+                    dict(zip(ledger_positions['ticker'].astype(str), ledger_positions['quantity']))
+                    if not ledger_positions.empty else {}
+                )
+                qty_tolerance = 1.0  # shares; absorbs rounding, not real drift
+                for ticker in sorted(set(ledger_qty_by_ticker) | set(mat_qty)):
+                    lq = float(ledger_qty_by_ticker.get(ticker, 0.0))
+                    mq = float(mat_qty.get(ticker, 0.0))
+                    if abs(lq - mq) > qty_tolerance:
+                        failures.append(
+                            f"Position materialisation mismatch for {ticker}: ledger {lq:.2f} shares "
+                            f"vs current_positions.parquet {mq:.2f} shares"
+                        )
+
         return failures
     
     def write_reconciliation_log(self, result: ReconciliationResult) -> None:

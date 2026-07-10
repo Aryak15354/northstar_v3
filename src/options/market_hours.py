@@ -4,6 +4,8 @@ Market Hours Manager - Production Grade
 Handles NSE market hours and trading calendar
 """
 from datetime import datetime, time
+from functools import lru_cache
+from pathlib import Path
 import pytz
 from typing import Tuple
 
@@ -14,38 +16,47 @@ IST = pytz.timezone('Asia/Kolkata')
 MARKET_OPEN = time(9, 15)   # 9:15 AM IST
 MARKET_CLOSE = time(15, 30)  # 3:30 PM IST
 
-# NSE holidays (major ones - should be updated annually)
-NSE_HOLIDAYS_2025 = [
-    "2025-01-26",  # Republic Day
-    "2025-03-14",  # Holi
-    "2025-04-14",  # Ram Navami
-    "2025-04-18",  # Good Friday
-    "2025-05-01",  # Maharashtra Day
-    "2025-08-15",  # Independence Day
-    "2025-10-02",  # Gandhi Jayanti
-    "2025-11-01",  # Diwali Laxmi Puja
-    "2025-11-03",  # Diwali Balipratipada
-    "2025-12-25",  # Christmas
-]
+# Single source of truth for NSE holidays: config/nse_holidays.csv (also used by
+# src/ingestion/refresh_scheduler). The previous hardcoded NSE_HOLIDAYS_2025 list
+# was never updated for 2026, so every 2026 NSE holiday was treated as a trading
+# day here while the scheduler used the CSV — two contradictory holiday truths.
+_HOLIDAYS_CSV = Path(__file__).resolve().parents[2] / "config" / "nse_holidays.csv"
+
+
+@lru_cache(maxsize=1)
+def _load_nse_holidays() -> frozenset:
+    """Load NSE holiday dates (YYYY-MM-DD strings) from config/nse_holidays.csv."""
+    holidays: set[str] = set()
+    try:
+        import csv
+        with _HOLIDAYS_CSV.open(newline="") as fh:
+            for row in csv.DictReader(fh):
+                d = str(row.get("date", "")).strip()
+                if d:
+                    holidays.add(d[:10])
+    except Exception:
+        pass
+    return frozenset(holidays)
+
 
 def get_ist_time() -> datetime:
     """Get current time in IST"""
     return datetime.now(IST)
 
 def is_market_day(date: datetime = None) -> bool:
-    """Check if given date is a market day (weekday, not holiday)"""
+    """Check if given date is a market day (weekday, not NSE holiday)."""
     if date is None:
         date = get_ist_time()
-    
+
     # Check if weekday (Monday=0, Sunday=6)
     if date.weekday() >= 5:  # Saturday or Sunday
         return False
-    
-    # Check if holiday
+
+    # Check if holiday (config/nse_holidays.csv — the shared calendar)
     date_str = date.strftime("%Y-%m-%d")
-    if date_str in NSE_HOLIDAYS_2025:
+    if date_str in _load_nse_holidays():
         return False
-    
+
     return True
 
 def is_market_hours(dt: datetime = None) -> bool:

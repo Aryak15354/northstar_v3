@@ -89,6 +89,12 @@ class RegimeDetector:
         return default
 
     def calculate_iv_rank(self, current_iv: float, iv_history: pd.Series) -> float:
+        # NOTE: this returns the IV PERCENTILE (fraction of lookback days with IV
+        # below current), in [0,1] — NOT the min-max "IV rank"
+        # (current−min)/(max−min) that src/options/historical_data_loader.iv_rank
+        # computes. The regime thresholds (low_vol_sell_iv_rank, etc.) are tuned
+        # against THIS percentile definition; they are two different statistics
+        # that share the name "iv_rank" — do not swap one for the other.
         s = pd.to_numeric(iv_history, errors="coerce").dropna()
         if s.empty:
             return 0.5

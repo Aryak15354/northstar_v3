@@ -295,16 +295,38 @@ class PositionManager:
         portfolio_vega = 0.0
         
         for leg in position.legs:
-            # Prefer exact instrument-key match when available; fallback to strike/type.
+            # Prefer exact instrument-key match when available; fallback to
+            # strike/type — but MUST also match expiry, otherwise on a chain that
+            # carries multiple expiries (weekly + monthly NIFTY is the norm) the
+            # strike/type fallback can pick a DIFFERENT expiry's premium (iloc[0]
+            # is arbitrary), corrupting this leg's MTM and the exit logic keyed on
+            # pnl_pct_of_max_loss.
             chain_row = pd.DataFrame()
             if "instrument_key" in current_chain.columns and leg.symbol:
                 chain_row = current_chain[current_chain["instrument_key"] == leg.symbol]
             if chain_row.empty:
-                chain_row = current_chain[
-                    (current_chain['strike'] == leg.strike) &
-                    (current_chain['option_type'] == leg.option_type)
-                ]
-            
+                base_mask = (
+                    (current_chain['strike'] == leg.strike)
+                    & (current_chain['option_type'] == leg.option_type)
+                )
+                if 'expiry' in current_chain.columns:
+                    chain_exp = pd.to_datetime(current_chain['expiry'], errors='coerce').dt.date
+                    exp_match = current_chain[base_mask & (chain_exp == position.expiry)]
+                    if not exp_match.empty:
+                        chain_row = exp_match
+                    else:
+                        # No exact-expiry row: fall back to strike/type but warn —
+                        # marking against the wrong expiry silently is worse.
+                        chain_row = current_chain[base_mask]
+                        if not chain_row.empty:
+                            logger.warning(
+                                "MTM fallback used strike/type WITHOUT matching expiry for "
+                                "%s %s@%s (position expiry %s not in chain)",
+                                leg.option_type, leg.strike, position.underlying, position.expiry,
+                            )
+                else:
+                    chain_row = current_chain[base_mask]
+
             if not chain_row.empty:
                 # Update leg with current data
                 row = chain_row.iloc[0]
