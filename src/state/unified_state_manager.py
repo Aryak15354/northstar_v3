@@ -646,23 +646,39 @@ class UnifiedStateManager:
             print(f"   ❌ Unified state update failed: {e}")
             return False
     
+    @staticmethod
+    def _atomic_write_json(payload, path):
+        """Write JSON atomically: temp file in the same dir + os.replace, so a
+        reader never sees a half-written file and a crash can't corrupt state."""
+        path = str(path)
+        directory = os.path.dirname(path) or "."
+        os.makedirs(directory, exist_ok=True)
+        tmp = os.path.join(directory, f".{os.path.basename(path)}.{os.getpid()}.tmp")
+        with open(tmp, "w") as f:
+            json.dump(payload, f, indent=2, default=str)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+
+    @staticmethod
+    def _atomic_write_parquet(df, path):
+        path = str(path)
+        directory = os.path.dirname(path) or "."
+        os.makedirs(directory, exist_ok=True)
+        tmp = os.path.join(directory, f".{os.path.basename(path)}.{os.getpid()}.tmp")
+        df.to_parquet(tmp, index=False)
+        os.replace(tmp, path)
+
     def save_state(self):
-        """Save unified state to files"""
-        
+        """Save unified state to files (atomically)."""
         try:
             state = self.get_unified_state()
-            
-            # Save to JSON (human readable)
-            with open(self.state_file, 'w') as f:
-                json.dump(state, f, indent=2, default=str)
-            
-            # Save to Parquet (fast loading)
-            state_df = pd.DataFrame([self.flatten_state(state)])
-            state_df.to_parquet(self.state_parquet, index=False)
-            
-            # Update history
+            # Previously bare open('w')+json.dump and to_parquet — non-atomic, so
+            # a concurrent reader could see truncated JSON and a crash mid-write
+            # corrupted the canonical state file. Now written via temp + os.replace.
+            self._atomic_write_json(state, self.state_file)
+            self._atomic_write_parquet(pd.DataFrame([self.flatten_state(state)]), self.state_parquet)
             self.update_state_history(state)
-            
         except Exception as e:
             print(f"⚠️ Error saving state: {e}")
     
@@ -705,10 +721,10 @@ class UnifiedStateManager:
             
             # Keep only recent history (last 1000 records)
             history_df = history_df.tail(1000)
-            
-            # Save history
-            history_df.to_parquet(self.state_history_file, index=False)
-            
+
+            # Save history atomically (temp + os.replace)
+            self._atomic_write_parquet(history_df, self.state_history_file)
+
         except Exception as e:
             print(f"⚠️ Error updating state history: {e}")
     
