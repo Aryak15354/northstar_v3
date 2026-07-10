@@ -29,19 +29,33 @@ def safe_load_json(path):
 def compute_from_live_json(live):
     if not live or 'indices' not in live:
         return None
+
+    # Use the FEED's own timestamp, not "now". This series feeds research-side
+    # macro-regime gating, so stamping a stale live snapshot with today's date
+    # (the old behaviour) silently attributes yesterday's market internals to
+    # today — a live→research boundary leak. Refuse snapshots older than one
+    # session so a frozen feed can't masquerade as fresh.
+    snap_ts = pd.to_datetime(live.get('timestamp'), errors='coerce')
+    if pd.isna(snap_ts):
+        print("⚠️ live market feed has no usable timestamp; skipping market_internals update")
+        return None
+    if (pd.Timestamp.now() - snap_ts) > pd.Timedelta(days=2):
+        print(f"⚠️ live market feed is stale ({snap_ts}); refusing to stamp as current")
+        return None
+
     indices = live['indices']
     sector_changes = []
     for name, d in indices.items():
         if name == 'NIFTY':
             continue
-        if 'pct_change' in d:
-            change = d['pct_change']
+        # DROP malformed sector rows rather than injecting a fake 0% move (which
+        # biased breadth/dispersion toward calm).
+        if 'pct_change' in d and d['pct_change'] is not None:
+            sector_changes.append(float(d['pct_change']))
         elif 'net_change' in d and 'close' in d:
             prev_close = d['close'] - d['net_change']
-            change = (d['net_change'] / prev_close * 100) if prev_close else 0
-        else:
-            change = 0
-        sector_changes.append(change)
+            if prev_close:
+                sector_changes.append(d['net_change'] / prev_close * 100)
     if not sector_changes:
         return None
     pos = sum(1 for x in sector_changes if x > 0)
@@ -52,12 +66,12 @@ def compute_from_live_json(live):
     mean_move = np.mean(sector_changes)
     dispersion = np.std(sector_changes)
     market_stress = max(0.0, (-mean_move/2.0) + (dispersion/2.0))  # rough scale
-    now = pd.Timestamp(datetime.now().date())
+    stamp = pd.Timestamp(snap_ts).normalize()
     return pd.DataFrame({
         'MarketStress': [market_stress],
         'breadth': [breadth],
         'participation': [participation]
-    }, index=[now])
+    }, index=[stamp])
 
 
 def main():

@@ -19,6 +19,11 @@ import json
 import numpy as np
 import pandas as pd
 
+from src.data.price_access import (
+    canonical_price_columns,
+    canonical_price_path,
+    prices_to_legacy_shape,
+)
 from src.data.query_engine import DuckDBQueryEngine
 
 
@@ -94,20 +99,39 @@ class V3DataHub:
         exposure = float(weight.sum())
         return n_pos >= 5 and exposure > 0.01
 
+    def _canonical_prices_path(self) -> Optional[Path]:
+        try:
+            return canonical_price_path(project_root=self.project_root)
+        except FileNotFoundError:
+            return None
+
+    def _legacy_price_columns(self, columns: Optional[Sequence[str]]) -> Optional[list[str]]:
+        return canonical_price_columns(columns)
+
+    def _prices_to_legacy_shape(self, df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+        if not isinstance(df, pd.DataFrame) or df.empty:
+            return None
+        return prices_to_legacy_shape(df)
+
     def _sanitize_proxy_close(
         self,
         series: pd.Series,
         *,
-        jump_threshold: float = 0.35,
+        jump_threshold: float = 0.20,
         ret_cap: float = 0.12,
     ) -> pd.Series:
         """
-        Stitch structural level breaks in synthetic proxy indices and cap extreme jumps.
+        Stitch ONLY genuine structural level breaks in synthetic proxy indices.
 
         Why:
         - Proxy index series can inherit constituent scale breaks (splits/source changes),
           which creates unrealistic cliffs/flatlines in charts.
-        - We treat very large one-day moves as data-level shifts, then re-stitch continuity.
+        - We stitch single-day moves beyond `jump_threshold` (data-level shifts) back to a
+          bounded step. We do NOT blanket-cap smaller moves: the previous version clipped
+          EVERY daily return to ±12%, which silently rewrote genuine crash days (a real
+          −13% index session became −12%). Real index moves have never exceeded ~15% in a
+          day, so a >20% single-day move in a proxy index is a data artifact, while anything
+          below is preserved as-is.
         """
         s = pd.to_numeric(series, errors="coerce").replace([np.inf, -np.inf], np.nan)
         s = s.where(s > 0)
@@ -116,9 +140,8 @@ class V3DataHub:
 
         base = float(s.dropna().iloc[0])
         r = s.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
-        # Treat structural jumps as data breaks, then cap residual jumps.
-        r = r.mask(r.abs() > jump_threshold, np.sign(r) * ret_cap)
-        r = r.clip(lower=-ret_cap, upper=ret_cap).fillna(0.0)
+        # Stitch only clear structural breaks; leave all real moves untouched.
+        r = r.mask(r.abs() > jump_threshold, np.sign(r) * ret_cap).fillna(0.0)
         recon = base * (1.0 + r).cumprod()
         recon = recon.where(s.notna())
         recon.name = s.name
@@ -328,7 +351,15 @@ class V3DataHub:
         return self._read_parquet("data/processed/nifty.parquet")
 
     def prices(self) -> Optional[pd.DataFrame]:
-        return self._read_parquet("data/processed/prices.parquet")
+        path = self._canonical_prices_path()
+        if path is None:
+            return None
+        try:
+            if self.query.available:
+                return self._prices_to_legacy_shape(self.query.read_parquet(path))
+            return self._prices_to_legacy_shape(pd.read_parquet(path))
+        except Exception:
+            return None
 
     def prices_filtered(
         self,
@@ -343,22 +374,25 @@ class V3DataHub:
         """
         if not tickers:
             return None
-        path = self.project_root / "data/processed/prices.parquet"
-        if not path.exists():
+        path = self._canonical_prices_path()
+        if path is None or not path.exists():
             return None
+        read_columns = self._legacy_price_columns(columns)
         try:
             if self.query.available:
-                return self.query.read_parquet(
+                df = self.query.read_parquet(
                     path,
-                    columns=list(columns) if columns else None,
+                    columns=read_columns,
                     in_filters={"ticker": list(tickers)},
                 )
+                return self._prices_to_legacy_shape(df)
             # pandas fallback
-            return pd.read_parquet(
+            df = pd.read_parquet(
                 path,
-                columns=list(columns) if columns else None,
+                columns=read_columns,
                 filters=[("ticker", "in", list(tickers))],
             )
+            return self._prices_to_legacy_shape(df)
         except Exception:
             return None
 
