@@ -357,12 +357,30 @@ class AlternativeDataLoader(BaseLoader):
             # PIT enforcement
             df = df[df['ReleaseDate'] <= as_of_date].copy()
             self._validate_pit(df, 'ReleaseDate', as_of_date)
-            
-            # Compute derived features
-            df = self._compute_gst_features(df)
-            
+
+            # Honour the `level` argument. The chosen source may be STATE-level
+            # (a 'state' column with many rows per month); computing MoM/YoY
+            # pct_change on that interleaved frame mixes states and is meaningless
+            # (the old code ignored `level` entirely). For 'national' we collapse
+            # states to one monthly series (sum values per MonthEnd) before
+            # deriving features; for 'state' we derive features per state.
+            if 'state' in df.columns and str(level).lower() == 'national':
+                num_cols = [c for c in df.columns
+                            if c not in ('MonthEnd', 'state', 'category', 'ReleaseDate')
+                            and pd.api.types.is_numeric_dtype(df[c])]
+                release = df.groupby('MonthEnd')['ReleaseDate'].max().reset_index()
+                df = df.groupby('MonthEnd', as_index=False)[num_cols].sum().merge(release, on='MonthEnd')
+                df = self._compute_gst_features(df)
+            elif 'state' in df.columns:  # per-state features
+                parts = []
+                for _, grp in df.sort_values('MonthEnd').groupby('state', sort=False):
+                    parts.append(self._compute_gst_features(grp.copy()))
+                df = pd.concat(parts, ignore_index=True) if parts else df
+            else:
+                df = self._compute_gst_features(df)
+
             df = df.set_index('MonthEnd')
-            
+
             return df
             
         except Exception as e:
@@ -372,16 +390,25 @@ class AlternativeDataLoader(BaseLoader):
     def _compute_gst_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Compute GST derived features."""
         if 'gst_collection' not in df.columns:
-            # Try to find the GST collection column
-            gst_cols = [
-                c for c in df.columns
-                if 'gst' in c.lower()
-                or 'collection' in c.lower()
-                or 'eway_bill_value' in c.lower()
-                or 'eway_bills_generated' in c.lower()
+            # Bind gst_collection to a rupee VALUE column, deterministically.
+            # The old `gst_cols[0]` picked the first keyword match in column order,
+            # which could latch onto a COUNT series (eway_bills_generated) instead
+            # of the value — silently turning the GST signal into a bill count.
+            priority = [
+                'gst_collection', 'gross_gst_collection', 'gst_revenue', 'total_gst',
+                'eway_bill_value_crore', 'eway_bill_value_cr', 'eway_bill_value',
             ]
-            if gst_cols:
-                df = df.rename(columns={gst_cols[0]: 'gst_collection'})
+            chosen = next((c for c in priority if c in df.columns), None)
+            if chosen is None:
+                # Any gst/collection/value column that is NOT a count.
+                chosen = next(
+                    (c for c in df.columns
+                     if ('gst' in c.lower() or 'collection' in c.lower() or 'value' in c.lower())
+                     and not any(tok in c.lower() for tok in ('count', 'generated', 'number', 'num_'))),
+                    None,
+                )
+            if chosen:
+                df = df.rename(columns={chosen: 'gst_collection'})
         
         if 'gst_collection' in df.columns:
             df = df.sort_values('MonthEnd')
@@ -481,8 +508,11 @@ class AlternativeDataLoader(BaseLoader):
             # YoY growth (using 365-day rolling for yearly comparison)
             df['power_yoy_growth'] = df['EnergyMetMU'].pct_change(365)
 
-            # Seasonal baseline (same week in prior years - 52 week rolling median)
-            df['power_seasonal_baseline'] = df['EnergyMetMU'].rolling(52, min_periods=1).median()
+            # Trailing 1-year seasonal baseline. This is DAILY data, so a
+            # "52-week" window is ~364 rows, not 52 — the old rolling(52) was a
+            # 52-DAY median mislabelled as 52 weeks, so the deviation captured
+            # ~2 months of trend rather than a full-year deseasonalised baseline.
+            df['power_seasonal_baseline'] = df['EnergyMetMU'].rolling(364, min_periods=30).median()
             df['power_deviation_from_seasonal'] = (
                 (df['EnergyMetMU'] - df['power_seasonal_baseline']) / df['power_seasonal_baseline']
             )
@@ -593,9 +623,23 @@ class AlternativeDataLoader(BaseLoader):
             if 'outlook' in df.columns and 'Outlook' not in df.columns:
                 df = df.rename(columns={'outlook': 'Outlook'})
             
-            # Use DATE OF CREDIT RATING as the action date (not the generic 'date' column)
+            # Use DATE OF CREDIT RATING as the action date (not the generic 'date' column).
+            # Parse with the expected dd-mm-YYYY format first, then fall back to a
+            # general parse for any rows that don't match, and warn if a material
+            # share still fails — the old rigid format + errors='coerce' turned
+            # every off-format date into NaT that the PIT filter dropped SILENTLY.
             if 'DATE OF CREDIT RATING' in df.columns:
-                df['ActionDate'] = pd.to_datetime(df['DATE OF CREDIT RATING'], errors='coerce', format='%d-%m-%Y')
+                raw_action = df['DATE OF CREDIT RATING']
+                parsed = pd.to_datetime(raw_action, errors='coerce', format='%d-%m-%Y')
+                fallback_mask = parsed.isna() & raw_action.notna()
+                if fallback_mask.any():
+                    parsed.loc[fallback_mask] = pd.to_datetime(
+                        raw_action[fallback_mask], errors='coerce', dayfirst=True
+                    )
+                df['ActionDate'] = parsed
+                still_bad = int((df['ActionDate'].isna() & raw_action.notna()).sum())
+                if still_bad:
+                    logger.warning("%d credit-rating rows have unparseable ActionDate (dropped by PIT filter)", still_bad)
             elif 'date' in df.columns:
                 df['ActionDate'] = pd.to_datetime(df['date'], errors='coerce')
 
@@ -666,9 +710,17 @@ class AlternativeDataLoader(BaseLoader):
                     group = group.sort_values('ActionDate')
                     momentum = []
                     for i, row in group.iterrows():
-                        # Look back 90 days from current date
+                        # Trailing 90-day window ending AT this row's date. The
+                        # window MUST be upper-bounded by row['ActionDate']: the
+                        # old code used only `>= cutoff` with no upper bound, so a
+                        # historical row's momentum counted FUTURE rating actions
+                        # (look-ahead) — poisoning any point-in-time / backtest
+                        # consumer of these rows.
                         cutoff_date = row['ActionDate'] - pd.Timedelta(days=90)
-                        recent = group[group['ActionDate'] >= cutoff_date]
+                        recent = group[
+                            (group['ActionDate'] >= cutoff_date)
+                            & (group['ActionDate'] <= row['ActionDate'])
+                        ]
                         upgrades = (recent['ActionType'] == 'UPGRADE').sum()
                         downgrades = (recent['ActionType'] == 'DOWNGRADE').sum()
                         momentum.append(upgrades - downgrades)
@@ -680,10 +732,21 @@ class AlternativeDataLoader(BaseLoader):
                 logger.warning(f"Could not compute rating momentum: {e}")
                 df['rating_momentum'] = 0
             
-            # Distress flag (rating below BBB-)
+            # Distress flag (rating below BBB-). NSE rating strings carry an
+            # agency prefix/bracket ("CRISIL BB+", "[ICRA]B+", "IND A-"), so an
+            # exact isin() against bare symbols matched almost nothing and left
+            # in_distress ~always False. Extract the rating symbol first, then match.
             if 'CurrentRating' in df.columns:
-                distress_ratings = ['BB+', 'BB', 'BB-', 'B+', 'B', 'B-', 'C', 'D']
-                df['in_distress'] = df['CurrentRating'].isin(distress_ratings)
+                distress_ratings = {'BB+', 'BB', 'BB-', 'B+', 'B', 'B-', 'C', 'D'}
+
+                def _rating_symbol(value: object) -> str:
+                    s = str(value or '').upper()
+                    # strip agency brackets/prefixes; keep the last token that
+                    # looks like a rating (letters A–D + optional +/-).
+                    tokens = re.findall(r'[A-D]{1,3}[+-]?', s.replace('[', ' ').replace(']', ' '))
+                    return tokens[-1] if tokens else ''
+
+                df['in_distress'] = df['CurrentRating'].map(_rating_symbol).isin(distress_ratings)
         
         return df
     
@@ -789,8 +852,20 @@ class AlternativeDataLoader(BaseLoader):
         if 'Ticker' not in df.columns or 'Quantity' not in df.columns:
             return df
         
-        # Compute net buy pressure
-        df['net_quantity'] = df['Quantity'] * df.get('BuySellFlag', 1)  # 1 for buy, -1 for sell
+        # Compute net buy pressure. The old code multiplied by
+        # df.get('BuySellFlag', 1): that column NEVER exists (the deal side lives
+        # in DealType/deal_type as 'BUY'/'SELL'), so DataFrame.get returned the
+        # scalar default 1 and every SELL was counted as a BUY — net_buy_pressure
+        # collapsed to gross volume and "institutional_accumulation" was just
+        # top-quartile turnover. Derive the ±1 sign from the actual deal side.
+        side_col = next((c for c in ('DealType', 'deal_type', 'BuySellFlag') if c in df.columns), None)
+        if side_col is not None:
+            side = df[side_col].astype(str).str.upper().str.strip()
+            sign = np.where(side.str.startswith('S'), -1.0, 1.0)  # SELL -> -1, else BUY
+        else:
+            logger.warning("bulk deals missing deal-side column; net_buy_pressure unsigned")
+            sign = 1.0
+        df['net_quantity'] = pd.to_numeric(df['Quantity'], errors='coerce').fillna(0.0) * sign
         
         # Aggregate over lookback period
         aggregated = df.groupby('Ticker').agg({

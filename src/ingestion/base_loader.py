@@ -23,12 +23,23 @@ logger = logging.getLogger(__name__)
 
 
 # Custom Exceptions
-class PITViolationError(Exception):
+#
+# PITViolationError and StaleDataError are CORRECTNESS failures — look-ahead bias
+# and critically-stale data silently produce wrong signals and must NEVER be
+# swallowed. They deliberately subclass BaseException (not Exception) so the
+# loaders' blanket `except Exception: return empty_frame` graceful-degradation
+# handlers cannot catch them: previously strict-mode PIT enforcement was
+# decorative because every load_*() wrapped its body in `except Exception` and
+# turned a PIT violation into a silent empty frame. Explicit handlers
+# (`except PITViolationError` / `except StaleDataError`, as in the tests) still
+# catch them normally; only broad Exception handlers are bypassed, which is the
+# intended behaviour — these should crash the pipeline loudly.
+class PITViolationError(BaseException):
     """Raised when loaded data contains dates after as_of_date — lookahead bias detected."""
     pass
 
 
-class StaleDataError(Exception):
+class StaleDataError(BaseException):
     """Raised when data is older than the hard maximum staleness threshold."""
     pass
 

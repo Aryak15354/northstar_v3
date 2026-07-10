@@ -3,7 +3,7 @@ MarketLoader — Load daily price data for all 504 Nifty 500 tickers plus index 
 
 Data sources:
 - data/raw/prices_daily/ — Individual CSV files per ticker
-- data/processed/prices.parquet — Pre-merged version
+- data/canonical/prices/equity_prices_daily.parquet — Canonical pre-merged version
 - data/universe/ — Universe snapshots, corporate actions, delistings, symbol migrations
 
 Handles:
@@ -21,6 +21,8 @@ from typing import List, Optional
 
 import numpy as np
 import pandas as pd
+
+from src.data.price_access import canonical_price_path
 
 from .base_loader import BaseLoader, DataNotFoundError, PITViolationError
 
@@ -94,8 +96,8 @@ class MarketLoader(BaseLoader):
             lookback_days = self.config.get('market_data_lookback_days', 1095)  # 3 years default
             start_date = as_of_date - timedelta(days=lookback_days)
         
-        # Try to load from pre-merged parquet first
-        prices_path = self._resolve_path('prices_daily', 'data/processed/prices.parquet')
+        # Active runtime reads canonical prices only; builders own legacy ingestion.
+        prices_path = canonical_price_path(project_root=Path.cwd())
         
         if prices_path.exists() and prices_path.suffix == '.parquet':
             df = self._load_from_parquet(prices_path, normalized_tickers, start_date, as_of_date)
@@ -322,53 +324,21 @@ class MarketLoader(BaseLoader):
         df: pd.DataFrame,
         as_of_date: datetime
     ) -> pd.DataFrame:
-        """Apply corporate action adjustments (splits, dividends)."""
-        try:
-            ca_path = self._resolve_path('corporate_actions', 'data/universe/corporate_actions.parquet')
-            
-            if not ca_path.exists():
-                logger.debug("No corporate actions file found, skipping adjustments")
-                return df
-            
-            ca_df = pd.read_parquet(ca_path)
-            
-            # Ensure Date column exists
-            if 'Date' not in ca_df.columns and ca_df.index.name == 'Date':
-                ca_df = ca_df.reset_index()
-            
-            if 'Date' not in ca_df.columns:
-                logger.debug("No Date column in corporate actions, skipping")
-                return df
-            
-            ca_df['Date'] = pd.to_datetime(ca_df['Date'])
-            
-            # Only apply actions that occurred before as_of_date
-            ca_df = ca_df[ca_df['Date'] <= as_of_date]
-            
-            # Apply split adjustments
-            splits = ca_df[ca_df['ActionType'] == 'split']
-            for _, action in splits.iterrows():
-                ticker = action['Ticker']
-                split_date = action['Date']
-                split_ratio = action.get('SplitRatio', 1.0)
-                
-                # Adjust prices before split date
-                mask = (df.index.get_level_values('Ticker') == ticker) & \
-                       (df.index.get_level_values('Date') < split_date)
-                
-                price_cols = ['Open', 'High', 'Low', 'Close', 'Adj Close']
-                for col in price_cols:
-                    if col in df.columns:
-                        df.loc[mask, col] = df.loc[mask, col] / split_ratio
-                
-                if 'Volume' in df.columns:
-                    df.loc[mask, 'Volume'] = df.loc[mask, 'Volume'] * split_ratio
-            
-            logger.debug(f"Applied {len(splits)} split adjustments")
-            
-        except Exception as e:
-            logger.debug(f"Error applying corporate actions: {e}")
-        
+        """Corporate-action (split/bonus) adjustment — intentional NO-OP.
+
+        Northstar's price panels are sourced from yfinance with auto_adjust=True
+        (see src/ingestion/price_fetcher.py), i.e. they are ALREADY split- and
+        dividend-adjusted at the source. Re-applying a split adjustment here would
+        DOUBLE-adjust every price before the split date.
+
+        The previous implementation looked for columns (Date/ActionType/Ticker/
+        SplitRatio) that do not exist in data/universe/corporate_actions.parquet
+        (its schema is symbol/action_date/action_type/action_value), so it always
+        early-returned via a debug log — a silent no-op that LOOKED like it might
+        be adjusting. This is now an EXPLICIT no-op so nobody "fixes the schema"
+        and reintroduces double-adjustment. If a genuinely unadjusted price source
+        is ever added, adjustment must be made source-aware here.
+        """
         return df
     
     def _handle_delistings(
@@ -376,36 +346,61 @@ class MarketLoader(BaseLoader):
         df: pd.DataFrame,
         as_of_date: datetime
     ) -> pd.DataFrame:
-        """Remove data for tickers delisted before as_of_date."""
+        """Trim any price rows AFTER each ticker's delisting date.
+
+        Two fixes vs the previous version:
+        1. SCHEMA: data/universe/delisting_database.parquet uses columns
+           `symbol`/`delisting_date` (not `Ticker`/`DelistDate`), so the old code
+           always early-returned — a silent no-op.
+        2. SURVIVORSHIP: the old code removed a delisted ticker's ENTIRE history,
+           so a point-in-time panel as-of T lost every stock that later delisted —
+           classic survivorship bias, and it contradicted the delisted-price
+           backfill the canonical builder deliberately produces. We now KEEP each
+           delisted name's real pre-delisting history and only drop rows dated
+           after its delisting (data hygiene; real feeds have none, but stale/
+           fabricated post-delist rows get removed).
+        """
         try:
             delist_path = self._resolve_path('delisting_database', 'data/universe/delisting_database.parquet')
-            
             if not delist_path.exists():
                 logger.debug("No delisting database found")
                 return df
-            
-            delist_df = pd.read_parquet(delist_path)
-            
-            # Ensure DelistDate column exists
-            if 'DelistDate' not in delist_df.columns:
-                logger.debug("No DelistDate column in delisting database")
+            if not isinstance(df.index, pd.MultiIndex) or 'Ticker' not in df.index.names:
                 return df
-            
-            delist_df['DelistDate'] = pd.to_datetime(delist_df['DelistDate'])
-            
-            # Find tickers delisted before as_of_date
-            delisted_tickers = delist_df[
-                delist_df['DelistDate'] < as_of_date
-            ]['Ticker'].unique()
-            
-            if len(delisted_tickers) > 0:
-                # Remove delisted tickers
-                df = df[~df.index.get_level_values('Ticker').isin(delisted_tickers)]
-                logger.debug(f"Removed {len(delisted_tickers)} delisted tickers")
-            
+
+            delist_df = pd.read_parquet(delist_path)
+            sym_col = next((c for c in ('symbol', 'Ticker', 'ticker') if c in delist_df.columns), None)
+            date_col = next((c for c in ('delisting_date', 'DelistDate', 'delist_date') if c in delist_df.columns), None)
+            if sym_col is None or date_col is None:
+                logger.debug("delisting database missing symbol/date columns")
+                return df
+
+            def _norm(sym: object) -> str:
+                s = str(sym).strip().upper()
+                if not s:
+                    return ''
+                return s if s.endswith(('.NS', '.BO')) else f"{s}.NS"
+
+            delist_map: dict[str, pd.Timestamp] = {}
+            for _, row in delist_df.iterrows():
+                t = _norm(row.get(sym_col))
+                d = pd.to_datetime(row.get(date_col), errors='coerce')
+                if t and pd.notna(d):
+                    # keep the earliest delist date if duplicated
+                    delist_map[t] = min(delist_map.get(t, d), d)
+            if not delist_map:
+                return df
+
+            tickers_level = df.index.get_level_values('Ticker')
+            dates_level = df.index.get_level_values('Date')
+            mapped = pd.to_datetime(pd.Series(tickers_level).map(delist_map).to_numpy())
+            keep = mapped.isna() | (dates_level <= mapped)
+            trimmed = df[keep.to_numpy()]
+            logger.debug("Trimmed %d post-delisting rows across %d names",
+                         int(len(df) - len(trimmed)), len(delist_map))
+            return trimmed
         except Exception as e:
             logger.debug(f"Error handling delistings: {e}")
-        
         return df
     
     def _handle_symbol_migrations(
@@ -422,30 +417,40 @@ class MarketLoader(BaseLoader):
                 return df
             
             migration_df = pd.read_parquet(migration_path)
-            
-            # Ensure MigrationDate column exists
-            if 'MigrationDate' not in migration_df.columns:
-                logger.debug("No MigrationDate column in migration map")
+
+            # SCHEMA FIX: data/universe/symbol_migration_map.parquet uses
+            # `original_symbol`/`mapped_ticker` (not OldSymbol/NewSymbol/
+            # MigrationDate), so the old code always early-returned — a silent
+            # no-op. The map has no date column; a symbol migration is an identity
+            # rename (the old ticker IS the new entity), so applying the mapping
+            # is point-in-time safe.
+            old_col = next((c for c in ('original_symbol', 'OldSymbol', 'old_symbol') if c in migration_df.columns), None)
+            new_col = next((c for c in ('mapped_ticker', 'NewSymbol', 'new_symbol') if c in migration_df.columns), None)
+            if old_col is None or new_col is None:
+                logger.debug("migration map missing old/new symbol columns")
                 return df
-            
-            migration_df['MigrationDate'] = pd.to_datetime(migration_df['MigrationDate'])
-            
-            # Only apply migrations that occurred before as_of_date
-            migrations = migration_df[migration_df['MigrationDate'] <= as_of_date]
-            
-            # Create mapping dict
-            symbol_map = dict(zip(migrations['OldSymbol'], migrations['NewSymbol']))
-            
-            if symbol_map:
-                # Apply mapping to index
+
+            def _norm(sym: object) -> str:
+                s = str(sym).strip().upper()
+                if not s or s in ('NAN', 'NONE'):
+                    return ''
+                return s if s.endswith(('.NS', '.BO')) else f"{s}.NS"
+
+            symbol_map = {}
+            for _, row in migration_df.iterrows():
+                o, n = _norm(row.get(old_col)), _norm(row.get(new_col))
+                if o and n and o != n:
+                    symbol_map[o] = n
+
+            if symbol_map and isinstance(df.index, pd.MultiIndex) and 'Ticker' in df.index.names:
                 df = df.reset_index()
                 df['Ticker'] = df['Ticker'].replace(symbol_map)
                 df = df.set_index(['Date', 'Ticker'])
                 logger.debug(f"Applied {len(symbol_map)} symbol migrations")
-            
+
         except Exception as e:
             logger.debug(f"Error handling symbol migrations: {e}")
-        
+
         return df
     
     def load_index(
