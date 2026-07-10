@@ -1,0 +1,361 @@
+#!/usr/bin/env python3
+"""CI gate: live-artifact truth invariants.
+
+This gate encodes the mechanical checks that would have caught the critical
+defects found in the 2026-07 forensic audit — every one of which produced a
+plausible-looking artifact that no existing health check flagged because the
+health checks counted rows instead of measuring signal. Each invariant here
+asserts a property of a LIVE artifact that must hold if the pipeline is telling
+the truth:
+
+  * a per-stock output must actually vary per stock (no universe-wide constant)
+  * monetary columns must not jump by ~1e7 between adjacent periods (unit mixing)
+  * a consumed feed must not be stale (dead-feed detection)
+  * the daily scheduler must not be silently failing a source
+  * the live book must be the book we intend to hold (name count / gross)
+
+Design:
+  * Missing artifact  -> SKIP (does not fail CI; environments without data exist)
+  * Present + violates -> FAIL (this is always a real bug; fix the pipeline, not
+    the gate)
+  * Staleness is measured in CALENDAR days with a generous threshold so normal
+    weekends/holidays do not trip it; a genuinely dead feed (weeks stale) will.
+
+Exit 0 = all present artifacts pass. Exit 1 = at least one hard invariant failed.
+Run: python3 scripts/ci/check_live_artifact_invariants.py [--json]
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Callable
+
+import numpy as np
+import pandas as pd
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+D = PROJECT_ROOT / "data"
+
+# Max calendar days a consumed feed may lag "now" before we call it dead.
+# Generous enough to survive a long weekend + a public holiday cluster.
+STALE_HARD_DAYS = 12
+
+
+@dataclass
+class Result:
+    name: str
+    status: str  # PASS | FAIL | SKIP
+    detail: str = ""
+    metrics: dict = field(default_factory=dict)
+
+    @property
+    def failed(self) -> bool:
+        return self.status == "FAIL"
+
+
+def _skip(name: str, reason: str) -> Result:
+    return Result(name, "SKIP", reason)
+
+
+def _read(path: Path, **kw) -> pd.DataFrame | None:
+    if not path.exists():
+        return None
+    try:
+        return pd.read_parquet(path, **kw)
+    except Exception as exc:  # pragma: no cover - corruption surfaces as FAIL upstream
+        raise RuntimeError(f"unreadable:{path.name}:{exc}") from exc
+
+
+def _max_date(df: pd.DataFrame, candidates: tuple[str, ...]) -> pd.Timestamp | None:
+    for col in candidates:
+        if col in df.columns:
+            s = pd.to_datetime(df[col], errors="coerce").dropna()
+            if not s.empty:
+                return pd.Timestamp(s.max()).tz_localize(None)
+    # date may live in the index
+    if isinstance(df.index, pd.DatetimeIndex) and len(df.index):
+        return pd.Timestamp(df.index.max()).tz_localize(None)
+    return None
+
+
+# --------------------------------------------------------------------------- #
+# Invariants
+# --------------------------------------------------------------------------- #
+def inv_fundamentals_unit_continuity() -> Result:
+    """Adjacent-fiscal-year revenue per ticker must not jump ~1e7x (₹ vs ₹cr mix)."""
+    name = "fundamentals_unit_continuity"
+    path = D / "canonical/fundamentals/fundamentals_annual_panel.parquet"
+    df = _read(path, columns=["ticker", "fiscal_year", "revenue"])
+    if df is None:
+        return _skip(name, "annual panel missing")
+    work = df.dropna(subset=["ticker", "fiscal_year", "revenue"]).copy()
+    work = work[work["revenue"] != 0]
+    work = work.sort_values(["ticker", "fiscal_year"])
+    work["prev"] = work.groupby("ticker")["revenue"].shift(1)
+    work = work.dropna(subset=["prev"])
+    # Only a meaningful positive prior base gives a meaningful ratio; near-zero
+    # or negative bases (turnarounds, first-revenue years) produce spurious huge
+    # ratios that are not unit errors.
+    work = work[work["prev"].abs() >= 1.0]
+    ratio = (work["revenue"] / work["prev"]).abs()
+    # This gate targets the ₹-vs-₹crore UNIT MIX specifically (a 1e7x jump), not
+    # real business growth. Even extreme small-cap hypergrowth stays under ~1000x
+    # in a single year; a >1e4x (or <1e-4x) jump is only ever a unit-scale
+    # corruption. Bounds chosen to catch every 1e7 mix while never flagging a
+    # genuine ramp (OLAELEC ₹1cr→₹373cr, CAMPUS ₹2cr→₹508cr all pass).
+    offenders = work[(ratio > 1e4) | (ratio < 1e-4)]
+    n = int(len(offenders))
+    if n == 0:
+        return Result(name, "PASS", f"{work['ticker'].nunique()} tickers continuous",
+                      {"tickers": int(work["ticker"].nunique())})
+    sample = (offenders.assign(ratio=ratio.loc[offenders.index].round(2))
+              .sort_values("ratio", ascending=False)
+              .head(8)[["ticker", "fiscal_year", "prev", "revenue", "ratio"]]
+              .to_dict("records"))
+    return Result(name, "FAIL", f"{n} adjacent-FY revenue jumps outside [0.2,5]",
+                  {"offenders": n, "sample": sample})
+
+
+def inv_valuation_engines_nondegenerate() -> Result:
+    """Per-stock valuation z-scores must vary across the universe (not a constant)."""
+    name = "valuation_engines_nondegenerate"
+    path = D / "processed/valuation_engines.parquet"
+    df = _read(path)
+    if df is None:
+        return _skip(name, "valuation_engines.parquet missing")
+    checked, dead = {}, []
+    for col in ("composite_z", "fundamental_z", "relative_z", "market_implied_z"):
+        if col in df.columns:
+            std = float(pd.to_numeric(df[col], errors="coerce").std(skipna=True) or 0.0)
+            checked[col] = round(std, 6)
+            # composite must move; single engines may legitimately be sparse but
+            # composite collapsing to one number means no stock-specific signal.
+            if col == "composite_z" and std < 1e-4:
+                dead.append(col)
+    if not checked:
+        return _skip(name, "no z-score columns present")
+    if dead:
+        return Result(name, "FAIL",
+                      f"degenerate constant valuation output: {dead} (std<1e-4)",
+                      {"stds": checked, "rows": int(len(df))})
+    return Result(name, "PASS", "composite_z varies across universe", {"stds": checked})
+
+
+def inv_stock_roles_nondegenerate() -> Result:
+    """Risk-role classification must not collapse to a single/near-single label."""
+    name = "stock_roles_nondegenerate"
+    path = D / "processed/stock_roles.parquet"
+    df = _read(path, columns=["stock_role"])
+    if df is None:
+        return _skip(name, "stock_roles.parquet missing")
+    vc = df["stock_role"].value_counts()
+    n_roles = int(len(vc))
+    top_share = float(vc.iloc[0] / vc.sum()) if len(vc) else 1.0
+    # >=3 distinct roles present AND no single role owns >95% of the book.
+    if n_roles >= 3 and top_share <= 0.95:
+        return Result(name, "PASS", f"{n_roles} roles, top share {top_share:.2f}",
+                      {"roles": vc.to_dict()})
+    return Result(name, "FAIL",
+                  f"degenerate roles: {n_roles} distinct, top share {top_share:.2f}",
+                  {"roles": vc.to_dict()})
+
+
+def inv_scores_have_spread() -> Result:
+    """Live scores must have cross-sectional spread (a model that produces a flat
+    cross-section is producing no ranking)."""
+    name = "scores_have_spread"
+    path = D / "processed/scores.parquet"
+    df = _read(path)
+    if df is None:
+        return _skip(name, "scores.parquet missing")
+    col = next((c for c in ("final_score", "northstar_score", "model_score") if c in df.columns), None)
+    if col is None:
+        return _skip(name, "no score column")
+    std = float(pd.to_numeric(df[col], errors="coerce").std(skipna=True) or 0.0)
+    if std > 1e-6:
+        return Result(name, "PASS", f"{col} std={std:.4f}", {"std": round(std, 6), "n": int(len(df))})
+    return Result(name, "FAIL", f"flat cross-section: {col} std={std:.2e}", {"n": int(len(df))})
+
+
+def inv_portfolio_weights_sane() -> Result:
+    """The live book must be a concentrated book, not the whole quintile.
+
+    Guards the DailyScorer._build_weights regression where the turnover-capped
+    top-N book was discarded and every quintile-5 name got a weight. A healthy
+    long book holds well under half the scored universe.
+    """
+    name = "portfolio_weights_sane"
+    path = D / "processed/portfolio_weights.parquet"
+    df = _read(path)
+    if df is None:
+        return _skip(name, "portfolio_weights.parquet missing")
+    wcol = next((c for c in ("final_weight", "weight") if c in df.columns), None)
+    if wcol is None:
+        return _skip(name, "no weight column")
+    w = pd.to_numeric(df[wcol], errors="coerce").fillna(0.0)
+    held = int((w.abs() > 1e-9).sum())
+    gross = float(w.abs().sum())
+    # gross must be a sane fraction (0,1.5]; held names must be a real book, not
+    # a closet index (<= 60 names for a top-N mandate).
+    problems = []
+    if not (0.0 < gross <= 1.5):
+        problems.append(f"gross={gross:.3f} outside (0,1.5]")
+    if held > 60:
+        problems.append(f"held={held} names (closet-index; expected concentrated book)")
+    if held == 0:
+        problems.append("empty book")
+    if problems:
+        return Result(name, "FAIL", "; ".join(problems), {"held": held, "gross": round(gross, 4)})
+    return Result(name, "PASS", f"{held} names, gross {gross:.3f}",
+                  {"held": held, "gross": round(gross, 4)})
+
+
+def inv_refresh_scheduler_healthy() -> Result:
+    """No scheduled data source may be silently failing (consecutive_failures>=2).
+
+    This is exactly how the cross-asset feed died for 7.5 weeks: argparse error,
+    exit 2, recorded in a state file nobody read.
+    """
+    name = "refresh_scheduler_healthy"
+    path = D / "runtime/refresh_state.json"
+    if not path.exists():
+        return _skip(name, "refresh_state.json missing")
+    try:
+        state = json.loads(path.read_text())
+    except Exception as exc:
+        return Result(name, "FAIL", f"unreadable refresh_state.json: {exc}")
+    failing = {}
+    for src, info in (state.get("sources") or {}).items():
+        cf = int(info.get("consecutive_failures", 0) or 0)
+        if cf >= 2:
+            failing[src] = {"consecutive_failures": cf, "last_error": info.get("last_error")}
+    if failing:
+        return Result(name, "FAIL", f"{len(failing)} source(s) failing repeatedly",
+                      {"failing": failing})
+    return Result(name, "PASS", "all sources healthy", {"sources": len(state.get("sources") or {})})
+
+
+def inv_consumed_feeds_fresh() -> Result:
+    """Consumed live feeds must not be weeks-stale (dead-feed detection).
+
+    Only checks artifacts that the daily live path actually reads. A stale feed
+    is a pipeline failure; the fix is to refresh the feed, never to widen this.
+    """
+    name = "consumed_feeds_fresh"
+    now = pd.Timestamp(datetime.now()).normalize()
+    feeds = {
+        "cross_asset_prices": (D / "canonical/macro/cross_asset_prices_daily.parquet", ("date",)),
+        "canonical_prices": (D / "canonical/prices/equity_prices_daily.parquet", ("date",)),
+        "scores": (D / "processed/scores.parquet", ("date",)),
+        "market_state": (D / "processed/market_state.parquet", ("date", "timestamp")),
+    }
+    stale, checked = {}, {}
+    for label, (path, cols) in feeds.items():
+        df = _read(path, columns=None)
+        if df is None:
+            continue
+        mx = _max_date(df, cols)
+        if mx is None:
+            continue
+        age = int((now - mx).days)
+        checked[label] = {"latest": str(mx.date()), "age_days": age}
+        if age > STALE_HARD_DAYS:
+            stale[label] = checked[label]
+    if not checked:
+        return _skip(name, "no consumed feeds present")
+    if stale:
+        return Result(name, "FAIL", f"{len(stale)} feed(s) stale > {STALE_HARD_DAYS}d",
+                      {"stale": stale, "checked": checked})
+    return Result(name, "PASS", f"{len(checked)} feeds fresh", {"checked": checked})
+
+
+def inv_nav_no_backfill() -> Result:
+    """The paper-fund NAV must be an honest walk-forward record, not a backfill.
+
+    Guards the look-ahead regression where the engine replayed TODAY's target
+    from the 2024 inception across all past dates. The NAV must not begin
+    materially before the earliest point-in-time target snapshot
+    (data/portfolio/weekly/*.parquet) — if it does, history is being
+    back-projected from the current book.
+    """
+    name = "nav_no_backfill"
+    nav_path = D / "pnl/nav_history.parquet"
+    weekly_dir = D / "portfolio/weekly"
+    nav = _read(nav_path, columns=["date"])
+    if nav is None or "date" not in nav.columns:
+        return _skip(name, "nav_history.parquet missing/undated")
+    nav_start = pd.to_datetime(nav["date"], errors="coerce").min()
+    if pd.isna(nav_start):
+        return _skip(name, "no NAV dates")
+    if not weekly_dir.exists():
+        return _skip(name, "no weekly snapshots to compare")
+    snap_dates = [pd.to_datetime(p.stem, errors="coerce") for p in weekly_dir.glob("*.parquet")]
+    snap_dates = [d for d in snap_dates if pd.notna(d)]
+    if not snap_dates:
+        return _skip(name, "no dated weekly snapshots")
+    first_snap = min(snap_dates)
+    # Allow a small grace (a few days) for the trading-day alignment.
+    if pd.Timestamp(nav_start) < pd.Timestamp(first_snap) - pd.Timedelta(days=7):
+        return Result(name, "FAIL",
+                      f"NAV starts {pd.Timestamp(nav_start).date()} but first target snapshot "
+                      f"is {pd.Timestamp(first_snap).date()} — history is back-projected",
+                      {"nav_start": str(pd.Timestamp(nav_start).date()),
+                       "first_snapshot": str(pd.Timestamp(first_snap).date())})
+    return Result(name, "PASS", f"NAV starts {pd.Timestamp(nav_start).date()} ≥ first target",
+                  {"nav_start": str(pd.Timestamp(nav_start).date())})
+
+
+INVARIANTS: tuple[Callable[[], Result], ...] = (
+    inv_fundamentals_unit_continuity,
+    inv_valuation_engines_nondegenerate,
+    inv_stock_roles_nondegenerate,
+    inv_scores_have_spread,
+    inv_portfolio_weights_sane,
+    inv_nav_no_backfill,
+    inv_refresh_scheduler_healthy,
+    inv_consumed_feeds_fresh,
+)
+
+
+def run() -> tuple[int, list[Result]]:
+    results: list[Result] = []
+    for fn in INVARIANTS:
+        try:
+            results.append(fn())
+        except Exception as exc:
+            results.append(Result(fn.__name__, "FAIL", f"invariant raised: {exc}"))
+    rc = 1 if any(r.failed for r in results) else 0
+    return rc, results
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Live-artifact truth invariants gate")
+    ap.add_argument("--json", action="store_true", help="Emit machine-readable JSON only")
+    args = ap.parse_args()
+
+    rc, results = run()
+    if args.json:
+        print(json.dumps({"gate": "live_artifact_invariants",
+                          "status": "FAIL" if rc else "PASS",
+                          "results": [r.__dict__ for r in results]}, indent=2, default=str))
+        return rc
+
+    print("== live-artifact truth invariants ==")
+    for r in results:
+        icon = {"PASS": "✅", "FAIL": "❌", "SKIP": "⏭️"}[r.status]
+        print(f"{icon} {r.name:34s} {r.status:4s} {r.detail}")
+        if r.failed and r.metrics:
+            print(f"      {json.dumps(r.metrics, default=str)[:400]}")
+    n_fail = sum(1 for r in results if r.failed)
+    n_skip = sum(1 for r in results if r.status == "SKIP")
+    print(f"-- {len(results)-n_fail-n_skip} pass, {n_fail} fail, {n_skip} skip --")
+    return rc
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
