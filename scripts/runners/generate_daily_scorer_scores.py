@@ -29,10 +29,20 @@ def _resolve_date(raw: str) -> pd.Timestamp:
 
 def _load_config(path: Path) -> dict:
     if not path.exists():
+        # Do NOT silently fall through to hard-coded defaults — that is exactly
+        # how the deleted research_policy.yaml went unnoticed for weeks.
+        print(
+            f"⚠️  research policy config not found at {path} — running on built-in "
+            f"DailyScorer defaults. Restore config/research_policy.yaml to make the "
+            f"policy explicit.",
+            file=sys.stderr,
+        )
         return {}
     try:
         payload = yaml.safe_load(path.read_text()) or {}
-    except Exception:
+    except Exception as exc:
+        print(f"⚠️  research policy config unreadable ({path}): {exc} — using defaults",
+              file=sys.stderr)
         return {}
     if isinstance(payload, dict) and isinstance(payload.get("historical_research"), dict):
         hr = dict(payload.get("historical_research") or {})
