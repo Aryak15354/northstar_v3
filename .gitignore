@@ -49,8 +49,21 @@ northstar_sector_regime_campaign_fresh/
 
 # Live data and local run outputs
 data/
+# ...but src/data/ and src/dashboard/data/ are SOURCE directories, not data
+# outputs. The bare `data/` pattern above matched them too, so critical modules
+# (src/data/loaders.py, price_sanitizer.py, artifact_contracts.py, and the
+# dashboard data managers) were silently untracked. Re-include the source.
+!src/data/
+!src/dashboard/data/
 reports/daily_operations_report_*.json
 reports/
 notebooks/
 ns_uso/
 universe/
+
+# Local generated dataset / kaggle artifacts (entirely untracked; their
+# manifests embed machine-local absolute paths flagged by
+# scripts/ci/check_no_local_paths.py).
+alpha_dataset/
+alpha_lab_outputs/
+kaggle_architecture/
