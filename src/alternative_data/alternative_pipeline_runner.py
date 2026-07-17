@@ -35,7 +35,9 @@ from src.alternative_data.alt_data_keys import (
     POWER_INDUSTRIAL_PROXY,
     POWER_YOY_GROWTH,
 )
-from src.ingestion.ingestion_registry import IngestionRegistry
+# IngestionRegistry imported lazily in __init__ (see below) to break the
+# ingestion<->core<->alternative_data import cycle; it is instantiated at
+# runtime, not needed at module import.
 from src.alternative_data.alternative_state import (
     AlternativeDataState,
     GSTSignalState,
@@ -89,7 +91,8 @@ class AlternativePipelineRunner:
         self.config = config
         self.event_bus = event_bus
         
-        # Initialize registry
+        # Initialize registry (lazy import: breaks the import cycle)
+        from src.ingestion.ingestion_registry import IngestionRegistry
         self.registry = IngestionRegistry(config)
         
         # Initialize feature block

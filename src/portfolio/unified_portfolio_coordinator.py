@@ -13,7 +13,7 @@ Coordinates:
 - Integration with unified intelligence and risk systems
 
 Usage:
-from cohesion.dependency_container import get_dependency_container
+from src.cohesion.dependency_container import get_dependency_container
 
     from src.portfolio.unified_portfolio_coordinator import UnifiedPortfolioCoordinator
     
@@ -93,7 +93,7 @@ class UnifiedPortfolioCoordinator:
                 self._portfolio_governor = PortfolioGovernor()
             except ImportError as e:
                 try:
-                    from portfolio.portfolio_governor import PortfolioGovernor
+                    from src.portfolio.portfolio_governor import PortfolioGovernor
                     self._portfolio_governor = PortfolioGovernor()
                 except ImportError:
                     print(f"⚠️ Portfolio Governor not available: {e}")
@@ -109,7 +109,7 @@ class UnifiedPortfolioCoordinator:
                 self._capital_allocator = CapitalAllocator()
             except ImportError as e:
                 try:
-                    from intelligence.capital_allocator import CapitalAllocator
+                    from src.intelligence.capital_allocator import CapitalAllocator
                     self._capital_allocator = CapitalAllocator()
                 except ImportError:
                     print(f"⚠️ Capital Allocator not available: {e}")

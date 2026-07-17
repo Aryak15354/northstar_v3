@@ -30,7 +30,10 @@ sys.path.insert(0, str(project_root / "src"))
 
 # Import core system components (FROZEN RULES)
 from src.orchestrator.system_orchestrator import SystemOrchestrator
-from src.intelligence.unified_intelligence_engine import UnifiedIntelligenceEngine
+# UnifiedIntelligenceEngine was relocated to src.volatility.intelligence_engine;
+# the old src.intelligence.unified_intelligence_engine path no longer exists
+# and made this whole module fail at import time.
+from src.volatility.intelligence_engine import UnifiedIntelligenceEngine
 from src.portfolio.unified_portfolio_coordinator import UnifiedPortfolioCoordinator
 from src.volatility.risk_authority import create_risk_authority  # Updated: was UnifiedRiskCoordinator
 

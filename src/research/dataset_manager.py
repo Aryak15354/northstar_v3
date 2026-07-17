@@ -15,6 +15,12 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from src.core.panel_math import (
+    group_rank_centered as _shared_group_rank_centered,
+    group_zscore as _shared_group_zscore,
+    normalize_ticker as _shared_normalize_ticker,
+    sector_string,
+)
 # REFACTORED: Use unified ingestion layer instead of direct loaders
 from src.ingestion import IngestionRegistry
 
@@ -62,6 +68,11 @@ def _sanitize_target_series(
     winsor_quantile: float = 0.995,
 ) -> pd.Series:
     """Sanitize and bound target returns for stable training/metrics."""
+    # N6: this fills missing internal targets with 0.0 for stable metric
+    # computation. The Kaggle EXPORT target is recomputed separately in
+    # resample_daily_panel_to_weekly (which nulls suspended/flat weeks), so this
+    # 0-fill affects only DatasetManager-internal training consumers — documented
+    # here so a consumer does not mistake a filled 0 for a real flat return.
     out = pd.to_numeric(target, errors="coerce")
     out = out.replace([np.inf, -np.inf], np.nan).fillna(0.0).astype(float)
 
@@ -217,16 +228,7 @@ class DatasetManager:
         self.config["max_tickers"] = max(20, min(cur_tickers, cap_tickers))
         self.config["lookback_days"] = max(365, min(cur_lookback, cap_lookback))
 
-    @staticmethod
-    def _normalize_ticker(value: Any) -> str:
-        s = str(value or "").strip().upper()
-        if not s:
-            return ""
-        if s.endswith(".NS"):
-            return s
-        if "." in s:
-            s = s.split(".", 1)[0]
-        return f"{s}.NS"
+    _normalize_ticker = staticmethod(_shared_normalize_ticker)
 
     @staticmethod
     def _as_date(df: pd.DataFrame, preferred: list[str]) -> pd.Series:
@@ -510,7 +512,7 @@ class DatasetManager:
         )
         if sector_col is None:
             return panel
-        sec = panel[sector_col].astype(str).fillna("UNKNOWN")
+        sec = sector_string(panel[sector_col])
         dummies = pd.get_dummies(sec, prefix="sector_dummy")
         if dummies.empty:
             return panel
@@ -809,26 +811,15 @@ class DatasetManager:
 
     @staticmethod
     def _group_zscore(values: pd.Series, groups: pd.Series, clip_abs: float = 8.0) -> pd.Series:
-        v = pd.to_numeric(values, errors="coerce")
-        mu = v.groupby(groups, sort=False).transform("mean")
-        sigma = v.groupby(groups, sort=False).transform("std").replace(0.0, np.nan)
-        z = (v - mu) / (sigma + 1e-12)
-        z = z.replace([np.inf, -np.inf], np.nan).fillna(0.0)
-        if float(clip_abs) > 0.0:
-            z = z.clip(lower=-float(clip_abs), upper=float(clip_abs))
-        return z.astype(float)
+        return _shared_group_zscore(values, groups, clip_abs=clip_abs)
 
-    @staticmethod
-    def _group_rank_centered(values: pd.Series, groups: pd.Series) -> pd.Series:
-        v = pd.to_numeric(values, errors="coerce")
-        r = v.groupby(groups, sort=False).rank(method="average", pct=True)
-        return (r.fillna(0.5) - 0.5).astype(float)
+    _group_rank_centered = staticmethod(_shared_group_rank_centered)
 
     @staticmethod
     def _sector_residualized_target(target: pd.Series, dates: pd.Series, sectors: pd.Series) -> pd.Series:
         t = pd.to_numeric(target, errors="coerce").fillna(0.0).astype(float)
         d = pd.to_datetime(dates, errors="coerce")
-        s = sectors.astype(str).fillna("UNKNOWN")
+        s = sector_string(sectors).astype(object)
         key = pd.MultiIndex.from_arrays([d, s])
         sec_mean = t.groupby(key, sort=False).transform("mean")
         resid = (t - sec_mean).replace([np.inf, -np.inf], np.nan).fillna(0.0)
@@ -928,8 +919,8 @@ class DatasetManager:
         """Residualize target by rolling market/sector betas per ticker (leakage-safe via shift(1))."""
         t = pd.to_numeric(target, errors="coerce").replace([np.inf, -np.inf], np.nan).fillna(0.0).astype(float)
         d = pd.to_datetime(dates, errors="coerce")
-        tk = tickers.astype(str).fillna("UNKNOWN")
-        sc = sectors.astype(str).fillna("UNKNOWN")
+        tk = sector_string(tickers).astype(object)
+        sc = sector_string(sectors).astype(object)
 
         work = pd.DataFrame(
             {
@@ -1011,7 +1002,7 @@ class DatasetManager:
             if sector_col is None:
                 sectors = pd.Series("UNKNOWN", index=panel.index, dtype="object")
             else:
-                sectors = panel[sector_col].astype(str).fillna("UNKNOWN")
+                sectors = sector_string(panel[sector_col]).astype(object)
         else:
             sectors = pd.Series("UNKNOWN", index=panel.index, dtype="object")
 
@@ -1200,6 +1191,10 @@ class DatasetManager:
 
                 ticker_filter = None
                 if max_tickers > 0:
+                    # N5: selecting the top-N by row-count picks the
+                    # longest-history tickers = survivorship bias. Inactive in the
+                    # canonical build (max_tickers=0); if ever enabled, prefer a
+                    # recent-window ADV/liquidity ranking instead.
                     ticker_df = self.query.read_parquet(
                         path,
                         columns=["ticker"],
@@ -1277,6 +1272,14 @@ class DatasetManager:
                     "date",
                     "Date",
                     "timestamp",
+                    # The canonical fundamentals panel dates rows with report_date /
+                    # availability_date; without these the loaded frame had NO date
+                    # column, so the PIT merge in build_features matched nothing and
+                    # silently emptied the whole fundamentals family (accruals_ratio,
+                    # roe, operating_margin, earnings_quality...).
+                    "report_date",
+                    "availability_date",
+                    "screener_report_date",
                     "announcement_date",
                     "announcementDate",
                     "results_announcement_date",
@@ -1478,6 +1481,26 @@ class DatasetManager:
             out = canon.copy()
             out["date"] = pd.to_datetime(out["availability_date"], errors="coerce")
             return out.reset_index(drop=True)
+
+        # The daily state spine only reaches as far back as market_state
+        # history — which was truncated to a couple of rows for months (audit
+        # finding H2). When the spine is SHORTER than the canonical macro
+        # history it must not collapse the whole macro panel to its own
+        # length: flip the merge, keep the macro panel as the base, and
+        # asof-join the best-available state columns onto it (PIT-safe:
+        # backward join on availability dates only).
+        if len(state_spine) < len(canon):
+            base = canon.copy()
+            base["date"] = pd.to_datetime(base["availability_date"], errors="coerce")
+            spine_cols = [c for c in state_spine.columns if c != "date"]
+            merged = pd.merge_asof(
+                base.sort_values("date"),
+                state_spine.sort_values("date")[["date"] + spine_cols],
+                on="date",
+                direction="backward",
+                allow_exact_matches=True,
+            )
+            return merged.reset_index(drop=True)
 
         right = canon.rename(
             columns={
@@ -2045,6 +2068,13 @@ class DatasetManager:
         return out, ok
 
     def build_research_dataset(self) -> ResearchDataset:
+        import time as _time
+        _pg_t0 = _time.time()
+
+        def _pg(msg: str) -> None:
+            print(f"[progress] {msg} | +{_time.time() - _pg_t0:5.0f}s", flush=True)
+
+        _pg("loading inputs (prices, fundamentals, screener, macro, sentiment)...")
         prices = self.load_prices()
         fundamentals = self.load_fundamentals()
         screener_annual = self.load_screener_extended_annual() if bool(self.use_screener_features) else pd.DataFrame()
@@ -2090,6 +2120,19 @@ class DatasetManager:
                     cutoff = p["__date"].max() - pd.Timedelta(days=lookback_days + 180)
                     p = p.loc[p["__date"] >= cutoff].copy()
 
+                # Restrict to the reference research universe when configured.
+                # The delisted backfill in canonical prices adds ~91 names outside
+                # the Nifty-500 universe, which fails validate_reference_bundle at
+                # the very end (export_contains_unknown_tickers). Filtering here
+                # (before the expensive feature joins) both fixes that and trims
+                # wasted work on out-of-universe names.
+                whitelist = self.config.get("universe_whitelist")
+                if whitelist and "ticker" in p.columns:
+                    wl = {str(t) for t in whitelist}
+                    n_before = p["ticker"].nunique()
+                    p = p.loc[p["ticker"].astype(str).isin(wl)].copy()
+                    _pg(f"universe filter: {p['ticker'].nunique()}/{n_before} tickers in reference universe")
+
                 if max_tickers > 0 and "ticker" in p.columns and p["ticker"].nunique() > max_tickers:
                     top = (
                         p.groupby("ticker")["__date"]
@@ -2121,6 +2164,9 @@ class DatasetManager:
                         ].copy()
                 prices = p.drop(columns=["__date"], errors="ignore")
 
+        n_tk = prices["ticker"].nunique() if ("ticker" in prices.columns and not prices.empty) else 0
+        _pg(f"inputs ready ({n_tk} tickers); building features "
+            "(momentum, valuation, screener, bulk-deals, macro)...")
         panel = self.factory.build_features(
             prices=prices,
             fundamentals=fundamentals,
@@ -2135,6 +2181,19 @@ class DatasetManager:
             et500_membership=et500_membership if bool(self.use_et500_features) else None,
         )
 
+        _pg(f"features built ({panel.shape[1]} cols, {len(panel):,} rows); post-processing...")
+        # Memory guard for low-RAM machines (e.g. an 8GB laptop): the daily panel
+        # is ~900K rows x hundreds of float64 cols (~3GB), and the post-processing
+        # tail + weekly resample transiently double it, which OOM-kills the build.
+        # float32 halves the footprint with no meaningful precision loss for
+        # standardized features. Gated so only the export opts in; other consumers
+        # keep float64.
+        if bool(self.config.get("downcast_float32_features", False)) and not panel.empty:
+            f64_cols = [c for c in panel.select_dtypes(include=["float64"]).columns
+                        if c not in ("date", "ticker")]
+            if f64_cols:
+                panel[f64_cols] = panel[f64_cols].astype("float32")
+                _pg(f"downcast {len(f64_cols)} feature cols to float32 (memory guard)")
         # Merge sentiment features if enabled
         if not sentiment_features_df.empty:
             panel = panel.merge(

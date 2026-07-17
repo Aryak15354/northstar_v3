@@ -1,0 +1,70 @@
+# Freshness invariants for scraped data artifacts.
+#
+# Each dataset declares the maximum age (in business or calendar days) of its
+# newest row before it is considered STALE. The checker
+# (scripts/ci/check_data_freshness.py) reads this file, inspects the newest date
+# in each artifact, and fails when the invariant is violated. This turns "the
+# scraper silently stopped producing data" from an invisible condition into a
+# hard, alerting failure — the recurring Northstar failure mode.
+#
+# max_age_days   : newest row must be within this many days of today
+# calendar_basis : 'business' skips weekends when counting age; 'calendar' does not
+# date_column    : the column holding the row date (for parquet/csv artifacts)
+# severity       : 'error' fails the checker (rc!=0); 'warn' logs only
+
+datasets:
+  bulk_deals:
+    path: data/processed/alternative/bulk_deals_nse_all.parquet
+    date_column: date
+    max_age_days: 3
+    calendar_basis: business
+    severity: error
+
+  announcements:
+    path: data/processed/alternative/announcements_all.parquet
+    date_column: date
+    max_age_days: 2
+    calendar_basis: business
+    severity: error
+
+  promoter_pledge:
+    path: data/processed/alternative/promoter_pledge_all.parquet
+    date_column: date
+    max_age_days: 10          # NSE publishes weekly pledge snapshots
+    calendar_basis: calendar
+    severity: error
+
+  credit_ratings:
+    path: data/processed/alternative/credit_ratings_nse_all.parquet
+    date_column: date
+    max_age_days: 5
+    calendar_basis: business
+    severity: error
+
+  earnings_dates:
+    path: data/processed/alternative/earnings_dates_all.csv
+    date_column: announcement_date
+    max_age_days: 5
+    calendar_basis: business
+    severity: warn            # sparse off-results-season
+
+  screener_fundamentals:
+    path: data/processed/screener_fundamentals_quarterly.csv
+    date_column: null         # no row date; use file mtime
+    max_age_days: 30
+    calendar_basis: calendar
+    severity: warn
+
+  prices:
+    path: data/processed/prices.parquet
+    date_column: Date
+    max_age_days: 3
+    calendar_basis: business
+    severity: error
+
+  xbrl_credit_quarterly:
+    path: data/processed/sector_financials/credit_quarterly.parquet
+    date_column: availability_date
+    max_age_days: 120         # results are quarterly; loosest during off-season
+    calendar_basis: calendar
+    severity: warn

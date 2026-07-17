@@ -1,0 +1,15 @@
+causal_narrative: '{macro_forces} have historically signaled a shift toward {regime_type}.
+  In similar periods ({historical_examples}), {strategy_effect}. Northstar therefore
+  {portfolio_action}, positioning for {expected_outcome}.'
+market_outlook: Looking ahead, {forward_indicators} suggest {market_direction}. Key
+  risks include {primary_risks}, while opportunities lie in {opportunities}. We are
+  positioned {positioning_stance} based on {historical_precedent}.
+regime_transition: Market regime shows {stability_level} stability at {stability_pct}%.
+  Current {current_regime} regime typically transitions to {likely_next_regime} under
+  these conditions. We have {action_taken} to prepare for this shift.
+risk_management: Portfolio risk is currently {risk_level} with {risk_metric}. Given
+  {regime_context}, we maintain {risk_position} positioning. Historical analysis shows
+  {risk_justification} in similar conditions.
+strategy_performance: '{strategy_name} delivered {performance_metric} over the period,
+  {performance_context}. This {performance_assessment} is {historical_context} for
+  {current_regime} regimes. We have {allocation_action} accordingly.'

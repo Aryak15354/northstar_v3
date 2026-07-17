@@ -17,6 +17,7 @@ import yaml
 import pandas as pd
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 from src.pnl.ledger import UnifiedPnLLedger
 from src.pnl.nav_calculator import NAVCalculator
@@ -25,6 +26,7 @@ from src.pnl.reconciliation import PnLReconciler
 from src.pnl.execution_quality import ExecutionQualityMonitor
 from src.pnl.paper_fund import PaperFundManager
 from src.core.state import UnifiedState
+from src.data.price_access import read_prices_legacy
 
 
 logger = logging.getLogger(__name__)
@@ -113,16 +115,16 @@ def load_current_positions() -> dict:
 
 
 def load_eod_prices(tickers: list[str], trade_date: datetime) -> dict:
-    """Load end-of-day equity prices from the canonical processed price store."""
-    prices_path = Path("data/processed/prices.parquet")
-    if not prices_path.exists():
-        raise FileNotFoundError(f"Price data not found at {prices_path}")
-
-    prices = pd.read_parquet(prices_path, columns=["Date", "Close", "ticker"])
+    """Load end-of-day equity prices from the canonical price store."""
+    prices = read_prices_legacy(
+        project_root=PROJECT_ROOT,
+        columns=["Date", "Close", "ticker"],
+        tickers=tickers,
+        start_date=pd.Timestamp(trade_date).normalize(),
+        end_date=pd.Timestamp(trade_date).normalize(),
+    )
     prices["Date"] = pd.to_datetime(prices["Date"], errors="coerce").dt.normalize()
     filtered = prices[prices["Date"] == pd.Timestamp(trade_date).normalize()]
-    if tickers:
-        filtered = filtered[filtered["ticker"].isin(tickers)]
     if filtered.empty:
         raise ValueError(f"No EOD prices found for {trade_date:%Y-%m-%d}")
     return filtered.drop_duplicates(subset=["ticker"], keep="last").set_index("ticker")["Close"].astype(float).to_dict()
@@ -130,15 +132,14 @@ def load_eod_prices(tickers: list[str], trade_date: datetime) -> dict:
 
 def resolve_effective_rebalance_date(tickers: list[str], requested_date: datetime) -> datetime:
     """Resolve the most recent available EOD date at or before the requested date."""
-    prices_path = Path("data/processed/prices.parquet")
-    if not prices_path.exists():
-        raise FileNotFoundError(f"Price data not found at {prices_path}")
-
-    prices = pd.read_parquet(prices_path, columns=["Date", "ticker"])
+    prices = read_prices_legacy(
+        project_root=PROJECT_ROOT,
+        columns=["Date", "ticker"],
+        tickers=tickers,
+        end_date=pd.Timestamp(requested_date).normalize(),
+    )
     prices["Date"] = pd.to_datetime(prices["Date"], errors="coerce").dt.normalize()
     prices = prices.dropna(subset=["Date"])
-    if tickers:
-        prices = prices[prices["ticker"].isin(tickers)]
     prices = prices[prices["Date"] <= pd.Timestamp(requested_date).normalize()]
     if prices.empty:
         raise ValueError(f"No EOD price history available on or before {requested_date:%Y-%m-%d}")
@@ -291,7 +292,23 @@ def eod_rebalance_with_pnl(*, dry_run: bool = False) -> bool:
             print(f"   ✗ CRITICAL: Reconciliation failures detected!")
             for action in recon_result.action_required:
                 print(f"      - {action}")
-            # TODO: Emit event to event bus
+            # Write the canonical TRADING_HALTED flag. This is now enforced:
+            # src/execution/trading_halt.py blocks new (non-close) orders at
+            # the runtime execution gate (PortfolioRuntimeService.process_proposal)
+            # and the real-broker path (broker_execution.place_order), and
+            # preopen_checks.py fails the pre-market checklist while it is set.
+            # Cleared via scripts/resume_trading.py once investigated.
+            try:
+                from src.execution.trading_halt import HALT_FLAG_PATH
+                halt_path = HALT_FLAG_PATH
+                with open(halt_path, 'w') as halt_f:
+                    halt_f.write(f"Trading halted at {datetime.now()}\n")
+                    halt_f.write("Reason: CRITICAL reconciliation failure at EOD\n")
+                    for action in recon_result.action_required:
+                        halt_f.write(f"  - {action}\n")
+                print(f"   🛑 Wrote {halt_path} -- run scripts/resume_trading.py once investigated")
+            except Exception as halt_exc:
+                print(f"   ⚠ Warning: failed to write TRADING_HALTED flag: {halt_exc}")
         elif recon_result.overall_status == 'WARNING':
             print(f"   ⚠ WARNING: Minor reconciliation issues")
             for action in recon_result.action_required:
@@ -301,10 +318,11 @@ def eod_rebalance_with_pnl(*, dry_run: bool = False) -> bool:
     
     # Step 6: Update PnLState in UnifiedState
     print("\n10. Updating PnLState...")
+    nav_df = pd.DataFrame()  # Always defined, even if this step fails before assigning it below.
     try:
         # Today's P&L
         state.pnl_state.pnl_today_inr = ledger.get_total_pnl(today)
-        
+
         # Current NAV
         nav_df = nav_calculator.compute_daily_nav(
             config['pnl']['nav']['inception_date'],
@@ -368,18 +386,19 @@ def eod_rebalance_with_pnl(*, dry_run: bool = False) -> bool:
     print("\n" + "=" * 80)
     print("EOD PROCESSING COMPLETE")
     print("=" * 80)
+    recon_status = recon_result.overall_status if recon_result is not None else "RECONCILIATION_FAILED"
     print(f"\n✓ Ledger entries: {len(ledger.query())}")
     print(f"✓ Today's P&L: ₹{state.pnl_state.pnl_today_inr:,.2f}")
-    print(f"✓ Reconciliation: {recon_result.overall_status}")
+    print(f"✓ Reconciliation: {recon_status}")
     print(f"✓ Fund Health: {state.pnl_state.fund_health}")
-    
+
     # Write summary to log
     summary_path = Path("logs/eod_pnl_summary.log")
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     with open(summary_path, 'a') as f:
         f.write(f"\n{today.date()} | P&L: {state.pnl_state.pnl_today_inr:.2f} | ")
         f.write(f"NAV: {state.pnl_state.current_nav_inr:.2f} | ")
-        f.write(f"Recon: {recon_result.overall_status} | ")
+        f.write(f"Recon: {recon_status} | ")
         f.write(f"Health: {state.pnl_state.fund_health}\n")
     
 

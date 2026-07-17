@@ -296,7 +296,13 @@ def main() -> int:
         key = str(year)
         out_file = out_dir / f"earnings_{year}.csv"
 
-        if args.resume and out_file.exists():
+        # Resume may skip a year ONLY if it is fully closed (year < current year).
+        # The current (and any future) year is never resume-skipped: quarters are
+        # still being disclosed, so a cached file is guaranteed incomplete. Skipping
+        # it is exactly the "resume == complete" bug that froze earnings_2026 at 20
+        # rows while the pipeline reported SUCCESS.
+        year_is_closed = year < date.today().year
+        if args.resume and year_is_closed and out_file.exists():
             try:
                 old = pd.read_csv(out_file, parse_dates=["announcement_date", "ex_date"])
                 if _is_year_file_valid(old, year, NSE_MIN_HISTORY_YEAR) and (state.has(key) or len(old) > 0):

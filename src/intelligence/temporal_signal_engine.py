@@ -14,7 +14,7 @@ Key Signals Rebuilt:
 
 Usage:
     try:
-    from intelligence.temporal_signal_engine import TemporalSignalEngine
+    from src.intelligence.temporal_signal_engine import TemporalSignalEngine
 except ImportError:
     from TemporalSignalEngine import TemporalSignalEngine
     
@@ -36,7 +36,7 @@ try:
     from src.intelligence.temporal_guard import TemporalGuard
 except Exception:
     try:
-        from intelligence.temporal_guard import TemporalGuard
+        from src.intelligence.temporal_guard import TemporalGuard
     except Exception:
         from temporal_guard import TemporalGuard
 

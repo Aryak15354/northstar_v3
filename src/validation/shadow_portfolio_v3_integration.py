@@ -59,14 +59,8 @@ try:
         from src.core.events import EventBus, Event, EventType, EventPriority, DecisionEvent, StateChangeEvent
         V3_AVAILABLE = True
         print("✅ V3 core components imported successfully (src.core path)")
-    except ImportError:
-        try:
-            from core.state import UnifiedState, StateEvent, AuthorityLevel
-            from core.events import EventBus, Event, EventType, EventPriority, DecisionEvent, StateChangeEvent
-            V3_AVAILABLE = True
-            print("✅ V3 core components imported successfully (core path)")
-        except ImportError as e:
-            raise e
+    except ImportError as e:
+        raise e
     
 except ImportError as e1:
     print(f"⚠️ V3 components not available: {e1}")

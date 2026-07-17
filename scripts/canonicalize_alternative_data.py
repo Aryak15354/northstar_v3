@@ -100,18 +100,38 @@ def _parse_mixed_datetime(values: pd.Series) -> pd.Series:
     if parsed.isna().any():
         fallback = pd.to_datetime(values, errors="coerce", dayfirst=True)
         parsed = parsed.fillna(fallback)
-    future_cutoff = pd.Timestamp.now().normalize() + pd.Timedelta(days=14)
-    as_text = values.astype(str).str.strip()
-    iso_mask = as_text.str.match(r"^\d{4}-\d{2}-\d{2}$", na=False) & parsed.gt(future_cutoff)
-    if bool(iso_mask.any()):
-        swapped = as_text.loc[iso_mask].str.replace(
-            r"^(\d{4})-(\d{2})-(\d{2})$",
-            r"\1-\3-\2",
-            regex=True,
-        )
-        reparsed = pd.to_datetime(swapped, errors="coerce")
-        parsed.loc[iso_mask] = reparsed
-    return parsed
+    # These feeds are historical disclosures/trades — a parsed date in the future
+    # can only mean a day/month swap. Repair by swapping day<->month when that
+    # yields a valid past date; otherwise leave as NaT (dropped downstream).
+    return _repair_future_swapped(parsed)
+
+
+def _repair_future_swapped(parsed: pd.Series) -> pd.Series:
+    """Repair future-dated timestamps caused by day/month swaps.
+
+    NSE/BSE feeds are historical; any date beyond today is a corruption artefact
+    (a prior parser interpreted day-first strings as month-first). For each such
+    row we swap day<->month. If the swapped value is a valid date on or before
+    today we adopt it; otherwise we null it so it cannot poison PIT queries.
+    """
+    if parsed is None or len(parsed) == 0:
+        return parsed
+    parsed = pd.to_datetime(parsed, errors="coerce")
+    today = pd.Timestamp.now().normalize()
+    future_mask = parsed.notna() & (parsed.dt.normalize() > today)
+    if not bool(future_mask.any()):
+        return parsed
+
+    def _swap(ts: pd.Timestamp):
+        try:
+            swapped = ts.replace(month=ts.day, day=ts.month)
+        except ValueError:
+            return pd.NaT
+        return swapped if swapped.normalize() <= today else pd.NaT
+
+    repaired = parsed.copy()
+    repaired.loc[future_mask] = parsed.loc[future_mask].map(_swap)
+    return repaired
 
 
 def _standardize_bulk_frame(frame: pd.DataFrame) -> pd.DataFrame:
@@ -468,9 +488,22 @@ def canonicalize_promoter_pledge() -> dict[str, object]:
         return {"rows": 0, "latest_date": None}
 
     combined = pd.concat(frames, ignore_index=True, sort=False)
-    combined["date"] = pd.to_datetime(combined["date"], errors="coerce")
-    combined["broadcast_datetime"] = pd.to_datetime(combined["broadcast_datetime"], errors="coerce")
+    # Repair any legacy future-dated rows (day/month swap) carried in from the
+    # previously-stored parquet, then enforce that no future dates survive.
+    combined["broadcast_datetime"] = _repair_future_swapped(
+        pd.to_datetime(combined["broadcast_datetime"], errors="coerce")
+    )
+    combined["date"] = _repair_future_swapped(
+        pd.to_datetime(combined["date"], errors="coerce")
+    )
     combined = combined.dropna(subset=["date"])
+    _today = pd.Timestamp.now().normalize()
+    _future = int((combined["date"].dt.normalize() > _today).sum())
+    if _future:
+        raise ValueError(
+            f"promoter_pledge canonicalization produced {_future} future-dated rows "
+            "after repair; refusing to write poisoned PIT data"
+        )
     combined["company_name"] = combined["company_name"].astype(str).str.strip()
     combined["nse_ticker"] = combined["nse_ticker"].astype(str).map(_normalize_ticker)
     combined["bse_code"] = combined["bse_code"].astype(str).str.strip()
@@ -557,8 +590,17 @@ def canonicalize_announcements() -> dict[str, object]:
 
     combined = pd.concat(frames, ignore_index=True, sort=False)
     for column in ["date", "broadcast_datetime", "receipt_datetime", "dissemination_datetime"]:
-        combined[column] = pd.to_datetime(combined[column], errors="coerce")
+        combined[column] = _repair_future_swapped(
+            pd.to_datetime(combined[column], errors="coerce")
+        )
     combined = combined.dropna(subset=["date"])
+    _today = pd.Timestamp.now().normalize()
+    _future = int((combined["date"].dt.normalize() > _today).sum())
+    if _future:
+        raise ValueError(
+            f"announcements canonicalization produced {_future} future-dated rows "
+            "after repair; refusing to write poisoned PIT data"
+        )
     combined = combined.drop_duplicates(
         subset=["date", "nse_ticker", "headline", "attachment"],
         keep="last",

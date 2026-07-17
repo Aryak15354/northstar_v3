@@ -70,6 +70,13 @@ class GovernanceEventLogger:
 
     def _write_events_df(self, df: pd.DataFrame) -> None:
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
+        # Normalise timestamp columns: historical rows were written as ISO
+        # strings while new events carry datetime objects; the mixed object
+        # column made pyarrow refuse the write and crashed daemon startup
+        # (ArrowTypeError: Expected bytes, got a 'Timestamp' object).
+        for col in ("timestamp", "resolved_at"):
+            if col in df.columns:
+                df = df.assign(**{col: pd.to_datetime(df[col], errors="coerce")})
         tmp_path = self.log_path.with_suffix(f"{self.log_path.suffix}.tmp")
         df.to_parquet(tmp_path, index=False)
         tmp_path.replace(self.log_path)

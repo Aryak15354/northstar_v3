@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 
-from src.strategies import compare_strategies
+from src.portfolio.strategies import compare_strategies
 
 PRICES_FILE = "data/processed/prices.parquet"
 

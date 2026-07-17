@@ -196,6 +196,19 @@ def _strip_regenerated_rows(df: pd.DataFrame) -> pd.DataFrame:
     # the same executed basket in the canonical ledger.
     mask |= out["entry_id"].astype(str).str.startswith("RUNTIME_EQUITY_FILL_")
     mask |= out["source"].astype(str).eq("PRS_SYNC")
+    # Mark-to-market rows written by the append-only path
+    # (src/pnl/ledger.py::record_eod_mark, used by scripts/eod_rebalance_with_pnl.py)
+    # carry source='LIVE' and would otherwise SURVIVE regeneration -- so if an
+    # operator ran `make eod` and then the orchestrated refresh, both a LIVE
+    # mark and a regenerated ACCOUNTING_ mark for the same book/position would
+    # be summed into NAV, double-counting P&L. refresh_runtime_accounting is
+    # the single canonical MTM owner (it regenerates every mark from
+    # source-of-truth artifacts each run), so drop any stale LIVE mark here.
+    if "entry_type" in out.columns:
+        mask |= (
+            out["source"].astype(str).eq("LIVE")
+            & out["entry_type"].astype(str).str.upper().str.endswith("MTM")
+        )
     mask |= (
         out["book"].astype(str).eq("EQUITY")
         & out["ticker"].astype(str).eq("PORTFOLIO")
@@ -261,6 +274,22 @@ def _build_equity_rows(config: Dict[str, Any]) -> List[Dict[str, Any]]:
         df["Equity"] = pd.to_numeric(df["Equity"], errors="coerce")
         df = df.dropna(subset=["Date", "Equity"]).sort_values("Date")
         df = df[df["Date"] >= inception_date]
+        # Trim the leading FLAT prehistory. pnl_on_paper.parquet is built by
+        # forward-filling the weekly target snapshots onto the FULL price index
+        # (back to the 1990s), so every date before the first real target carries
+        # a constant equity (0-weight → 0 return). Filtering from the hardcoded
+        # inception then produced ~15 months of flat NAV that masqueraded as a
+        # track record predating the fund's first real book. Start the record at
+        # the first date equity actually moves (the first real P&L), so
+        # nav_history is honest about when the fund began — guarded by
+        # scripts/ci/check_live_artifact_invariants.py::nav_no_backfill.
+        if not df.empty:
+            _eq = pd.to_numeric(df["Equity"], errors="coerce").reset_index(drop=True)
+            _changed = _eq.ne(_eq.iloc[0])
+            if _changed.any():
+                _first_move = int(_changed.idxmax())
+                # keep the inception point (row just before the first move) onward
+                df = df.iloc[max(0, _first_move - 1):].copy()
         if not df.empty:
             max_abs_equity = float(df["Equity"].abs().max())
             if max_abs_equity <= 10.0:
@@ -575,6 +604,17 @@ def _build_options_rows(runtime_payload: Dict[str, Any]) -> List[Dict[str, Any]]
                 continue
             current_value = _safe_float(pos.get("current_value"), 0.0)
             unrealized_pnl = _safe_float(pos.get("unrealized_pnl"), 0.0)
+            # Cumulative (not daily-delta) unrealized P&L is correct here:
+            # _strip_regenerated_rows wipes ALL ACCOUNTING_* rows every run and
+            # this loop regenerates at most ONE MTM row per currently-open
+            # position (dated today), so the single surviving row must carry
+            # the position's full current unrealized P&L for NAV's net_pnl sum
+            # to be correct. (This differs from the append-only
+            # ledger.record_eod_mark path, where per-day deltas are right
+            # because every day's row persists.) When a position closes it
+            # drops out of open_positions -> no MTM regenerated, and its
+            # realized P&L is booked once via the OPTIONS_CLOSE row above, so
+            # there is no realized+unrealized double-count at exit.
             greeks = pos.get("greeks") if isinstance(pos.get("greeks"), dict) else None
             expiry = pd.to_datetime(pos.get("expiry"), errors="coerce")
             rows.append(
@@ -675,12 +715,33 @@ def _write_nav_history(config: Dict[str, Any]) -> pd.DataFrame:
     ledger = UnifiedPnLLedger(ledger_path=str(MASTER_LEDGER_PATH), config=config)
     nav_cfg = _nav_config(config)
     inception_date = _naive_utc(pd.to_datetime(nav_cfg.get("inception_date", "2024-09-01"), errors="coerce"))
+    start_date = inception_date
     if ledger.ledger_df.empty:
         end_date = _now_utc()
     else:
-        latest = pd.to_datetime(ledger.ledger_df["trade_date"], errors="coerce", utc=True).dropna()
-        end_date = _naive_utc(latest.max()) if not latest.empty else _naive_utc(_now_utc())
-    nav = NAVCalculator(ledger, config).compute_daily_nav(start_date=inception_date, end_date=end_date)
+        trade_dates = pd.to_datetime(ledger.ledger_df["trade_date"], errors="coerce", utc=True).dropna()
+        end_date = _naive_utc(trade_dates.max()) if not trade_dates.empty else _naive_utc(_now_utc())
+        # Start the NAV record at the first REAL POSITION, not the hardcoded
+        # inception. compute_daily_nav(start=inception) padded a flat NAV from
+        # 2024-09-01 (a lone inception CASH_IN) to the first actual book
+        # (2025-12-30) — ~15 months of uninformative flat "track record"
+        # predating any position. The honest record begins when the fund first
+        # held risk. We locate the first non-cash (traded) ledger entry; if the
+        # ledger is cash-only we fall back to inception. Guarded by
+        # check_live_artifact_invariants.py::nav_no_backfill.
+        ldf = ledger.ledger_df.copy()
+        ldf["_td"] = pd.to_datetime(ldf["trade_date"], errors="coerce", utc=True)
+        non_cash = ldf
+        if "book" in ldf.columns:
+            non_cash = ldf[ldf["book"].astype(str).str.upper() != "CASH"]
+        elif "entry_type" in ldf.columns:
+            non_cash = ldf[~ldf["entry_type"].astype(str).str.upper().str.startswith("CASH")]
+        first_dates = non_cash["_td"].dropna()
+        if not first_dates.empty:
+            first_entry = _naive_utc(first_dates.min())
+            if first_entry is not None and first_entry > inception_date:
+                start_date = first_entry
+    nav = NAVCalculator(ledger, config).compute_daily_nav(start_date=start_date, end_date=end_date)
     nav_export = nav.reset_index()
     if "index" in nav_export.columns and "date" not in nav_export.columns:
         nav_export = nav_export.rename(columns={"index": "date"})

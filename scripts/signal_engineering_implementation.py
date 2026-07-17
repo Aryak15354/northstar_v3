@@ -70,14 +70,9 @@ def run_phase_0() -> bool:
         else:
             logger.warning("  ⚠ Could not verify accruals sign from source")
         
-        # Check earnings quality score
-        source_eq = inspect.getsource(FeatureFactory._compute_earnings_quality_features)
-        if 'accruals + cash_flow_ratio' in source_eq:
-            logger.info("  ✓ Earnings quality accruals sign corrected")
-        elif '-accruals' in source_eq:
-            logger.error("  ✗ Earnings quality accruals sign still incorrect")
-            return False
-        
+        # Earnings-quality is now produced by Gap9AcademicFactors, not the
+        # removed FeatureFactory._compute_earnings_quality_features (H.1 dead-code
+        # deletion), so the old source-string check no longer applies.
         logger.info("  ✓ Phase 0.2 accruals sign fixes verified")
         
     except Exception as e:

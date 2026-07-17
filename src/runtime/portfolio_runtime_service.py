@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import numpy as np
 
+from src.execution.trading_halt import is_trading_halted
 from .capital_allocator import CapitalAllocatorPolicy
 from .alpha_mortality_controller import AlphaMortalityController, AlphaMortalityProfile, MortalityState
 from .certification_gate import CertificationGate, CertificationGateConfig
@@ -1168,6 +1169,8 @@ class PortfolioRuntimeService:
         liquidity_snapshot_for_gate = dict(adaptive_meta.get("liquidity_snapshot", market_liquidity_snapshot or {}))
         phase6_state = str(adaptive_meta.get("phase6_mortality_state", MortalityState.ACTIVE.value) or MortalityState.ACTIVE.value)
 
+        if is_trading_halted() and (not close_only):
+            return self._reject(proposal, "risk.trading_halted")
         if self._is_runtime_frozen() and (not close_only):
             return self._reject(proposal, "risk.runtime_frozen_close_only")
         if (not close_only) and phase6_state == MortalityState.SHADOW.value:

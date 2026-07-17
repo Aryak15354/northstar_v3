@@ -281,9 +281,26 @@ def parse_nse_promoter_pledge_csv(csv_path: str | Path) -> pd.DataFrame:
         if column in frame.columns:
             frame[column] = _to_numeric(frame[column])
 
-    broadcast = pd.to_datetime(frame.get("broadcast_datetime"), format="%d-%b-%Y %H:%M:%S", errors="coerce")
-    if broadcast.isna().all():
-        broadcast = pd.to_datetime(frame.get("broadcast_datetime"), errors="coerce", dayfirst=True)
+    # NSE emits named-month timestamps ("08-Jul-2026 16:31:35"). Some historical
+    # exports used numeric day-first ("08-07-2026 16:31:35"). Pin the named format
+    # first, then fill any remaining gaps with an explicit day-first numeric parse.
+    # Never fall back to a month-first interpretation, which is what silently
+    # swapped day/month and produced future-dated rows.
+    raw_broadcast = frame.get("broadcast_datetime")
+    if raw_broadcast is None:
+        raw_broadcast = pd.Series([pd.NA] * len(frame), index=frame.index)
+    raw_broadcast = pd.Series(raw_broadcast)
+    broadcast = pd.to_datetime(raw_broadcast, format="%d-%b-%Y %H:%M:%S", errors="coerce")
+    missing = broadcast.isna() & raw_broadcast.notna()
+    if bool(missing.any()):
+        subset = raw_broadcast[missing]
+        numeric = pd.to_datetime(subset, format="%d-%m-%Y %H:%M:%S", errors="coerce")
+        still = numeric.isna()
+        if bool(still.any()):
+            numeric.loc[still] = pd.to_datetime(
+                subset[still], errors="coerce", dayfirst=True
+            )
+        broadcast.loc[missing] = numeric
     frame["broadcast_datetime"] = broadcast
     frame["date"] = frame["broadcast_datetime"].dt.normalize()
 

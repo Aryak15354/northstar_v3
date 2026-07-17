@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -402,6 +402,17 @@ class NorthstarDaemon:
         )
         self._research_throttle_until = datetime.min
         self.last_progress_log = datetime.min
+
+        # Cadence-aware daily data refresh (scripts/daily_data_refresh.py). Spawned
+        # at most once per calendar day, after the configured hour (post-close so
+        # daily datasets have published), as a detached subprocess so it never
+        # blocks the daemon loop. The refresh script itself decides which sources
+        # are due (daily/weekly/monthly/quarterly) via config/refresh_cadence.yaml.
+        data_refresh_cfg = self.config.get("data_refresh", {}) or {}
+        self.data_refresh_enabled = bool(data_refresh_cfg.get("enabled", True))
+        self.data_refresh_after_hour = int(data_refresh_cfg.get("after_hour", 18))
+        self.last_data_refresh_date: Optional[date] = None
+        self._data_refresh_proc: Optional[subprocess.Popen] = None
         self._active_alert_flags: Dict[str, bool] = {}
         self._active_event_ids: Dict[str, str] = {}
 
@@ -1467,6 +1478,41 @@ class NorthstarDaemon:
             mem,
         )
 
+    def _maybe_run_data_refresh(self) -> None:
+        """Spawn the cadence-aware data refresh once per calendar day (detached)."""
+        if not self.data_refresh_enabled:
+            return
+
+        # Reap a finished prior run and log its outcome.
+        if self._data_refresh_proc is not None:
+            rc = self._data_refresh_proc.poll()
+            if rc is None:
+                return  # still running; don't overlap
+            LOGGER.info("Daily data refresh finished (exit=%s)", rc)
+            self._data_refresh_proc = None
+
+        now = datetime.now()
+        if now.hour < self.data_refresh_after_hour:
+            return
+        if self.last_data_refresh_date == now.date():
+            return
+
+        log_path = self.proc_log_dir / "data_refresh.log"
+        try:
+            log_fh = open(log_path, "a", encoding="utf-8")
+            log_fh.write(f"\n===== data refresh spawned {now.isoformat()} =====\n")
+            log_fh.flush()
+            self._data_refresh_proc = subprocess.Popen(
+                [sys.executable, str(PROJECT_ROOT / "scripts" / "daily_data_refresh.py")],
+                cwd=str(PROJECT_ROOT),
+                stdout=log_fh,
+                stderr=subprocess.STDOUT,
+            )
+            self.last_data_refresh_date = now.date()
+            LOGGER.info("Spawned daily data refresh (pid=%s, log=%s)", self._data_refresh_proc.pid, log_path)
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.error("Failed to spawn daily data refresh: %s", exc)
+
     def run(self) -> int:
         if not self.startup_checks():
             return 1
@@ -1499,6 +1545,8 @@ class NorthstarDaemon:
                     is_market_hours=is_market_hours,
                     constraints=self.mode_controller.constraints_active,
                 )
+
+                self._maybe_run_data_refresh()
 
                 self._update_status()
                 if datetime.now() - self.last_progress_log >= self.progress_log_interval:

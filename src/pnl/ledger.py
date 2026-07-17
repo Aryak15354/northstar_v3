@@ -289,6 +289,67 @@ class UnifiedPnLLedger:
         
         return self.record(entry)
     
+    def _prior_cumulative_unrealized(
+        self,
+        entry_type: "LedgerEntryType",
+        original_entry_id: str,
+        before_date: datetime,
+        lot_key: Optional[str] = None,
+    ) -> float:
+        """
+        Reconstruct the cumulative unrealized P&L already recognized for a
+        position as of the most recent prior mark, by summing this position's
+        past unrealized_pnl_change entries (each of which is itself a daily
+        delta once written by this method). Returns 0.0 if no prior mark
+        exists, which naturally gives day-1 semantics (first mark's delta ==
+        its own total).
+
+        `lot_key`, when provided (equity), guards against summing across a
+        close-then-reopen cycle on the same ticker: entries are scanned
+        newest-first and summation stops as soon as a prior entry's recorded
+        lot_key (its avg_cost at the time) no longer matches the current one,
+        since that means the earlier entries belong to a different, already
+        -closed lot. Options positions pass lot_key=None because position_id
+        is minted fresh on every open and is never reused, so no such guard
+        is needed.
+        """
+        candidates: List[tuple] = []
+
+        for buffered in self.buffer:
+            if (
+                buffered.entry_type == entry_type
+                and buffered.original_entry_id == original_entry_id
+                and buffered.trade_date < before_date
+            ):
+                candidates.append((buffered.trade_date, buffered.unrealized_pnl_change, buffered.notes))
+
+        if len(self.ledger_df) > 0 and {'entry_type', 'original_entry_id', 'trade_date'}.issubset(self.ledger_df.columns):
+            df = self.ledger_df
+            trade_dates = pd.to_datetime(df['trade_date'], format='mixed', errors='coerce')
+            mask = (
+                (df['entry_type'] == entry_type.value)
+                & (df['original_entry_id'] == original_entry_id)
+                & (trade_dates < before_date)
+            )
+            matched = df.loc[mask]
+            for trade_date, delta, notes in zip(
+                trade_dates[mask], matched['unrealized_pnl_change'], matched.get('notes', pd.Series(dtype=object))
+            ):
+                candidates.append((trade_date, float(delta), notes))
+
+        if not candidates:
+            return 0.0
+
+        candidates.sort(key=lambda row: row[0], reverse=True)
+
+        total = 0.0
+        for _, delta, notes in candidates:
+            if lot_key is not None and notes != lot_key:
+                break
+            total += delta
+
+        return total
+
     def record_eod_mark(
         self,
         date: datetime,
@@ -300,25 +361,39 @@ class UnifiedPnLLedger:
         """
         Record end-of-day mark-to-market for all open positions.
         Called by eod_rebalance.py every evening.
+
+        Writes the day's INCREMENTAL unrealized P&L change into
+        unrealized_pnl_change/net_pnl (not the position's total unrealized
+        P&L since entry), because NAVCalculator and get_total_pnl() both sum
+        net_pnl across days to reconstruct cumulative P&L. Writing the total
+        every day would make NAV double/triple/n-count the same gain for
+        every day a position stays open without a new trade.
         """
         logger.info(f"Recording EOD mark for {date.date()}")
-        
+
         # Mark equity positions
         for ticker, position in equity_positions.items():
             if ticker not in equity_prices:
                 logger.warning(f"No EOD price for {ticker}, skipping MTM")
                 continue
-            
+
             current_price = equity_prices[ticker]
             quantity = position.get('quantity', 0)
-            
+
             if quantity == 0:
                 continue
-            
-            # Compute unrealized P&L change
+
+            # Compute total unrealized P&L since entry, then convert to a
+            # daily delta by subtracting what was already recognized in
+            # prior marks for this same lot (see _prior_cumulative_unrealized).
             avg_cost = position.get('avg_cost', current_price)
-            unrealized_pnl = (current_price - avg_cost) * quantity
-            
+            lot_key = f"avg_cost={avg_cost:.6f}"
+            total_unrealized_pnl = (current_price - avg_cost) * quantity
+            prior_cumulative = self._prior_cumulative_unrealized(
+                LedgerEntryType.EQUITY_MTM, ticker, date, lot_key=lot_key
+            )
+            unrealized_pnl_change = total_unrealized_pnl - prior_cumulative
+
             entry = LedgerEntry(
                 entry_id=str(uuid.uuid4()),
                 entry_type=LedgerEntryType.EQUITY_MTM,
@@ -331,28 +406,37 @@ class UnifiedPnLLedger:
                 price=current_price,
                 notional=abs(quantity * current_price),
                 realized_pnl=0.0,
-                unrealized_pnl_change=unrealized_pnl,
+                unrealized_pnl_change=unrealized_pnl_change,
                 transaction_cost=0.0,
-                net_pnl=unrealized_pnl,
+                net_pnl=unrealized_pnl_change,
                 strategy_id=position.get('strategy_id'),
                 signal_strength=None,
-                source='LIVE'
+                source='LIVE',
+                notes=lot_key,
+                original_entry_id=ticker,
             )
-            
+
             self.record(entry)
-        
+
         # Mark options positions
         for position_id, position in options_positions.items():
             ticker = position.get('underlying')
             if ticker not in options_prices:
                 logger.warning(f"No EOD price for options on {ticker}, skipping MTM")
                 continue
-            
+
             current_value = options_prices.get(position_id, 0)
             entry_value = position.get('entry_credit_debit', 0)
-            
-            unrealized_pnl = current_value - entry_value
-            
+
+            # position_id is minted fresh per open and never reused (see
+            # src/options/position_manager.py), so no lot_key guard is needed
+            # here the way it is for equity tickers.
+            total_unrealized_pnl = current_value - entry_value
+            prior_cumulative = self._prior_cumulative_unrealized(
+                LedgerEntryType.OPTIONS_MTM, position_id, date
+            )
+            unrealized_pnl_change = total_unrealized_pnl - prior_cumulative
+
             entry = LedgerEntry(
                 entry_id=str(uuid.uuid4()),
                 entry_type=LedgerEntryType.OPTIONS_MTM,
@@ -365,14 +449,15 @@ class UnifiedPnLLedger:
                 price=current_value,
                 notional=abs(current_value),
                 realized_pnl=0.0,
-                unrealized_pnl_change=unrealized_pnl,
+                unrealized_pnl_change=unrealized_pnl_change,
                 transaction_cost=0.0,
-                net_pnl=unrealized_pnl,
+                net_pnl=unrealized_pnl_change,
                 strategy_id=position.get('strategy_id'),
                 signal_strength=None,
-                source='LIVE'
+                source='LIVE',
+                original_entry_id=position_id,
             )
-            
+
             self.record(entry)
     
     def flush(self) -> None:
@@ -501,9 +586,15 @@ class UnifiedPnLLedger:
             cost_basis = (group['quantity'] * group['price']).sum()
             avg_cost = cost_basis / total_qty if total_qty != 0 else 0
             
-            # Get latest unrealized P&L
-            latest_mtm = group[group['entry_type'].str.contains('MTM')].tail(1)
-            unrealized_pnl = latest_mtm['unrealized_pnl_change'].sum() if len(latest_mtm) > 0 else 0
+            # unrealized_pnl_change on each MTM row is a daily delta (see
+            # record_eod_mark), so the position's current cumulative
+            # unrealized P&L is the sum of all its MTM deltas, not the most
+            # recent row alone. Note: like avg_cost above, this sums across
+            # the ticker's whole history in `df`, so a ticker that was fully
+            # closed and reopened within the query window will overstate
+            # both figures by including the earlier, already-closed lot.
+            mtm_rows = group[group['entry_type'].str.contains('MTM')]
+            unrealized_pnl = mtm_rows['unrealized_pnl_change'].sum() if len(mtm_rows) > 0 else 0
             
             positions.append({
                 'ticker': ticker,

@@ -107,7 +107,7 @@ def create_sample_market_data():
     
     # Ensure data directory exists
     os.makedirs('data/processed', exist_ok=True)
-    df.to_parquet('data/processed/market_state.parquet')
+    df.to_parquet('data/testing/sample_processed/market_state.parquet')  # demo output, never canonical
     
     print(f"✅ Created {len(df)} days of sample market data")
     return df

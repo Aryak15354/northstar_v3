@@ -29,7 +29,7 @@ from src.intelligence.anticipatory_capital_allocator import AnticipatoryCapitalA
 
 # Import existing risk management components
 from src.risk.portfolio_kill_switches import PortfolioKillSwitches
-from src.risk.emergency_brake import EmergencyBrake
+from src.risk.emergency_brake import EmergencyBrakeEngine
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +126,7 @@ class RiskManagementValidator:
         
         # Existing risk management components
         self.kill_switches = PortfolioKillSwitches()
-        self.emergency_brake = EmergencyBrake()
+        self.emergency_brake = EmergencyBrakeEngine()
         
         # Risk thresholds for different scenarios
         self.risk_thresholds = self._initialize_risk_thresholds()

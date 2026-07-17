@@ -24,8 +24,8 @@ warnings.filterwarnings('ignore')
 
 # Safe utilities
 try:
-    from utils.parquet_utils import safe_load_parquet
-    from utils.json_utils import safe_load_json
+    from src.utils.parquet_utils import safe_load_parquet
+    from src.utils.json_utils import safe_load_json
 except ImportError:
     def safe_load_parquet(file_path, default=None):
         try:
@@ -57,9 +57,9 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from intelligence.strategy_beliefs import StrategyBeliefs
-from intelligence.strategy_regret import StrategyRegret
-from intelligence.strategy_tailwinds import StrategyTailwinds
+from src.intelligence.strategy_beliefs import StrategyBeliefs
+from src.intelligence.strategy_regret import StrategyRegret
+from src.intelligence.strategy_tailwinds import StrategyTailwinds
 
 class AnticipatoryCapitalAllocator:
     """

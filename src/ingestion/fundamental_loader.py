@@ -21,6 +21,7 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
+from src.core.panel_math import normalize_ticker as _shared_normalize_ticker
 from .base_loader import BaseLoader, DataNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -152,16 +153,7 @@ class FundamentalLoader(BaseLoader):
         
         return df
 
-    @staticmethod
-    def _normalize_ticker(value: object) -> str:
-        s = str(value or "").strip().upper()
-        if not s:
-            return ""
-        if s.endswith(('.NS', '.BO')):
-            return s
-        if '.' in s:
-            s = s.split('.', 1)[0]
-        return f"{s}.NS"
+    _normalize_ticker = staticmethod(_shared_normalize_ticker)
 
     @staticmethod
     def _pick_first(record: dict, *names: str):

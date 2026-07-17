@@ -9,7 +9,9 @@ TAB_STATE_KEY = "northstar_active_tab"
 
 
 def _format_tab_label(tab: str, counts: dict[str, int]) -> str:
-    return f"{tab} ({counts.get(tab, 0)})"
+    n = counts.get(tab, 0)
+    # Function pages (e.g. Security/DES) have no registry visuals — plain label.
+    return f"{tab} ({n})" if n else tab
 
 
 def _normalize_active_tab() -> str:

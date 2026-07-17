@@ -2004,6 +2004,18 @@ def main() -> int:
     )
     run_step("shadow_snapshot_canonical", lambda: _build_shadow_snapshot(PROJECT_ROOT), optional=True)
 
+    def _step_valuation_engines():
+        # The 10-engine valuation stack (DCF/LBO/credit/real-option/composite)
+        # was never wired into any schedule — it sat frozen at 50/500 names,
+        # 6+ months stale (audit finding H4) until fixed 2026-07-06.
+        from src.intelligence.valuation_engines import ValuationEngineStack
+        df = ValuationEngineStack().compute_universe_valuations()
+        if df is None or df.empty:
+            return False, "valuation engine stack produced no rows"
+        return True, f"valuation_engines refreshed: {len(df)} names"
+
+    run_step("valuation_engines_refresh", _step_valuation_engines, optional=True)
+
     # ---- Valuation quality gates (strict schema + predictive diagnostics) ----
     def _step_valuation_schema_validation():
         cmd = [sys.executable, "-u", "scripts/runners/validate_valuation_artifacts.py", "--strict"]

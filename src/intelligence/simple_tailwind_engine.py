@@ -233,13 +233,22 @@ class SimpleTailwindEngine:
                     self.current_regime = current_regime
                     return current_regime
             
-            print("   ⚠️ No regime memory found, using default")
-            self.current_regime = 'Late-Expansion'  # Default regime
+            print("   ⚠️ No regime memory found -- using neutral fallback regime")
+            # Previously defaulted to 'Late-Expansion', a specific regime
+            # with its own real institutional-bias multipliers (see
+            # regime_preferences/family_preferences above), silently
+            # blending 40% of that bias into the tailwind score whenever
+            # regime memory was simply missing. 'REGIME_UNAVAILABLE' is not
+            # a key in either preference table, so calculate_regime_tailwinds
+            # naturally falls through to base_preference=1.0 (fully neutral)
+            # for every strategy -- and the sentinel is visible in the saved
+            # tailwind data's 'regime' column, unlike a fabricated real regime name.
+            self.current_regime = 'REGIME_UNAVAILABLE'
             return self.current_regime
-            
+
         except Exception as e:
-            print(f"   ⚠️ Error detecting regime: {e}")
-            self.current_regime = 'Late-Expansion'
+            print(f"   ⚠️ Error detecting regime: {e} -- using neutral fallback regime")
+            self.current_regime = 'REGIME_UNAVAILABLE'
             return self.current_regime
     
     def calculate_regime_tailwinds(self, strategy_data, current_regime):

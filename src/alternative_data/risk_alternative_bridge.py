@@ -14,12 +14,14 @@ risk management. It ensures research-to-live consistency by using AlternativeFea
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import pandas as pd
 import numpy as np
 
-from src.ingestion.ingestion_registry import IngestionRegistry
+# lazy under TYPE_CHECKING to break the ingestion<->core<->alternative_data cycle
+if TYPE_CHECKING:
+    from src.ingestion.ingestion_registry import IngestionRegistry
 from src.alternative_data.alternative_feature_block import AlternativeFeatureBlock
 from src.alternative_data.alternative_state import (
     AlternativeDataState,
@@ -38,12 +40,12 @@ class RiskAlternativeBridge:
     portfolio construction and position management.
     """
     
-    def __init__(self, registry: IngestionRegistry, config: dict):
+    def __init__(self, registry: "IngestionRegistry", config: dict):
         """
         Initialize bridge with registry and configuration.
         
         Args:
-            registry: IngestionRegistry for data access
+            registry: "IngestionRegistry" for data access
             config: Configuration dict
         """
         self.registry = registry

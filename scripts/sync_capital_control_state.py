@@ -164,6 +164,12 @@ def main() -> int:
 
     governor = PortfolioGovernor(config=_load_governor_config())
     structure = governor.compute_capital_structure(state)
+    if structure is None:
+        # The governor refuses to compute on stale state (honest guard) and
+        # returns None — exit cleanly instead of crashing on attribute access.
+        print("✗ governor returned no capital structure (stale state?); "
+              "run scripts/sync_canonical_state.py first")
+        return 1
     governor_state = GovernorState()
     governor_state.update_from_structure(structure)
     governor_state.caution_score = float(getattr(governor, "last_caution_score", 0.0))

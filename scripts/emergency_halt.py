@@ -10,6 +10,12 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.execution.trading_halt import HALT_FLAG_PATH
+
 
 def emergency_halt():
     """Emergency halt - stop all trading"""
@@ -17,9 +23,10 @@ def emergency_halt():
     print("⚠️  EMERGENCY HALT ⚠️")
     print(f"Time: {datetime.now()}")
     print("=" * 60)
-    
-    # Create halt flag file
-    halt_file = "TRADING_HALTED"
+
+    # Create halt flag file at the single canonical location that the runtime
+    # execution gate (src/execution/trading_halt.py) and preopen checks read.
+    halt_file = str(HALT_FLAG_PATH)
     with open(halt_file, 'w') as f:
         f.write(f"Trading halted at {datetime.now()}\n")
         f.write("Reason: Manual emergency halt\n")
@@ -31,8 +38,8 @@ def emergency_halt():
     print("\nTo resume trading, run: python scripts/resume_trading.py")
     
     # Log to file
-    log_file = Path("logs/emergency.log")
-    log_file.parent.mkdir(exist_ok=True)
+    log_file = PROJECT_ROOT / "logs" / "emergency.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
     with open(log_file, 'a') as f:
         f.write(f"{datetime.now()} - EMERGENCY HALT\n")
     

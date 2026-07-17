@@ -13,15 +13,34 @@ if str(REPO_ROOT) not in os.sys.path:
 
 from src.research.regime_conditional_trainer import RegimeConditionalTrainer
 from src.research.dataset_manager import DatasetManager
+from src.research.feature_pit_rules import default_feature_pit_lags, default_pit_day_config
 
 
 def main() -> int:
     print("=== Retraining Regime Models with Regularization ===")
     print("")
     
-    # Build dataset
+    # Build dataset. The canonical macro panel is MONTHLY (GST/power series),
+    # so ~7 years of real history is ~87 rows — the default 200-row floor was
+    # calibrated for daily artifacts and made retraining impossible even with
+    # perfectly healthy data. 60 monthly rows (5 years) is the honest minimum.
     print("Building research dataset...")
-    dm = DatasetManager()
+    dm = DatasetManager(config={
+        "artifact_min_rows": {"macro": 60},
+        # canonical PIT discipline shared with the Kaggle export (see
+        # src/research/feature_pit_rules.py) — without it, the strict PIT
+        # guard rejects every feature and retraining is impossible.
+        "feature_pit_lags": default_feature_pit_lags(),
+        **default_pit_day_config(),
+        # match the Kaggle export's strictness profile exactly: the trainer's
+        # own regularization handles dimensionality/collinearity; the default
+        # 28-feature budget + correlation rejection were calibrated for
+        # hand-picked factor sets and make full-panel training impossible.
+        "feature_budget": 500,
+        "feature_budget_enforce": False,
+        "feature_correlation_enforce": False,
+        "feature_correlation_skip": True,
+    })
     ds = dm.build_research_dataset()
     
     if ds.frame.empty:

@@ -63,7 +63,10 @@ if "save_standard_data" not in globals():
 FUND_FILE = "data/processed/fundamentals.parquet"
 VAL_FILE = "data/processed/valuation.parquet"
 TECH_FILE = "data/processed/technicals.parquet"
-PRICE_FILE = "data/processed/prices.parquet"
+# Actual price loading goes through load_prices() (canonical, PIT-safe). This
+# constant is only used in a diagnostic message; point it at the canonical
+# contract so that message isn't misleading.
+PRICE_FILE = "data/canonical/prices/equity_prices_daily.parquet"
 UNIVERSE_FILE = "universe/nifty500.csv"
 OUTPUT_FILE = "data/processed/scores.parquet"
 

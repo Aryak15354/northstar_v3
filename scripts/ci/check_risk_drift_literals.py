@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SCAN_DIRS = [ROOT / "src", ROOT / "scripts", ROOT / "config", ROOT / "run.py", ROOT / "run_complete_v3_system.py"]
+SCAN_DIRS = [ROOT / "src", ROOT / "scripts", ROOT / "config"]
 EXTENSIONS = {".py", ".yaml", ".yml", ".json", ".toml"}
 ALLOWLIST = {
     "src/risk/risk_policy.py",
@@ -52,8 +52,14 @@ def _collect_violations() -> list[dict]:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         for lineno, line in enumerate(text.splitlines(), start=1):
+            # CSS values are not risk parameters: `rgba(255,77,77,0.02)` and
+            # `letter-spacing: 0.04em` in dashboard styling were tripping the
+            # literal patterns (audit finding M2). Mask colour functions and
+            # unit-suffixed numbers before scanning.
+            scan_line = re.sub(r"rgba\([^)]*\)", "rgba(<color>)", line)
+            scan_line = re.sub(r"\b\d*\.\d+(?:em|rem|px|s|vh|vw)\b", "<css>", scan_line)
             for name, pattern in PATTERNS.items():
-                if pattern.search(line):
+                if pattern.search(scan_line):
                     source = line.strip()
                     stable_digest = hashlib.sha256(f"{rel}\0{name}\0{source}".encode("utf-8")).hexdigest()[:16]
                     violations.append(

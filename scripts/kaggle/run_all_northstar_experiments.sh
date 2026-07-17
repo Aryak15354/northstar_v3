@@ -168,6 +168,9 @@ PREFLIGHT_ARGS=()
 if [[ "${REQUIRE_CUDA:-1}" == "1" ]]; then
   PREFLIGHT_ARGS+=(--require-cuda)
 fi
+if [[ "${SEQUENCE_AVAILABLE}" != "1" && "${REQUIRE_SEQUENCE}" != "1" ]]; then
+  PREFLIGHT_ARGS+=(--skip-sequence)
+fi
 python "${SCRIPT_DIR}/run4_preflight.py" \
   --feature-dir "${FEATURE_DATA_DIR}" \
   --sequence-dir "${SEQUENCE_DATA_DIR}" \

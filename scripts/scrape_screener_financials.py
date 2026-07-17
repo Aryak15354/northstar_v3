@@ -504,6 +504,24 @@ def _all_resume_files_exist(output_dir: Path, ticker_slug: str) -> bool:
     return all(p.exists() for p in _expected_resume_files(output_dir, ticker_slug))
 
 
+def _resume_files_are_fresh(output_dir: Path, ticker_slug: str, max_age_days: int) -> bool:
+    """True only if every core file exists AND is newer than max_age_days.
+
+    Existence alone is NOT sufficient: quarterly fundamentals gain a new column
+    every quarter, so a file scraped last quarter is stale even though it exists.
+    Skipping on existence alone is the "resume == complete" bug that resume-skipped
+    all 2,495 tickers on the June run while the real data was from March.
+    A non-positive max_age_days disables the freshness gate (existence-only resume).
+    """
+    files = _expected_resume_files(output_dir, ticker_slug)
+    if not all(p.exists() for p in files):
+        return False
+    if max_age_days <= 0:
+        return True
+    cutoff = time.time() - (max_age_days * 86400)
+    return all(p.stat().st_mtime >= cutoff for p in files)
+
+
 def _load_tickers(path: Path) -> list[str]:
     if not path.exists():
         raise FileNotFoundError(f"ticker file not found: {path}")
@@ -551,6 +569,20 @@ def _fetch_company_page(session: requests.Session, ticker: str, timeout: int = 3
     raise RuntimeError(f"consolidated request failed with status {r.status_code}")
 
 
+def _quarterly_npa_is_blank(rows: list[dict[str, Any]]) -> bool:
+    """True if bank asset-quality rows exist but every value is NaN.
+
+    Banks disclose Gross/Net NPA on their STANDALONE statements; the consolidated
+    Screener page carries the NPA row labels with empty cells. Detecting that lets
+    us fall back to the standalone page instead of silently storing all-NaN NPA
+    (the B3 defect that left 75 of 95 financials without GNPA).
+    """
+    npa_vals = [r["value"] for r in rows if "npa" in str(r.get("metric", "")).lower()]
+    if not npa_vals:
+        return False
+    return all(pd.isna(v) for v in npa_vals)
+
+
 def scrape_ticker(session: requests.Session, ticker: str, output_dir: Path) -> ScrapeResult:
     started = time.time()
     ticker_slug = _ticker_to_slug(ticker)
@@ -561,6 +593,28 @@ def scrape_ticker(session: requests.Session, ticker: str, output_dir: Path) -> S
     try:
         url_used, html = _fetch_company_page(session, ticker)
         soup = BeautifulSoup(html, "html.parser")
+
+        # Bank asset-quality (Gross/Net NPA) is disclosed standalone. If the fetched
+        # (consolidated) page has NPA rows that are entirely blank, re-fetch the
+        # standalone page so those metrics are captured instead of stored as NaN.
+        _probe = _table_to_long_rows(
+            _find_table_by_spec(soup, TABLE_SECTION_SPECS["quarterly_pl"]), ticker
+        )
+        if _quarterly_npa_is_blank(_probe) and url_used.endswith("/consolidated/"):
+            standalone_url = url_used.replace("/consolidated/", "/")
+            try:
+                r_sa = session.get(standalone_url, timeout=30, allow_redirects=True)
+                if r_sa.status_code == 200:
+                    sa_soup = BeautifulSoup(r_sa.text, "html.parser")
+                    sa_probe = _table_to_long_rows(
+                        _find_table_by_spec(sa_soup, TABLE_SECTION_SPECS["quarterly_pl"]), ticker
+                    )
+                    if not _quarterly_npa_is_blank(sa_probe):
+                        soup = sa_soup
+                        url_used = standalone_url
+                        sections.append("standalone_fallback_for_npa")
+            except Exception:
+                pass
 
         # Section I
         metadata = _extract_metadata(soup, ticker, url_used)
@@ -694,7 +748,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Ticker source file (one ticker per line OR CSV with ticker/symbol column).",
     )
     p.add_argument("--max-tickers", type=int, default=0, help="Limit to first N tickers (0 = all).")
-    p.add_argument("--resume", action="store_true", help="Skip tickers that already have all required core files.")
+    p.add_argument("--resume", action="store_true", help="Skip tickers that already have all required core files AND are fresh (see --max-age-days).")
+    p.add_argument(
+        "--max-age-days",
+        type=int,
+        default=45,
+        help="Under --resume, only skip a ticker whose core files are newer than this many days "
+        "(quarterly cadence ~90d; 45 forces a re-scrape well within each quarter). 0 = existence-only (legacy).",
+    )
     p.add_argument("--delay-min", type=float, default=4.0, help="Minimum delay between companies (seconds).")
     p.add_argument("--delay-max", type=float, default=8.0, help="Maximum delay between companies (seconds).")
     p.add_argument("--output-dir", type=str, default=str(DEFAULT_OUTPUT_DIR), help="Output directory root.")
@@ -749,7 +810,7 @@ def main() -> int:
 
     for idx, ticker in enumerate(tickers):
         ticker_slug = _ticker_to_slug(ticker)
-        if bool(args.resume) and _all_resume_files_exist(out_dir, ticker_slug):
+        if bool(args.resume) and _resume_files_are_fresh(out_dir, ticker_slug, int(args.max_age_days)):
             result = ScrapeResult(
                 ticker=ticker,
                 url_used="",

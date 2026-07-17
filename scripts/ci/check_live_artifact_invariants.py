@@ -434,8 +434,47 @@ def inv_nav_no_backfill() -> Result:
                   {"nav_start": str(pd.Timestamp(nav_start).date())})
 
 
+def inv_price_panel_trading_clean() -> Result:
+    """The processed price panel must be trading-clean: no weekend/holiday rows,
+    no forward-filled frozen blocks, no sub-threshold scale seams.
+
+    Guards the corruption that silently poisoned the 2026-07-04 alpha export —
+    5 mega-caps (HDFCBANK, ICICIBANK, INFY, RELIANCE, TCS) whose feed fabricated
+    NSE-holiday rows and, for HDFCBANK/ICICIBANK, forward-filled two full years
+    at ~1/5 scale. Because every feature is cross-sectionally ranked per date, one
+    corrupted mega-cap perturbs every stock's z-score on every affected date.
+    Delegates to scripts/ci/check_price_integrity (single source of truth)."""
+    name = "price_panel_trading_clean"
+    prices = D / "processed/prices.parquet"
+    if not prices.exists():
+        return _skip(name, "processed/prices.parquet missing")
+    try:
+        from scripts.ci import check_price_integrity as cpi
+    except Exception:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "check_price_integrity", Path(__file__).with_name("check_price_integrity.py"))
+        cpi = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cpi)
+    report = cpi.run(prices)
+    checks = report["checks"]
+    # ADVISORY (mega-cap pins) never fails this invariant, matching the gate.
+    hard_fail = {k: v["status"] for k, v in checks.items()
+                 if v["status"] == "FAIL"}
+    if not hard_fail:
+        return Result(name, "PASS",
+                      f"{report['tickers']} tickers trading-clean",
+                      {"rows": report["rows"]})
+    quarantine = list(checks["flat_lines"].get("quarantine_refetch", {}).keys())
+    return Result(name, "FAIL",
+                  f"price panel corrupt: {', '.join(hard_fail)}"
+                  + (f"; re-fetch {quarantine}" if quarantine else ""),
+                  {"failing_checks": hard_fail, "quarantine_refetch": quarantine})
+
+
 INVARIANTS: tuple[Callable[[], Result], ...] = (
     inv_fundamentals_unit_continuity,
+    inv_price_panel_trading_clean,
     inv_valuation_engines_nondegenerate,
     inv_stock_roles_nondegenerate,
     inv_scores_have_spread,

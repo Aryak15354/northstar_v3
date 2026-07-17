@@ -32,7 +32,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from utils.rbi_data_handler import rbi_handler
+    from src.utils.rbi_data_handler import rbi_handler
 except ImportError:
     rbi_handler = None
 

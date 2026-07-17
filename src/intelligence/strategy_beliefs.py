@@ -8,7 +8,7 @@ This is not performance tracking - this is belief tracking.
 
 Usage:
     try:
-    from intelligence.strategy_beliefs import StrategyBeliefs
+    from src.intelligence.strategy_beliefs import StrategyBeliefs
 except ImportError:
     from StrategyBeliefs import StrategyBeliefs
     

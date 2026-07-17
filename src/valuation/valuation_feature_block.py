@@ -55,6 +55,16 @@ class ValuationFeatureBlock:
         self._moat = MoatScorer(self._config)
         self._eq = EarningsQualityAnalyzer(self._config)
         self._aggregator = BayesianValuationAggregator()
+        # I.1: keep the accumulated cache in memory and flush to disk in batches
+        # instead of reading + rewriting the entire cache file on every daily
+        # date (which is quadratic in the number of dates). ``_cache_frame`` is
+        # loaded once, updated in memory, and persisted every
+        # ``_cache_flush_every`` writes plus on an explicit ``flush_cache()``.
+        self._cache_frame: Optional[pd.DataFrame] = None
+        self._cache_loaded = False
+        self._cache_dirty = False
+        self._pending_writes = 0
+        self._cache_flush_every = int(self._valuation_cfg.get("cache_flush_every", 50) or 50)
 
     def compute(
         self,
@@ -63,13 +73,18 @@ class ValuationFeatureBlock:
         market_prices: dict,
         use_cache: bool = True,
     ) -> pd.DataFrame:
-        if use_cache:
-            cached = self._load_from_cache(as_of_date, tickers)
-            if cached is not None:
-                return cached
+        requested = [str(t) for t in (tickers or [])]
+
+        # I.2: split the request into tickers already cached for this date and
+        # the ones that must be computed. Previously a single missing ticker
+        # rejected the whole cache entry and forced a full recompute of every
+        # ticker for the date.
+        cached_raw = self._load_cached_raw(as_of_date, requested) if use_cache else None
+        have = set(cached_raw.index.astype(str)) if cached_raw is not None else set()
+        missing = [t for t in requested if t not in have]
 
         rows: dict[str, dict] = {}
-        for ticker in list(tickers or []):
+        for ticker in missing:
             try:
                 rows[str(ticker)] = self._compute_ticker(
                     str(ticker),
@@ -80,9 +95,26 @@ class ValuationFeatureBlock:
                 logger.warning("Valuation features failed for %s on %s: %s", ticker, as_of_date, exc)
                 rows[str(ticker)] = {name: np.nan for name in self.FEATURE_NAMES}
 
-        df = pd.DataFrame.from_dict(rows, orient="index")
+        computed = pd.DataFrame.from_dict(rows, orient="index") if rows else pd.DataFrame(columns=self.FEATURE_NAMES)
+        computed.index.name = "ticker"
+
+        # Persist only the newly-computed raw rows to the cache (in-memory,
+        # batched to disk). Cache stores raw features only; z-scores are always
+        # recomputed fresh over the requested set below.
+        if use_cache and not computed.empty:
+            self._store_raw_rows(as_of_date, computed)
+
+        # Assemble raw features for the full requested ticker set.
+        parts: list[pd.DataFrame] = []
+        if cached_raw is not None and not cached_raw.empty:
+            parts.append(cached_raw)
+        if not computed.empty:
+            parts.append(computed[[c for c in self.FEATURE_NAMES if c in computed.columns]])
+        raw = pd.concat(parts, axis=0) if parts else pd.DataFrame(columns=self.FEATURE_NAMES)
+        if not raw.empty:
+            raw = raw[~raw.index.astype(str).duplicated(keep="last")]
+        df = raw.reindex(requested)
         df.index.name = "ticker"
-        df = df.reindex([str(t) for t in tickers])
         for col in self.FEATURE_NAMES:
             if col not in df.columns:
                 df[col] = np.nan
@@ -102,8 +134,7 @@ class ValuationFeatureBlock:
                     continue
             df[f"{col}_zscore"] = np.nan
 
-        self._write_to_cache(as_of_date, df)
-        return df
+        return df[[*self.FEATURE_NAMES, *[f"{c}_zscore" for c in self.FEATURE_NAMES]]]
 
     def _compute_ticker(
         self,
@@ -115,9 +146,13 @@ class ValuationFeatureBlock:
         history = self._normalizer.load_history(ticker, as_of_date, n_periods=10, frequency="annual")
         if not fin:
             return {name: np.nan for name in self.FEATURE_NAMES}
+        # PIT-CRITICAL: use only the point-in-time price passed in (from the
+        # research panel for this as_of_date). Do NOT fall back to
+        # ``fin.get("current_price")`` — that field is today's Screener snapshot
+        # price and would value historical rows at a future price, leaking into
+        # val_discount_to_fair_pct / val_margin_of_safety. If no PIT price is
+        # available for this ticker/date, those features stay NaN.
         effective_price = pd.to_numeric(current_price, errors="coerce")
-        if pd.isna(effective_price):
-            effective_price = pd.to_numeric(fin.get("current_price"), errors="coerce")
 
         features = {name: np.nan for name in self.FEATURE_NAMES}
         dcf_result: dict[str, float] = {}
@@ -400,62 +435,104 @@ class ValuationFeatureBlock:
             return np.nan
         return float(1.0 / (1.0 + max(float(d2e), 0.0)))
 
-    def _load_from_cache(self, as_of_date: datetime, tickers: list[str]) -> Optional[pd.DataFrame]:
-        df = self._safe_read_cache()
-        if df is None or df.empty:
+    def _ensure_cache_loaded(self) -> None:
+        if self._cache_loaded:
+            return
+        self._cache_frame = self._safe_read_cache()
+        self._cache_loaded = True
+
+    def _load_cached_raw(self, as_of_date: datetime, tickers: list[str]) -> Optional[pd.DataFrame]:
+        """Return the raw (pre-zscore) cached feature rows for the requested
+        tickers on the resolved date — the intersection, not all-or-nothing (I.2).
+        """
+        self._ensure_cache_loaded()
+        df = self._cache_frame
+        if df is None or df.empty or "date" not in df.columns:
             return None
         try:
             requested = pd.Timestamp(as_of_date).normalize()
-            exact_mask = df["date"] == requested
-            if bool(exact_mask.any()):
+            date_col = pd.to_datetime(df["date"], errors="coerce").dt.normalize()
+            if bool((date_col == requested).any()):
                 use_date = requested
             else:
                 if not bool(self._valuation_cfg.get("allow_prior_cache_fallback", True)):
                     return None
-                prior = df.loc[df["date"] <= requested].copy()
+                prior = date_col[date_col <= requested]
                 if prior.empty:
                     return None
-                use_date = pd.Timestamp(prior["date"].max()).normalize()
+                use_date = pd.Timestamp(prior.max()).normalize()
                 max_age_days = int(self._valuation_cfg.get("max_cache_fallback_age_days", 7) or 7)
                 cache_age_days = int((requested - use_date).days)
                 if cache_age_days < 0 or cache_age_days > max_age_days:
                     return None
-                logger.info(
-                    "Valuation cache fallback: using %s for requested %s",
-                    use_date.date(),
-                    requested.date(),
-                )
 
-            cached = df.loc[df["date"] == use_date].set_index("ticker")
-            if not set(tickers).issubset(set(cached.index.astype(str))):
+            cached = df.loc[date_col == use_date].copy()
+            if cached.empty:
                 return None
-            return cached.loc[[str(t) for t in tickers]]
+            cached = cached.set_index("ticker")
+            cached.index = cached.index.astype(str)
+            keep = [c for c in self.FEATURE_NAMES if c in cached.columns]
+            want = [str(t) for t in tickers]
+            sub = cached.loc[cached.index.intersection(want), keep]
+            return sub if not sub.empty else None
         except Exception:  # noqa: BLE001
             return None
 
-    def _write_to_cache(self, as_of_date: datetime, df: pd.DataFrame) -> None:
-        tmp = None
+    def _store_raw_rows(self, as_of_date: datetime, computed: pd.DataFrame) -> None:
+        """Update the in-memory cache frame with newly-computed raw rows and
+        flush to disk in batches (I.1) instead of rewriting the whole file each
+        date.
+        """
         try:
-            new_rows = df.copy()
-            new_rows["date"] = pd.Timestamp(as_of_date)
+            self._ensure_cache_loaded()
+            raw_cols = [c for c in self.FEATURE_NAMES if c in computed.columns]
+            new_rows = computed[raw_cols].copy()
+            new_rows["date"] = pd.Timestamp(as_of_date).normalize()
             new_rows["ticker"] = new_rows.index.astype(str)
             new_rows = new_rows.reset_index(drop=True)
-            existing = self._safe_read_cache()
+
+            existing = self._cache_frame
             if existing is not None and not existing.empty:
-                existing = existing[existing["date"] != pd.Timestamp(as_of_date)]
-                combined = pd.concat([existing, new_rows], ignore_index=True)
+                ex_date = pd.to_datetime(existing["date"], errors="coerce").dt.normalize()
+                same_date = ex_date == pd.Timestamp(as_of_date).normalize()
+                # Drop only the rows for the tickers being (re)written on this date.
+                overwrite = same_date & existing["ticker"].astype(str).isin(set(new_rows["ticker"]))
+                kept = existing.loc[~overwrite]
+                self._cache_frame = pd.concat([kept, new_rows], ignore_index=True)
             else:
-                self.CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
-                combined = new_rows
+                self._cache_frame = new_rows
+
+            self._cache_dirty = True
+            self._pending_writes += 1
+            if self._pending_writes >= max(1, self._cache_flush_every):
+                self.flush_cache()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Valuation cache update failed for %s: %s", as_of_date, exc)
+
+    def flush_cache(self) -> None:
+        """Persist the in-memory cache frame to disk atomically (single write)."""
+        if not self._cache_dirty or self._cache_frame is None:
+            return
+        tmp = None
+        try:
+            self.CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
             tmp = self.CACHE_PATH.with_name(
                 f"{self.CACHE_PATH.stem}.tmp.{os.getpid()}.{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}{self.CACHE_PATH.suffix}"
             )
-            combined.to_parquet(tmp, index=False)
+            self._cache_frame.to_parquet(tmp, index=False)
             tmp.replace(self.CACHE_PATH)
+            self._cache_dirty = False
+            self._pending_writes = 0
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Valuation cache write failed for %s: %s", as_of_date, exc)
+            logger.warning("Valuation cache flush failed: %s", exc)
             try:
                 if tmp is not None and Path(tmp).exists():
                     Path(tmp).unlink()
             except Exception:
                 pass
+
+    def __del__(self):  # noqa: D401
+        try:
+            self.flush_cache()
+        except Exception:
+            pass

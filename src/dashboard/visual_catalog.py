@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 
 from src.dashboard.data_contract import DashboardDataContract
@@ -187,6 +188,129 @@ def _latest_per_group(df: pd.DataFrame, group_col: str, date_col: str) -> pd.Dat
         return pd.DataFrame()
     idx = working.groupby(group_col)[date_col].idxmax()
     return working.loc[idx].reset_index(drop=True)
+
+
+def _normalize_option_type(value: Any) -> str | None:
+    if value in [None, "", "nan", "None"]:
+        return None
+    normalized = str(value).strip().upper()
+    mapping = {
+        "CE": "C",
+        "PE": "P",
+        "CALL": "C",
+        "PUT": "P",
+        "CALL_OPTION": "C",
+        "PUT_OPTION": "P",
+    }
+    return mapping.get(normalized, normalized[:1] if normalized else None)
+
+
+def _normalize_options_chain(df: pd.DataFrame, *, symbol_hint: str | None = None) -> pd.DataFrame:
+    if df is None or df.empty:
+        return pd.DataFrame()
+    working = _ensure_datetime(df, "timestamp", "date", "expiry")
+    if "symbol" not in working.columns and symbol_hint:
+        working["symbol"] = symbol_hint
+    if "symbol" in working.columns:
+        working["symbol"] = working["symbol"].where(working["symbol"].notna(), symbol_hint).astype(str).str.upper()
+    if "option_type" in working.columns:
+        working["option_type"] = working["option_type"].map(_normalize_option_type)
+    elif "instrument_type" in working.columns:
+        working["option_type"] = working["instrument_type"].map(_normalize_option_type)
+    if "date" not in working.columns:
+        if "timestamp" in working.columns:
+            working["date"] = working["timestamp"]
+        elif "expiry" in working.columns:
+            working["date"] = working["expiry"]
+    if "underlying_price" not in working.columns:
+        for source in ["spot_price", "underlying_spot", "underlying_ltp", "underlying_value"]:
+            if source in working.columns:
+                working["underlying_price"] = pd.to_numeric(working[source], errors="coerce")
+                break
+    if "moneyness" not in working.columns and {"strike", "underlying_price"}.issubset(working.columns):
+        strike = pd.to_numeric(working["strike"], errors="coerce")
+        underlying_price = pd.to_numeric(working["underlying_price"], errors="coerce")
+        working["moneyness"] = strike / underlying_price.replace({0: pd.NA})
+    return working
+
+
+def _frame_last_timestamp(df: pd.DataFrame, *cols: str) -> datetime | None:
+    if df is None or df.empty:
+        return None
+    for column in cols:
+        if column not in df.columns:
+            continue
+        parsed = _safe_datetime(df[column]).dropna()
+        if not parsed.empty:
+            return parsed.max().to_pydatetime()
+    return None
+
+
+def _path_snapshot_timestamp(path: Path) -> datetime:
+    stem_parts = path.stem.rsplit("_", 2)
+    if len(stem_parts) == 3:
+        date_token = stem_parts[-2]
+        time_token = stem_parts[-1]
+        if date_token.isdigit() and time_token.isdigit():
+            try:
+                return datetime.strptime(f"{date_token}{time_token}", "%Y%m%d%H%M%S")
+            except ValueError:
+                pass
+    return datetime.fromtimestamp(path.stat().st_mtime)
+
+
+def _load_latest_options_chain_cache(symbols: list[str]) -> pd.DataFrame:
+    cache_dir = PROJECT_ROOT / "data/options/chains_cache"
+    if not cache_dir.exists():
+        return pd.DataFrame()
+    frames: list[pd.DataFrame] = []
+    for symbol in symbols:
+        candidates = list(cache_dir.glob(f"{symbol}_*.parquet"))
+        if not candidates:
+            continue
+        latest_path = max(candidates, key=_path_snapshot_timestamp)
+        frame = _normalize_options_chain(_read_parquet(latest_path), symbol_hint=symbol)
+        if not frame.empty:
+            frames.append(frame)
+    if not frames:
+        return pd.DataFrame()
+    combined = pd.concat(frames, ignore_index=True, sort=False)
+    subset = [col for col in ["symbol", "expiry", "strike", "option_type"] if col in combined.columns]
+    if subset:
+        combined = combined.drop_duplicates(subset=subset, keep="last")
+    return combined.sort_values([col for col in ["timestamp", "date", "expiry"] if col in combined.columns]).reset_index(drop=True)
+
+
+def _select_freshest_options_chain(*candidates: pd.DataFrame) -> pd.DataFrame:
+    prepared = [_normalize_options_chain(frame) for frame in candidates if isinstance(frame, pd.DataFrame) and not frame.empty]
+    if not prepared:
+        return pd.DataFrame()
+    if all("symbol" in frame.columns for frame in prepared):
+        symbol_frames: list[pd.DataFrame] = []
+        symbols = sorted(
+            {
+                symbol
+                for frame in prepared
+                for symbol in frame["symbol"].dropna().astype(str).unique().tolist()
+                if symbol
+            }
+        )
+        for symbol in symbols:
+            freshest_frame = pd.DataFrame()
+            freshest_timestamp: datetime | None = None
+            for frame in prepared:
+                symbol_frame = frame[frame["symbol"].astype(str) == symbol].copy()
+                if symbol_frame.empty:
+                    continue
+                timestamp = _frame_last_timestamp(symbol_frame, "timestamp", "date", "expiry")
+                if freshest_timestamp is None or (timestamp is not None and timestamp > freshest_timestamp):
+                    freshest_timestamp = timestamp
+                    freshest_frame = symbol_frame
+            if not freshest_frame.empty:
+                symbol_frames.append(freshest_frame)
+        if symbol_frames:
+            return pd.concat(symbol_frames, ignore_index=True, sort=False)
+    return max(prepared, key=lambda frame: _frame_last_timestamp(frame, "timestamp", "date", "expiry") or datetime.min).copy()
 
 
 def _normalize_nav(df: pd.DataFrame) -> pd.DataFrame:
@@ -475,7 +599,17 @@ def _load_bundle() -> dict[str, Any]:
     cohesive_alpha = _ensure_datetime(_read_parquet(PROJECT_ROOT / "data/processed/cohesive_alpha_feed.parquet"), "as_of")
     alpha_os_timeseries = _ensure_datetime(_read_parquet(PROJECT_ROOT / "data/processed/alpha_os_timeseries.parquet"), "timestamp")
     alpha_os_posteriors = _ensure_datetime(_read_parquet(PROJECT_ROOT / "data/processed/alpha_os_strategy_posteriors.parquet"), "timestamp")
-    options_chain = _ensure_datetime(_read_parquet(PROJECT_ROOT / "data/options/live/nifty_options_latest.parquet"), "timestamp", "date", "expiry")
+    options_chain = _select_freshest_options_chain(
+        _normalize_options_chain(
+            _read_parquet(PROJECT_ROOT / "data/options/live/nifty_options_latest.parquet"),
+            symbol_hint="NIFTY",
+        ),
+        _normalize_options_chain(
+            _read_parquet(PROJECT_ROOT / "data/options/live_option_chain.parquet"),
+            symbol_hint="NIFTY",
+        ),
+        _load_latest_options_chain_cache(["NIFTY", "BANKNIFTY"]),
+    )
     options_governance = _ensure_datetime(_read_parquet(PROJECT_ROOT / "data/options/live/governance_events.parquet"), "timestamp", "resolved_at")
     options_runtime_state = _read_json(PROJECT_ROOT / "data/options/live/options_runtime_state.json")
     options_dashboard_state = _read_json(PROJECT_ROOT / "data/options/live/options_dashboard_state.json")
@@ -748,7 +882,13 @@ def _scatter_figure(df: pd.DataFrame, x: str, y: str, title: str, *, color: Opti
     size_col = size if size and size in df.columns else None
     if size_col:
         columns.append(size_col)
+    # Carry a human-readable identifier so hovering a bubble names the company.
+    id_col = next((c for c in ("Company Name", "company_name", "Company", "ticker", "symbol") if c in df.columns), None)
+    if id_col and id_col not in columns:
+        columns.append(id_col)
     working = df[columns].copy()
+    if id_col:
+        working["__label__"] = working[id_col].astype(str).str.replace(".NS", "", regex=False)
     working[x] = _winsorize_series(working[x])
     working[y] = _winsorize_series(working[y])
     size_plot_col = None
@@ -786,6 +926,7 @@ def _scatter_figure(df: pd.DataFrame, x: str, y: str, title: str, *, color: Opti
         hover_data[color] = True
     if size_col and size_col in working.columns:
         hover_data[size_col] = ":.4f"
+    has_label = "__label__" in working.columns
     fig = px.scatter(
         working,
         x=x,
@@ -793,6 +934,7 @@ def _scatter_figure(df: pd.DataFrame, x: str, y: str, title: str, *, color: Opti
         color=color_col if color_col in working.columns else None,
         size=size_plot_col if size_plot_col and size_plot_col in working.columns else None,
         hover_data=hover_data or None,
+        hover_name="__label__" if has_label else None,
     )
     if size_plot_col:
         fig.update_traces(marker=dict(sizemode="area", sizemin=6))
@@ -915,8 +1057,27 @@ def _regime_transition_matrix(bundle: dict[str, Any]) -> Optional[go.Figure]:
     if df.empty or "regime" not in df.columns:
         return None
     working = df[["date", "regime"]].dropna().sort_values("date")
+    if len(working) < 2:
+        latest = str(working["regime"].iloc[-1]) if not working.empty else "unknown"
+        fig = go.Figure(
+            go.Indicator(
+                mode="number",
+                value=1,
+                title={
+                    "text": (
+                        "Regime Transition Matrix<br>"
+                        f"<span style='font-size:0.8em;color:#94a3b8'>Current regime: {latest}; "
+                        "transition history has not accumulated yet</span>"
+                    )
+                },
+                number={"suffix": " observed regime"},
+            )
+        )
+        return _apply_theme(fig, title="Regime Transition Matrix", height=320)
     working["next_regime"] = working["regime"].shift(-1)
     matrix = pd.crosstab(working["regime"], working["next_regime"])
+    if matrix.empty:
+        return None
     return _heatmap_figure(matrix, "Regime Transition Matrix")
 
 
@@ -1004,6 +1165,48 @@ def _exposure_allowed_vs_actual(bundle: dict[str, Any]) -> Optional[go.Figure]:
         return None
     cols = [col for col in ["allowed_exposure", "actual_exposure", "risk_scaled_exposure"] if col in df.columns]
     return _multi_line_figure(df, "date", cols, "Allowed vs Actual Exposure")
+
+
+def _unified_macro_and_exposure(bundle: dict[str, Any]) -> Optional[go.Figure]:
+    """MacroScore (a composite of growth/inflation/liquidity/stress
+    contributions, roughly 0=worst to 2=best regime backdrop) and the equity-
+    exposure ceiling it implies, on one shared timeline instead of two bare
+    unlabeled line charts. The bottom panel makes the causal link explicit:
+    exposure ceiling tracks the macro score with regime-dependent haircuts."""
+    df = _frame(bundle, "unified_daily")
+    if df.empty or "date" not in df.columns:
+        return None
+    cols = [c for c in ("MacroScore", "Max_Equity_Exposure") if c in df.columns]
+    if len(cols) < 2:
+        return None
+    working = df[["date"] + cols].copy()
+    for c in cols:
+        working[c] = pd.to_numeric(working[c], errors="coerce")
+    working = working.dropna(subset=["date"]).sort_values("date")
+    if working.dropna(subset=cols, how="all").empty:
+        return None
+    last_valid = working.dropna(subset=cols, how="all")["date"].max()
+
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.55, 0.45],
+                        vertical_spacing=0.08,
+                        subplot_titles=("Macro Score (0 = worst backdrop, ~2 = best)",
+                                        "Implied Max Equity Exposure Ceiling"))
+    fig.add_trace(go.Scatter(x=working["date"], y=working["MacroScore"], mode="lines",
+                             line=dict(color=THEME["green"], width=2), name="MacroScore",
+                             showlegend=False), row=1, col=1)
+    fig.add_hline(y=working["MacroScore"].median(), line=dict(color=THEME["grid"], width=1, dash="dot"),
+                  row=1, col=1)
+    fig.add_trace(go.Scatter(x=working["date"], y=working["Max_Equity_Exposure"], mode="lines",
+                             fill="tozeroy", line=dict(color=THEME["amber"], width=2),
+                             name="Max Equity Exposure", showlegend=False), row=2, col=1)
+    fig.update_yaxes(range=[0, 1], tickformat=".0%", row=2, col=1)
+    fig = _apply_theme(
+        fig,
+        title=f"Unified Daily Macro Score & Exposure Ceiling — last data point {last_valid:%d %b %Y}"
+              + (" (this feed has not been refreshed since)" if (pd.Timestamp.now() - last_valid).days > 30 else ""),
+        height=480,
+    )
+    return fig
 
 
 def _latest_ticker_sentiment_chart(bundle: dict[str, Any], *, positive: bool) -> Optional[go.Figure]:
@@ -1101,15 +1304,51 @@ def _sector_exposure(bundle: dict[str, Any]) -> Optional[go.Figure]:
 
 
 def _mispricing_vs_weight(bundle: dict[str, Any]) -> Optional[go.Figure]:
-    df = _frame(bundle, "unified_portfolio")
-    return _scatter_figure(df, "mispricing", "final_weight", "Mispricing vs Final Weight", color="position_role", size="northstar_score")
+    weights = _frame(bundle, "portfolio_weights")
+    if weights.empty:
+        weights = _frame(bundle, "unified_portfolio")
+    if weights.empty or "ticker" not in weights.columns:
+        return None
+
+    working = weights.copy()
+    if "final_weight" not in working.columns and "weight" in working.columns:
+        working["final_weight"] = pd.to_numeric(working["weight"], errors="coerce")
+    if "mispricing" not in working.columns:
+        valuation = _frame(bundle, "valuation")
+        value_cols = [col for col in ["ticker", "margin_of_safety_pct", "valuation_signal"] if col in valuation.columns]
+        if len(value_cols) >= 2:
+            latest_val = valuation[value_cols].drop_duplicates(subset=["ticker"], keep="last")
+            working = working.merge(latest_val, on="ticker", how="left")
+            if "margin_of_safety_pct" in working.columns:
+                working["mispricing"] = pd.to_numeric(working["margin_of_safety_pct"], errors="coerce")
+            elif "valuation_signal" in working.columns:
+                working["mispricing"] = pd.to_numeric(working["valuation_signal"], errors="coerce")
+    if "northstar_score" not in working.columns:
+        scores = _frame(bundle, "scores")
+        score_cols = [col for col in ["ticker", "northstar_score", "score", "final_score"] if col in scores.columns]
+        if len(score_cols) >= 2:
+            latest_scores = scores[score_cols].drop_duplicates(subset=["ticker"], keep="last")
+            working = working.merge(latest_scores, on="ticker", how="left")
+            for col in ["northstar_score", "score", "final_score"]:
+                if col in working.columns:
+                    working["northstar_score"] = pd.to_numeric(working[col], errors="coerce")
+                    break
+    return _scatter_figure(working, "mispricing", "final_weight", "Mispricing vs Final Weight", color="position_role", size="northstar_score")
 
 
 def _top_portfolio_scores(bundle: dict[str, Any]) -> Optional[go.Figure]:
-    df = _frame(bundle, "unified_portfolio")
-    if df.empty or "ticker" not in df.columns or "northstar_score" not in df.columns:
+    weights = _frame(bundle, "portfolio_weights")
+    scores = _frame(bundle, "scores")
+    if weights.empty or "ticker" not in weights.columns or scores.empty or "ticker" not in scores.columns:
         return None
-    working = df[["ticker", "northstar_score"]].copy().dropna().sort_values("northstar_score", ascending=False).head(15)
+    score_col = next((col for col in ["northstar_score", "score", "final_score"] if col in scores.columns), None)
+    if score_col is None:
+        return None
+    latest_scores = scores[["ticker", score_col]].drop_duplicates(subset=["ticker"], keep="last")
+    working = weights[["ticker"]].drop_duplicates().merge(latest_scores, on="ticker", how="left")
+    working = working.rename(columns={score_col: "northstar_score"})
+    working["northstar_score"] = pd.to_numeric(working["northstar_score"], errors="coerce")
+    working = working.dropna().sort_values("northstar_score", ascending=False).head(15)
     return _bar_figure(working, "ticker", "northstar_score", "Top Northstar Scores in Current Portfolio")
 
 
@@ -1160,6 +1399,14 @@ def _governor_budget_bar(bundle: dict[str, Any]) -> Optional[go.Figure]:
 
 
 def _chain_by_option_type(bundle: dict[str, Any], value_col: str, title: str) -> Optional[go.Figure]:
+    """Strike-axis chain chart, faceted by underlying.
+
+    The raw options_chain bundle mixes every fetched index/underlying together
+    (e.g. NIFTY strikes ~21-26k alongside BANKNIFTY strikes ~50k+) — plotting
+    them on one shared strike axis produced a nonsensical chart with two
+    disconnected, unlabeled clusters. Faceting by `symbol` (falling back to
+    `underlying`) keeps each underlying's own strike ladder legible while still
+    showing everything the live chain currently covers."""
     df = _frame(bundle, "options_chain")
     if df.empty or "strike" not in df.columns or value_col not in df.columns or "option_type" not in df.columns:
         return None
@@ -1179,9 +1426,28 @@ def _chain_by_option_type(bundle: dict[str, Any], value_col: str, title: str) ->
             elif value_col == "vega":
                 working["vega_exposure"] = source * oi
                 derived_column = "vega_exposure"
-    working = working[["strike", derived_column, "option_type"]].copy().dropna()
+    symbol_col = "symbol" if "symbol" in working.columns else ("underlying" if "underlying" in working.columns else None)
+    keep = ["strike", derived_column, "option_type"] + ([symbol_col] if symbol_col else [])
+    working = working[keep].copy().dropna(subset=["strike", derived_column, "option_type"])
     if working.empty:
         return None
+    if symbol_col and working[symbol_col].nunique(dropna=True) > 1:
+        symbols = sorted(working[symbol_col].dropna().unique().tolist())
+        fig = make_subplots(rows=1, cols=len(symbols), subplot_titles=symbols, shared_yaxes=False)
+        colors = {"C": THEME["green"], "CE": THEME["green"], "P": THEME["red"], "PE": THEME["red"]}
+        seen_legend = set()
+        for i, sym in enumerate(symbols, start=1):
+            sub = working[working[symbol_col] == sym].sort_values("strike")
+            for opt_type, grp in sub.groupby("option_type"):
+                show_legend = opt_type not in seen_legend
+                seen_legend.add(opt_type)
+                fig.add_trace(
+                    go.Scatter(x=grp["strike"], y=grp[derived_column], mode="lines",
+                              name=str(opt_type), legendgroup=str(opt_type), showlegend=show_legend,
+                              line=dict(width=2.3, color=colors.get(str(opt_type), THEME["blue"]))),
+                    row=1, col=i,
+                )
+        return _apply_theme(fig, title=title, height=420)
     fig = px.line(working.sort_values("strike"), x="strike", y=derived_column, color="option_type")
     fig.update_traces(line=dict(width=2.3))
     return _apply_theme(fig, title=title)
@@ -1191,11 +1457,30 @@ def _options_iv_heatmap(bundle: dict[str, Any]) -> Optional[go.Figure]:
     df = _frame(bundle, "options_chain")
     if df.empty or not {"strike", "option_type", "iv"}.issubset(df.columns):
         return None
+    symbol_col = "symbol" if "symbol" in df.columns else ("underlying" if "underlying" in df.columns else None)
+    if symbol_col and df[symbol_col].nunique(dropna=True) > 1:
+        # Heatmap needs one primary underlying (mixed strike ladders can't
+        # share one index axis); show the most-liquid one by open interest.
+        primary = (df.groupby(symbol_col)["oi"].sum().sort_values(ascending=False).index[0]
+                   if "oi" in df.columns else df[symbol_col].value_counts().index[0])
+        df = df[df[symbol_col] == primary]
+        title_suffix = f" — {primary}"
+    else:
+        title_suffix = ""
     pivot = df.pivot_table(index="strike", columns="option_type", values="iv", aggfunc="mean")
-    return _heatmap_figure(pivot, "Option Chain IV Heatmap")
+    return _heatmap_figure(pivot, f"Option Chain IV Heatmap{title_suffix}")
 
 
 def _options_active_greeks(bundle: dict[str, Any]) -> Optional[go.Figure]:
+    """Net greeks of the fund's OWN open option positions — never a proxy.
+
+    A prior fallback summed OI x greeks across the ENTIRE fetched chain (every
+    strike, every underlying, other market participants' open interest
+    included) when no positions were open. That is not "active position"
+    exposure at all — it is a market-wide aggregate that happens to net near
+    zero by construction (calls and puts roughly offset), which silently
+    mislabeled "no exposure data" as "flat exposure". When there are truly no
+    open positions we say so instead of fabricating a number."""
     df = _frame(bundle, "active_option_positions")
     rows = []
     for greek in ["delta", "gamma", "vega", "theta"]:
@@ -1206,9 +1491,16 @@ def _options_active_greeks(bundle: dict[str, Any]) -> Optional[go.Figure]:
         for greek in ["delta", "gamma", "vega", "theta"]:
             if greek in portfolio_greeks:
                 rows.append({"greek": greek.upper(), "value": pd.to_numeric(portfolio_greeks.get(greek), errors="coerce")})
-    if not rows:
-        return None
-    return _bar_figure(pd.DataFrame(rows), "greek", "value", "Active Option Positions: Net Greeks")
+    rows = [r for r in rows if pd.notna(r.get("value"))]
+    if rows and any(abs(r["value"]) > 1e-9 for r in rows):
+        return _bar_figure(pd.DataFrame(rows), "greek", "value", "Active Option Positions: Net Greeks")
+    fig = go.Figure(go.Indicator(
+        mode="number", value=0,
+        title={"text": "Active Option Positions: Net Greeks<br>"
+                       "<span style='font-size:0.8em;color:#94a3b8'>No live option positions are open right now</span>"},
+        number={"valueformat": ",d"},
+    ))
+    return _apply_theme(fig, title="Active Option Positions: Net Greeks", height=320)
 
 
 def _options_active_underlyings(bundle: dict[str, Any]) -> Optional[go.Figure]:
@@ -1245,7 +1537,16 @@ def _governance_event_counts(bundle: dict[str, Any]) -> Optional[go.Figure]:
 def _runtime_iv_history(bundle: dict[str, Any]) -> Optional[go.Figure]:
     df = _frame(bundle, "option_iv_history")
     if df.empty:
-        return None
+        chain = _frame(bundle, "options_chain")
+        if chain.empty or not {"underlying", "iv"}.issubset(chain.columns):
+            return None
+        latest = chain[["underlying", "iv"]].copy()
+        latest["iv"] = pd.to_numeric(latest["iv"], errors="coerce")
+        latest = latest.dropna(subset=["underlying", "iv"])
+        if latest.empty:
+            return None
+        latest = latest.groupby("underlying", dropna=False)["iv"].mean().reset_index().sort_values("iv", ascending=False).head(20)
+        return _bar_figure(latest, "underlying", "iv", "Current Chain IV by Underlying", orientation="h")
     if df["timestamp"].nunique(dropna=True) <= 2:
         latest = df.sort_values("timestamp").groupby("underlying", dropna=False)["iv"].last().reset_index().sort_values("iv", ascending=False).head(20)
         return _bar_figure(latest, "underlying", "iv", "Current Runtime IV by Underlying", orientation="h")
@@ -1294,50 +1595,187 @@ def _cohesive_alpha_top(bundle: dict[str, Any]) -> Optional[go.Figure]:
 
 
 def _score_quintiles(bundle: dict[str, Any]) -> Optional[go.Figure]:
+    """Quintiles are rank-defined so their *counts* are trivially uniform (100
+    each). What actually matters is the score gradient they carry — so plot the
+    mean composite score per quintile with its min/max whiskers."""
     df = _frame(bundle, "scores")
     if df.empty or "quintile" not in df.columns:
         return None
-    grouped = df["quintile"].astype(str).value_counts().reset_index()
-    grouped.columns = ["quintile", "count"]
-    return _bar_figure(grouped, "quintile", "count", "Score Quintile Distribution")
+    score_col = next((c for c in ("northstar_score", "final_score", "score", "model_score") if c in df.columns), None)
+    if score_col is None:
+        return None
+    work = df[["quintile", score_col]].copy()
+    work["quintile"] = pd.to_numeric(work["quintile"], errors="coerce")
+    work[score_col] = pd.to_numeric(work[score_col], errors="coerce")
+    work = work.dropna()
+    if work.empty:
+        return None
+    g = work.groupby("quintile")[score_col].agg(["mean", "min", "max", "count"]).reset_index().sort_values("quintile")
+    labels = {1: "Q1 weak", 2: "Q2", 3: "Q3", 4: "Q4", 5: "Q5 strong"}
+    x = [labels.get(int(q), f"Q{int(q)}") for q in g["quintile"]]
+    palette = ["#ff4d4d", "#c0774d", "#8b95a5", "#5fa878", "#26e07f"]
+    colors = [palette[min(int(q) - 1, 4)] for q in g["quintile"]]
+    fig = go.Figure(go.Bar(
+        x=x, y=g["mean"], marker_color=colors,
+        error_y=dict(type="data", symmetric=False,
+                     array=(g["max"] - g["mean"]).tolist(),
+                     arrayminus=(g["mean"] - g["min"]).tolist(),
+                     color="#7d8899", thickness=1),
+        text=[f"μ={m:.3f}<br>n={int(n)}" for m, n in zip(g["mean"], g["count"])],
+        textposition="outside", textfont=dict(size=9),
+        hovertemplate="%{x}<br>mean=%{y:.4f}<extra></extra>",
+    ))
+    fig.update_layout(title="Score Quintile Gradient — mean composite score (whiskers = min/max)",
+                      yaxis_title="Composite score")
+    return fig
+
+
+def _strategy_regret_fig(bundle: dict[str, Any]) -> Optional[go.Figure]:
+    """Regret = how much return each strategy left on the table versus the best
+    performer. The frame is a long daily history, so show each strategy's most
+    recent rolling regret (lower = closer to the best call)."""
+    df = _frame(bundle, "strategy_regret")
+    if df.empty or "strategy" not in df.columns:
+        return None
+    metric = next((c for c in ("regret_90d", "regret_30d", "cum_regret", "regret") if c in df.columns), None)
+    if metric is None:
+        return None
+    work = df.copy()
+    if "date" in work.columns:
+        work["date"] = pd.to_datetime(work["date"], errors="coerce")
+        work = work.sort_values("date").groupby("strategy", as_index=False).last()
+    work[metric] = pd.to_numeric(work[metric], errors="coerce")
+    work = work.dropna(subset=[metric])
+    if work.empty:
+        return None
+    return _bar_figure(work, "strategy", metric, f"Strategy Regret — latest {metric} (lower is better)",
+                       orientation="h", ascending=True)
 
 
 def _strategy_sharpe_vs_drawdown(bundle: dict[str, Any]) -> Optional[go.Figure]:
     df = _frame(bundle, "strategy_performance")
-    return _scatter_figure(df, "sharpe_ratio", "max_drawdown", "Strategy Sharpe vs Max Drawdown", color="strategy_name", size="final_equity")
+    return _scatter_figure(df, "sharpe", "max_drawdown", "Strategy Sharpe vs Max Drawdown", color="strategy", size="final_equity")
+
+
+_REGIME_LABEL = {
+    "regime_low_vol": "Low-vol (calm)",
+    "regime_high_vol": "High-vol (choppy)",
+    "regime_crisis": "Crisis (risk-off)",
+    "regime_transition": "Transition",
+}
+_REGIME_COLOR = {
+    "regime_low_vol": "#26e07f",
+    "regime_high_vol": "#f5a623",
+    "regime_crisis": "#ff4d4d",
+    "regime_transition": "#38bdf8",
+}
 
 
 def _alpha_os_probabilities(bundle: dict[str, Any]) -> Optional[go.Figure]:
+    """How to read: each coloured band is the model's probability, that day, of
+    being in a given volatility regime — the bands stack to 100%. The widest
+    band on the right edge is the regime the system believes we're in *now*."""
     df = _frame(bundle, "alpha_os_timeseries")
     if df.empty or "timestamp" not in df.columns:
         return None
-    cols = [col for col in ["regime_low_vol", "regime_high_vol", "regime_crisis", "regime_transition"] if col in df.columns]
+    cols = [c for c in ["regime_low_vol", "regime_high_vol", "regime_crisis", "regime_transition"] if c in df.columns]
     if not cols:
         return None
-    working = df[["timestamp"] + cols].copy().tail(200)
+    working = df[["timestamp"] + cols].copy()
     working["timestamp"] = pd.to_datetime(working["timestamp"], errors="coerce")
-    for col in cols:
-        working[col] = pd.to_numeric(working[col], errors="coerce")
+    for c in cols:
+        working[c] = pd.to_numeric(working[c], errors="coerce")
     working = working.dropna(subset=["timestamp"]).sort_values("timestamp")
+    # Drop degenerate rows where the model emitted no signal: probabilities
+    # all zero, OR uniform (0.25 each = maximum entropy = zero information —
+    # 92% of history was uniform per the 2026-07-06 audit, finding H1).
+    working = working[working[cols].sum(axis=1) > 0.5]
+    spread = working[cols].max(axis=1) - working[cols].min(axis=1)
+    working = working[spread > 0.01].tail(180)
     if working.empty:
         return None
-    melted = working.melt(id_vars="timestamp", value_vars=cols, var_name="regime", value_name="probability")
-    melted = melted.dropna(subset=["probability"])
-    if melted.empty:
-        return None
-    fig = px.area(melted, x="timestamp", y="probability", color="regime")
-    fig.update_traces(mode="lines")
-    return _apply_theme(fig, title="Alpha OS Regime Probabilities", height=430)
+    fig = go.Figure()
+    for c in cols:
+        fig.add_trace(go.Scatter(
+            x=working["timestamp"], y=working[c], name=_REGIME_LABEL.get(c, c),
+            mode="lines", stackgroup="one", groupnorm="percent",
+            line=dict(width=0.5, color=_REGIME_COLOR.get(c)),
+            fillcolor=_REGIME_COLOR.get(c),
+            hovertemplate="%{x|%d-%b}<br>" + _REGIME_LABEL.get(c, c) + ": %{y:.0f}%<extra></extra>",
+        ))
+    latest = working.iloc[-1]
+    dom = max(cols, key=lambda c: latest[c])
+    fig.add_annotation(
+        xref="paper", yref="paper", x=1.0, y=1.12, showarrow=False, xanchor="right",
+        text=f"NOW: <b>{_REGIME_LABEL.get(dom, dom)}</b> ({100*latest[dom]/max(latest[cols].sum(),1e-9):.0f}%)",
+        font=dict(color=_REGIME_COLOR.get(dom), size=12),
+    )
+    fig.update_layout(yaxis=dict(title="probability", ticksuffix="%", range=[0, 100]))
+    return _apply_theme(fig, title="Alpha OS Regime Probabilities — belief the market is calm / choppy / crisis (stacked to 100%)", height=430)
 
 
 def _alpha_os_risk_stack(bundle: dict[str, Any]) -> Optional[go.Figure]:
+    """How to read: three named risk pressures on a 0→1 scale. Green = benign,
+    amber = building, red = hot. The bar shows *today's* level; the number in
+    brackets is where it sits versus its own recent history.
+
+    A run of exact 0.0 across the whole recorded history means the Alpha OS
+    orchestrator has never emitted these risk metrics (it mostly runs in
+    shadow/degraded mode) — that is "no signal", not "confirmed calm", so we
+    say that explicitly rather than paint three green zero-bars that read as
+    reassuring."""
     df = _frame(bundle, "alpha_os_timeseries")
-    return _multi_line_figure(
-        df.tail(200),
-        "timestamp",
-        [col for col in ["convexity_score", "gap_risk_score", "crowding_score"] if col in df.columns],
-        "Alpha OS Risk Stack",
-    )
+    if df.empty:
+        return None
+    specs = [
+        ("crowding_score", "Crowding — everyone in the same trade"),
+        ("gap_risk_score", "Gap risk — overnight jump exposure"),
+        ("convexity_score", "Convexity — payoff curvature stress"),
+    ]
+    # "Current" must come from the latest row where the orchestrator was
+    # actually operating (not 'error'/'blocked_*') — a transient degraded
+    # cycle at the very tail of history was zeroing out every metric even
+    # though 70%+ of the recorded history carries real, nonzero readings.
+    mode = df.get("mode", pd.Series(dtype=str)).astype(str)
+    healthy = ~mode.str.contains("error", case=False, na=False) & ~mode.str.contains("blocked", case=False, na=False)
+    current_slice = df[healthy] if healthy.any() else df
+
+    rows = []
+    for col, label in specs:
+        if col not in df.columns:
+            continue
+        s = pd.to_numeric(df[col], errors="coerce").dropna()
+        if s.empty or not (s.abs() > 1e-9).any():
+            continue
+        cur_series = pd.to_numeric(current_slice[col], errors="coerce").dropna()
+        cur = float(cur_series.iloc[-1]) if not cur_series.empty else float(s.iloc[-1])
+        pct = float((s <= cur).mean() * 100) if len(s) > 1 else 50.0
+        rows.append((label, cur, pct))
+    if not rows:
+        fig = go.Figure(go.Indicator(
+            mode="number", value=0,
+            title={"text": "Alpha OS Risk Stack<br>"
+                           "<span style='font-size:0.75em;color:#94a3b8'>No signal: the orchestrator has not "
+                           "emitted crowding/gap/convexity risk in its recorded history (running in shadow mode)</span>"},
+        ))
+        return _apply_theme(fig, title="Alpha OS Risk Stack", height=320)
+    labels = [r[0] for r in rows]
+    values = [r[1] for r in rows]
+
+    def sev(v: float) -> str:
+        return "#26e07f" if v < 0.33 else "#f5a623" if v < 0.66 else "#ff4d4d"
+
+    fig = go.Figure(go.Bar(
+        x=values, y=labels, orientation="h",
+        marker=dict(color=[sev(v) for v in values]),
+        text=[f"{v:.2f}  ·  {p:.0f}th pct" for (_, v, p) in rows],
+        textposition="outside", textfont=dict(size=10),
+        hovertemplate="%{y}<br>level=%{x:.3f}<extra></extra>",
+    ))
+    fig.add_vline(x=0.33, line=dict(color="#5fa878", width=1, dash="dot"))
+    fig.add_vline(x=0.66, line=dict(color="#ff4d4d", width=1, dash="dot"))
+    fig.update_layout(xaxis=dict(range=[0, 1.05], title="risk level"))
+    return _apply_theme(fig, title="Alpha OS Risk Stack — current pressure per risk (0 calm → 1 hot)", height=360)
 
 
 def _alpha_os_capacity(bundle: dict[str, Any]) -> Optional[go.Figure]:
@@ -1394,9 +1832,65 @@ def _state_write_intensity(bundle: dict[str, Any]) -> Optional[go.Figure]:
     return _line_figure(grouped, "minute", "writes", "State Write Intensity", color=THEME["teal"])
 
 
+def _humanize_age(hours: float) -> str:
+    if hours < 1:
+        return f"{hours * 60:.0f}m"
+    if hours < 48:
+        return f"{hours:.1f}h"
+    return f"{hours / 24:.1f}d"
+
+
 def _pipeline_freshness_fig(bundle: dict[str, Any]) -> Optional[go.Figure]:
+    """Operational freshness board across every tracked pipeline.
+
+    Raw ages here span 5+ orders of magnitude (seconds for the live-engine
+    heartbeat vs. months for a dormant status file) — a plain linear bar chart
+    made every fast-refreshing source an invisible sliver next to the stale
+    ones, and a source with no timestamp at all (Alpha OS, which only carries
+    one when the orchestrator isn't in shadow mode) rendered as a NaN-height
+    bar. Log-scale x-axis + explicit "no timestamp" row + human-readable age
+    labels + severity coloring make this an actual ops board."""
     df = _frame(bundle, "pipeline_freshness")
-    return _bar_figure(df, "source", "age_hours", "Data Pipeline Age (Hours)", color="status")
+    if df.empty or "source" not in df.columns:
+        return None
+    working = df.copy()
+    working["age_hours"] = pd.to_numeric(working.get("age_hours"), errors="coerce")
+    has_age = working[working["age_hours"].notna() & (working["age_hours"] > 0)].sort_values("age_hours")
+    missing = working[working["age_hours"].isna() | (working["age_hours"] <= 0)]
+
+    def sev(age_h: float) -> str:
+        if age_h <= 1:
+            return THEME["green"]
+        if age_h <= 24:
+            return THEME["blue"]
+        if age_h <= 72:
+            return THEME["amber"]
+        return THEME["red"]
+
+    fig = go.Figure()
+    if not has_age.empty:
+        fig.add_trace(go.Bar(
+            x=has_age["age_hours"], y=has_age["source"], orientation="h",
+            marker=dict(color=[sev(a) for a in has_age["age_hours"]]),
+            text=[f"{_humanize_age(a)} · {s}" for a, s in zip(has_age["age_hours"], has_age.get("status", ""))],
+            textposition="outside", textfont=dict(size=10),
+            hovertemplate="%{y}: %{text}<extra></extra>",
+            showlegend=False,
+        ))
+    if not missing.empty:
+        # Plot at a fixed sentinel position past the oldest real bar so "we
+        # don't know" is visually distinct from "we know it's very stale".
+        sentinel = float(has_age["age_hours"].max() * 1.3) if not has_age.empty else 1.0
+        fig.add_trace(go.Bar(
+            x=[sentinel] * len(missing), y=missing["source"], orientation="h",
+            marker=dict(color=THEME["grid"], pattern=dict(shape="/")),
+            text=["no timestamp reported"] * len(missing),
+            textposition="outside", textfont=dict(size=10, color=THEME["grid"]),
+            hovertemplate="%{y}: no timestamp reported<extra></extra>",
+            showlegend=False,
+        ))
+    fig.update_xaxes(type="log", title="age (hours, log scale)")
+    return _apply_theme(fig, title="Data Pipeline Age — freshness across every tracked source", height=max(320, 60 + 34 * len(working)))
 
 
 def _component_status_fig(bundle: dict[str, Any]) -> Optional[go.Figure]:
@@ -1507,7 +2001,7 @@ def _build_specs() -> list[VisualSpec]:
         VisualSpec("overview_governor_fractions", "Executive Overview", "Governor Capital Fractions", "Top-level capital structure from the canonical governor.", _governor_fraction_donut),
         VisualSpec("overview_pnl_mix", "Executive Overview", "Today's P&L Mix", "Equity, options, and net P&L from the unified P&L surface.", _overview_pnl_mix),
         VisualSpec("overview_market_regime_timeline", "Executive Overview", "Regime Timeline", "Current market regime path from canonical state and regime history.", _market_regime_timeline),
-        VisualSpec("overview_alpha_probs", "Executive Overview", "Alpha OS Regime Probabilities", "Alpha OS regime probability surface.", _alpha_os_probabilities),
+        VisualSpec("overview_alpha_probs", "Executive Overview", "Alpha OS Regime Probabilities", "How to read: each band is the model's belief the market is calm (green), choppy (amber), crisis (red) or transitioning (cyan); bands stack to 100%, and the widest band at the right edge is the regime it believes we are in NOW.", _alpha_os_probabilities),
         VisualSpec("overview_pipeline_age", "Executive Overview", "Data Pipeline Age (Hours)", "Freshness across canonical operational surfaces.", _pipeline_freshness_fig),
         VisualSpec("overview_component_status", "Executive Overview", "System Component Status Mix", "Execution-log component status by outcome.", _component_status_fig),
         VisualSpec("overview_runtime_age", "Executive Overview", "Runtime Surface Age (Hours)", "Operational age of orchestrator and options runtime surfaces.", _runtime_surface_age),
@@ -1556,8 +2050,9 @@ def _build_specs() -> list[VisualSpec]:
             VisualSpec("market_transition_matrix", "Market & Regime", "Regime Transition Matrix", "Empirical regime-to-regime transition map.", _regime_transition_matrix),
             VisualSpec("market_vol_regime_counts", "Market & Regime", "Volatility Regime Counts", "Distribution of volatility regime observations.", _volatility_regime_counts),
             VisualSpec("market_risk_on_vs_stress", "Market & Regime", "Risk-On Probability vs Stress Score", "Relationship between risk appetite and stress.", _risk_on_vs_stress),
-            _spec_line("Market & Regime", "unified_daily", "date", "MacroScore", "Unified Daily Macro Score", "Long-horizon macro score from the unified daily dataset.", color=THEME["green"]),
-            _spec_line("Market & Regime", "unified_daily", "date", "Max_Equity_Exposure", "Unified Daily Max Equity Exposure", "Long-horizon exposure ceiling from the unified daily dataset.", color=THEME["amber"]),
+            VisualSpec("market_unified_macro_exposure", "Market & Regime", "Long-Horizon Macro Score & Exposure Ceiling",
+                       "5-year history of the macro-conditioning score and the equity-exposure cap it implies.",
+                       _unified_macro_and_exposure),
             VisualSpec("market_exposure_allowed_vs_actual", "Market & Regime", "Allowed vs Actual Exposure", "Live exposure policy vs actual runtime exposure.", _exposure_allowed_vs_actual),
         ]
     )
@@ -1621,7 +2116,7 @@ def _build_specs() -> list[VisualSpec]:
         VisualSpec("portfolio_governor_budget", "Portfolio & Governor", "Governor Budget Allocation (INR)", "Current capital budget by sleeve.", _governor_budget_bar),
         VisualSpec("portfolio_stock_roles", "Portfolio & Governor", "NSE Universe Stock-Role Distribution", "Leader/follower role mix in the modeled NSE universe.", _stock_role_distribution),
         _spec_bar("Portfolio & Governor", "strategy_weights", "strategy", "weight", "Alpha OS Strategy Weights", "Active strategy weights from canonical Alpha OS state.", top_n=12),
-        _spec_bar("Portfolio & Governor", "strategy_performance", "strategy_name", "total_return", "Strategy Total Return", "Backtest/live strategy return comparison.", top_n=16),
+        _spec_bar("Portfolio & Governor", "strategy_performance", "strategy", "total_return", "Strategy Total Return", "Backtest/live strategy return comparison.", top_n=16),
     ]
     specs.extend(portfolio_specs)
 
@@ -1664,13 +2159,13 @@ def _build_specs() -> list[VisualSpec]:
     specs.extend(valuation_specs)
 
     alpha_ops_specs = [
-        VisualSpec("alpha_probs", "Alpha OS & Operations", "Alpha OS Regime Probabilities", "Regime probability stream inside Alpha OS.", _alpha_os_probabilities),
+        VisualSpec("alpha_probs", "Alpha OS & Operations", "Alpha OS Regime Probabilities", "How to read: each band is the model's belief the market is calm (green), choppy (amber), crisis (red) or transitioning (cyan); bands stack to 100%, and the widest band at the right edge is the regime it believes we are in NOW.", _alpha_os_probabilities),
         _spec_line("Alpha OS & Operations", "alpha_os_timeseries", "timestamp", "regime_entropy", "Alpha OS Regime Entropy", "Regime uncertainty through time.", color=THEME["red"]),
         VisualSpec("alpha_capacity", "Alpha OS & Operations", "Alpha OS Capacity & Utilization", "Gross/net capacity vs utilization in Alpha OS.", _alpha_os_capacity),
-        VisualSpec("alpha_risk_stack", "Alpha OS & Operations", "Alpha OS Risk Stack", "Convexity, gap-risk, and crowding diagnostics.", _alpha_os_risk_stack),
+        VisualSpec("alpha_risk_stack", "Alpha OS & Operations", "Alpha OS Risk Stack", "How to read: three named risk pressures on a 0-to-1 scale — green bar = benign, amber = building, red = hot; the label shows today's level and where it sits vs its own history (percentile).", _alpha_os_risk_stack),
         VisualSpec("alpha_latest_weights", "Alpha OS & Operations", "Latest Alpha OS Strategy Weights", "Most recent final strategy weights chosen by Alpha OS.", _alpha_os_latest_weights),
         VisualSpec("alpha_mean_vs_weight", "Alpha OS & Operations", "Alpha OS Posterior Mean vs Final Weight", "Posterior return signal vs deployed weight.", _alpha_os_mean_vs_weight),
-        _spec_bar("Alpha OS & Operations", "strategy_regret", "strategy_name", "regret_score", "Strategy Regret Scores", "Strategy regret diagnostics.", top_n=16),
+        VisualSpec("ops_strategy_regret", "Alpha OS & Operations", "Strategy Regret Scores", "How much return each strategy left on the table vs the best performer.", _strategy_regret_fig),
         _spec_bar("Alpha OS & Operations", "strategy_beliefs", "strategy", "belief_strength", "Strategy Belief Strength", "Belief weights emitted by the intelligence layer.", top_n=16),
         VisualSpec("ops_pipeline_age", "Alpha OS & Operations", "Data Pipeline Age (Hours)", "Freshness across top operational surfaces.", _pipeline_freshness_fig),
         VisualSpec("ops_component_mix", "Alpha OS & Operations", "System Component Status Mix", "Status mix across execution-log components.", _component_status_fig),

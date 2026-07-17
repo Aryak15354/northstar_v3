@@ -39,8 +39,14 @@ from src.runtime import (
 )
 from src.runtime.hash_utils import canonical_hash, file_sha256
 from src.portfolio.strategies import AVAILABLE_STRATEGIES
+from src.data.price_access import canonical_price_path, read_prices_legacy
 
 warnings.filterwarnings('ignore')
+
+
+def _default_prices_path() -> str:
+    return str(canonical_price_path())
+
 
 class BacktestEngine:
     """
@@ -56,7 +62,7 @@ class BacktestEngine:
         
         # File paths
         self.paths = {
-            'prices': 'data/processed/prices.parquet',
+            'prices': _default_prices_path(),
             'market_state': 'data/processed/market_state.parquet',
             'strategy_portfolios': 'data/processed/strategy_portfolios',
             'strategy_performance': 'data/processed/strategy_performance',
@@ -69,6 +75,13 @@ class BacktestEngine:
                      'data/processed/backtests', 'data/processed/performance']:
             os.makedirs(path, exist_ok=True)
         
+        # One-way transaction cost applied to turnover on rebalance (brokerage +
+        # STT + exchange charges + a conservative market-impact estimate for
+        # Indian large/mid-cap equities). Previously this engine charged zero
+        # cost anywhere in the loop, structurally inflating every backtested
+        # Sharpe/return relative to what's achievable live.
+        self.transaction_cost_bps = 15.0
+
         # Strategy universe
         self.strategies = list(AVAILABLE_STRATEGIES)
         
@@ -259,10 +272,10 @@ class BacktestEngine:
         
         print("📈 Loading price data for backtesting...")
         
-        if not os.path.exists(self.paths['prices']):
+        if not Path(self.paths['prices']).exists():
             raise FileNotFoundError(f"Price data not found: {self.paths['prices']}")
-        
-        prices_df = pd.read_parquet(self.paths['prices'])
+
+        prices_df = read_prices_legacy(columns=["Date", "ticker", "Close"])
 
         ticker_col = None
         for candidate in ('ticker', 'Ticker', 'symbol', 'Symbol'):
@@ -433,30 +446,16 @@ class BacktestEngine:
                 if cumulative_delisted_symbols:
                     tradeable_tickers = tradeable_tickers - cumulative_delisted_symbols
             
-            # Get strategy weights (rebalance weekly)
-            if len(results) == 0 or len(results) % 5 == 0:  # Weekly rebalancing
-                current_weights = self.generate_strategy_weights(strategy_name, date).copy()
-                
-                # Align with available prices
-                available_tickers = (
-                    backtest_prices.columns.intersection(current_weights.index)
-                )
-                if tradeable_tickers:
-                    available_tickers = pd.Index(
-                        [t for t in available_tickers if t in tradeable_tickers]
-                    )
-                current_weights = current_weights.reindex(available_tickers).fillna(0)
-                current_weights = current_weights / current_weights.sum() if current_weights.sum() > 0 else current_weights
-                _ = self._emit_rebalance_proposals(
-                    strategy_name=strategy_name,
-                    run_id=run_id,
-                    date=pd.Timestamp(date),
-                    target_weights=current_weights,
-                    previous_weights=previous_weights,
-                    prices_row=backtest_prices.loc[date],
-                )
-            
-            # Calculate daily returns
+            # 1. Calculate today's return using the weights already held coming
+            # into today -- i.e. decided at the LAST rebalance, strictly before
+            # today's close. The new weights computed in step 2 below use
+            # today's close price/signals and cannot be credited with today's
+            # own return: that would mean deciding a position using a price
+            # you could not have observed until the close, then also capturing
+            # the return that produced that same close -- a same-day
+            # look-ahead bias that mechanically flatters momentum/low-vol
+            # strategies (whose scores are directly correlated with the very
+            # return being captured) on every rebalance day.
             if len(results) > 0:
                 price_returns = backtest_prices.loc[date] / backtest_prices.shift(1).loc[date] - 1
                 price_returns = price_returns.fillna(0)
@@ -477,16 +476,52 @@ class BacktestEngine:
                 # Portfolio return
                 portfolio_return = (current_weights * price_returns.reindex(current_weights.index).fillna(0)).sum()
                 portfolio_return += delist_penalty
-                equity *= (1 + portfolio_return)
             else:
                 portfolio_return = 0.0
-            
-            # Calculate turnover
+
+            # 2. AFTER crediting today's return to the OLD weights, decide the
+            # NEW weights using today's close (as_of_date=date) -- these take
+            # effect starting tomorrow, the earliest point they could actually
+            # be executed at.
+            if len(results) == 0 or len(results) % 5 == 0:  # Weekly rebalancing
+                new_weights = self.generate_strategy_weights(strategy_name, date).copy()
+
+                # Align with available prices
+                available_tickers = (
+                    backtest_prices.columns.intersection(new_weights.index)
+                )
+                if tradeable_tickers:
+                    available_tickers = pd.Index(
+                        [t for t in available_tickers if t in tradeable_tickers]
+                    )
+                new_weights = new_weights.reindex(available_tickers).fillna(0)
+                new_weights = new_weights / new_weights.sum() if new_weights.sum() > 0 else new_weights
+                _ = self._emit_rebalance_proposals(
+                    strategy_name=strategy_name,
+                    run_id=run_id,
+                    date=pd.Timestamp(date),
+                    target_weights=new_weights,
+                    previous_weights=current_weights,
+                    prices_row=backtest_prices.loc[date],
+                )
+                current_weights = new_weights
+
+            # Calculate turnover (compares weights held today vs. the newly
+            # decided weights taking effect tomorrow -- this IS the trading
+            # that occurs today, so it's also the basis for transaction costs).
             if not previous_weights.empty:
                 turnover = (current_weights - previous_weights.reindex(current_weights.index).fillna(0)).abs().sum()
             else:
                 turnover = current_weights.abs().sum()
-            
+
+            # Transaction costs: charged on turnover the day it's incurred.
+            # Previously this engine had no cost model anywhere in the loop,
+            # so backtested Sharpe/return numbers were structurally inflated
+            # relative to what's achievable live.
+            transaction_cost = turnover * (self.transaction_cost_bps / 10000.0)
+            portfolio_return -= transaction_cost
+            equity *= (1 + portfolio_return)
+
             # Get market state
             market_row = backtest_market.loc[date] if date in backtest_market.index else {}
             

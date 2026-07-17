@@ -136,9 +136,16 @@ class BaseLoader(ABC):
         
         if df.empty:
             return
-        
+
         if date_col not in df.columns:
-            logger.warning(f"Date column '{date_col}' not found in DataFrame")
+            # N4: a missing date column means PIT compliance cannot be verified.
+            # In strict mode that is a schema failure, not a warning to swallow —
+            # a silently-unvalidated frame is exactly how look-ahead slips through.
+            msg = f"PIT validation could not run: date column '{date_col}' not found in DataFrame"
+            if self.pit_strict_mode:
+                logger.error(msg)
+                raise DataSchemaError(msg)
+            logger.warning(msg)
             return
         
         # Convert to datetime for comparison

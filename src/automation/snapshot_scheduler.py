@@ -39,7 +39,7 @@ def build_snapshot():
         logger.info("🧠 Starting snapshot build...")
         
         # Import and run the snapshot builder
-        from intelligence.build_dashboard_snapshot import build_unified_snapshot
+        from src.intelligence.build_dashboard_snapshot import build_unified_snapshot
         
         snapshot = build_unified_snapshot()
         

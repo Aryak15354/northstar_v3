@@ -23,6 +23,13 @@ class DCFResult:
     valuation_grade: str
     assumptions: Dict[str, float]
     sensitivity: Dict[str, float]
+    # True when intrinsic_value* was NOT produced by the real DCF calculation
+    # (buffett_style_valuation raised, or returned a non-positive per-share
+    # value) and was instead substituted with a price-anchored placeholder.
+    # Downstream consumers must not treat a fallback result as equivalent to
+    # a genuine valuation -- it's a tautology (fair value derived from the
+    # current price itself), not an independent estimate.
+    is_fallback: bool = False
 
 
 class DCFEngine:
@@ -167,8 +174,13 @@ class DCFEngine:
                 valuation_grade="C",
                 assumptions={},
                 sensitivity={},
+                is_fallback=True,
             )
         if float(result.intrinsic_value_per_share) <= 0.0 and safe_price > 0.0:
+            # Price-anchored placeholder: fair_value is derived from
+            # current_price itself, so margin_of_safety is tautologically
+            # bounded to roughly [-20%, +20%] and carries no independent
+            # valuation signal. is_fallback=True flags this explicitly.
             fallback_multiplier = float(np.clip(0.80 + (quality_score / 100.0) * 0.40, 0.80, 1.20))
             fallback_per_share = safe_price * fallback_multiplier
             fallback_total = fallback_per_share * safe_shares
@@ -183,6 +195,7 @@ class DCFEngine:
                 valuation_grade="C",
                 assumptions={},
                 sensitivity={},
+                is_fallback=True,
             )
         owner_earnings_yield = np.nan
         if pd.notna(market_cap) and float(market_cap) > 0:
@@ -201,6 +214,12 @@ class DCFEngine:
             ]
         )
         confidence = float(np.clip(present_fields / 7.0, 0.1, 1.0))
+        if result.is_fallback:
+            # Field-presence-based confidence measures nothing about whether
+            # the DCF calculation actually succeeded -- a fallback/placeholder
+            # value could otherwise report confidence=1.0 indistinguishable
+            # from a genuine, fully-computed valuation. Cap it hard.
+            confidence = min(confidence, 0.2)
         return {
             "fair_value": float(result.intrinsic_value_per_share),
             "fair_value_total": float(result.intrinsic_value),
@@ -209,6 +228,7 @@ class DCFEngine:
             "margin_of_safety": float(result.margin_of_safety_pct),
             "valuation_grade": result.valuation_grade,
             "upside_potential": float(result.upside_potential),
+            "is_fallback": bool(result.is_fallback),
         }
     
     def calculate_discount_rate(

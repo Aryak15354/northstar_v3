@@ -6,6 +6,7 @@ from typing import Iterable, Optional, Protocol
 
 from src.risk.risk_policy import RiskPolicy
 from src.risk.risk_types import RiskDecision, RiskState, TradeProposal
+from src.alternative_data import RiskAlternativeBridge
 
 
 class Clock(Protocol):
@@ -28,7 +29,6 @@ class RiskController:
         self.use_alternative_risk = False
         if registry is not None:
             try:
-                from src.alternative_data import RiskAlternativeBridge
                 self.risk_bridge = RiskAlternativeBridge(registry, config or {})
                 self.use_alternative_risk = True
                 print("🟢 Alternative risk checks enabled in RiskController")

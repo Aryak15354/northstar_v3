@@ -10,8 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE_DEFAULT = ROOT / "audit/reachability_baseline.json"
 ENTRYPOINTS = [
-    ROOT / "run.py",
-    ROOT / "run_complete_v3_system.py",
+    ROOT / "scripts/run_complete_v3_system.py",
     ROOT / "scripts/northstar_v3_unified.py",
 ]
 ALWAYS_ACTIVE = [
@@ -30,6 +29,16 @@ ALWAYS_ACTIVE = [
     ROOT / "scripts/run_alpha_diagnostics.py",
     ROOT / "scripts/runners/build_dashboard_view_model.py",
     ROOT / "scripts/runners/generate_dashboard_emission_roadmap.py",
+    # paper-fund one-truth drivers (run daily via refresh cadence / manually)
+    ROOT / "scripts/run_paper_fund.py",
+    ROOT / "scripts/run_strategy_benchmarks.py",
+    ROOT / "scripts/update_benchmark_nifty.py",
+    ROOT / "scripts/retrain_regime_models.py",
+    ROOT / "scripts/daily_data_refresh.py",
+    ROOT / "src/dashboard/app.py",
+    ROOT / "scripts/ci/check_price_continuity.py",   # CI gate (Makefile `gates`)
+    ROOT / "src/dashboard/visuals_extra.py",          # registry imports via `from src.dashboard import visuals_extra`
+    ROOT / "src/pnl/tests/test_paper_fund.py",        # pytest target (src-embedded tests)
 ]
 
 
@@ -42,7 +51,7 @@ def _py_files_under(path: Path):
 
 
 def _production_files() -> set[str]:
-    files = {"run.py", "run_complete_v3_system.py"}
+    files: set[str] = set()
     for root in [ROOT / "src", ROOT / "scripts"]:
         if root.exists():
             files.update(str(p.relative_to(ROOT)) for p in _py_files_under(root))

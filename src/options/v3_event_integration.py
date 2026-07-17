@@ -32,16 +32,12 @@ try:
     from src.core.events import EventBus, Event, EventType, EventPriority
     V3_EVENT_BUS_AVAILABLE = True
 except ImportError:
-    try:
-        from core.events import EventBus, Event, EventType, EventPriority
-        V3_EVENT_BUS_AVAILABLE = True
-    except ImportError:
-        # Fallback for testing
-        V3_EVENT_BUS_AVAILABLE = False
-        
-        class EventBus:
-            def __init__(self):
-                self.events = []
+    # Fallback for isolated tests that do not load the V3 event bus.
+    V3_EVENT_BUS_AVAILABLE = False
+
+    class EventBus:
+        def __init__(self):
+            self.events = []
             
             def publish(self, event_type, data):
                 self.events.append({'type': event_type, 'data': data, 'timestamp': datetime.now()})

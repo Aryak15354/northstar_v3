@@ -16,7 +16,7 @@ This is how real hedge funds avoid getting fooled by noisy data.
 
 Usage:
     try:
-    from intelligence.confidence_engine import ConfidenceEngine
+    from src.intelligence.confidence_engine import ConfidenceEngine
 except ImportError:
     from ConfidenceEngine import ConfidenceEngine
     

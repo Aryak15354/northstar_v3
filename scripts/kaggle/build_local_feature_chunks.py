@@ -17,6 +17,7 @@ Kaggle with ``scripts/kaggle/merge_chunked_feature_dataset.py``.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import sys
@@ -42,8 +43,8 @@ from scripts.kaggle.week_2026_03_29.build_weekly_feature_export import (  # noqa
 )
 from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
     attach_universe_annotations,
-    build_feature_unit_registry,
     build_market_cap_fields,
+    infer_feature_unit_kind,
     build_plan_regime_labels,
     cast_feature_frame,
     cast_metadata_frame,
@@ -68,19 +69,20 @@ EXACT_PLAN_SYMBOLS = {
     "coal": "MTF=F",
     "us_10y": "^TNX",
 }
-DEAD_EXPORT_COLUMNS = {
-    "earnings_quality_ratio",
-    "earnings_quality_ratio_cs_z",
-    "earnings_quality_ratio_cs_rank",
-}
+# A.3: do NOT pre-delete earnings_quality_ratio here. It was being dropped per
+# chunk before the merge-time quality repair (repair_runtime_factor_families)
+# could rebuild it, permanently removing one of the two originally-missing anchor
+# factors from the chunked export. The merge step now repairs it from its proxy.
+DEAD_EXPORT_COLUMNS: set[str] = set()
+# E.8: only the BASE sparse columns are 0-filled (paired with an explicit
+# _available flag). The derived _cs_z / _cs_rank columns are NOT 0-filled — a 0
+# there would be indistinguishable from "genuinely at the cross-sectional
+# average"; leaving them NaN (their natural value when the base is missing) keeps
+# "no data" honest without needing the consumer to join the base availability flag.
 SCHEMA_DEFAULT_FILL_VALUES = {
     "sector_dummy__NA_": 0.0,
     "pledge_pct": 0.0,
-    "pledge_pct_cs_z": 0.0,
-    "pledge_pct_cs_rank": 0.0,
     "days_since_earnings": 0.0,
-    "days_since_earnings_cs_z": 0.0,
-    "days_since_earnings_cs_rank": 0.0,
 }
 SPARSE_FEATURE_AVAILABILITY_FLAGS = {
     "pledge_pct": "pledge_pct_available",
@@ -1031,16 +1033,17 @@ def _validate_signal_contract(
     return audit
 
 
-def _safe_feature_registry_sample(feature_columns: Iterable[str]) -> list[dict[str, Any]]:
-    ordered: list[str] = []
-    for name in ["date", "ticker", *[str(col) for col in feature_columns], "target_weekly_return"]:
-        if name not in ordered:
-            ordered.append(name)
-    sample = pd.DataFrame({col: pd.Series(dtype="float32") for col in ordered if col not in {"date", "ticker"}})
-    sample["date"] = pd.Series(dtype="datetime64[ns]")
-    sample["ticker"] = pd.Series(dtype="string")
-    sample = sample[ordered]
-    return build_feature_unit_registry(sample)
+def _feature_name_manifest(feature_columns: Iterable[str]) -> list[dict[str, Any]]:
+    """Names + inferred unit kind only.
+
+    N8: the chunk builder cannot compute coverage (no merged data yet), so it
+    must NOT emit a full feature_unit_registry from an empty frame — that would
+    report coverage 0 / model_safe False for every column, which is misleading.
+    The authoritative registry (with real coverage) is written by the merge step
+    from the actual merged parquet. Here we emit only the name + unit kind.
+    """
+    names = [str(col) for col in feature_columns if str(col) not in {"date", "ticker", "target_weekly_return"}]
+    return [{"feature": name, "unit_kind": infer_feature_unit_kind(name)} for name in sorted(dict.fromkeys(names))]
 
 
 def parse_args() -> argparse.Namespace:
@@ -1061,6 +1064,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--allow-proxies", choices=["true", "false"], default="false")
     parser.add_argument("--strict-plan-signals", choices=["true", "false"], default="true")
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument(
+        "--preflight-validation",
+        action="store_true",
+        help="Run the pre-build trailing-window signal validation (redundant with per-chunk + per-era enforcement; off by default for full builds).",
+    )
     parser.add_argument("--skip-existing", action="store_true")
     parser.add_argument("--min-exact-signal-coverage-pct", type=float, default=90.0)
     parser.add_argument("--train-weeks", type=int, default=104)
@@ -1073,6 +1081,20 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     _configure_thread_limits(args.threads)
+
+    # E.9: the warmup window must cover the longest rolling factor lookback, or
+    # chunk-boundary rows silently get truncated rolling features that differ from
+    # the direct (non-chunked) path. Gap9 academic factors default to a 252-day
+    # (~365 calendar-day) beta/factor lookback; require ~1.45x + a margin so a
+    # future increase to the factor lookback surfaces here instead of silently.
+    _gap9_lookback_days = 252
+    _required_warmup = int(1.45 * _gap9_lookback_days) + 30  # ~395
+    if int(args.warmup_days) < _required_warmup:
+        raise ValueError(
+            f"warmup_days_too_small:{args.warmup_days}<{_required_warmup} "
+            f"(must cover the {_gap9_lookback_days}-day factor lookback with margin; "
+            f"raise --warmup-days or lower the factor lookback)"
+        )
 
     bootstrap = StepProgress("Bootstrap", 5)
     with bootstrap.step("Resolve raw bundle directory"):
@@ -1089,6 +1111,29 @@ def main() -> int:
             "# Runtime policy is encoded in chunk manifests for the chunked local builder.\n",
             encoding="utf-8",
         )
+        # N1: any valuation_scores.parquet shipped in a raw bundle without a
+        # post-N1-fix provenance marker was computed BEFORE the metadata-broadcast
+        # leak fix and is poisoned (today's price/ROCE stamped into history).
+        # A marker-attested cache (scripts/research/precompute_valuation_cache.py)
+        # is trusted: recomputing valuations in-build costs ~116ms/ticker-date and
+        # killed three 2026-07-16/17 Kaggle runs against the 12h session cap.
+        # Only act when the runtime data tree is a real copy (Kaggle); when it is
+        # a symlink to the live project tree, the file is managed there.
+        runtime_data = runtime_root / "data"
+        stale_cache = runtime_root / "data" / "processed" / "valuation_scores.parquet"
+        cache_marker = stale_cache.with_name("valuation_scores.provenance.json")
+        if not runtime_data.is_symlink() and stale_cache.exists():
+            marker_ok = False
+            if cache_marker.exists():
+                try:
+                    marker_ok = bool(json.loads(cache_marker.read_text()).get("post_n1_fix"))
+                except Exception:
+                    marker_ok = False
+            if marker_ok:
+                print("[bootstrap] trusted marker-attested valuation cache (post-N1-fix)", flush=True)
+            else:
+                stale_cache.rename(stale_cache.with_name("valuation_scores.pre_n1_fix.stale"))
+                print("[bootstrap] quarantined stale valuation_scores.parquet (pre-N1-fix cache)", flush=True)
 
     with bootstrap.step("Validate screener rebuild state"):
         screener_rebuild = _maybe_rebuild_screener(runtime_root, args.rebuild_screener)
@@ -1104,21 +1149,37 @@ def main() -> int:
     allow_proxies = _as_bool(args.allow_proxies, default=False)
     strict_plan_signals = _as_bool(args.strict_plan_signals, default=True)
 
-    validation_audit = _validate_signal_contract(
-        runtime_root=runtime_root,
-        raw_bundle_dir=raw_bundle_dir,
-        data_start=global_start,
-        data_end=global_end,
-        warmup_days=int(args.warmup_days),
-        forward_buffer_days=int(args.forward_buffer_days),
-        max_tickers=int(args.max_tickers),
-        max_rows=int(args.max_rows),
-        duckdb_threads=int(args.duckdb_threads),
-        duckdb_memory_limit_mb=int(args.duckdb_memory_limit_mb),
-        allow_proxies=allow_proxies,
-        strict_plan_signals=strict_plan_signals,
-        min_exact_signal_coverage_pct=float(args.min_exact_signal_coverage_pct),
-    )
+    # G.3: the preflight validation rebuilds the trailing ~1.6 years of the
+    # dataset before the main loop then discards it, and the chunk loop rebuilds
+    # the same dates again. For a normal full build the per-chunk audits plus the
+    # finalize-time per-era enforcement (E.1/E.2) already cover the signal
+    # contract over the FULL range, so skip the redundant preflight by default.
+    # --validate-only and --preflight-validation still run it.
+    run_preflight = bool(args.validate_only or args.preflight_validation)
+    if run_preflight:
+        validation_audit = _validate_signal_contract(
+            runtime_root=runtime_root,
+            raw_bundle_dir=raw_bundle_dir,
+            data_start=global_start,
+            data_end=global_end,
+            warmup_days=int(args.warmup_days),
+            forward_buffer_days=int(args.forward_buffer_days),
+            max_tickers=int(args.max_tickers),
+            max_rows=int(args.max_rows),
+            duckdb_threads=int(args.duckdb_threads),
+            duckdb_memory_limit_mb=int(args.duckdb_memory_limit_mb),
+            allow_proxies=allow_proxies,
+            strict_plan_signals=strict_plan_signals,
+            min_exact_signal_coverage_pct=float(args.min_exact_signal_coverage_pct),
+        )
+    else:
+        validation_audit = {
+            "generated_at": now_utc_iso(),
+            "preflight_skipped": True,
+            "note": "Full build: per-chunk audits + finalize per-era enforcement cover the signal contract.",
+            "blocking_signals": [],
+            "warning_signals": [],
+        }
     write_json(output_dir / "plan_signal_audit.json", validation_audit)
     if args.validate_only:
         print(
@@ -1131,7 +1192,7 @@ def main() -> int:
             )
         )
         return 0
-    if strict_plan_signals and validation_audit.get("blocking_signals"):
+    if run_preflight and strict_plan_signals and validation_audit.get("blocking_signals"):
         raise RuntimeError(
             "strict_plan_signal_validation_failed:"
             + ",".join(str(item) for item in validation_audit["blocking_signals"])
@@ -1283,6 +1344,7 @@ def main() -> int:
                 "feature_count": int(len(feature_cols)),
                 "blocking_signals": list(chunk_signal_audit.get("blocking_signals", []) or []),
                 "warning_signals": list(chunk_signal_audit.get("warning_signals", []) or []),
+                "low_coverage_signals": list(chunk_signal_audit.get("low_coverage_signals", []) or []),
                 "files": {
                     "features": str(feature_path),
                     "metadata": str(metadata_path),
@@ -1309,6 +1371,8 @@ def main() -> int:
                 test_weeks=int(args.test_weeks),
                 step_weeks=int(args.step_weeks),
                 target_windows=int(args.target_windows),
+                forward_buffer_days=int(args.forward_buffer_days),
+                target_horizon_days=5,
             )
             splits = generate_anchored_weekly_splits(
                 weekly_dates,
@@ -1316,10 +1380,14 @@ def main() -> int:
                 test_weeks=int(split_config["test_weeks"]),
                 step_weeks=int(split_config["step_weeks"]),
                 target_windows=int(split_config["target_windows"]),
+                forward_buffer_days=int(args.forward_buffer_days),
+                target_horizon_days=5,
             )
         write_json(output_dir / "northstar_walk_forward_splits.json", splits)
-    with finalization.step("Write feature unit registry"):
-        write_json(output_dir / "feature_unit_registry.json", _safe_feature_registry_sample(feature_union))
+    with finalization.step("Write feature name manifest"):
+        # N8: names + unit kinds only. The coverage-bearing feature_unit_registry
+        # is written by merge_chunked_feature_dataset.py from the merged data.
+        write_json(output_dir / "feature_name_manifest.json", _feature_name_manifest(feature_union))
     canonical_feature_columns = _canonical_feature_column_order(feature_union)
     with finalization.step("Stabilize feature chunk schemas"):
         schema_stabilization_audit = _stabilize_feature_chunk_schemas(
@@ -1328,6 +1396,9 @@ def main() -> int:
         )
     chunk_blocking_counts: dict[str, int] = {}
     chunk_warning_counts: dict[str, int] = {}
+    chunk_low_coverage_counts: dict[str, int] = {}
+    built_chunk_rows = [row for row in chunk_rows if row.get("feature_rows") is not None]
+    n_built_chunks = int(len(built_chunk_rows))
     for row in chunk_rows:
         for signal in row.get("blocking_signals", []) or []:
             key = str(signal)
@@ -1335,12 +1406,41 @@ def main() -> int:
         for signal in row.get("warning_signals", []) or []:
             key = str(signal)
             chunk_warning_counts[key] = int(chunk_warning_counts.get(key, 0) + 1)
+        for signal in row.get("low_coverage_signals", []) or []:
+            key = str(signal)
+            chunk_low_coverage_counts[key] = int(chunk_low_coverage_counts.get(key, 0) + 1)
     chunk_blocking_union = sorted(chunk_blocking_counts)
     chunk_warning_union = sorted(chunk_warning_counts)
+
+    # E.1/E.2: the pre-build validation slice only ever sees the trailing ~1.6
+    # years, so it structurally cannot catch "sparse for most of history, fine
+    # recently". Enforce over the ACTUAL per-chunk audits, which span the full
+    # date range. A signal that is blocking, or below the exact-coverage floor,
+    # in more than a threshold fraction of built chunks fails the build (in
+    # strict mode) instead of only living in individual chunk manifests.
+    era_fault_fraction = 0.34
+    if n_built_chunks > 0:
+        era_faults: dict[str, dict[str, Any]] = {}
+        for signal, count in {**chunk_blocking_counts, **chunk_low_coverage_counts}.items():
+            blocking_n = int(chunk_blocking_counts.get(signal, 0))
+            low_cov_n = int(chunk_low_coverage_counts.get(signal, 0))
+            worst = max(blocking_n, low_cov_n)
+            if worst > era_fault_fraction * n_built_chunks:
+                era_faults[signal] = {
+                    "blocking_chunks": blocking_n,
+                    "low_coverage_chunks": low_cov_n,
+                    "total_built_chunks": n_built_chunks,
+                }
+        if era_faults:
+            message = "per_era_signal_coverage_failed:" + json.dumps(era_faults, sort_keys=True)
+            if strict_plan_signals:
+                raise RuntimeError(message)
+            print(f"[build_chunks] WARNING {message}", flush=True)
     with finalization.step("Write master chunk manifest"):
         manifest = {
             "generated_at": now_utc_iso(),
             "builder": "build_local_feature_chunks.py",
+            "universe_annotation_pit": "current_snapshot_static",
             "raw_bundle_dir": str(raw_bundle_dir),
             "runtime_root": str(runtime_root),
             "date_range": {
@@ -1389,7 +1489,7 @@ def main() -> int:
                 "regime_chunk_dir": str(regime_chunk_dir),
                 "chunk_manifest_dir": str(chunk_manifest_dir),
                 "splits": str(output_dir / "northstar_walk_forward_splits.json"),
-                "feature_unit_registry": str(output_dir / "feature_unit_registry.json"),
+                "feature_name_manifest": str(output_dir / "feature_name_manifest.json"),
                 "plan_signal_audit": str(output_dir / "plan_signal_audit.json"),
             },
         }

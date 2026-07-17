@@ -37,10 +37,7 @@ GAP_VALIDATORS = [
 SECONDARY_ROOTS = [
     "reports/",
     "snapshots/",
-    "archive/",
-    "_cold_archive/",
     "data/results/analysis/",
-    "truth_mode_runs/",
 ]
 
 

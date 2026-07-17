@@ -7,4 +7,5 @@ from src.dashboard.sections.performance import render as render_performance
 from src.dashboard.sections.portfolio import render as render_portfolio
 from src.dashboard.sections.research import render as render_research
 from src.dashboard.sections.risk import render as render_risk
+from src.dashboard.sections.security import render as render_security
 from src.dashboard.sections.sentiment import render as render_sentiment

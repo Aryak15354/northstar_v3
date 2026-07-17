@@ -1,51 +1,175 @@
-# Northstar V3 options trading configuration.
-# Calendar last verified: 2026-06-03.
-
 calendar:
   timezone: Asia/Kolkata
   source_notes:
-    rbi_mpc_2026_2027: "RBI Bulletin/press schedule for FY 2026-27; Apr 6-8, Jun 3-5, Aug 3-5, Oct 5-7, Dec 2-4, Feb 3-5."
-    nse_expiry_policy: "NSE index derivatives use Tuesday expiries for NIFTY weekly/monthly contracts from the 2026 cycle."
+    rbi_mpc_2026_2027: RBI Bulletin/press schedule for FY 2026-27; Apr 6-8, Jun 3-5,
+      Aug 3-5, Oct 5-7, Dec 2-4, Feb 3-5.
+    nse_expiry_policy: NSE index derivatives use Tuesday expiries for NIFTY weekly/monthly
+      contracts from the 2026 cycle.
   rbi_mpc_meetings:
-    - name: FY27_MPC_1
-      start: 2026-04-06
-      end: 2026-04-08
-      decision: 2026-04-08
-    - name: FY27_MPC_2
-      start: 2026-06-03
-      end: 2026-06-05
-      decision: 2026-06-05
-    - name: FY27_MPC_3
-      start: 2026-08-03
-      end: 2026-08-05
-      decision: 2026-08-05
-    - name: FY27_MPC_4
-      start: 2026-10-05
-      end: 2026-10-07
-      decision: 2026-10-07
-    - name: FY27_MPC_5
-      start: 2026-12-02
-      end: 2026-12-04
-      decision: 2026-12-04
-    - name: FY27_MPC_6
-      start: 2027-02-03
-      end: 2027-02-05
-      decision: 2027-02-05
+  - name: FY27_MPC_1
+    start: 2026-04-06
+    end: 2026-04-08
+    decision: 2026-04-08
+  - name: FY27_MPC_2
+    start: 2026-06-03
+    end: 2026-06-05
+    decision: 2026-06-05
+  - name: FY27_MPC_3
+    start: 2026-08-03
+    end: 2026-08-05
+    decision: 2026-08-05
+  - name: FY27_MPC_4
+    start: 2026-10-05
+    end: 2026-10-07
+    decision: 2026-10-07
+  - name: FY27_MPC_5
+    start: 2026-12-02
+    end: 2026-12-04
+    decision: 2026-12-04
+  - name: FY27_MPC_6
+    start: 2027-02-03
+    end: 2027-02-05
+    decision: 2027-02-05
   event_risk_windows:
     pre_event_business_days: 2
     post_event_business_days: 1
     block_new_short_gamma: true
     require_hedge_review: true
-
 expiry_policy:
   default_underlying: NIFTY
   weekly_expiry_weekday: Tuesday
   monthly_expiry_rule: last_tuesday
   min_days_to_expiry: 5
   avoid_expiry_day_entries: true
-
 strategy_generation:
   canonical_generator: src.options.enhanced_strategy_generator_v3.EnhancedStrategyGeneratorV3
   deprecated_generators:
-    - src.options.enhanced_strategy_generator.EnhancedStrategyGenerator
-    - src.options.enhanced_strategy_generator_v2.EnhancedStrategyGeneratorV2
+  - src.options.enhanced_strategy_generator.EnhancedStrategyGenerator
+  - src.options.enhanced_strategy_generator_v2.EnhancedStrategyGeneratorV2
+capital:
+  base_capital: 10000000
+  base_risk_pct: 0.75
+  max_risk_pct: 2.0
+  min_risk_pct: 0.25
+upstox:
+  api_key: ${UPSTOX_API_KEY}
+  api_secret: ${UPSTOX_API_SECRET}
+  access_token: ${UPSTOX_ACCESS_TOKEN}
+  rate_limit_per_second: 3
+  max_instruments_per_request: 50
+  endpoints:
+    option_chain: https://api.upstox.com/v2/option/chain
+    market_quote: https://api.upstox.com/v2/market-quote/quotes
+    token_refresh: https://api.upstox.com/v2/login/authorization/token
+    option_contracts: https://api.upstox.com/v2/option/contract
+strategies:
+  allowed:
+  - iron_condor
+  - calendar_spread
+  - long_straddle
+  iron_condor:
+    enabled: true
+    min_iv_rank: 0.45
+    target_delta: 0.16
+  calendar_spread:
+    enabled: true
+    min_iv_rank: 0.25
+    max_iv_rank: 0.7
+  long_straddle:
+    enabled: true
+    min_iv_rank: 0.15
+    max_iv_rank: 0.45
+regime_detection:
+  iv_rank_lookback_days: 252
+  vol_of_vol_threshold: 0.25
+  regime_persistence_days: 2
+  thresholds:
+    rising_vol_buy_iv_rank: 0.2
+    low_vol_sell_iv_rank: 0.45
+    high_vol_sell_iv_rank: 0.75
+eligibility:
+  max_bid_ask_spread_pct: 8.0
+  min_liquidity_depth_multiplier: 1.0
+  min_days_to_expiry: 5
+  event_buffer_days: 2
+  late_cycle_days: 3
+  late_cycle_size_reduction: 0.5
+  max_expected_slippage_bps: 120.0
+  max_transaction_cost_pct_of_max_loss: 0.2
+capital_scaling:
+  profit_milestone_pct: 5.0
+  profit_scaling_increment: 0.25
+  drawdown_threshold_1: 3.0
+  drawdown_threshold_2: 6.0
+  drawdown_descaling_1: 0.75
+  drawdown_descaling_2: 0.5
+  min_weeks_before_scaling: 2
+  recovery_profitable_trades: 3
+survival_rules:
+  weekly_loss_limit_pct: 2.0
+  trauma_loss_threshold_pct: 5.0
+  trauma_cooldown_weeks: 2
+  portfolio_risk_cap_pct: 0.1
+  max_trades_per_week: 25
+  no_trade_times: []
+  no_trade_days: []
+exit_rules:
+  profit_target_pct: 50.0
+  stop_loss_pct: 100.0
+  days_before_expiry: 2
+  precedence:
+  - stop_loss
+  - profit_target
+  - days_before_expiry
+  - regime_flip
+  regime_flip_min_hold_minutes: 30
+  regime_flip_confirmation_cycles: 2
+  regime_flip_market_open_grace_minutes: 30
+greek_safety_bands:
+  delta_min: -500000
+  delta_max: 500000
+  theta_min: -25000
+  vega_min: -250000
+  vega_max: 250000
+  gamma_escalation:
+    enabled: true
+    threshold: 100000
+costs:
+  brokerage_per_leg: 20.0
+  exchange_charges_pct: 0.0005
+  sebi_charges_per_crore: 10.0
+  stamp_duty_pct: 3.0e-05
+  gst_pct: 0.18
+tax:
+  rate: 0.3
+  min_profitability_multiplier: 1.25
+event_calendar: []
+lot_sizes:
+  NIFTY: 75
+  BANKNIFTY: 35
+  FINNIFTY: 65
+  MIDCPNIFTY: 120
+dashboard:
+  refresh_interval_seconds: 60
+  greek_chart_lookback_days: 30
+  trade_history_limit: 250
+  alerts:
+    enabled: true
+    sound: false
+logging:
+  level: INFO
+  file: logs/options_engine.log
+  max_bytes: 10485760
+  backup_count: 5
+  log_decisions:
+    enabled: true
+alpha_os:
+  enabled: false
+  shadow_mode: true
+  enforce_mode: false
+  write_legacy_artifacts: true
+data_paths:
+  trade_ledger: data/options/trade_ledger.parquet
+  regime_history: data/options/regime_history.parquet
+  iv_history: data/options/iv_history.parquet
+  position_snapshots: data/options/position_snapshots.parquet

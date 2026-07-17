@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 from pandas.tseries.offsets import BDay
 
+from src.core.panel_math import coalesce_rowwise, normalize_ticker as _normalize_ticker  # noqa: F401
+
 
 BUYER_CATEGORIES = {
     "FII": ["FII", "FPI", "FOREIGN", "OVERSEAS", "OFFSHORE"],
@@ -21,17 +23,6 @@ BUYER_CATEGORIES = {
 
 BUYER_LOOKUP_PATH = Path("data/processed/alternative/bulk_deals_buyer_lookup.csv")
 FUZZY_THRESHOLD = 0.85
-
-
-def _normalize_ticker(value: object) -> str:
-    s = str(value or "").strip().upper()
-    if not s:
-        return ""
-    if s.endswith(".NS"):
-        return s
-    if "." in s:
-        s = s.split(".", 1)[0]
-    return f"{s}.NS"
 
 
 def _find_col(columns: Iterable[str], aliases: Iterable[str]) -> str | None:
@@ -252,7 +243,14 @@ def compute_bulk_deal_features(df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.
 
     lookup = _load_buyer_lookup()
     names = deals[col_client].astype(str) if col_client else pd.Series("", index=deals.index)
-    deals["buyer_category"] = names.map(lambda x: _classify_buyer(x, lookup))
+    # Classify each DISTINCT buyer name once, not once per deal row. Buyer names
+    # repeat massively across deals, and _classify_buyer runs pure-Python fuzzy
+    # (Levenshtein) matching — computing it per-row made it 83% of the whole
+    # feature build (5.7M Levenshtein calls, ~4h for 578 tickers). Deduping to
+    # unique names is behaviour-identical (the function is a pure map of name ->
+    # category) but collapses the call count ~100x.
+    name_to_cat = {nm: _classify_buyer(nm, lookup) for nm in names.unique()}
+    deals["buyer_category"] = names.map(name_to_cat)
 
     categories = ["FII", "DII", "PROMOTER", "INSTITUTIONAL", "RETAIL", "UNKNOWN"]
     for cat in categories:
@@ -296,15 +294,20 @@ def compute_bulk_deal_features(df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.
     ]
     base = prices[base_cols].copy() if base_cols else prices[["date", "ticker"]].copy()
     base["market_cap"] = pd.to_numeric(_series_from_frame(base, "market_cap"), errors="coerce")
-    if base["market_cap"].isna().all() and {"close", "shares_outstanding"}.issubset(set(base.columns)):
-        base["market_cap"] = pd.to_numeric(base["close"], errors="coerce") * pd.to_numeric(
-            base["shares_outstanding"], errors="coerce"
+    # N10: per-row fallback to close*shares where market_cap is missing.
+    if {"close", "shares_outstanding"}.issubset(set(base.columns)):
+        base["market_cap"] = coalesce_rowwise(
+            base["market_cap"],
+            pd.to_numeric(base["close"], errors="coerce") * pd.to_numeric(base["shares_outstanding"], errors="coerce"),
         )
     base["volume"] = pd.to_numeric(_series_from_frame(base, "volume"), errors="coerce")
     base["shares_outstanding"] = pd.to_numeric(_series_from_frame(base, "shares_outstanding"), errors="coerce")
     free_float_pct = pd.to_numeric(_series_from_frame(base, "free_float_pct"), errors="coerce")
-    if free_float_pct.isna().all():
-        free_float_pct = pd.to_numeric(_series_from_frame(base, "screener_free_float_pct"), errors="coerce")
+    # N10: per-row fallback to the screener free-float column.
+    free_float_pct = coalesce_rowwise(
+        free_float_pct,
+        pd.to_numeric(_series_from_frame(base, "screener_free_float_pct"), errors="coerce"),
+    )
     base["free_float_pct"] = free_float_pct
     base["free_float_shares"] = base["shares_outstanding"] * (base["free_float_pct"] / 100.0)
 

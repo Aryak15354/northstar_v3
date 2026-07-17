@@ -36,8 +36,8 @@ from .causal_graph import CausalGraphEngine
 from .regime_memory import RegimeMemoryEngine
 from .market_pulse import MarketPulseEngine
 from .survival_instincts import SurvivalInstinctEngine
-from cohesion.bounded_exposure_calculator import BoundedExposureCalculator
-from cohesion.state_file_manager import StateFileManager
+from src.cohesion.bounded_exposure_calculator import BoundedExposureCalculator
+from src.cohesion.state_file_manager import StateFileManager
 
 class MarketBrainOrchestrator:
     """

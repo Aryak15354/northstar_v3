@@ -20,7 +20,7 @@ Key Features:
 
 Usage:
     try:
-    from intelligence.stress_testing_system import StressTestingSystem
+    from src.intelligence.stress_testing_system import StressTestingSystem
 except ImportError:
     from StressTestingSystem import StressTestingSystem
     
@@ -45,7 +45,7 @@ import sys
 try:
     from src.volatility.regime_detector import VolatilityRegime, RegimeState
 except ImportError:
-    from volatility.regime_detector import VolatilityRegime, RegimeState
+    from src.volatility.regime_detector import VolatilityRegime, RegimeState
 
 # Legacy alias for compatibility
 MarketRegime = VolatilityRegime

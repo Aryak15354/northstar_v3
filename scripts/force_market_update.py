@@ -38,18 +38,34 @@ def _write_json(path: Path, payload: dict[str, object]) -> None:
 
 
 def _write_market_state_stub(now_iso: str) -> None:
+    """CI-sandbox bootstrap ONLY.
+
+    NEVER overwrite an existing canonical market state: on 2026-06-24 this
+    stub (regime 'ci_fast_refresh', allowed_exposure 1.0 = maximum risk-on)
+    was written into PRODUCTION and the fabricated regime propagated into
+    unified_state_history. The stub now exists solely so a fresh CI checkout
+    (no data/) has a parsable file — and it is unmistakably labeled a stub
+    with ZERO risk appetite, so even if it ever leaked again it could not put
+    the system maximally long."""
+    if MARKET_STATE_PATH.exists():
+        print(f"↷ preserving existing canonical market state: {MARKET_STATE_PATH}")
+        return
     MARKET_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    as_of_date = pd.Timestamp(now_iso).normalize().isoformat()
     pd.DataFrame(
         [
             {
+                "date": as_of_date,
                 "timestamp": now_iso,
-                "regime": "ci_fast_refresh",
-                "allowed_exposure": 1.0,
-                "volatility_regime": "ci_fast_refresh",
-                "health_score": 1.0,
-                "risk_on_probability": 0.5,
+                "regime": "ci_stub_no_signal",
+                "allowed_exposure": 0.0,   # a stub must never authorise risk
+                "volatility_regime": "ci_stub_no_signal",
+                "health_score": 0.0,
+                "risk_on_probability": 0.0,
+                "macro_score": 0.0,
                 "breadth_pct": 0.0,
-                "confidence": 1.0,
+                "confidence": 0.0,
+                "is_ci_stub": True,
             }
         ]
     ).to_parquet(MARKET_STATE_PATH, index=False)

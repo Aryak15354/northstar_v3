@@ -191,3 +191,31 @@ def test_financial_normalizer_supports_kaggle_safe_screener_filenames(tmp_path):
 
     assert not loaded.empty
     assert loaded["ticker"].iloc[0] == "M&M.NS"
+
+
+def test_metadata_snapshot_not_broadcast_into_history():
+    """N1: the current-day Screener key-ratios snapshot must land ONLY on the
+    most-recent statement row, never broadcast/backfilled across historical
+    periods (which would leak today's price/ratios into years of history)."""
+    fn = FinancialNormalizer({})
+    long = pd.DataFrame(
+        {
+            "ticker": ["AAA.NS"] * 4,
+            "period": ["Mar-2019", "Mar-2019", "Mar-2024", "Mar-2024"],
+            "metric": ["Sales", "Net Profit", "Sales", "Net Profit"],
+            "value": [100.0, 10.0, 200.0, 20.0],
+        }
+    )
+    fn._load_metadata_key_ratios = lambda ticker: {
+        "current_price": 999.0,
+        "roce_pct": 42.0,
+        "shares_outstanding": 5.0,
+    }
+    wide = fn._normalize_loaded_frame(long, "annual").sort_values("period_end").reset_index(drop=True)
+    assert wide["period_end"].dt.year.tolist() == [2019, 2024]
+    # Historical row carries no current-day snapshot.
+    assert pd.isna(wide["current_price"].iloc[0])
+    assert pd.isna(wide["roce_pct"].iloc[0])
+    # Latest row does.
+    assert wide["current_price"].iloc[-1] == 999.0
+    assert wide["roce_pct"].iloc[-1] == 42.0

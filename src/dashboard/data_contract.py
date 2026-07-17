@@ -83,6 +83,11 @@ class DashboardDataContract:
         self.state_change_log_path = self.project_root / "data/state/state_change_log.jsonl"
         self.options_chain_path = self.project_root / "data/options/live/nifty_options_latest.parquet"
         self.options_governance_path = self.project_root / "data/options/live/governance_events.parquet"
+        # The REAL options book (with per-trade greeks_at_entry) lives here, not
+        # in master_ledger.parquet — that file is the equity paper-fund ledger
+        # and has never carried an option_type column, so get_greeks_history()
+        # was silently reading an unrelated, always-empty-for-options file.
+        self.options_trade_ledger_path = self.project_root / "data/options/trade_ledger.parquet"
         self.unified_state_history_path = self.project_root / "data/state/unified_state_history.parquet"
         self.sector_mapping_path = self.project_root / "data/processed/sector_mapping.csv"
         self.valuation_path = self.project_root / "data/processed/valuation.parquet"
@@ -811,6 +816,42 @@ class DashboardDataContract:
 
         if regime_df is None or regime_df.empty:
             regime_df = market_state
+        unified_daily = self._load_parquet(self.project_root / "data/processed/unified_daily.parquet")
+        if isinstance(unified_daily, pd.DataFrame) and not unified_daily.empty:
+            working_daily = unified_daily.copy()
+            if "date" not in working_daily.columns:
+                if "Date" in working_daily.columns:
+                    working_daily["date"] = working_daily["Date"]
+                elif isinstance(working_daily.index, pd.DatetimeIndex):
+                    working_daily = working_daily.reset_index().rename(columns={working_daily.index.name or "index": "date"})
+            if "date" in working_daily.columns:
+                regime_col = next(
+                    (col for col in ["market_regime", "Regime", "regime", "macro_regime"] if col in working_daily.columns),
+                    None,
+                )
+                if regime_col is not None:
+                    fallback = pd.DataFrame(
+                        {
+                            "date": pd.to_datetime(working_daily["date"], errors="coerce"),
+                            "regime": working_daily[regime_col].astype(str),
+                            "breadth": pd.to_numeric(working_daily.get("MarketBreadth", working_daily.get("breadth")), errors="coerce"),
+                            "participation": pd.to_numeric(working_daily.get("MarketParticipation", working_daily.get("participation")), errors="coerce"),
+                            "volatility": pd.to_numeric(working_daily.get("volatility", working_daily.get("TrueStress")), errors="coerce"),
+                            "correlation": pd.to_numeric(working_daily.get("correlation"), errors="coerce"),
+                            "risk_on_score": pd.to_numeric(working_daily.get("risk_on_score"), errors="coerce"),
+                        }
+                    ).dropna(subset=["date"])
+                    current_len = len(regime_df) if isinstance(regime_df, pd.DataFrame) else 0
+                    current_as_of = self._latest_date_in_df(regime_df) if isinstance(regime_df, pd.DataFrame) else None
+                    fallback_as_of = self._latest_date_in_df(fallback)
+                    primary_missing = regime_df is None or regime_df.empty or current_len < 2
+                    fallback_is_fresher = (
+                        fallback_as_of is not None
+                        and (current_as_of is None or fallback_as_of >= current_as_of)
+                    )
+                    fallback_is_richer = len(fallback) > current_len
+                    if not fallback.empty and (primary_missing or fallback_is_fresher or fallback_is_richer):
+                        regime_df = fallback
 
         if regime_df is None or regime_df.empty:
             return self._unavailable("market_regime", "Regime history is unavailable")
@@ -1112,13 +1153,18 @@ class DashboardDataContract:
         )
 
     def get_greeks_history(self, lookback_days: int = 30) -> LabeledValue:
-        ledger = self._coerce_frame(self._load_parquet(self.ledger_path), ("trade_date", "settlement_date", "recorded_at"))
-        if ledger.empty or "option_type" not in ledger.columns:
-            return self._unavailable("data/pnl/master_ledger.parquet", "Options Greeks history is unavailable")
+        # The real options book (with per-trade greeks_at_entry) lives in
+        # data/options/trade_ledger.parquet, NOT master_ledger.parquet — that
+        # file is the equity paper-fund's ledger and has no option_type column
+        # at all, so this previously always returned "unavailable" regardless
+        # of how much real options history existed.
+        ledger = self._coerce_frame(self._load_parquet(self.options_trade_ledger_path), ("timestamp",))
+        if ledger.empty or "greeks_at_entry" not in ledger.columns:
+            return self._unavailable("data/options/trade_ledger.parquet", "Options Greeks history is unavailable")
 
-        options = ledger[ledger["option_type"].notna()].copy()
+        options = ledger[ledger["greeks_at_entry"].notna()].copy()
         if options.empty:
-            return self._unavailable("data/pnl/master_ledger.parquet", "No options history is available")
+            return self._unavailable("data/options/trade_ledger.parquet", "No options history is available")
 
         def parse_greeks(payload: Any) -> dict:
             if isinstance(payload, dict):
@@ -1134,8 +1180,7 @@ class DashboardDataContract:
         for greek in ["delta", "gamma", "vega", "theta"]:
             options[greek] = greeks.apply(lambda g: pd.to_numeric(g.get(greek), errors="coerce") if isinstance(g, dict) else np.nan)
 
-        date_col = "trade_date" if "trade_date" in options.columns else "recorded_at"
-        options["date"] = pd.to_datetime(options[date_col], errors="coerce")
+        options["date"] = pd.to_datetime(options["timestamp"], errors="coerce")
         cutoff = datetime.now() - timedelta(days=lookback_days)
         options = options[options["date"] >= cutoff]
         history = (
@@ -1147,7 +1192,7 @@ class DashboardDataContract:
         as_of = self._latest_date_in_df(history)
         return LabeledValue(
             value=history,
-            source="data/pnl/master_ledger.parquet → greeks_at_entry",
+            source="data/options/trade_ledger.parquet → greeks_at_entry",
             as_of=as_of,
             freshness=self._compute_freshness(as_of),
             is_available=not history.empty,

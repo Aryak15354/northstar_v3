@@ -6,8 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ENTRY_FILES = [
-    ROOT / "run.py",
-    ROOT / "run_complete_v3_system.py",
+    ROOT / "scripts" / "run_complete_v3_system.py",
 ]
 SCAN_DIRS = [ROOT / "src/execution"]
 FORBIDDEN_TOKENS = [
@@ -33,10 +32,6 @@ def main() -> int:
         for token in required:
             if token not in gateway_src:
                 violations.append({"file": str(gateway_path.relative_to(ROOT)), "error": f"missing_required_token:{token}"})
-
-    run_src = _read(ROOT / "run.py")
-    if "live" in run_src and "choices=[\"dashboard\", \"update\", \"health\", \"status\"]" not in run_src:
-        violations.append({"file": "run.py", "error": "deprecated_mode_contract_not_removed"})
 
     for path in ENTRY_FILES:
         src = _read(path)

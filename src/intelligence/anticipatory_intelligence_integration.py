@@ -15,7 +15,7 @@ Key Integration Points:
 
 Usage:
     try:
-    from intelligence.anticipatory_intelligence_integration import AnticipatoryIntelligenceIntegration
+    from src.intelligence.anticipatory_intelligence_integration import AnticipatoryIntelligenceIntegration
 except ImportError:
     from AnticipatoryIntelligenceIntegration import AnticipatoryIntelligenceIntegration
     
@@ -33,8 +33,8 @@ warnings.filterwarnings('ignore')
 
 # Import safe JSON utilities
 try:
-    from utils.json_utils import safe_load_json, safe_save_json
-    from utils.parquet_utils import safe_load_parquet
+    from src.utils.json_utils import safe_load_json, safe_save_json
+    from src.utils.parquet_utils import safe_load_parquet
 except ImportError:
     # Fallback safe loading functions
     def safe_load_json(file_path, default=None):

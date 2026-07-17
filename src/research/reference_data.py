@@ -8,6 +8,8 @@ from typing import Any
 
 import pandas as pd
 
+from src.core.panel_math import normalize_ticker as _normalize_ticker  # noqa: F401
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_REFERENCE_ROOT = PROJECT_ROOT / "data" / "canonical" / "reference"
@@ -20,15 +22,6 @@ REFERENCE_RELATIVE_PATHS = {
 }
 
 
-def _normalize_ticker(value: Any) -> str:
-    text = str(value or "").strip().upper()
-    if not text:
-        return ""
-    if text.endswith(".NS"):
-        return text
-    if "." in text:
-        text = text.split(".", 1)[0]
-    return f"{text}.NS"
 
 
 def _looks_like_reference_root(path: Path) -> bool:

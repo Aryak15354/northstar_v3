@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 from src.nlp.pipeline.realtime_scorer import RealtimeScorer
 from src.intelligence.news_brain.news_signal_state import MacroSignal, ShockDirection, ShockSeverity, ShockType
@@ -221,11 +222,20 @@ class MacroNewsLayer:
         path = PROJECT_ROOT / "data" / "canonical" / "news" / "market_news_history.parquet"
         if not path.exists():
             return []
-        df = pd.read_parquet(path, columns=["headline", "source", "date", "availability_date"])
+        wanted = ["headline", "source", "date", "availability_date"]
+        available = set(pq.ParquetFile(path).schema.names)
+        df = pd.read_parquet(path, columns=[col for col in wanted if col in available])
         if df.empty:
             return []
+        for column in wanted:
+            if column not in df.columns:
+                df[column] = "macro_news" if column == "source" else pd.NaT
         df["date"] = pd.to_datetime(df["date"], errors="coerce")
         df["availability_date"] = pd.to_datetime(df["availability_date"], errors="coerce")
+        df["availability_date"] = df["availability_date"].fillna(df["date"])
+        df = df.dropna(subset=["headline", "date", "availability_date"])
+        if df.empty:
+            return []
         as_of_ts = pd.Timestamp(as_of_datetime).tz_localize(None) if pd.Timestamp(as_of_datetime).tzinfo else pd.Timestamp(as_of_datetime)
         eligible = df[df["availability_date"] <= as_of_ts].copy()
         if eligible.empty:

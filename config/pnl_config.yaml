@@ -1,0 +1,78 @@
+# =====================================================================
+# Northstar V3 Paper Fund — single source of truth for capital, costs,
+# taxes, and portfolio rules. Consumed by:
+#   - src/pnl/nav_calculator.py           (NAV / metrics)
+#   - src/pnl/paper_fund.py               (fund status)
+#   - src/pnl/indian_cost_model.py        (per-trade costs)
+#   - src/pnl/equity_tax_lots.py          (realized LTCG/STCG)
+#   - src/portfolio/paper_portfolio_engine.py (the one-truth driver)
+#
+# The fund runs on a FIXED imaginary capital base. There are no invisible
+# cash injections — cash only moves via modelled trades, costs and taxes.
+# Marks are honest: NAV stops at the last available market date and
+# auto-extends when newer prices arrive.
+# =====================================================================
+
+pnl:
+  nav:
+    starting_capital_inr: 1000000000      # ₹100 crore
+    inception_date: "2024-09-01"
+    nav_unit_size: 1000                    # ₹1,000 per unit → 1,000,000 units at inception
+    benchmark: "NIFTY50"
+    risk_free_rate_pct: 6.5                # India 10Y proxy
+
+  paper_fund:
+    fund_name: "Northstar V3 Paper Fund"
+    starting_capital_inr: 1000000000
+    inception_date: "2024-09-01"
+    benchmark: "NIFTY50"
+    target_monthly_return_pct: 2.0
+    max_acceptable_drawdown_pct: -15.0
+    min_sharpe_ratio: 1.2
+
+# ---------------------------------------------------------------------
+# Full Indian equity transaction-cost model (delivery / CNC, cash segment).
+# Rates are fractions of traded notional unless noted. GST applies to
+# brokerage + exchange txn + SEBI fees (not to STT or stamp duty).
+# ---------------------------------------------------------------------
+costs:
+  brokerage_pct: 0.0003                    # 3 bps (discount-broker delivery; many are ₹0 but we keep a small drag)
+  brokerage_max_inr: 20.0                  # per-order cap (₹20)
+  stt_pct: 0.001                           # 0.1% each side, delivery equity
+  exchange_txn_pct: 0.0000297              # NSE 0.00297%
+  sebi_turnover_pct: 0.000001              # ₹10 per crore
+  stamp_duty_pct: 0.00015                  # 0.015%, BUY side only
+  gst_pct: 0.18                            # 18% on (brokerage + exchange txn + SEBI)
+  # Execution slippage: fixed floor (bps) + market-impact scaled by sqrt(order/ADV).
+  slippage_bps: 5.0                        # 5 bps baseline
+  impact_coefficient_bps: 40.0            # impact_bps = coeff * sqrt(order_value / adv_value)
+
+# ---------------------------------------------------------------------
+# Capital-gains tax (applied on realized SELLs via FIFO tax lots).
+# Post-2024 Indian rates. LTCG has an annual exemption threshold.
+# ---------------------------------------------------------------------
+tax:
+  stcg_pct: 0.20                           # < 1 year holding
+  ltcg_pct: 0.125                          # >= 1 year holding
+  ltcg_annual_exemption_inr: 125000        # ₹1.25 lakh/year exempt
+  long_term_holding_days: 365
+
+# ---------------------------------------------------------------------
+# Systematic portfolio rules — the fund cannot violate these.
+# ---------------------------------------------------------------------
+rules:
+  max_position_pct: 8.0                     # single-name cap (% of fund NAV)
+  max_sector_pct: 25.0                      # sector cap (% of fund NAV)
+  cash_floor_pct: 2.0                       # minimum cash reserve
+  max_adv_participation_pct: 15.0           # ≤15% of a name's ADV can be traded per day
+  max_daily_turnover_pct: 20.0             # ≤20% of NAV can turn over in one day
+  rebalance_band_pct: 25.0                  # only trade a name once it drifts >25% from its target weight (cuts needless churn + tax)
+  min_holding_names: 15                     # diversification floor
+  adv_lookback_days: 20                     # ADV window
+  default_adv_inr: 50000000                 # ₹5 cr fallback ADV when a name has no volume history
+
+# ---------------------------------------------------------------------
+# Ongoing fund expenses (daily drag on NAV), annualised.
+# ---------------------------------------------------------------------
+expenses:
+  expense_ratio_annual_pct: 1.0            # 100 bps/yr management+ops drag, accrued daily

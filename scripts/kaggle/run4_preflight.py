@@ -14,6 +14,7 @@ def main() -> int:
     parser.add_argument("--sequence-dir", required=True)
     parser.add_argument("--code-dir", required=True)
     parser.add_argument("--require-cuda", action="store_true")
+    parser.add_argument("--skip-sequence", action="store_true")
     args = parser.parse_args()
 
     feature_dir = Path(args.feature_dir)
@@ -25,14 +26,19 @@ def main() -> int:
         "feature_parquet": feature_dir / "northstar_features.parquet",
         "walk_forward_splits": feature_dir / "northstar_walk_forward_splits.json",
         "regime_labels": feature_dir / "northstar_regime_labels.parquet",
-        "sequence_splits": sequence_dir / "sequence_walk_forward_splits.json",
-        "sequence_manifest": sequence_dir / "sequence_export_manifest.json",
-        "sequence_shards": sequence_dir / "sequence_shards",
         "common_py": code_dir / "plan_2026_05_18_production" / "common.py",
         "experiments_py": code_dir / "plan_2026_05_18_production" / "experiments.py",
         "run_all": code_dir / "run_all_northstar_experiments.sh",
         "sequence_runner": code_dir / "sequence_experiments" / "run_sequence_experiment.py",
     }
+    if not args.skip_sequence:
+        checks.update(
+            {
+                "sequence_splits": sequence_dir / "sequence_walk_forward_splits.json",
+                "sequence_manifest": sequence_dir / "sequence_export_manifest.json",
+                "sequence_shards": sequence_dir / "sequence_shards",
+            }
+        )
     for name, path in checks.items():
         if not path.exists():
             failures.append(f"missing:{name}:{path}")
@@ -67,6 +73,7 @@ def main() -> int:
         "failures": failures,
         "feature_dir": str(feature_dir),
         "sequence_dir": str(sequence_dir),
+        "sequence_required": not args.skip_sequence,
         "code_dir": str(code_dir),
         "cuda_available": cuda_available,
     }

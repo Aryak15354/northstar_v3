@@ -19,6 +19,7 @@ from src.dashboard.layout.global_bar import inject_dashboard_styles, render_glob
 from src.dashboard.layout.sidebar_filters import render_sidebar_filters
 from src.dashboard.layout.tab_router import render_tab_router
 from src.dashboard.registry import LIVE_TABS, TAB_ORDER, VISUALS
+from src.dashboard.layout.command_bar import render_command_bar
 from src.dashboard.sections import (
     render_alpha_os,
     render_market,
@@ -28,11 +29,13 @@ from src.dashboard.sections import (
     render_portfolio,
     render_research,
     render_risk,
+    render_security,
     render_sentiment,
 )
 
 SECTION_RENDERERS: dict[str, Callable[[dict], tuple[int, int]]] = {
     "Overview": render_overview,
+    "Security": render_security,
     "Performance": render_performance,
     "Market": render_market,
     "Sentiment": render_sentiment,
@@ -88,6 +91,7 @@ def render_dashboard() -> None:
 
     static_bundle = load_static_data()
     filters = render_sidebar_filters(static_bundle)
+    render_command_bar()  # keyboard-first: "RELIANCE", "TCS DES", "MOV", "PORT"…
     active_tab = render_tab_router()
 
     _render_global_bar_fragment(static_bundle)

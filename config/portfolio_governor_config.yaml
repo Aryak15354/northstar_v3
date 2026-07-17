@@ -1,0 +1,54 @@
+starting_capital_inr: 1000000000  # ₹100 crore paper-fund capital base (single fixed imaginary AUM)
+
+default_capital_structure:
+  equity_fraction: 0.75
+  options_fraction: 0.15
+  cash_fraction: 0.10
+
+regime_table:
+  FULL_DEPLOYMENT:
+    equity_fraction: 0.90
+    options_fraction: 0.08
+    cash_fraction: 0.02
+  STANDARD:
+    equity_fraction: 0.75
+    options_fraction: 0.15
+    cash_fraction: 0.10
+  CAUTIOUS:
+    equity_fraction: 0.60
+    options_fraction: 0.20
+    cash_fraction: 0.20
+  DEFENSIVE:
+    equity_fraction: 0.40
+    options_fraction: 0.20
+    cash_fraction: 0.40
+  CAPITAL_PRESERVATION:
+    equity_fraction: 0.15
+    options_fraction: 0.10
+    cash_fraction: 0.75
+
+hard_limits:
+  min_equity_fraction: 0.10
+  max_equity_fraction: 0.95
+  min_cash_fraction: 0.02
+  max_options_fraction: 0.25
+  min_options_fraction: 0.00
+  emergency_cash_minimum: 0.20
+
+modifiers:
+  drawdown_reduction:
+    trigger_drawdown_pct: -8.0
+    equity_reduction_per_drawdown_pct: 0.015
+    max_equity_reduction: 0.20
+  recovery_restoration:
+    activation_drawdown_pct: -3.0
+    equity_restore_per_day: 0.02
+    max_equity_restoration: 0.15
+  crisis_override:
+    crisis_prob_cautious: 0.15
+    crisis_prob_defensive: 0.25
+    crisis_prob_preservation: 0.40
+  nav_size_protection:
+    trigger_nav_multiple: 1.20
+    equity_reduction_per_multiple: 0.05
+    max_equity_reduction: 0.15

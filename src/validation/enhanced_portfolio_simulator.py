@@ -30,8 +30,8 @@ warnings.filterwarnings('ignore')
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from execution.shadow_fund_engine import ShadowFundEngine
-from validation.universe_manager import UniverseManager
+from src.execution.shadow_fund_engine import ShadowFundEngine
+from src.validation.universe_manager import UniverseManager
 
 class EnhancedPortfolioSimulator(ShadowFundEngine):
     """

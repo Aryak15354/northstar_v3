@@ -10,6 +10,7 @@ import re
 import numpy as np
 import pandas as pd
 
+from src.core.panel_math import coalesce_rowwise
 from .base_factor import BaseFactor
 
 logger = logging.getLogger(__name__)
@@ -144,8 +145,8 @@ class BulkDealFactor(BaseFactor):
         work['quantity'] = pd.to_numeric(work.get('quantity'), errors='coerce')
         work['price'] = pd.to_numeric(work.get('price'), errors='coerce')
         work['notional'] = pd.to_numeric(work.get('notional'), errors='coerce')
-        if work['notional'].isna().all():
-            work['notional'] = work['quantity'] * work['price']
+        # N10: per-row fallback to quantity*price where notional is missing.
+        work['notional'] = coalesce_rowwise(work['notional'], work['quantity'] * work['price'])
         if use_identity:
             work = self._classify(work, entity_table)
 

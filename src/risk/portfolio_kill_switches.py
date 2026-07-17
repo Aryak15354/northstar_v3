@@ -23,6 +23,8 @@ from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
+from src.cohesion.unified_state_manager import UnifiedStateManager, AuthorityLevel
+
 class PortfolioKillSwitches:
     """
     Portfolio Kill Switches - Survival Protection System
@@ -51,7 +53,13 @@ class PortfolioKillSwitches:
         
         # Create risk directory
         os.makedirs('data/risk', exist_ok=True)
-        
+
+        # Authoritative state sink for emergency actions (FORCE_ZERO_EXPOSURE,
+        # REDUCE_EXPOSURE_50, FREEZE_ALLOCATOR, HALT_TRADING). Must be a real
+        # instance, not a bare name, or execute_emergency_action raises
+        # NameError and the kill switch never actually de-risks anything.
+        self.emergency_state_manager = UnifiedStateManager()
+
         # Kill switch thresholds (adjusted for risk-controlled portfolio)
         self.thresholds = {
             'max_portfolio_drawdown': 0.20,    # 20% max portfolio drawdown (increased)
@@ -296,28 +304,58 @@ class PortfolioKillSwitches:
             'exposure_override': None
         }
         
+        state_update_ok = True
         if action == 'FORCE_ZERO_EXPOSURE':
-            emergency_state_manager.update_state("component", {'exposure_override': 0.0}, AuthorityLevel.SYSTEM, "State field update")
-            emergency_state_manager.update_state("component", {'portfolio_frozen': True}, AuthorityLevel.SYSTEM, "State field update")
+            state_update_ok = self.emergency_state_manager.update_state(
+                "kill_switches", {'exposure_override': 0.0, 'portfolio_frozen': True},
+                AuthorityLevel.SYSTEM, f"Kill switch: {violation['kill_switch']}"
+            )
             print("   🛑 PORTFOLIO EXPOSURE FORCED TO ZERO")
-            
+
         elif action == 'REDUCE_EXPOSURE_50':
-            emergency_state_manager.update_state("component", {'exposure_override': 0.5}, AuthorityLevel.SYSTEM, "State field update")
+            state_update_ok = self.emergency_state_manager.update_state(
+                "kill_switches", {'exposure_override': 0.5},
+                AuthorityLevel.SYSTEM, f"Kill switch: {violation['kill_switch']}"
+            )
             print("   ⚠️ PORTFOLIO EXPOSURE REDUCED BY 50%")
-            
+
         elif action == 'FREEZE_ALLOCATOR':
-            emergency_state_manager.update_state("component", {'portfolio_frozen': True}, AuthorityLevel.SYSTEM, "State field update")
+            state_update_ok = self.emergency_state_manager.update_state(
+                "kill_switches", {'portfolio_frozen': True},
+                AuthorityLevel.SYSTEM, f"Kill switch: {violation['kill_switch']}"
+            )
             print("   🧊 CAPITAL ALLOCATOR FROZEN")
-            
+
         elif action == 'HALT_TRADING':
-            emergency_state_manager.update_state("component", {'portfolio_frozen': True}, AuthorityLevel.SYSTEM, "State field update")
-            emergency_state_manager.update_state("component", {'exposure_override': 0.0}, AuthorityLevel.SYSTEM, "State field update")
+            state_update_ok = self.emergency_state_manager.update_state(
+                "kill_switches", {'portfolio_frozen': True, 'exposure_override': 0.0},
+                AuthorityLevel.SYSTEM, f"Kill switch: {violation['kill_switch']}"
+            )
             print("   🛑 ALL TRADING HALTED")
-        
+
+        if not state_update_ok:
+            # update_state() returns False (rather than raising) when a
+            # higher-authority value already exists for one of these fields
+            # (INVARIANT S3). The emergency action did NOT take effect --
+            # this must not be silently swallowed.
+            emergency_state['portfolio_frozen'] = False
+            print(f"   🚨 EMERGENCY STATE UPDATE REJECTED for action={action} -- "
+                  f"a higher-authority value already holds these fields. "
+                  f"Portfolio was NOT de-risked; manual intervention required.")
+        else:
+            emergency_state['portfolio_frozen'] = action in (
+                'FORCE_ZERO_EXPOSURE', 'FREEZE_ALLOCATOR', 'HALT_TRADING'
+            )
+            emergency_state['exposure_override'] = {
+                'FORCE_ZERO_EXPOSURE': 0.0,
+                'REDUCE_EXPOSURE_50': 0.5,
+                'HALT_TRADING': 0.0,
+            }.get(action)
+
         # Save emergency state
         with open(self.paths['emergency_state'], 'w') as f:
             json.dump(emergency_state, f, indent=2)
-        
+
         return emergency_state
     
     def log_violation(self, violation):

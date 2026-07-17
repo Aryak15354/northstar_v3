@@ -381,8 +381,9 @@ class PreOpenChecker:
         logger.info("=" * 60)
         
         start_time = datetime.now()
-        
+
         # Run individual checks
+        self.check_trading_halt()
         self.check_system_time()
         self.check_daemon_status()
         self.check_process_locks()
@@ -407,6 +408,38 @@ class PreOpenChecker:
         
         return summary
     
+    def check_trading_halt(self):
+        """Fail pre-open if the TRADING_HALTED flag is set.
+
+        The flag is raised by scripts/emergency_halt.py or by a CRITICAL EOD
+        reconciliation failure, and cleared by scripts/resume_trading.py. It
+        also blocks new orders at the runtime execution gate; surfacing it here
+        makes the halt visible to an operator before the session starts.
+        """
+        logger.info("0. Checking trading-halt flag...")
+        try:
+            from src.execution.trading_halt import is_trading_halted, halt_reason
+
+            if is_trading_halted():
+                self.failures.append({
+                    'check': 'trading_halt',
+                    'status': 'FAIL',
+                    'message': f"TRADING_HALTED flag is set: {halt_reason()}. "
+                               f"Resolve and run scripts/resume_trading.py before trading."
+                })
+            else:
+                self.checks.append({
+                    'check': 'trading_halt',
+                    'status': 'PASS',
+                    'message': 'No trading halt in effect'
+                })
+        except Exception as e:
+            self.failures.append({
+                'check': 'trading_halt',
+                'status': 'ERROR',
+                'message': f"Trading-halt check failed: {e}"
+            })
+
     def check_system_time(self):
         """Check system time and timezone"""
         logger.info("1. Checking system time and timezone...")

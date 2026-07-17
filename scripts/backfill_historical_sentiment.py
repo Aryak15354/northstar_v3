@@ -199,6 +199,18 @@ def aggregate_daily_sentiment(df):
 
 
 def main():
+    import sys as _sys
+    raise SystemExit(
+        "DEPRECATED / DISABLED (2026-07-11): this script produces SYNTHETIC sentiment "
+        "from data/raw/historical_news_datasets/ (verified templated fake headlines). "
+        "Real sentiment now comes from NSE announcements:\n"
+        "  python3 scripts/build_company_news_from_announcements.py\n"
+        "  python3 -c \"from src.nlp.pipeline.batch_scorer import BatchHistoricalScorer; "
+        "BatchHistoricalScorer().score_company_news_history()\"\n"
+        "If you truly need the old behaviour, remove this guard deliberately."
+    )
+
+def _disabled_main():
     """Execute historical sentiment backfill."""
     logger.info("=" * 80)
     logger.info("HISTORICAL SENTIMENT BACKFILL - REAL DATA ONLY")

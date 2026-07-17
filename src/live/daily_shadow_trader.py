@@ -20,7 +20,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-from runtime import (
+from src.data.price_access import canonical_price_path, read_prices_legacy
+from src.runtime import (
     DecisionMode,
     ExecutionEventType,
     PortfolioRuntimeService,
@@ -28,8 +29,8 @@ from runtime import (
     TradeProposal,
     build_certification_snapshot,
 )
-from runtime.contracts import ExecutionEvent
-from runtime.hash_utils import canonical_hash, file_sha256
+from src.runtime.contracts import ExecutionEvent
+from src.runtime.hash_utils import canonical_hash, file_sha256
 from src.live.shadow_reality_publisher import refresh_shadow_reality_from_live_artifacts
 
 
@@ -52,7 +53,7 @@ class DailyShadowTrader:
 
         self.project_root = project_root
         self.weights_path = self.project_root / "data/processed/portfolio_weights.parquet"
-        self.prices_path = self.project_root / "data/processed/prices.parquet"
+        self.prices_path = canonical_price_path(project_root=self.project_root)
 
         # Create data directories
         self.positions_dir = self.data_dir / "positions"
@@ -745,7 +746,10 @@ class DailyShadowTrader:
         if not self.prices_path.exists():
             raise FileNotFoundError(f"Processed prices not found: {self.prices_path}")
 
-        px = pd.read_parquet(self.prices_path, columns=["Date", "ticker", "Close"])
+        px = read_prices_legacy(
+            project_root=self.project_root,
+            columns=["Date", "ticker", "Close"],
+        )
         px["Date"] = pd.to_datetime(px["Date"], errors="coerce", utc=True).dt.tz_localize(None)
         px["Close"] = pd.to_numeric(px["Close"], errors="coerce")
         px["ticker"] = px["ticker"].astype(str)

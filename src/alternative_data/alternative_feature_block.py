@@ -9,7 +9,7 @@ They receive identical features, guaranteeing research-to-live consistency.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 import pandas as pd
 import numpy as np
@@ -31,7 +31,12 @@ from src.alternative_data.alt_data_keys import (
     POWER_INDUSTRIAL_PROXY,
     POWER_YOY_GROWTH,
 )
-from src.ingestion.ingestion_registry import IngestionRegistry
+# Lazy under TYPE_CHECKING to break the ingestion<->core<->alternative_data
+# import cycle (2026-07-17): ingestion_registry -> fundamental_loader ->
+# core.panel_math -> core.__init__ -> orchestrator -> state -> alternative_data
+# -> this module -> ingestion_registry (half-built). Only used as an annotation.
+if TYPE_CHECKING:
+    from src.ingestion.ingestion_registry import IngestionRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +44,7 @@ logger = logging.getLogger(__name__)
 class AlternativeFeatureBlock:
     """Converts alternative data into model-ready features."""
     
-    def __init__(self, registry: IngestionRegistry, config: dict):
+    def __init__(self, registry: "IngestionRegistry", config: dict):
         self.registry = registry
         self.config = config
         

@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 ACTIVE_ROOTS = ("arya", "scripts", "src", "tests")
-ROOT_FILES = ("run.py",)
 SKIP_PARTS = {
     ".git",
     ".hypothesis",
@@ -46,8 +45,6 @@ def _is_active(path: Path) -> bool:
     if parts & SKIP_PARTS:
         return False
     rel = path.as_posix()
-    if rel in ROOT_FILES:
-        return True
     return any(rel == root or rel.startswith(f"{root}/") for root in ACTIVE_ROOTS)
 
 

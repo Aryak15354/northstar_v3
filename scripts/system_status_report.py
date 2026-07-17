@@ -8,7 +8,8 @@ import os
 import sqlite3
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from datetime import time as dt_time
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,8 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.data.artifact_contracts import validate_all_contracts
 
 
 STATE_PATH = PROJECT_ROOT / "data" / "state" / "unified_state.json"
@@ -46,6 +49,12 @@ class ComponentStatus:
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _is_market_hours_ist() -> bool:
+    ist_now = datetime.now(timezone(timedelta(hours=5, minutes=30)))
+    current = ist_now.timetz().replace(tzinfo=None)
+    return dt_time(9, 15) <= current <= dt_time(15, 30)
 
 
 def _safe_json(path: Path) -> dict[str, Any]:
@@ -233,6 +242,25 @@ def _alternative_status() -> ComponentStatus:
     return ComponentStatus("alternative_data", status, summary, last_updated.isoformat() if last_updated else None)
 
 
+def _canonical_artifacts_status() -> ComponentStatus:
+    try:
+        results = validate_all_contracts(project_root=PROJECT_ROOT)
+    except Exception as exc:
+        return ComponentStatus("canonical_artifacts", "FAIL", f"contract validation failed: {exc}", None)
+
+    failed = [result for result in results if not result.ok]
+    total_rows = sum(result.rows for result in results)
+    latest_values = [result.latest for result in results if result.latest]
+    latest = max(latest_values) if latest_values else None
+    if failed:
+        first = failed[0]
+        summary = f"{len(failed)}/{len(results)} failed first={first.name} problems={';'.join(first.problems)}"
+        return ComponentStatus("canonical_artifacts", "FAIL", summary, latest)
+
+    summary = f"contracts={len(results)} rows={total_rows:,}"
+    return ComponentStatus("canonical_artifacts", "PASS", summary, latest)
+
+
 def _runtime_status() -> ComponentStatus:
     heartbeat = _safe_json(HEARTBEAT_PATH)
     runtime = _safe_json(RUNTIME_STATE_PATH)
@@ -251,6 +279,14 @@ def _runtime_status() -> ComponentStatus:
     stage = orchestrator.get("stage", "unknown")
     mode = runtime.get("current_mode", runtime.get("continuity_mode", "unknown"))
     loop_result = str(loop_status.get("status", "unknown") or "unknown")
+    standby_stage = stage in {"standby_off_hours", "ready_no_daemon"} or runtime.get("standby_status") in {
+        "standby_off_hours",
+        "ready_no_daemon",
+    }
+    if standby_stage and not _is_market_hours_ist() and runtime_age is not None and runtime_age <= 24.0:
+        status = "PASS"
+    elif standby_stage and runtime_age is not None and runtime_age <= 24.0:
+        status = "WARN"
     if stage == "day_failed" and status == "PASS":
         status = "WARN"
     summary = (
@@ -381,13 +417,20 @@ def _launch_surface_status() -> ComponentStatus:
     last_updated = _parse_dt(orchestrator.get("timestamp") or daemon.get("timestamp"))
     age = _age_hours(last_updated)
     status = "PASS" if active or daemon_running else _status_from_age(age, ok_hours=24.0, warn_hours=72.0)
-    summary = f"active_processes={len(active)} daemon_running={daemon_running} stage={orchestrator.get('stage', 'unknown')}"
+    stage = orchestrator.get("stage", "unknown")
+    if not active and not daemon_running and stage in {"standby_off_hours", "ready_no_daemon"}:
+        if age is not None and age <= 24.0 and not _is_market_hours_ist():
+            status = "PASS"
+        elif age is not None and age <= 24.0:
+            status = "WARN"
+    summary = f"active_processes={len(active)} daemon_running={daemon_running} stage={stage}"
     return ComponentStatus("launch_surface", status, summary, last_updated.isoformat() if last_updated else None)
 
 
 def collect_statuses() -> list[ComponentStatus]:
     return [
         _canonical_state_status(),
+        _canonical_artifacts_status(),
         _market_status(),
         _sentiment_status(),
         _alternative_status(),

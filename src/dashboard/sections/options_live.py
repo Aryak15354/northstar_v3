@@ -60,24 +60,36 @@ def render(bundle: dict) -> tuple[int, int]:
     _, freshness_label, _ = live_status_from_bundle(bundle)
     st.caption(f"Freshness badge: `{freshness_label}`")
 
-    _render_runtime_audit(bundle)
-    _render_position_tables(bundle)
-
     grouped = defaultdict(list)
     for spec in get_visuals_for_tab("Options"):
         grouped[spec.subsection].append(spec)
 
-    ordered = ["Market Surface", "Flow & Positioning", "Greeks Engine", "Risk Layer"]
+    # "Suggestions Cockpit" first: the v3-driven shorts/longs/hedges/opportunities.
+    # Any subsection present in the registry but not pre-listed is appended so
+    # new visual groups are never silently dropped.
+    ordered = ["Suggestions Cockpit", "Market Surface", "Flow & Positioning", "Greeks Engine", "Risk Layer"]
+    for sub in grouped:
+        if sub not in ordered:
+            ordered.append(sub)
+    ordered = [s for s in ordered if grouped.get(s)]  # drop empty subsections
     tabs = st.tabs(ordered)
     rendered = 0
     total = 0
     for tab_container, subsection in zip(tabs, ordered):
         specs = grouped.get(subsection, [])
         with tab_container:
-            for idx in range(0, len(specs), 2):
-                cols = st.columns(2)
-                for col, spec in zip(cols, specs[idx : idx + 2]):
+            # Suggestions Cockpit renders full-width (one per row) so the
+            # book table and risk/reward map are large and legible.
+            per_row = 1 if subsection == "Suggestions Cockpit" else 2
+            for idx in range(0, len(specs), per_row):
+                cols = st.columns(per_row)
+                for col, spec in zip(cols, specs[idx : idx + per_row]):
                     with col:
                         rendered += 1 if render_visual(spec, bundle) else 0
                         total += 1
+
+    # Runtime consistency + live position tables now sit BELOW the visual tabs.
+    with st.expander("Runtime consistency & live positions", expanded=False):
+        _render_runtime_audit(bundle)
+        _render_position_tables(bundle)
     return rendered, total

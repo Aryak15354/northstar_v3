@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SCAN_ROOTS = [ROOT / "src", ROOT / "scripts", ROOT / "run.py", ROOT / "run_complete_v3_system.py"]
+SCAN_ROOTS = [ROOT / "src", ROOT / "scripts"]
 
 
 def _py_files() -> list[Path]:

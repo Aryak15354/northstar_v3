@@ -253,15 +253,10 @@ def compute_sentiment_state(
         else:
             data_lag = 999
 
-        overall_fresh = bool(
-            is_fresh
-            and data_lag <= 3
-            and company_available
-            and companies_covered > 0
-            and company_lag <= 7
-        )
+        market_fresh = bool(is_fresh and data_lag <= 3)
+        company_fresh = bool(company_available and companies_covered > 0 and company_lag <= 7)
 
-        if not overall_fresh:
+        if not market_fresh or not company_fresh:
             logger.warning(
                 "Sentiment state degraded: market_lag_days=%s company_lag_days=%s companies_covered=%s",
                 data_lag,
@@ -270,8 +265,8 @@ def compute_sentiment_state(
             )
         
         return SentimentState(
-            market_sentiment_regime=regime if overall_fresh else SentimentRegime.UNAVAILABLE,
-            sentiment_trend=trend if overall_fresh else SentimentTrend.UNKNOWN,
+            market_sentiment_regime=regime if market_fresh else SentimentRegime.UNAVAILABLE,
+            sentiment_trend=trend if market_fresh else SentimentTrend.UNKNOWN,
             market_sentiment_zscore=float(zscore),
             sentiment_momentum_1w=float(momentum_1w),
             sentiment_momentum_1m=float(momentum_1m),
@@ -279,11 +274,11 @@ def compute_sentiment_state(
             regime_confidence=float(confidence),
             last_updated=datetime.now(),
             pipeline_last_run=latest_date if 'latest_date' in locals() else as_of_date,
-            is_fresh=overall_fresh,
+            is_fresh=market_fresh,
             data_lag_days=data_lag,
             company_sentiment_available=company_available,
             companies_with_coverage=companies_covered,
-            sentiment_crisis_signal=bool(crisis_signal and overall_fresh),
+            sentiment_crisis_signal=bool(crisis_signal and market_fresh),
             sentiment_divergence=float(divergence)
         )
         

@@ -578,6 +578,11 @@ class UnifiedState:
         if isinstance(time_payload, dict):
             candidates.append(time_payload.get("timestamp"))
 
+        # Take the NEWEST parsable candidate, not the first: a stale
+        # checkpoint_time from an old checkpoint run must not shadow a fresh
+        # top-level timestamp written by the state sync — that mismatch made
+        # the governor refuse "22.9h-old" state seconds after a full resync.
+        parsed_times = []
         for raw in candidates:
             if raw in (None, "", "None", "NaT"):
                 continue
@@ -585,9 +590,9 @@ class UnifiedState:
             if pd.isna(parsed):
                 continue
             if getattr(parsed, "tzinfo", None) is not None:
-                return parsed.tz_convert("UTC").tz_localize(None).to_pydatetime()
-            return parsed.to_pydatetime()
-        return None
+                parsed = parsed.tz_convert("UTC").tz_localize(None)
+            parsed_times.append(parsed.to_pydatetime())
+        return max(parsed_times) if parsed_times else None
 
     def _update_snapshot_freshness(
         self,

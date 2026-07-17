@@ -38,6 +38,66 @@ from src.portfolio.governor import PortfolioGovernor as CapitalStructureGovernor
 
 logger = logging.getLogger(__name__)
 
+
+def _cap_aware_rescale(
+    weights: "pd.Series",
+    target_sum: float,
+    position_cap: float,
+    group_ids: "pd.Series" = None,
+    group_cap: float = None,
+    max_iterations: int = 25,
+) -> "pd.Series":
+    """
+    Rescale/redistribute `weights` toward `target_sum` without letting any
+    single weight exceed `position_cap`, or (if `group_ids`/`group_cap` are
+    given) any group's summed weight exceed `group_cap`.
+
+    A naive `weights / weights.sum() * target_sum` rescale -- used to be the
+    final step of position/sector cap enforcement here -- silently pushes
+    already-capped positions back over their cap whenever concentration is
+    high enough that capped positions can't absorb the full redistribution
+    (e.g. 3 positions all clipped to an 8% cap: sum=0.24, naive rescale to
+    1.0 multiplies each back up to 0.333, 4x the intended cap). This instead
+    only grows positions that still have headroom below their cap, and
+    accepts a sum below `target_sum` once headroom is exhausted -- caps are
+    a hard constraint, so an under-invested/cash residual is the correct
+    outcome when they can't all be satisfied at full deployment, not a
+    reason to violate them.
+    """
+    w = weights.astype(float).clip(lower=0.0)
+
+    def _apply_caps(series: "pd.Series") -> "pd.Series":
+        series = series.clip(upper=position_cap)
+        if group_ids is not None and group_cap is not None and len(series) > 0:
+            group_sums = series.groupby(group_ids).transform('sum')
+            over = group_sums > group_cap
+            if over.any():
+                scale = (group_cap / group_sums).clip(upper=1.0)
+                series = series * scale
+        return series
+
+    w = _apply_caps(w)
+
+    for _ in range(max_iterations):
+        gap = target_sum - w.sum()
+        if gap <= 1e-9:
+            break
+
+        headroom = (position_cap - w).clip(lower=0.0)
+        if group_ids is not None and group_cap is not None and len(w) > 0:
+            group_sums = w.groupby(group_ids).transform('sum')
+            group_headroom = (group_cap - group_sums).clip(lower=0.0)
+            headroom = pd.concat([headroom, group_headroom], axis=1).min(axis=1)
+
+        total_headroom = headroom.sum()
+        if total_headroom <= 1e-9:
+            break  # Fully capped: target_sum is not reachable without a violation.
+
+        step = headroom / total_headroom * min(gap, total_headroom)
+        w = _apply_caps(w + step)
+
+    return w
+
 class PortfolioGovernor:
     """
     Portfolio Governor - The Final Authority on Portfolio Construction
@@ -1498,41 +1558,38 @@ class PortfolioGovernor:
         
         # Start with opportunity weights
         portfolio['risk_controlled_weight'] = portfolio['opportunity_weight'].copy()
-        
-        # 1. Single position limits
+
         max_single = self.constraints['max_single_position']
-        over_limit = portfolio['risk_controlled_weight'] > max_single
-        if over_limit.any():
-            excess = (portfolio.loc[over_limit, 'risk_controlled_weight'] - max_single).sum()
-            portfolio.loc[over_limit, 'risk_controlled_weight'] = max_single
-            
-            # Redistribute excess to other positions
-            under_limit = ~over_limit
-            if under_limit.any():
-                redistribution = excess * (portfolio.loc[under_limit, 'risk_controlled_weight'] / 
-                                         portfolio.loc[under_limit, 'risk_controlled_weight'].sum())
-                portfolio.loc[under_limit, 'risk_controlled_weight'] += redistribution
-            
-            print(f"   📊 Capped {over_limit.sum()} positions at {max_single:.1%}")
-        
-        # 2. Sector concentration limits
         max_sector = self.constraints['max_sector_exposure']
-        sector_weights = portfolio.groupby('Industry')['risk_controlled_weight'].sum()
-        over_sectors = sector_weights[sector_weights > max_sector]
-        
-        if len(over_sectors) > 0:
-            for sector in over_sectors.index:
-                sector_mask = portfolio['Industry'] == sector
-                sector_total = portfolio.loc[sector_mask, 'risk_controlled_weight'].sum()
-                scaling_factor = max_sector / sector_total
-                portfolio.loc[sector_mask, 'risk_controlled_weight'] *= scaling_factor
-            
-            print(f"   📊 Applied sector caps to {len(over_sectors)} sectors")
-        
-        # 3. Renormalize after constraints
-        total_weight = portfolio['risk_controlled_weight'].sum()
-        if total_weight > 0:
-            portfolio['risk_controlled_weight'] = portfolio['risk_controlled_weight'] / total_weight
+        pre_cap_over_limit = int((portfolio['risk_controlled_weight'] > max_single).sum())
+        pre_cap_sector_totals = portfolio.groupby('Industry')['risk_controlled_weight'].sum()
+        pre_cap_over_sectors = int((pre_cap_sector_totals > max_sector).sum())
+
+        # 1-3. Cap single-position and sector concentration, then redistribute
+        # toward full deployment (target_sum=1.0) using headroom only -- never
+        # by uniformly rescaling everyone back up, which would push already
+        # -capped positions/sectors back over their limit. See
+        # _cap_aware_rescale for why a naive rescale-to-1.0 is unsafe here.
+        portfolio['risk_controlled_weight'] = _cap_aware_rescale(
+            portfolio['risk_controlled_weight'],
+            target_sum=1.0,
+            position_cap=max_single,
+            group_ids=portfolio['Industry'],
+            group_cap=max_sector,
+        )
+
+        if pre_cap_over_limit:
+            print(f"   📊 Capped {pre_cap_over_limit} positions at {max_single:.1%}")
+        if pre_cap_over_sectors:
+            print(f"   📊 Applied sector caps to {pre_cap_over_sectors} sectors")
+
+        achieved_sum = portfolio['risk_controlled_weight'].sum()
+        if achieved_sum < 0.999:
+            print(
+                f"   ⚠️ Concentration caps binding: only {achieved_sum:.1%} of the "
+                f"book could be deployed within max_single_position/max_sector_exposure "
+                f"limits (need more eligible positions to reach full deployment)."
+            )
 
         # 4. Turnover governance relative to previous canonical weights.
         try:
@@ -1620,11 +1677,17 @@ class PortfolioGovernor:
             print("   💤 No engine active - minimal exposure mode")
             portfolio['final_weight'] = portfolio['risk_controlled_weight'] * 0.1  # 10% minimal exposure
         
-        # Ensure final exposure matches engine allocation
-        total_weight = portfolio['final_weight'].sum()
-        if total_weight > 0:
-            portfolio['final_weight'] = portfolio['final_weight'] / total_weight * final_exposure
-        
+        # Ensure final exposure matches engine allocation, without pushing any
+        # position/sector back over its (exposure-scaled) cap -- see
+        # _cap_aware_rescale.
+        portfolio['final_weight'] = _cap_aware_rescale(
+            portfolio['final_weight'],
+            target_sum=final_exposure,
+            position_cap=self.constraints['max_single_position'] * final_exposure,
+            group_ids=portfolio['Industry'],
+            group_cap=self.constraints['max_sector_exposure'] * final_exposure,
+        )
+
         print(f"   ✅ Applied {regime} regime overlay with {engine_allocation.active_engine} engine")
         print(f"   📊 Target exposure: {final_exposure:.1%}")
         
@@ -1808,11 +1871,20 @@ class PortfolioGovernor:
                 if sector_mask.any():
                     portfolio.loc[sector_mask, 'final_weight'] *= growth_boost
         
-        # Renormalize to maintain target exposure
-        total_weight = portfolio['final_weight'].sum()
-        if total_weight > 0:
-            portfolio['final_weight'] = portfolio['final_weight'] / total_weight * final_exposure
-        
+        # Renormalize to maintain target exposure, without pushing any
+        # position/sector back over its (exposure-scaled) cap -- see
+        # _cap_aware_rescale. risk_controlled_weight already respects
+        # max_single_position/max_sector_exposure (apply_risk_controls), but
+        # the regime quality/growth boosts just above can reintroduce a
+        # violation, so caps are re-applied here too.
+        portfolio['final_weight'] = _cap_aware_rescale(
+            portfolio['final_weight'],
+            target_sum=final_exposure,
+            position_cap=self.constraints['max_single_position'] * final_exposure,
+            group_ids=portfolio['Industry'],
+            group_cap=self.constraints['max_sector_exposure'] * final_exposure,
+        )
+
         print(f"   ✅ Applied {regime} regime overlay with strategy intelligence")
         print(f"   📊 Target exposure: {final_exposure:.1%}")
         

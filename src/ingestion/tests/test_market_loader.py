@@ -148,7 +148,19 @@ def test_corporate_action_adjustment(registry):
 
 def test_returns_live_mode(registry):
     """Test that forward returns are NaN in live mode."""
-    as_of_date = datetime.now()
+    canonical_prices = Path("data/canonical/prices/equity_prices_daily.parquet")
+    if canonical_prices.exists():
+        price_dates = pd.read_parquet(
+            canonical_prices,
+            columns=["date", "ticker"],
+            filters=[("ticker", "=", "RELIANCE.NS")],
+        )["date"]
+        if not price_dates.empty:
+            as_of_date = pd.Timestamp(price_dates.max()).to_pydatetime()
+        else:
+            as_of_date = datetime.now()
+    else:
+        as_of_date = datetime.now()
     horizon_days = 5
     
     try:

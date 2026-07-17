@@ -20,7 +20,7 @@ Key Features:
 
 Usage:
     try:
-    from intelligence.institutional_alpha_engine import InstitutionalAlphaEngine
+    from src.intelligence.institutional_alpha_engine import InstitutionalAlphaEngine
 except ImportError:
     from InstitutionalAlphaEngine import InstitutionalAlphaEngine
     
@@ -715,7 +715,7 @@ class InstitutionalAlphaEngine:
                 if system_health.overall_health == "healthy":
                     # Force defensive status during crisis
                     try:
-                        from intelligence.real_time_health_monitor import SystemHealthStatus
+                        from src.intelligence.real_time_health_monitor import SystemHealthStatus
                     except ImportError:
                         from SystemHealthStatus import SystemHealthStatus
                     system_health = SystemHealthStatus(
@@ -743,7 +743,7 @@ class InstitutionalAlphaEngine:
             
             # Return minimal health status
             try:
-                from intelligence.real_time_health_monitor import SystemHealthStatus
+                from src.intelligence.real_time_health_monitor import SystemHealthStatus
             except ImportError:
                 from SystemHealthStatus import SystemHealthStatus
             return SystemHealthStatus(

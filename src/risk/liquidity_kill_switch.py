@@ -35,7 +35,6 @@ class LiquidityRiskAssessor:
     def __init__(self, config: Optional[LiquidityConfig] = None) -> None:
         self.config = config or LiquidityConfig()
         self.paths = {
-            "prices": Path("data/processed/prices.parquet"),
             "portfolio": Path("data/processed/portfolio_weights.parquet"),
             "pnl": Path("data/portfolio/pnl_on_paper.parquet"),
             "output_json": Path("data/processed/liquidity_risk.json"),
@@ -43,13 +42,16 @@ class LiquidityRiskAssessor:
         }
 
     def _load_prices(self) -> Optional[pd.DataFrame]:
-        if not self.paths["prices"].exists():
-            return None
+        # Previously read data/processed/prices.parquet directly -- a stale
+        # legacy file missing ~91 tickers (including delisted names) and any
+        # PIT metadata. Now reads the canonical price contract instead.
         try:
-            df = pd.read_parquet(self.paths["prices"])
+            from src.data.price_access import read_prices_legacy
+
+            df = read_prices_legacy()
         except Exception:
             return None
-        if df.empty:
+        if df is None or df.empty:
             return None
         # Normalize columns
         if "Date" not in df.columns and "date" in df.columns:

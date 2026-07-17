@@ -6,7 +6,7 @@ Verifies timezone and clock drift for trading system integrity.
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 import requests
 import pytz
@@ -115,6 +115,38 @@ class ClockGuard:
         
         return report
     
+    @staticmethod
+    def _sntp_offset(server: str = "time.apple.com", timeout: float = 3.0) -> Optional[float]:
+        """True clock offset via a raw SNTP query (RFC 4330, UDP 123).
+
+        Unlike the HTTP time APIs (which sit behind CDNs and can serve stale
+        cached timestamps — measured ~15s of phantom 'drift' on 2026-07-06),
+        SNTP measures offset with round-trip compensation:
+            offset = ((t1 - t0) + (t2 - t3)) / 2
+        Returns seconds of local-clock error, or None if unreachable."""
+        import socket
+        import struct
+        import time as _time
+        NTP_DELTA = 2208988800  # 1900→1970 epoch difference
+        packet = b"\x1b" + 47 * b"\0"
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                sock.settimeout(timeout)
+                t0 = _time.time()
+                sock.sendto(packet, (server, 123))
+                data, _ = sock.recvfrom(512)
+                t3 = _time.time()
+            if len(data) < 48:
+                return None
+            unpacked = struct.unpack("!12I", data[:48])
+            def _ts(hi_idx: int) -> float:
+                return unpacked[hi_idx] - NTP_DELTA + unpacked[hi_idx + 1] / 2**32
+            t1 = _ts(8)   # server receive
+            t2 = _ts(10)  # server transmit
+            return ((t1 - t0) + (t2 - t3)) / 2.0
+        except Exception:
+            return None
+
     def get_reference_time(self) -> Optional[datetime]:
         """Get reference time from external source"""
         for source in self.reference_sources:
@@ -189,29 +221,35 @@ class ClockGuard:
             # Get local time in target timezone
             target_tz = pytz.timezone(self.target_timezone)
             local_time = datetime.now(target_tz)
-            
-            # Get reference time
-            ref_time = self.get_reference_time()
-            
             report['local_time'] = local_time.isoformat()
-            
-            if ref_time is None:
-                report['status'] = 'unknown'
-                report['reference_available'] = False
-                report['issues'].append("No reference time source available")
-                report['recommendations'].append("Check internet connectivity for time sync")
-                logger.warning("Clock drift check: No reference time available")
-                return report
-            
-            # Convert reference time to target timezone
-            if ref_time.tzinfo is None:
-                # For API payloads with naive datetime, assume target/source timezone,
-                # not UTC, to avoid false ±5:30h drift on IST hosts.
-                ref_time = self._localize_reference_datetime(ref_time, source_timezone=self.target_timezone)
-            ref_time_local = ref_time.astimezone(target_tz)
-            
-            # Calculate drift
-            drift_seconds = (local_time - ref_time_local).total_seconds()
+
+            # PRIMARY: raw SNTP with round-trip compensation — immune to the
+            # CDN-cached HTTP timestamps and request latency that previously
+            # produced ~15s of phantom drift and blocked daemon startup.
+            sntp_offset = self._sntp_offset()
+            if sntp_offset is not None:
+                drift_seconds = float(sntp_offset)
+                ref_time_local = (local_time - timedelta(seconds=drift_seconds))
+                report['reference_source'] = 'sntp:time.apple.com'
+            else:
+                # FALLBACK: HTTP time APIs. Compare against a local stamp taken
+                # AFTER the fetch and tolerate their second-level precision.
+                ref_time = self.get_reference_time()
+                if ref_time is None:
+                    report['status'] = 'unknown'
+                    report['reference_available'] = False
+                    report['issues'].append("No reference time source available")
+                    report['recommendations'].append("Check internet connectivity for time sync")
+                    logger.warning("Clock drift check: No reference time available")
+                    return report
+                if ref_time.tzinfo is None:
+                    # For API payloads with naive datetime, assume target/source
+                    # timezone, not UTC, to avoid false ±5:30h drift on IST hosts.
+                    ref_time = self._localize_reference_datetime(ref_time, source_timezone=self.target_timezone)
+                ref_time_local = ref_time.astimezone(target_tz)
+                local_after_fetch = datetime.now(target_tz)
+                drift_seconds = (local_after_fetch - ref_time_local).total_seconds()
+                report['reference_source'] = 'http'
             
             report.update({
                 'reference_time': ref_time_local.isoformat(),

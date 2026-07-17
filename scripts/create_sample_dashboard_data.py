@@ -130,7 +130,7 @@ def create_sample_shadow_trading_data():
 
 def create_sample_intelligence_data():
     """Create sample market intelligence data"""
-    data_path = Path("data/processed")
+    data_path = Path("data/testing/sample_processed")  # NEVER canonical: sample data must not overwrite production artifacts
     data_path.mkdir(parents=True, exist_ok=True)
     
     # Unified intelligence
@@ -197,7 +197,7 @@ def create_sample_intelligence_data():
 
 def create_sample_health_data():
     """Create sample system health data"""
-    data_path = Path("data/processed")
+    data_path = Path("data/testing/sample_processed")  # NEVER canonical: sample data must not overwrite production artifacts
     intelligence_path = Path("data/intelligence")
     intelligence_path.mkdir(parents=True, exist_ok=True)
     

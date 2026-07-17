@@ -21,6 +21,7 @@ import pandas as pd
 import numpy as np
 from pandas.tseries.offsets import BDay
 
+from src.core.panel_math import coalesce_rowwise, normalize_ticker as _shared_normalize_ticker
 from .base_loader import BaseLoader
 
 logger = logging.getLogger(__name__)
@@ -57,16 +58,7 @@ class AlternativeDataLoader(BaseLoader):
         # Return GST as default, or all as dict
         return self.load_gst(as_of_date, **kwargs)
 
-    @staticmethod
-    def _normalize_ticker(value: object) -> str:
-        s = str(value or "").strip().upper()
-        if not s:
-            return ""
-        if s.endswith(('.NS', '.BO')):
-            return s
-        if '.' in s:
-            s = s.split('.', 1)[0]
-        return f"{s}.NS"
+    _normalize_ticker = staticmethod(_shared_normalize_ticker)
 
     def _read_first_existing_table(self, paths: tuple[str, ...]) -> pd.DataFrame:
         for raw_path in paths:
@@ -154,8 +146,9 @@ class AlternativeDataLoader(BaseLoader):
         work['client_name'] = work.get('client_name', pd.Series('', index=work.index)).astype(str).fillna('')
         work['signed_qty'] = np.where(work['deal_type'].eq('SELL'), -work['quantity'], work['quantity'])
         work['notional'] = pd.to_numeric(work.get('notional'), errors='coerce')
-        if work['notional'].isna().all():
-            work['notional'] = work['quantity'] * work['price']
+        # N10: fill notional per row from quantity*price where missing, not only
+        # when the whole column is empty.
+        work['notional'] = coalesce_rowwise(work['notional'], work['quantity'] * work['price'])
 
         work = work.dropna(subset=['date', 'ticker', 'availability_date']).copy()
         start_date = pd.Timestamp(as_of_date) - timedelta(days=int(max(lookback_days, 1) + 7))
@@ -231,10 +224,13 @@ class AlternativeDataLoader(BaseLoader):
         else:
             work['availability_date'] = pd.concat([work['availability_date'], lagged], axis=1).max(axis=1)
         work['pledge_pct'] = pd.to_numeric(work.get('pledge_pct'), errors='coerce')
-        if work['pledge_pct'].isna().all() and {'shares_pledged', 'total_promoter_shares'}.issubset(set(work.columns)):
+        # I.11: fill pledge_pct PER ROW from shares_pledged/total_promoter_shares
+        # where it is missing, not only when the whole column is empty (the
+        # whole-column guard was a plausible contributor to pledge_pct sparsity).
+        if {'shares_pledged', 'total_promoter_shares'}.issubset(set(work.columns)):
             pledged = pd.to_numeric(work.get('shares_pledged'), errors='coerce')
             total = pd.to_numeric(work.get('total_promoter_shares'), errors='coerce').replace(0.0, np.nan)
-            work['pledge_pct'] = 100.0 * pledged / total
+            work['pledge_pct'] = coalesce_rowwise(work['pledge_pct'], 100.0 * pledged / total)
 
         work = work.dropna(subset=['ticker', 'quarter_end', 'availability_date']).copy()
         work = work[work['availability_date'] <= pd.Timestamp(as_of_date)].copy()
@@ -743,6 +739,11 @@ class AlternativeDataLoader(BaseLoader):
                     s = str(value or '').upper()
                     # strip agency brackets/prefixes; keep the last token that
                     # looks like a rating (letters A–D + optional +/-).
+                    # I.12: this "take the last A–D token" heuristic is fragile to
+                    # any agency name/text containing an A–D letter sequence AFTER
+                    # the real rating. It handles the documented formats
+                    # ("CRISIL BB+", "IND A-", "[ICRA]B+"); spot-check in_distress
+                    # against a sample of raw CurrentRating values before trusting.
                     tokens = re.findall(r'[A-D]{1,3}[+-]?', s.replace('[', ' ').replace(']', ' '))
                     return tokens[-1] if tokens else ''
 

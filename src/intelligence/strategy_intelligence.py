@@ -32,7 +32,7 @@ class StrategyIntelligence:
     def tailwind_engine(self):
         if self._tailwind_engine is None:
             try:
-                from intelligence.simple_tailwind_engine import SimpleTailwindEngine
+                from src.intelligence.simple_tailwind_engine import SimpleTailwindEngine
                 self._tailwind_engine = SimpleTailwindEngine()
             except ImportError:
                 self._tailwind_engine = None
@@ -42,7 +42,7 @@ class StrategyIntelligence:
     def beliefs_engine(self):
         if self._beliefs_engine is None:
             try:
-                from intelligence.strategy_beliefs import StrategyBeliefs
+                from src.intelligence.strategy_beliefs import StrategyBeliefs
                 self._beliefs_engine = StrategyBeliefs()
             except ImportError:
                 self._beliefs_engine = None
@@ -52,7 +52,7 @@ class StrategyIntelligence:
     def regret_engine(self):
         if self._regret_engine is None:
             try:
-                from intelligence.strategy_regret import StrategyRegret
+                from src.intelligence.strategy_regret import StrategyRegret
                 self._regret_engine = StrategyRegret()
             except ImportError:
                 self._regret_engine = None

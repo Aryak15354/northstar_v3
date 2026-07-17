@@ -39,11 +39,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.intelligence.temporal_guard import TemporalGuard
 from src.intelligence.temporal_signal_engine import TemporalSignalEngine
+from src.data.price_access import canonical_price_path
 
 SCORES_FILE = PROJECT_ROOT / "data/processed/scores.parquet"
 SCORE_HISTORY_DIR = PROJECT_ROOT / "data/processed/score_history"
 UNIVERSE_FILE = PROJECT_ROOT / "universe/nifty500.csv"
-PRICES_FILE = PROJECT_ROOT / "data/processed/prices.parquet"
+# Canonical, point-in-time-safe price contract. Previously hardcoded to the
+# legacy data/processed/prices.parquet, which is missing ~91 tickers
+# (including delisted names -- a survivorship-bias risk for momentum/vol
+# signals computed here) and has no availability_date/source columns.
+PRICES_FILE = canonical_price_path()
 STRATEGY_PORTFOLIOS_DIR = PROJECT_ROOT / "data/processed/strategy_portfolios"
 ANNUAL_FUNDAMENTALS_FILE = PROJECT_ROOT / "data/canonical/fundamentals/fundamentals_annual_panel.parquet"
 QUARTERLY_FUNDAMENTALS_FILE = PROJECT_ROOT / "data/canonical/fundamentals/fundamentals_quarterly_panel.parquet"

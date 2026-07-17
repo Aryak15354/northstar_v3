@@ -22,7 +22,7 @@ Key Features:
 
 Usage:
     try:
-    from intelligence.real_time_health_monitor import RealTimeHealthMonitor
+    from src.intelligence.real_time_health_monitor import RealTimeHealthMonitor
 except ImportError:
     from RealTimeHealthMonitor import RealTimeHealthMonitor
     
@@ -49,7 +49,7 @@ import sys
 try:
     from src.volatility.regime_detector import VolatilityRegime, RegimeState
 except ImportError:
-    from volatility.regime_detector import VolatilityRegime, RegimeState
+    from src.volatility.regime_detector import VolatilityRegime, RegimeState
 
 # Legacy alias for compatibility
 MarketRegime = VolatilityRegime

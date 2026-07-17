@@ -5,19 +5,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from src.core.panel_math import coalesce_rowwise, normalize_ticker as _normalize_ticker  # noqa: F401
+
 
 QUARTER_LAG_DAYS = 45
-
-
-def _normalize_ticker(value: object) -> str:
-    s = str(value or "").strip().upper()
-    if not s:
-        return ""
-    if s.endswith(".NS"):
-        return s
-    if "." in s:
-        s = s.split(".", 1)[0]
-    return f"{s}.NS"
 
 
 def compute_pledge_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -51,10 +42,11 @@ def compute_pledge_features(df: pd.DataFrame) -> pd.DataFrame:
     out["date"] = pd.to_datetime(out[date_col], errors="coerce")
     out["ticker"] = out[ticker_col].map(_normalize_ticker)
     out["pledge_pct"] = pd.to_numeric(out.get("pledge_pct"), errors="coerce")
-    if out["pledge_pct"].isna().all() and {"shares_pledged", "total_promoter_shares"}.issubset(set(out.columns)):
+    # N10: per-row fallback where pledge_pct is missing but the share counts exist.
+    if {"shares_pledged", "total_promoter_shares"}.issubset(set(out.columns)):
         pledged = pd.to_numeric(out.get("shares_pledged"), errors="coerce")
         total = pd.to_numeric(out.get("total_promoter_shares"), errors="coerce").replace(0.0, np.nan)
-        out["pledge_pct"] = 100.0 * pledged / total
+        out["pledge_pct"] = coalesce_rowwise(out["pledge_pct"], 100.0 * pledged / total)
 
     out = out.dropna(subset=["date", "ticker"])
     if out.empty:

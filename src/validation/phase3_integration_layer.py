@@ -148,7 +148,7 @@ class Phase3IntegrationLayer:
             
             # Initialize RegimeMemorySystem
             try:
-                from intelligence.regime_memory_system import RegimeMemorySystem
+                from src.intelligence.regime_memory_system import RegimeMemorySystem
                 self._regime_memory = RegimeMemorySystem()
                 status['regime_memory'] = True
                 print("   ✅ RegimeMemorySystem initialized")
@@ -157,7 +157,7 @@ class Phase3IntegrationLayer:
             
             # Initialize SimpleTailwindEngine
             try:
-                from intelligence.simple_tailwind_engine import SimpleTailwindEngine
+                from src.intelligence.simple_tailwind_engine import SimpleTailwindEngine
                 self._tailwind_engine = SimpleTailwindEngine()
                 status['tailwind_engine'] = True
                 print("   ✅ SimpleTailwindEngine initialized")
@@ -166,7 +166,7 @@ class Phase3IntegrationLayer:
             
             # Initialize NoEdgeDetector
             try:
-                from intelligence.no_edge_detector import NoEdgeDetector
+                from src.intelligence.no_edge_detector import NoEdgeDetector
                 self._no_edge_detector = NoEdgeDetector()
                 status['no_edge_detector'] = True
                 print("   ✅ NoEdgeDetector initialized")
@@ -175,7 +175,7 @@ class Phase3IntegrationLayer:
             
             # Initialize CapitalAllocator
             try:
-                from intelligence.capital_allocator import CapitalAllocator
+                from src.intelligence.capital_allocator import CapitalAllocator
                 self._capital_allocator = CapitalAllocator()
                 status['capital_allocator'] = True
                 print("   ✅ CapitalAllocator initialized")

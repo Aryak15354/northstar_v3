@@ -12,7 +12,7 @@ They don't pick stocks. They allocate capital to models.
 
 Usage:
     try:
-    from intelligence.capital_allocator import CapitalAllocator
+    from src.intelligence.capital_allocator import CapitalAllocator
 except ImportError:
     from CapitalAllocator import CapitalAllocator
     
@@ -49,7 +49,7 @@ try:
         strategy_surface_mode,
     )
 except Exception:
-    from intelligence.strategy_surface_policy import (  # type: ignore
+    from src.intelligence.strategy_surface_policy import (  # type: ignore
         is_archived_strategy,
         is_feature_only_strategy,
         is_standalone_strategy,
@@ -166,7 +166,7 @@ class CapitalAllocator:
             try:
                 from src.intelligence.market_brain.weekly_fabric_reader import WeeklyFabricReader
             except Exception:
-                from intelligence.market_brain.weekly_fabric_reader import WeeklyFabricReader
+                from src.intelligence.market_brain.weekly_fabric_reader import WeeklyFabricReader
             reader = WeeklyFabricReader()
             insights = reader.get_capital_allocation_insights() or {}
             multipliers = insights.get('strategy_fitness_multipliers', {}) or {}
@@ -934,7 +934,7 @@ class CapitalAllocator:
             import os
             sys.path.append(os.path.dirname(os.path.dirname(__file__)))
             
-            from intelligence.simple_tailwind_engine import SimpleTailwindEngine
+            from src.intelligence.simple_tailwind_engine import SimpleTailwindEngine
             
             tailwind_engine = SimpleTailwindEngine()
             all_tailwinds = tailwind_engine.get_all_tailwinds()
@@ -1050,7 +1050,7 @@ class CapitalAllocator:
             import os
             sys.path.append(os.path.dirname(os.path.dirname(__file__)))
             
-            from intelligence.no_edge_detector import NoEdgeDetector
+            from src.intelligence.no_edge_detector import NoEdgeDetector
             
             detector = NoEdgeDetector()
             current_state = detector.detect_no_edge_state()
@@ -1061,18 +1061,19 @@ class CapitalAllocator:
             print(f"   📊 Exposure cap: {current_state['exposure_cap']:.0%}")
             if current_state['reasons']:
                 print(f"   📊 Reasons: {len(current_state['reasons'])}")
-            
+
+            current_state.setdefault('data_source', 'live_detector')
             return current_state
-            
+
         except Exception as e:
             print(f"   ⚠️ Error loading NO_EDGE state: {e}")
-            
+
             # Fallback: try to load directly from file
             try:
                 no_edge_file = 'data/intelligence/no_edge_state.parquet'
                 if os.path.exists(no_edge_file):
                     state_df = pd.read_parquet(no_edge_file)
-                    
+
                     if not state_df.empty:
                         latest = state_df.iloc[-1]
                         # Canonical schema
@@ -1083,7 +1084,8 @@ class CapitalAllocator:
                                 'state': latest.get('state', 'NORMAL'),
                                 'exposure_cap': float(latest.get('exposure_cap', 0.8)),
                                 'reasons': reasons,
-                                'date': latest.get('date')
+                                'date': latest.get('date'),
+                                'data_source': 'stale_file_fallback',
                             }
 
                         # Legacy schema compatibility
@@ -1099,18 +1101,30 @@ class CapitalAllocator:
                             'state': state_val,
                             'exposure_cap': 0.2 if state_val == 'NO_EDGE' else 0.8,
                             'reasons': [],
-                            'date': latest['date']
+                            'date': latest['date'],
+                            'data_source': 'legacy_file_fallback',
                         }
-                
+
             except Exception as e2:
                 print(f"   ⚠️ Fallback loading also failed: {e2}")
-            
-            # Ultimate fallback
+
+            # Ultimate fallback: both the live detector AND the on-disk
+            # fallback failed. Previously this returned {'state': 'NORMAL',
+            # 'exposure_cap': 0.8, ...} -- silently indistinguishable from a
+            # genuinely healthy read, so a crashed no-edge detector and a
+            # confirmed-healthy market produced the exact same "permit 80%
+            # exposure" signal. Since we have NO real signal here, default
+            # to the conservative NO_EDGE state (matching how
+            # no_edge_detector.py's own exception paths already fail toward
+            # NO_EDGE rather than NORMAL) and mark the source so callers can
+            # tell this apart from a real determination.
+            print("   🚨 Both live detector and file fallback failed -- defaulting to conservative NO_EDGE state")
             return {
-                'state': 'NORMAL',
-                'exposure_cap': 0.8,
-                'reasons': [],
-                'date': datetime.now().date()
+                'state': 'NO_EDGE',
+                'exposure_cap': 0.2,
+                'reasons': ['no_edge_state_unavailable_both_paths_failed'],
+                'date': datetime.now().date(),
+                'data_source': 'ultimate_fallback_degraded',
             }
 
     def load_governor_state(self):

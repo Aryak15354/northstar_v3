@@ -28,6 +28,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.cohesion.state_file_manager import StateFileManager
 from src.core.state import UnifiedState
+from src.data.price_access import canonical_price_path
 from src.ingestion import IngestionRegistry
 from src.sentiment.sentiment_regime import SentimentRegimeClassifier
 from src.sentiment.sentiment_state import compute_sentiment_state
@@ -89,10 +90,14 @@ def slugify(text: str) -> str:
 
 def check_market_data_freshness(max_age_hours: float = 4.0) -> dict[str, Any]:
     """Abort the intelligence stack if all canonical market-refresh artifacts are stale."""
+    try:
+        prices_path = canonical_price_path(project_root=PROJECT_ROOT)
+    except FileNotFoundError:
+        prices_path = PROJECT_ROOT / "data" / "processed" / "prices.parquet"
     candidate_paths = [
         PROJECT_ROOT / "data" / "processed" / "market_state.parquet",
         PROJECT_ROOT / "data" / "options" / "live" / "market_data_latest.json",
-        PROJECT_ROOT / "data" / "processed" / "prices.parquet",
+        prices_path,
     ]
     existing_paths = [path for path in candidate_paths if path.exists()]
     if not existing_paths:
@@ -1415,6 +1420,7 @@ def run_command_stage(
     run_dir: Path,
     dry_run: bool,
     timeout_seconds: Optional[int] = None,
+    env_overrides: Optional[dict[str, str]] = None,
 ) -> StageResult:
     started_at = datetime.now()
     log_path = run_dir / "logs" / f"{slugify(name)}.log"
@@ -1440,13 +1446,16 @@ def run_command_stage(
         )
 
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    env = {**os.environ, "PYTHONUNBUFFERED": os.environ.get("PYTHONUNBUFFERED", "1")}
+    if env_overrides:
+        env.update({str(key): str(value) for key, value in env_overrides.items()})
     with open(log_path, "w", encoding="utf-8") as handle:
         handle.write(f"$ {command_text}\n\n")
         try:
             completed = subprocess.run(
                 command,
                 cwd=PROJECT_ROOT,
-                env={**os.environ, "PYTHONUNBUFFERED": os.environ.get("PYTHONUNBUFFERED", "1")},
+                env=env,
                 stdout=handle,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -1530,6 +1539,7 @@ def stage_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
             "command": [sys.executable, "scripts/force_market_update.py"],
             "required": True,
             "timeout_seconds": 7200,
+            "env": {"NORTHSTAR_FAST_MARKET_REFRESH": "1"} if args.quick else {},
         }
     ]
 
@@ -1675,6 +1685,16 @@ def stage_plan(args: argparse.Namespace) -> list[dict[str, Any]]:
     )
 
     if ci_gate_quick:
+        if args.data_only:
+            stages.append(
+                {
+                    "type": "function",
+                    "name": "Canonical State Sync",
+                    "description": "Push refreshed sentiment, alternative, P&L, health, and governor state into UnifiedState",
+                    "required": True,
+                    "func": lambda: sync_canonical_state(args, CURRENT_RUN_DIR),
+                }
+            )
         return stages
 
     if not ci_gate_quick:
@@ -1998,6 +2018,7 @@ def main() -> int:
                 run_dir=CURRENT_RUN_DIR,
                 dry_run=args.dry_run,
                 timeout_seconds=stage.get("timeout_seconds"),
+                env_overrides=stage.get("env"),
             )
             stage_results.append(result)
             if result.status == "FAIL" and result.required:

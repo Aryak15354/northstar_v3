@@ -19,7 +19,7 @@ Key Features:
 
 Usage:
     try:
-    from intelligence.signal_health_monitor import SignalHealthMonitor
+    from src.intelligence.signal_health_monitor import SignalHealthMonitor
 except ImportError:
     from SignalHealthMonitor import SignalHealthMonitor
     
@@ -45,7 +45,7 @@ import sys
 try:
     from src.volatility.regime_detector import VolatilityRegime, RegimeState
 except ImportError:
-    from volatility.regime_detector import VolatilityRegime, RegimeState
+    from src.volatility.regime_detector import VolatilityRegime, RegimeState
 
 # Legacy aliases for compatibility
 MarketRegime = VolatilityRegime
@@ -753,7 +753,7 @@ def main():
     
     # Mock specialist signals for testing
     try:
-        from intelligence.regime_aware_specialists import SpecialistSignal
+        from src.intelligence.regime_aware_specialists import SpecialistSignal
     except ImportError:
         from SpecialistSignal import SpecialistSignal
     

@@ -1,6 +1,14 @@
 """
 Factor Registry — Single entry point for all factor signal computation.
 
+STATUS (I.10): currently DORMANT. It is only constructed when
+``use_academic_factors`` (or ``factors.enabled``) is True, which is False in both
+Kaggle build configs. The ACTIVE producer of piotroski_fscore / bab_signal /
+amihud_illiquidity / max_ret_20d / earnings_quality_ratio (and their cs_z/cs_rank
+variants) is ``src/factors/gap9_academic_factors.py``. Two parallel
+implementations of the same signals are a drift risk — a decision on whether to
+retire this registry or promote it over Gap9 is pending (do not activate both).
+
 The registry:
 1. Knows about all five factor classes
 2. Instantiates them with the correct registry and config

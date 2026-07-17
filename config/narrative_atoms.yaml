@@ -1,0 +1,99 @@
+macro_forces:
+  fii_outflows:
+    condition: FII_flows < -1000
+    historical_precedents:
+    - 2022_Q1
+    - 2018_Q4
+    - 2013_Q2
+    implications:
+    - market_pressure
+    - currency_weakness
+    narrative: Foreign capital retreat
+  inflation_rising:
+    condition: CPI_delta > 0.002
+    historical_precedents:
+    - 2018_Q3
+    - 2022_Q1
+    - 2008_Q1
+    implications:
+    - late_cycle_risk
+    - monetary_tightening_risk
+    narrative: Rising inflation pressures
+  liquidity_tightening:
+    condition: RBI_liquidity_delta < -0.05
+    historical_precedents:
+    - 2018_Q4
+    - 2013_Q2
+    implications:
+    - credit_stress
+    - momentum_weakness
+    narrative: Tightening liquidity conditions
+  yield_curve_inversion:
+    condition: 10Y_2Y_spread < 0
+    historical_precedents:
+    - 2019_Q3
+    - 2006_Q4
+    implications:
+    - recession_risk
+    - defensive_positioning
+    narrative: Yield curve inversion signals
+portfolio_actions:
+  defensive_rotation:
+    condition: cash_allocation > 0.15
+    justification: Historical precedent shows defensive outperformance in similar
+      conditions
+    narrative: Rotated capital to defensive positioning
+  momentum_reduction:
+    condition: momentum_allocation_delta < -0.1
+    justification: Momentum strategies typically underperform in current regime
+    narrative: Reduced momentum exposure
+  value_increase:
+    condition: value_allocation_delta > 0.05
+    justification: Value strategies historically outperform in transition periods
+    narrative: Increased value allocation
+regime_signals:
+  crisis_regime:
+    action_required: true
+    condition: regime_name in ["Crisis_Liquidity_Shock", "Crisis_Structural"]
+    implications:
+    - capital_preservation
+    - quality_focus
+    narrative: Crisis regime conditions
+  late_cycle_emergence:
+    condition: regime_name == "Late_Expansion_Euphoria"
+    historical_precedents:
+    - 2007_Q4
+    - 2000_Q1
+    implications:
+    - momentum_peak
+    - value_opportunity
+    narrative: Late-cycle conditions emerging
+  regime_instability:
+    action_required: true
+    condition: regime_stability < 0.3
+    implications:
+    - strategy_rotation
+    - defensive_positioning
+    narrative: Regime transition risk rising
+strategy_signals:
+  momentum_weakness:
+    condition: momentum_sharpe < 0.5
+    historical_context: Typical in late-cycle and crisis regimes
+    implications:
+    - rotation_to_value
+    - defensive_tilt
+    narrative: Momentum strategies losing effectiveness
+  quality_defense:
+    condition: quality_max_drawdown < market_drawdown * 0.7
+    historical_context: Critical during market stress
+    implications:
+    - defensive_positioning
+    - risk_management
+    narrative: Quality strategies providing downside protection
+  value_opportunity:
+    condition: value_sharpe > momentum_sharpe
+    historical_context: Often marks regime transitions
+    implications:
+    - contrarian_opportunity
+    - cycle_turning
+    narrative: Value strategies outperforming momentum

@@ -88,14 +88,46 @@ def main() -> int:
         PROJECT_ROOT / "data/raw/vendors/screener",
         PROJECT_ROOT / "data/raw/shared/research_inputs/week_2026_03_29",
         PROJECT_ROOT / "data/raw/shared/market_data/cross_asset_manifest.json",
+        # sentiment: absent from earlier bundles, so every Kaggle build logged
+        # "Sentiment features enabled but file not found" and shipped an empty
+        # sent_* family (would have killed F-07; caught in the v13 log 2026-07-17).
+        PROJECT_ROOT / "data/processed/sentiment",
+        # marker-attested post-N1 valuation cache: computing valuations in-build
+        # costs ~116ms/ticker-date and cannot fit Kaggle's 12h cap (three dead
+        # runs 2026-07-16/17). precompute_valuation_cache.py builds both files.
+        PROJECT_ROOT / "data/processed/valuation_scores.parquet",
+        PROJECT_ROOT / "data/processed/valuation_scores.provenance.json",
         PROJECT_ROOT / "data/processed/alternative/earnings_dates_all.csv",
+        # macro_cleaned feeds the MacroLoader DBIE merge in feature_factory; without
+        # it every Kaggle build logs "RBI DBIE feature merge skipped" (seen 2026-07-16).
+        PROJECT_ROOT / "data/macro/cleaned/macro_cleaned.parquet",
+        PROJECT_ROOT / "data/processed/macro/rbi_macro_weekly.parquet",
+        PROJECT_ROOT / "data/processed/macro/rbi_macro_weekly_manifest.json",
+        PROJECT_ROOT / "data/processed/sector_financials/credit_quarterly.parquet",
+        PROJECT_ROOT / "data/processed/sector_financials/credit_quarterly.csv",
+        PROJECT_ROOT / "data/processed/screener_fundamentals_quarterly.csv",
         PROJECT_ROOT / "data/processed/intelligent_market_state.parquet",
         PROJECT_ROOT / "data/processed/market_state.parquet",
         PROJECT_ROOT / "data/processed/regime_labels.parquet",
         PROJECT_ROOT / "data/processed/sector_mapping.csv",
         PROJECT_ROOT / "data/processed/valuation.parquet",
         PROJECT_ROOT / "data/processed/valuation_posterior.parquet",
-        PROJECT_ROOT / "data/processed/valuation_scores.parquet",
+        # 2026-07-17 static input audit: every path the factory/build resolves
+        # must ship, or the family silently degrades (the sentiment/macro_cleaned
+        # incident class). These nine were resolvable locally but never bundled.
+        PROJECT_ROOT / "data/integrity/data_release_calendar.parquet",
+        PROJECT_ROOT / "data/processed/fundamentals.parquet",
+        PROJECT_ROOT / "data/processed/india_vix.parquet",
+        # NOT data/processed/macro/macro_regime_features.parquet: it is a stale
+        # MONTHLY (87-row) copy of the canonical WEEKLY (383-row) pack, same
+        # schema. Shipping it made the notebook's conditional mirror skip, and
+        # the builder loaded 87 rows -> required_macro_artifact_too_small (smoke
+        # kernel, 2026-07-17). The notebook now mirrors canonical over it always.
+        PROJECT_ROOT / "data/processed/nifty.parquet",
+        PROJECT_ROOT / "data/processed/prices.parquet",
+        PROJECT_ROOT / "data/reference/et500_pit_membership.csv",
+        PROJECT_ROOT / "data/universe/delisting_database.parquet",
+        PROJECT_ROOT / "data/universe/liquidity_membership.parquet",
         PROJECT_ROOT / "data/results/research/state/weekly_data_stack_verification.json",
         PROJECT_ROOT / "config",
         PROJECT_ROOT / "universe/nifty500.csv",

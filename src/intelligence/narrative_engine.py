@@ -27,7 +27,7 @@ This is how BlackRock, Bridgewater, AQR actually think about markets.
 
 Usage:
     try:
-    from intelligence.narrative_engine import NarrativeEngine
+    from src.intelligence.narrative_engine import NarrativeEngine
 except ImportError:
     from NarrativeEngine import NarrativeEngine
     

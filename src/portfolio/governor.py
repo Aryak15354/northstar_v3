@@ -404,8 +404,11 @@ class PortfolioGovernor:
         """Apply drawdown-based equity reduction."""
         cfg = self.modifiers.get('drawdown_reduction', {})
         trigger = cfg.get('trigger_drawdown_pct', -8.0)
-        reduction_per_pct = cfg.get('equity_reduction_per_pct', 0.03)
-        max_reduction = cfg.get('max_equity_reduction', 0.25)
+        # Config key is equity_reduction_per_drawdown_pct (config/portfolio_governor_config.yaml);
+        # this previously read a nonexistent equity_reduction_per_pct key, silently falling
+        # back to a hardcoded default 2x the tuned config value (0.03 vs 0.015) with no warning.
+        reduction_per_pct = cfg.get('equity_reduction_per_drawdown_pct', 0.015)
+        max_reduction = cfg.get('max_equity_reduction', 0.20)
         
         if current_drawdown_pct >= trigger:
             return equity_frac, cash_frac, []
@@ -424,8 +427,13 @@ class PortfolioGovernor:
         """Apply recovery-based equity restoration."""
         cfg = self.modifiers.get('recovery_restoration', {})
         activation = cfg.get('activation_drawdown_pct', -3.0)
-        restoration_rate = cfg.get('restoration_rate_per_day', 0.01)
-        max_restoration = cfg.get('max_restoration_per_day', 0.02)
+        # Config keys are equity_restore_per_day / max_equity_restoration
+        # (config/portfolio_governor_config.yaml); this previously read
+        # nonexistent restoration_rate_per_day / max_restoration_per_day keys,
+        # silently falling back to hardcoded defaults 2x / 7.5x off from the
+        # tuned config values with no warning.
+        restoration_rate = cfg.get('equity_restore_per_day', 0.02)
+        max_restoration = cfg.get('max_equity_restoration', 0.15)
         
         if current_drawdown_pct >= activation:
             # In recovery zone
@@ -482,8 +490,12 @@ class PortfolioGovernor:
         """Apply NAV size-based cash protection."""
         cfg = self.modifiers.get('nav_size_protection', {})
         trigger_multiple = cfg.get('trigger_nav_multiple', 1.20)
-        cash_per_multiple = cfg.get('cash_per_multiple', 0.02)
-        max_additional_cash = cfg.get('max_additional_cash', 0.10)
+        # Config keys are equity_reduction_per_multiple / max_equity_reduction
+        # (config/portfolio_governor_config.yaml); this previously read
+        # nonexistent cash_per_multiple / max_additional_cash keys, silently
+        # falling back to hardcoded defaults with no warning.
+        cash_per_multiple = cfg.get('equity_reduction_per_multiple', 0.05)
+        max_additional_cash = cfg.get('max_equity_reduction', 0.15)
         
         starting_nav = self.starting_capital_inr
         nav_multiple = current_nav / starting_nav
@@ -686,8 +698,13 @@ class PortfolioGovernor:
             try:
                 existing = pd.read_parquet(self.allocation_history_file)
                 history_df = pd.concat([existing, history_df], ignore_index=True)
-            except Exception:
-                pass
+            except Exception as exc:
+                # Losing prior allocation history silently corrupts the audit
+                # trail — warn loudly (today's rows still proceed).
+                import logging
+                logging.getLogger(__name__).warning(
+                    "allocation history unreadable (%s); starting fresh from today's rows", exc
+                )
         
         self.allocation_history_file.parent.mkdir(parents=True, exist_ok=True)
         history_df.to_parquet(self.allocation_history_file, index=False)

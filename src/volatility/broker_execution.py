@@ -181,11 +181,12 @@ class BrokerExecutionInterface:
         order_type: OrderType = OrderType.LIMIT,
         price: Optional[float] = None,
         product_type: ProductType = ProductType.CARRYFORWARD,
-        trigger_price: Optional[float] = None
+        trigger_price: Optional[float] = None,
+        close_only: bool = False,
     ) -> Order:
         """
         Place order with broker
-        
+
         Args:
             instrument_key: Upstox instrument key (e.g., "NSE_FO|12345")
             quantity: Order quantity
@@ -194,10 +195,19 @@ class BrokerExecutionInterface:
             price: Limit price (required for LIMIT orders)
             product_type: Product type (INTRADAY, DELIVERY, CARRYFORWARD)
             trigger_price: Trigger price (for stop loss orders)
-        
+            close_only: True if this order only exits an existing position
+                (still permitted during a trading halt).
+
         Returns:
             Order object with order_id
         """
+        # Hard trading-halt gate. This is the real-broker order path, so it
+        # blocks by default during a halt (manual emergency halt or a CRITICAL
+        # reconciliation failure) unless the caller explicitly flags the order
+        # as position-closing. Raises TradingHaltedError.
+        from src.execution.trading_halt import assert_not_halted
+        assert_not_halted(close_only=close_only, context="broker_execution.place_order")
+
         # Validate order
         if order_type == OrderType.LIMIT and price is None:
             raise ValueError("Price required for LIMIT orders")

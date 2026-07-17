@@ -467,8 +467,11 @@ class IntegratedOptionsPaperEngine:
         return p if p.is_absolute() else (PROJECT_ROOT / p)
 
     def _build_prs_context(self) -> Dict[str, str]:
+        from src.data.price_access import canonical_price_path
         config_path = PROJECT_ROOT / "config/options_trading.yaml"
-        prices_path = PROJECT_ROOT / "data/processed/prices.parquet"
+        # Provenance/cache-invalidation hash input: use the canonical price
+        # contract so the data-revision hash tracks the real price source.
+        prices_path = canonical_price_path()
         market_state_path = PROJECT_ROOT / "data/processed/market_state.parquet"
 
         config_hash = ""

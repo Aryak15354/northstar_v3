@@ -23,9 +23,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from execution.enhanced_transaction_cost_model import EnhancedTransactionCostModel
-from runtime import DecisionMode, PortfolioRuntimeService, ProposalOrigin, TradeProposal, build_certification_snapshot
-from runtime.hash_utils import canonical_hash, file_sha256
+from src.execution.enhanced_transaction_cost_model import EnhancedTransactionCostModel
+from src.data.price_access import canonical_price_path, read_prices_legacy
+from src.runtime import DecisionMode, PortfolioRuntimeService, ProposalOrigin, TradeProposal, build_certification_snapshot
+from src.runtime.hash_utils import canonical_hash, file_sha256
 
 class ShadowFundEngine:
     """
@@ -54,10 +55,13 @@ class ShadowFundEngine:
             'cash_buffer': 0.05             # 5% cash buffer
         }
         
-        # File paths
+        # File paths. Prices point at the canonical, point-in-time-safe
+        # contract (equity_prices_daily) rather than the stale legacy
+        # data/processed/prices.parquet -- this is the shadow-fund execution
+        # path, so it must not size positions off missing/stale tickers.
         self.paths = {
             'portfolio_weights': 'data/processed/portfolio_weights.parquet',
-            'prices': 'data/processed/prices.parquet',
+            'prices': str(canonical_price_path()),
             'shadow_positions': 'data/execution/shadow_positions.parquet',
             'shadow_trades': 'data/execution/shadow_trades.parquet',
             'shadow_pnl': 'data/execution/shadow_pnl.parquet',
@@ -221,13 +225,15 @@ class ShadowFundEngine:
         if not os.path.exists(self.paths['prices']):
             print("   ❌ No price data found")
             return pd.DataFrame()
-        
-        prices_df = pd.read_parquet(self.paths['prices'])
-        
+
+        # read_prices_legacy returns the canonical prices in the legacy
+        # Date/ticker/Close column shape this method expects.
+        prices_df = read_prices_legacy()
+
         if prices_df.empty:
             print("   ❌ Empty price data")
             return pd.DataFrame()
-        
+
         # Get latest prices
         latest_prices = prices_df.sort_values('Date').groupby('ticker').tail(1)
         latest_prices = latest_prices.set_index('ticker')['Close']

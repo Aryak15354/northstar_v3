@@ -73,8 +73,19 @@ ANCHOR_FACTOR_ALIASES = {
     "eps_revision_accel": ["eps_revision_accel", "combined_revision_score_cs_z"],
     "rev_sue_decay": ["rev_sue_decay", "rev_sue_decay_cs_z", "rev_sue_decay_cs_rank"],
     "agreement_score": ["agreement_score", "agreement_score_cs_z", "agreement_score_cs_rank"],
-    "earnings_quality_ratio": ["earnings_quality_ratio", "earnings_quality_ratio_cs_z", "earnings_quality_ratio_cs_rank"],
-    "accruals_ratio": ["accruals_ratio", "accruals_ratio_cs_z", "accruals_ratio_cs_rank"],
+    "earnings_quality_ratio": [
+        "earnings_quality_ratio",
+        "earnings_quality_ratio_cs_z",
+        "earnings_quality_ratio_cs_rank",
+        "val_earnings_quality_score_zscore",
+        "val_quality_composite_zscore",
+    ],
+    "accruals_ratio": [
+        "accruals_ratio",
+        "accruals_ratio_cs_z",
+        "accruals_ratio_cs_rank",
+        "val_accruals_ratio_zscore",
+    ],
 }
 COMMODITY_SIGNALS = [
     "inrusd_4w_return",

@@ -149,6 +149,10 @@ def test_valuation_feature_block_recovers_from_corrupt_cache(tmp_path, monkeypat
 
     tickers = ["AAA.NS", "BBB.NS"]
     df = block.compute(datetime(2024, 6, 15), tickers, {"AAA.NS": 100.0, "BBB.NS": 110.0}, use_cache=True)
+    # The cache now flushes to disk in batches (I.1); force a flush to assert the
+    # persisted contents. Quarantine of the corrupt file happens on read,
+    # independent of flushing.
+    block.flush_cache()
 
     assert list(df.index) == tickers
     assert cache_path.exists()
@@ -156,6 +160,31 @@ def test_valuation_feature_block_recovers_from_corrupt_cache(tmp_path, monkeypat
     assert not repaired.empty
     quarantined = list(tmp_path.glob("valuation_scores.corrupt_*.parquet"))
     assert quarantined
+
+
+def test_valuation_cache_partial_ticker_reuse(tmp_path, monkeypatch):
+    """I.2: a second call with an overlapping + new ticker set must reuse the
+    cached tickers and only recompute the genuinely-new one — not the whole set.
+    """
+    monkeypatch.setattr(ValuationFeatureBlock, "CACHE_PATH", tmp_path / "valuation_scores.parquet")
+    block = ValuationFeatureBlock({})
+    computed_calls: list[str] = []
+
+    def fake_compute_ticker(self, ticker, as_of_date, current_price):
+        computed_calls.append(str(ticker))
+        return {name: 1.0 for name in self.FEATURE_NAMES}
+
+    monkeypatch.setattr(ValuationFeatureBlock, "_compute_ticker", fake_compute_ticker)
+
+    when = datetime(2024, 6, 15)
+    block.compute(when, ["A.NS", "B.NS"], {"A.NS": 100.0, "B.NS": 100.0}, use_cache=True)
+    assert sorted(computed_calls) == ["A.NS", "B.NS"]
+
+    computed_calls.clear()
+    df = block.compute(when, ["A.NS", "B.NS", "C.NS"], {"A.NS": 100.0, "B.NS": 100.0, "C.NS": 100.0}, use_cache=True)
+    # Only the new ticker is recomputed; A and B are served from cache.
+    assert computed_calls == ["C.NS"]
+    assert list(df.index) == ["A.NS", "B.NS", "C.NS"]
 
 
 def test_valuation_feature_block_negative_margin_of_safety(monkeypatch):

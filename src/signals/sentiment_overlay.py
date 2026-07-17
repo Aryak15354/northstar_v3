@@ -275,11 +275,16 @@ class SentimentOverlay:
         reduce_mask = pd.to_numeric(out["sentiment_polarity"], errors="coerce") < -0.2
         out.loc[reduce_mask, "sentiment_multiplier"] = 0.6
 
+        # Strong negative sentiment is a heavy penalty, NOT annihilation: a
+        # x0.0 multiplier deleted names from the book on the strength of a
+        # single (possibly wrong or stale) news read — 7 names were hard-zeroed
+        # in the 2026-07-06 audit. Floor at 0.3 so sentiment can never be the
+        # sole reason a name's score becomes exactly zero.
         zero_mask = (
             (pd.to_numeric(out["sentiment_polarity"], errors="coerce") < -0.5)
             & (pd.to_numeric(out["sentiment_conviction"], errors="coerce") > 0.7)
         )
-        out.loc[zero_mask, "sentiment_multiplier"] = 0.0
+        out.loc[zero_mask, "sentiment_multiplier"] = 0.3
         out.loc[zero_mask, "sentiment_override"] = True
         out.loc[zero_mask, "override_reason"] = "strong_negative_sentiment"
 

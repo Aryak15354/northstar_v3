@@ -718,6 +718,24 @@ class CanonicalDatasetBuilder:
             .drop_duplicates(["ticker", "date"], keep="first")
             .drop(columns=["source_priority"], errors="ignore")
         )
+        # Enforce the trading-clean invariant at the canonical layer too. The
+        # clean processed panel wins on shared (ticker, date), but the stale
+        # existing_canonical still contributes fabricated NSE-holiday/weekend rows
+        # on dates the clean panel no longer has (only the corrupt mega-caps ever
+        # had them), which would otherwise survive the merge. Drop them here so
+        # equity_prices_daily can never re-inject the corruption fixed upstream.
+        # See src/data/price_sanitizer + scripts/ci/check_price_integrity.
+        if not work.empty:
+            from src.processing.price_processor import drop_non_session_rows, trim_frozen_runs
+            # Trim forward-filled frozen runs (post-delisting fills from the
+            # existing-canonical / backfill sources; active names move daily and
+            # are untouched), then drop fabricated non-session rows.
+            work, n_frozen = trim_frozen_runs(work, date_col="date", ticker_col="ticker")
+            if n_frozen:
+                self._warn(f"prices_daily: trimmed {n_frozen} forward-filled frozen rows")
+            work, n_non_session = drop_non_session_rows(work, date_col="date", ticker_col="ticker")
+            if n_non_session:
+                self._warn(f"prices_daily: dropped {n_non_session} fabricated non-session rows")
         self._write_parquet("prices_daily", work.reset_index(drop=True), "prices/equity_prices_daily.parquet")
         return work
 
@@ -1302,8 +1320,80 @@ class CanonicalDatasetBuilder:
             df["availability_date"] = _as_dates(df.get("availability_date")).dt.normalize()
             if "ticker" in df.columns:
                 df["ticker"] = df["ticker"].astype(str)
+            df = self._merge_gst_growth(df)
+            df = self._weekly_macro_regime(df)
         self._write_parquet("macro_regime_features", df, "macro/macro_regime_features.parquet")
         return df
+
+    @staticmethod
+    def _merge_gst_growth(df: pd.DataFrame) -> pd.DataFrame:
+        """Backfill the gst_* columns from the real monthly GST series.
+
+        `build_regime_labels.py` populated macro_regime_features' gst_* columns
+        from the wrong file (`gst_ewaybill_monthly.parquet` — 6 rows, 2026-only,
+        no growth columns), so those columns came out ~0% populated even though
+        the true series (`data/processed/gst_monthly.parquet`, 165 months back to
+        2012) was sitting right there with yoy growth at 93%. Rather than re-run
+        the whole regime pipeline, we merge the good series here, PIT-safely:
+        each macro row takes the latest GST reading already *published*
+        (availability_date = collection month-end + ~1 month) as of that date."""
+        gst_path = REPO_ROOT / "data/processed/gst_monthly.parquet"
+        if not gst_path.exists():
+            return df
+        g = pd.read_parquet(gst_path)
+        if g.empty or "gst_yoy_growth" not in g.columns:
+            return df
+        g = g.copy()
+        avail = _as_dates(g.get("availability_date"))
+        gdate = _as_dates(g.get("date"))
+        avail = avail.fillna(gdate + pd.offsets.MonthEnd(1)).dt.normalize()
+        yoy = pd.to_numeric(g.get("gst_yoy_growth"), errors="coerce")
+        src = pd.DataFrame({
+            "availability_date": avail,
+            # gst_yoy_growth is the clean same-month YoY %; the raw collection
+            # level alternates (quarterly cumulation artifact) so value-growth is
+            # mapped to the same clean YoY rather than recomputed from the level.
+            "gst_yoy_growth": yoy,
+            "gst_value_growth": yoy,
+            "gst_mom_growth": pd.to_numeric(g.get("mom_growth"), errors="coerce"),
+            "gst_3m_trend": pd.to_numeric(g.get("gst_3m_trend"), errors="coerce"),
+        }).dropna(subset=["availability_date"]).sort_values("availability_date")
+        gst_cols = ["gst_yoy_growth", "gst_value_growth", "gst_mom_growth", "gst_3m_trend"]
+        df = df.drop(columns=[c for c in gst_cols if c in df.columns]).sort_values("date")
+        merged = pd.merge_asof(
+            df, src, left_on="date", right_on="availability_date",
+            direction="backward", suffixes=("", "_gst"))
+        if "availability_date_gst" in merged.columns:
+            merged = merged.drop(columns=["availability_date_gst"])
+        return merged.reset_index(drop=True)
+
+    @staticmethod
+    def _weekly_macro_regime(df: pd.DataFrame) -> pd.DataFrame:
+        """Resample the MARKET macro-regime features from month-end to the weekly
+        Friday grid the equity panel uses. The source is monthly (~87 rows), but
+        the research panel is weekly and load_macro requires a non-trivial
+        artifact; a monthly series as-of joined to weekly forward-fills each
+        reading until the next month is *released*. Alignment is on
+        availability_date (month-end + publication lag), so no look-ahead: a
+        Friday only sees a macro reading already published by then. Idempotent —
+        if the input is already ~weekly it is returned unchanged."""
+        gaps = df.sort_values("date")["date"].diff().dt.days.dropna()
+        if gaps.empty or gaps.median() <= 10:
+            return df  # already weekly/denser
+        feat_cols = [c for c in df.columns
+                     if c not in ("date", "availability_date", "ticker")]
+        src = df.sort_values("availability_date")
+        grid = pd.date_range(df["date"].min(), df["date"].max(), freq="W-FRI")
+        base = pd.DataFrame({"date": grid})
+        merged = pd.merge_asof(base, src.rename(columns={"date": "source_date"}),
+                               left_on="date", right_on="availability_date",
+                               direction="backward")
+        merged = merged.dropna(subset=["source_date"]).copy()
+        merged["ticker"] = "MARKET"
+        # availability_date on the weekly grid is the grid Friday itself (the data
+        # was already released as of source availability_date <= this Friday).
+        merged["availability_date"] = merged["date"]
+        return merged[["date", "availability_date", "ticker"] + feat_cols].reset_index(drop=True)
 
     def build_cea_power_daily(self) -> pd.DataFrame:
         processed_path = REPO_ROOT / "data/processed/macro/cea_power_daily.parquet"

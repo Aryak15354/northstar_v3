@@ -307,6 +307,12 @@ class RegimeEngine:
         return out
 
     def _expanding_standardize(self, frame: pd.DataFrame) -> pd.DataFrame:
+        # N13: this ends with ffill().fillna(0.0), and _optional_series assumes a
+        # daily/monthly row cadence for its pct_change(365)/pct_change(12)
+        # derivations. If the macro input is not on a regular calendar grid those
+        # period offsets are misaligned — verify input cadence (or resample to a
+        # calendar grid) before trusting the macro_regime inputs. This affects
+        # macro_regime only, not the shipped plan-regime labels.
         if frame.empty:
             return frame
         out = frame.copy()

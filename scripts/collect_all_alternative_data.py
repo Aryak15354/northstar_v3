@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -72,6 +74,46 @@ def _file_mtime(stage_name: str) -> float | None:
         return float(p.stat().st_mtime)
     except Exception:
         return None
+
+
+RUN_LEDGER_PATH = Path("data/processed/alternative/collection_run_ledger.json")
+# A stage that lands zero new rows for this many distinct calendar days is treated
+# as DEGRADED_PERSISTENT — a scraper that quietly stopped producing data, which is
+# exactly what the "SUCCESS despite frozen data" pattern hides.
+STALE_DAYS_THRESHOLD = 3
+
+
+def _load_ledger() -> list[dict]:
+    if not RUN_LEDGER_PATH.exists():
+        return []
+    try:
+        data = json.loads(RUN_LEDGER_PATH.read_text())
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def _days_since_last_delta(ledger: list[dict], stage: str) -> int | None:
+    """Number of distinct past run-days (most recent backwards) with delta<=0 for stage."""
+    days: set[str] = set()
+    for run in reversed(ledger):
+        stages = run.get("stages", {})
+        info = stages.get(stage)
+        if not info:
+            continue
+        if int(info.get("delta_rows", 0)) > 0:
+            break
+        day = str(run.get("run_date", ""))[:10]
+        if day:
+            days.add(day)
+    return len(days) if days else 0
+
+
+def _write_ledger(ledger: list[dict], run_record: dict, keep: int = 60) -> None:
+    ledger.append(run_record)
+    ledger = ledger[-keep:]
+    RUN_LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    RUN_LEDGER_PATH.write_text(json.dumps(ledger, indent=2, default=str))
 
 
 def _run(name: str, script: str, args: argparse.Namespace) -> tuple[int, float]:
@@ -199,11 +241,39 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def _finalize_ledger(ledger: list[dict], stage_records: dict[str, dict]) -> str:
+    """Compute the global run status and append the run to the ledger."""
+    statuses = {s["status"] for s in stage_records.values()}
+    if "FAIL" in statuses:
+        global_status = "FAIL"
+    elif "DEGRADED_PERSISTENT" in statuses:
+        global_status = "DEGRADED"
+    elif statuses and statuses <= {"NO_DELTA"}:
+        # Nothing new landed in ANY stage this run — suspicious but not yet persistent.
+        global_status = "DEGRADED"
+    else:
+        global_status = "SUCCESS"
+    run_record = {
+        "run_date": datetime.now().isoformat(),
+        "global_status": global_status,
+        "stages": stage_records,
+    }
+    _write_ledger(ledger, run_record)
+    print(f"[collect_alternative] run_ledger_status={global_status} -> {RUN_LEDGER_PATH}")
+    degraded = [n for n, s in stage_records.items() if s["status"] in {"DEGRADED_PERSISTENT", "NO_DELTA"}]
+    if degraded:
+        print(f"[collect_alternative] WARNING degraded_stages={degraded}")
+    return global_status
+
+
 def main() -> int:
     args = parse_args()
     stages = list(SCRIPTS)
     if bool(args.include_announcements):
         print("[collect_alternative] NSE announcements are already included by default; continuing.")
+
+    ledger = _load_ledger()
+    stage_records: dict[str, dict] = {}
 
     with Progress(total=len(stages), desc="collect_alternative", unit="stage") as p:
         for name, script in stages:
@@ -229,6 +299,27 @@ def main() -> int:
             else:
                 status = "NO_DELTA"
                 detail = "scraper succeeded but no new processed rows landed"
+
+            # Cross-run staleness: if this stage has landed 0 new rows across
+            # STALE_DAYS_THRESHOLD distinct days (this run included), it is not
+            # healthy regardless of a clean exit code.
+            zero_days = _days_since_last_delta(ledger, name)
+            if delta <= 0:
+                zero_days += 1
+            if delta <= 0 and zero_days >= STALE_DAYS_THRESHOLD:
+                status = "DEGRADED_PERSISTENT"
+                detail = f"0 new rows across {zero_days} distinct days (>= {STALE_DAYS_THRESHOLD})"
+
+            stage_records[name] = {
+                "rows_before": before_rows,
+                "rows_after": after_rows,
+                "delta_rows": delta,
+                "rc": rc,
+                "elapsed_seconds": round(elapsed, 1),
+                "status": status,
+                "detail": detail,
+                "zero_delta_days": zero_days if delta <= 0 else 0,
+            }
             print(
                 f"[{name}] ingest_postcheck: rows_after={after_rows}, "
                 f"delta_rows={delta}, stage_seconds={elapsed:.1f}, rc={rc}, "
@@ -237,7 +328,10 @@ def main() -> int:
             p.update(1)
             if rc != 0:
                 print(f"[{name}] failed with rc={rc}")
+                _finalize_ledger(ledger, stage_records)
                 return rc
+
+    _finalize_ledger(ledger, stage_records)
 
     print("[alt_canonicalizer] normalizing raw downloads into canonical processed files")
     processor = subprocess.run([sys.executable, "scripts/canonicalize_alternative_data.py"], text=True)

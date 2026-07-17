@@ -330,15 +330,30 @@ class ConfigLoader:
             **(config_dict.get("alpha_os") or {}),
         }
 
+        eligibility_dict = {
+            **config_dict['eligibility'],
+            'max_bid_ask_spread_pct': config_dict['eligibility']['max_bid_ask_spread_pct'] / 100.0,
+        }
+        survival_rules_dict = {
+            **config_dict['survival_rules'],
+            'weekly_loss_limit_pct': config_dict['survival_rules']['weekly_loss_limit_pct'] / 100.0,
+            'trauma_loss_threshold_pct': config_dict['survival_rules']['trauma_loss_threshold_pct'] / 100.0,
+        }
+        exit_rules_dict = {
+            **config_dict['exit_rules'],
+            'profit_target_pct': config_dict['exit_rules']['profit_target_pct'] / 100.0,
+            'stop_loss_pct': config_dict['exit_rules']['stop_loss_pct'] / 100.0,
+        }
+
         return OptionsConfig(
             capital=CapitalConfig(**config_dict['capital']),
             upstox=UpstoxConfig(**config_dict['upstox']),
             strategies=StrategyConfig(**config_dict['strategies']),
             regime_detection=RegimeConfig(**config_dict['regime_detection']),
-            eligibility=EligibilityConfig(**config_dict['eligibility']),
+            eligibility=EligibilityConfig(**eligibility_dict),
             capital_scaling=CapitalScalingConfig(**config_dict['capital_scaling']),
-            survival_rules=SurvivalRulesConfig(**config_dict['survival_rules']),
-            exit_rules=ExitRulesConfig(**config_dict['exit_rules']),
+            survival_rules=SurvivalRulesConfig(**survival_rules_dict),
+            exit_rules=ExitRulesConfig(**exit_rules_dict),
             greek_safety_bands=GreekSafetyBandsConfig(**config_dict['greek_safety_bands']),
             costs=CostsConfig(**config_dict['costs']),
             tax=TaxConfig(**config_dict['tax']),
@@ -369,6 +384,26 @@ class ConfigLoader:
         if not self._config.upstox.access_token:
             raise ValueError("Upstox access token not configured")
         
+        # Validate exit/survival/eligibility percentages are stored as 0-1 fractions,
+        # not percentage points. These fields gate stop-loss/profit-target/weekly-loss/
+        # trauma-cooldown/spread-eligibility checks; a value > 1.0 here means the
+        # config-loading conversion regressed and these safety checks would silently
+        # stop firing (see _create_config_object).
+        fraction_fields = [
+            ("exit_rules.stop_loss_pct", self._config.exit_rules.stop_loss_pct),
+            ("exit_rules.profit_target_pct", self._config.exit_rules.profit_target_pct),
+            ("survival_rules.weekly_loss_limit_pct", self._config.survival_rules.weekly_loss_limit_pct),
+            ("survival_rules.trauma_loss_threshold_pct", self._config.survival_rules.trauma_loss_threshold_pct),
+            ("eligibility.max_bid_ask_spread_pct", self._config.eligibility.max_bid_ask_spread_pct),
+        ]
+        for field_name, value in fraction_fields:
+            if not (0.0 < value <= 1.0):
+                raise ValueError(
+                    f"{field_name}={value} must be a 0-1 fraction after config loading "
+                    "(e.g. 0.05 for 5%), not a percentage point. Check the YAML value and "
+                    "the conversion in ConfigLoader._create_config_object."
+                )
+
         # Validate regime thresholds
         thresholds = self._config.regime_detection.thresholds
         if not (0 < thresholds['rising_vol_buy_iv_rank'] < thresholds['low_vol_sell_iv_rank'] < thresholds['high_vol_sell_iv_rank'] < 1):

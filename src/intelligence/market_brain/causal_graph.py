@@ -21,7 +21,10 @@ import numpy as np
 import os
 import json
 from datetime import datetime, timedelta
-from statsmodels.tsa.stattools import grangercausalitytests
+try:
+    from statsmodels.tsa.stattools import grangercausalitytests
+except Exception:
+    grangercausalitytests = None
 from sklearn.preprocessing import StandardScaler
 import networkx as nx
 import warnings
@@ -159,6 +162,9 @@ class CausalGraphEngine:
         """Compute Granger causality between all variable pairs"""
         
         print("🔬 Computing Granger causality relationships...")
+        if grangercausalitytests is None:
+            print("   ⚠️ statsmodels unavailable; using lagged-correlation causality heuristic")
+            return self.compute_lagged_correlation_causality(tensor)
         
         variables = tensor.columns.tolist()
         causality_results = []
@@ -231,6 +237,56 @@ class CausalGraphEngine:
         else:
             print("   ⚠️ No significant causal relationships found")
         
+        return causality_df
+
+    def compute_lagged_correlation_causality(self, tensor):
+        """Fallback causal screen when statsmodels is unavailable.
+
+        This does not claim statistical Granger causality. It produces a
+        conservative lagged influence graph so downstream integration can
+        continue with explicit method provenance.
+        """
+        variables = tensor.columns.tolist()
+        causality_results = []
+        max_lag = int(self.config["max_lag"])
+        min_strength = max(float(self.config["min_strength"]), 0.35)
+
+        for i, cause_var in enumerate(variables):
+            cause = pd.to_numeric(tensor[cause_var], errors="coerce")
+            for j, effect_var in enumerate(variables):
+                if i == j:
+                    continue
+                effect = pd.to_numeric(tensor[effect_var], errors="coerce")
+                best_lag = None
+                best_strength = 0.0
+                for lag in range(1, max_lag + 1):
+                    pair = pd.concat([effect, cause.shift(lag)], axis=1).dropna()
+                    if len(pair) < self.config["min_observations"]:
+                        continue
+                    corr = pair.iloc[:, 0].corr(pair.iloc[:, 1])
+                    if pd.isna(corr):
+                        continue
+                    strength = abs(float(corr))
+                    if strength > best_strength:
+                        best_strength = strength
+                        best_lag = lag
+                if best_lag is not None and best_strength >= min_strength:
+                    causality_results.append(
+                        {
+                            "cause": cause_var,
+                            "effect": effect_var,
+                            "lag": int(best_lag),
+                            "p_value": np.nan,
+                            "strength": float(best_strength),
+                            "method": "lagged_correlation_fallback",
+                        }
+                    )
+
+        causality_df = pd.DataFrame(causality_results)
+        if not causality_df.empty:
+            print(f"   ✅ Found {len(causality_df)} fallback lagged relationships")
+        else:
+            print("   ⚠️ No fallback lagged relationships found")
         return causality_df
     
     def build_causal_graph(self, causality_df):

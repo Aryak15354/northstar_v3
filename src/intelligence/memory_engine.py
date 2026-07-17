@@ -19,7 +19,7 @@ This is how BlackRock, Bridgewater, AQR actually build intelligence.
 
 Usage:
     try:
-    from intelligence.memory_engine import MemoryEngine
+    from src.intelligence.memory_engine import MemoryEngine
 except ImportError:
     from MemoryEngine import MemoryEngine
     

@@ -13,7 +13,7 @@ Key Rules:
 
 Usage:
     try:
-    from intelligence.temporal_guard import TemporalGuard
+    from src.intelligence.temporal_guard import TemporalGuard
 except ImportError:
     from TemporalGuard import TemporalGuard
     

@@ -62,6 +62,10 @@ class ModelRegistry:
         freeze_active: bool,
         override: bool = False,
         reason: Optional[str] = None,
+        min_ic_mean: Optional[float] = None,
+        min_icir: Optional[float] = None,
+        min_hit_rate: Optional[float] = None,
+        force_quality_gate: bool = False,
     ) -> Dict[str, Any]:
         if freeze_active and not override:
             return {
@@ -83,6 +87,33 @@ class ModelRegistry:
             return {"ok": False, "blocked": False, "reason": "candidate_not_found"}
 
         candidate = self._read_json(candidate_path, {})
+
+        # Quality gate: only enforced when a caller opts in by passing at
+        # least one threshold, so existing callers that don't pass thresholds
+        # keep their current behavior. Skipped entirely if force_quality_gate.
+        if not force_quality_gate and (min_ic_mean is not None or min_icir is not None or min_hit_rate is not None):
+            metrics = candidate.get("validation_metrics", {}) or {}
+            score = metrics.get("score", {}) or {}
+            ic_mean = float(score.get("ic", metrics.get("ic_mean", 0.0)) or 0.0)
+            icir = float(metrics.get("icir", 0.0) or 0.0)
+            hit_rate = float(metrics.get("hit_rate", 0.0) or 0.0)
+
+            failures = []
+            if min_ic_mean is not None and ic_mean < min_ic_mean:
+                failures.append(f"ic_mean {ic_mean:.4f} < required {min_ic_mean:.4f}")
+            if min_icir is not None and icir < min_icir:
+                failures.append(f"icir {icir:.4f} < required {min_icir:.4f}")
+            if min_hit_rate is not None and hit_rate < min_hit_rate:
+                failures.append(f"hit_rate {hit_rate:.4f} < required {min_hit_rate:.4f}")
+
+            if failures:
+                return {
+                    "ok": False,
+                    "blocked": True,
+                    "reason": "promotion_criteria_not_met",
+                    "message": "; ".join(failures),
+                }
+
         candidate["status"] = "production"
         candidate["promoted_at"] = datetime.utcnow().isoformat()
 

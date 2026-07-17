@@ -11,10 +11,11 @@ in the Northstar V3 system. It implements the single-source-of-truth pattern wit
 
 import os
 import json
-import fcntl
 import shutil
 import logging
+import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable, TypeVar
 from dataclasses import dataclass
@@ -23,9 +24,54 @@ from functools import wraps
 import pandas as pd
 import numpy as np
 
+from src.options.state_io import ProcessLock
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
+
+# Per-path in-process locks, guarding the intra-process (multi-thread) case.
+# ProcessLock (fcntl.flock) alone is not enough: empirically, on this
+# platform, flock does not reliably serialize between file descriptors
+# opened by *different threads of the same process* (verified directly --
+# real cross-process concurrency via flock is fine; concurrent threads in
+# one process occasionally both reported the lock "acquired" at once,
+# corrupting a read-modify-write). Acquire this thread lock first, then the
+# ProcessLock, and release in the opposite order everywhere, so ordering is
+# always consistent and cannot deadlock.
+_THREAD_LOCKS: Dict[str, threading.Lock] = {}
+_THREAD_LOCKS_GUARD = threading.Lock()
+
+
+class _FileLock:
+    """Combined intra-process (threading.Lock) + inter-process (flock) lock for one target file."""
+
+    def __init__(self, lock_path: Path):
+        key = str(lock_path)
+        with _THREAD_LOCKS_GUARD:
+            if key not in _THREAD_LOCKS:
+                _THREAD_LOCKS[key] = threading.Lock()
+            self._thread_lock = _THREAD_LOCKS[key]
+        self._process_lock = ProcessLock(lock_path)
+        self._thread_lock_held = False
+
+    def acquire(self, timeout: float = 30.0) -> bool:
+        if not self._thread_lock.acquire(timeout=timeout):
+            return False
+        self._thread_lock_held = True
+        if not self._process_lock.acquire(timeout=timeout):
+            self._thread_lock.release()
+            self._thread_lock_held = False
+            return False
+        return True
+
+    def release(self) -> None:
+        try:
+            self._process_lock.release()
+        finally:
+            if self._thread_lock_held:
+                self._thread_lock.release()
+                self._thread_lock_held = False
 
 
 def retry_on_failure(
@@ -144,6 +190,19 @@ class StateFileManager:
         
         logger.info("StateFileManager initialized")
     
+    def _file_lock(self, file_path: Path) -> _FileLock:
+        """
+        Per-target-file exclusive lock (both intra-process and
+        cross-process). This module's docstring has long claimed "File
+        locking for concurrent access protection", but no lock was ever
+        actually taken -- concurrent writers (e.g. the daemon's scheduled
+        refresh racing a manually-triggered rebuild, or two threads in the
+        same process) shared a fixed `.tmp` path with no serialization, so
+        one writer's atomic rename could clobber or interleave with
+        another's.
+        """
+        return _FileLock(file_path.with_name(file_path.name + ".lock"))
+
     def _validate_schema(self, df: pd.DataFrame, expected_schema: Dict[str, str], file_name: str) -> ValidationResult:
         """
         Validate DataFrame schema matches expected schema.
@@ -228,106 +287,6 @@ class StateFileManager:
             except Exception as e:
                 logger.warning(f"Failed to remove old backup {old_backup}: {e}")
     
-    def _restore_from_backup(self, file_path: Path) -> bool:
-        """
-        Attempt to restore file from most recent backup.
-        
-        Args:
-            file_path: Path to file to restore
-            
-        Returns:
-            True if restoration successful, False otherwise
-        """
-        try:
-            # Find most recent backup
-            backups = sorted(
-                self.BACKUP_DIR.glob(f"{file_path.stem}_*{file_path.suffix}"),
-                key=lambda p: p.stat().st_mtime,
-                reverse=True
-            )
-            
-            if not backups:
-                logger.error(f"No backups found for {file_path.name}")
-                return False
-            
-            most_recent = backups[0]
-            logger.info(f"Restoring {file_path.name} from backup: {most_recent.name}")
-            
-            # Copy backup to original location
-            shutil.copy2(most_recent, file_path)
-            
-            # Verify restoration
-            if file_path.suffix == '.parquet':
-                pd.read_parquet(file_path)
-            elif file_path.suffix == '.json':
-                with open(file_path, 'r') as f:
-                    json.load(f)
-            
-            logger.info(f"✓ Successfully restored {file_path.name} from backup")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to restore from backup: {e}")
-            return False
-    
-    @retry_on_failure(max_retries=3, delay=0.5)
-    def _read_parquet_with_fallback(self, file_path: Path) -> pd.DataFrame:
-        """
-        Read parquet file with automatic backup restoration on corruption.
-        
-        Args:
-            file_path: Path to parquet file
-            
-        Returns:
-            DataFrame from file
-            
-        Raises:
-            RuntimeError: If file cannot be read and backup restoration fails
-        """
-        try:
-            return pd.read_parquet(file_path)
-        except Exception as e:
-            logger.warning(f"Failed to read {file_path.name}: {e}")
-            
-            # Attempt backup restoration
-            if self._restore_from_backup(file_path):
-                # Try reading again after restoration
-                return pd.read_parquet(file_path)
-            else:
-                raise RuntimeError(
-                    f"Cannot read {file_path.name} and backup restoration failed"
-                ) from e
-    
-    @retry_on_failure(max_retries=3, delay=0.5)
-    def _read_json_with_fallback(self, file_path: Path) -> Dict[str, Any]:
-        """
-        Read JSON file with automatic backup restoration on corruption.
-        
-        Args:
-            file_path: Path to JSON file
-            
-        Returns:
-            Dictionary from file
-            
-        Raises:
-            RuntimeError: If file cannot be read and backup restoration fails
-        """
-        try:
-            with open(file_path, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.warning(f"Failed to read {file_path.name}: {e}")
-            
-            # Attempt backup restoration
-            if self._restore_from_backup(file_path):
-                # Try reading again after restoration
-                with open(file_path, 'r') as f:
-                    return json.load(f)
-            else:
-                raise RuntimeError(
-                    f"Cannot read {file_path.name} and backup restoration failed"
-                ) from e
-    
     @retry_on_failure(
         max_retries=3,
         delay=0.5,
@@ -338,17 +297,27 @@ class StateFileManager:
         df: pd.DataFrame,
         file_path: Path,
         schema: Dict[str, str],
-        validate: bool = True
+        validate: bool = True,
+        _lock_already_held: bool = False,
     ) -> None:
         """
         Atomically write DataFrame to parquet file with retry logic.
-        
+
         Args:
             df: DataFrame to write
             file_path: Target file path
             schema: Expected schema for validation
             validate: Whether to validate schema before writing
+            _lock_already_held: Set True only by a caller (e.g.
+                append_exposure_history) that already holds this file's lock
+                across its own read-modify-write section, to avoid this
+                method re-acquiring the same exclusive lock and deadlocking.
         """
+        df = df.copy()
+        for column, expected_type in schema.items():
+            if expected_type == "datetime64[ns]" and column in df.columns:
+                df[column] = pd.to_datetime(df[column], errors="coerce").astype("datetime64[ns]")
+
         # Validate schema if requested
         if validate:
             validation = self._validate_schema(df, schema, file_path.name)
@@ -357,63 +326,85 @@ class StateFileManager:
             if validation.warnings:
                 for warning in validation.warnings:
                     logger.warning(warning)
-        
-        # Create backup of existing file
-        self._backup_file(file_path)
-        
-        # Write to temporary file
-        temp_path = file_path.with_suffix('.tmp')
+
+        lock = None if _lock_already_held else self._file_lock(file_path)
+        if lock is not None and not lock.acquire(timeout=30.0):
+            raise RuntimeError(f"Could not acquire write lock for {file_path} within 30s")
         try:
-            df.to_parquet(temp_path, index=False, engine='pyarrow')
-            
-            # Verify the write by reading it back
-            verify_df = pd.read_parquet(temp_path)
-            if len(verify_df) != len(df):
-                raise ValueError(f"Verification failed: row count mismatch")
-            
-            # Atomic rename
-            temp_path.replace(file_path)
-            logger.info(f"Atomically wrote {len(df)} rows to {file_path}")
-            
-        except Exception as e:
-            # Clean up temp file on failure
-            if temp_path.exists():
-                temp_path.unlink()
-            raise RuntimeError(f"Failed to write {file_path}: {e}") from e
-    
+            # Create backup of existing file
+            self._backup_file(file_path)
+
+            # Write to a per-call-unique temp file so two writers can never
+            # collide on the same temp path even if the lock above were ever
+            # bypassed.
+            temp_path = file_path.with_name(f"{file_path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
+            try:
+                df.to_parquet(temp_path, index=False, engine='pyarrow')
+
+                # Verify the write by reading it back
+                verify_df = pd.read_parquet(temp_path)
+                if len(verify_df) != len(df):
+                    raise ValueError(f"Verification failed: row count mismatch")
+
+                # Atomic rename
+                temp_path.replace(file_path)
+                logger.info(f"Atomically wrote {len(df)} rows to {file_path}")
+
+            except Exception as e:
+                # Clean up temp file on failure
+                if temp_path.exists():
+                    temp_path.unlink()
+                raise RuntimeError(f"Failed to write {file_path}: {e}") from e
+        finally:
+            if lock is not None:
+                lock.release()
+
     @retry_on_failure(max_retries=3, delay=0.5)
-    def _atomic_write_json(self, data: Dict[str, Any], file_path: Path) -> None:
+    def _atomic_write_json(
+        self,
+        data: Dict[str, Any],
+        file_path: Path,
+        _lock_already_held: bool = False,
+    ) -> None:
         """
         Atomically write dictionary to JSON file with retry logic.
-        
+
         Args:
             data: Dictionary to write
             file_path: Target file path
+            _lock_already_held: See _atomic_write_parquet.
         """
-        # Create backup of existing file
-        self._backup_file(file_path)
-        
-        # Write to temporary file
-        temp_path = file_path.with_suffix('.tmp')
+        lock = None if _lock_already_held else self._file_lock(file_path)
+        if lock is not None and not lock.acquire(timeout=30.0):
+            raise RuntimeError(f"Could not acquire write lock for {file_path} within 30s")
         try:
-            with open(temp_path, 'w') as f:
-                json.dump(data, f, indent=2, default=str)
-            
-            # Verify the write by reading it back
-            with open(temp_path, 'r') as f:
-                verify_data = json.load(f)
-            if not verify_data:
-                raise ValueError("Verification failed: empty data")
-            
-            # Atomic rename
-            temp_path.replace(file_path)
-            logger.info(f"Atomically wrote JSON to {file_path}")
-            
-        except Exception as e:
-            # Clean up temp file on failure
-            if temp_path.exists():
-                temp_path.unlink()
-            raise RuntimeError(f"Failed to write {file_path}: {e}") from e
+            # Create backup of existing file
+            self._backup_file(file_path)
+
+            # Write to a per-call-unique temp file (see _atomic_write_parquet).
+            temp_path = file_path.with_name(f"{file_path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
+            try:
+                with open(temp_path, 'w') as f:
+                    json.dump(data, f, indent=2, default=str)
+
+                # Verify the write by reading it back
+                with open(temp_path, 'r') as f:
+                    verify_data = json.load(f)
+                if not verify_data:
+                    raise ValueError("Verification failed: empty data")
+
+                # Atomic rename
+                temp_path.replace(file_path)
+                logger.info(f"Atomically wrote JSON to {file_path}")
+
+            except Exception as e:
+                # Clean up temp file on failure
+                if temp_path.exists():
+                    temp_path.unlink()
+                raise RuntimeError(f"Failed to write {file_path}: {e}") from e
+        finally:
+            if lock is not None:
+                lock.release()
     
 
     
@@ -639,22 +630,33 @@ class StateFileManager:
     def append_exposure_history(self, history_row: pd.DataFrame) -> None:
         """
         Append to exposure history atomically.
-        
+
         Args:
             history_row: DataFrame with single row to append
+
+        This is read-modify-write, not a plain overwrite: the lock must span
+        the read too, or two concurrent callers can both read the same
+        existing history, each append their own row on top of it, and the
+        second writer's rename silently discards the first writer's row
+        (lost update). _atomic_write_parquet is called with
+        _lock_already_held=True since we already hold this file's lock here.
         """
-        # Read existing history
-        existing = self.read_exposure_history()
-        
-        # Append new row
-        updated = pd.concat([existing, history_row], ignore_index=True)
-        
-        # Write atomically
-        self._atomic_write_parquet(
-            updated,
-            self.EXPOSURE_HISTORY_PATH,
-            self.EXPOSURE_HISTORY_SCHEMA
-        )
+        lock = self._file_lock(self.EXPOSURE_HISTORY_PATH)
+        if not lock.acquire(timeout=30.0):
+            raise RuntimeError(
+                f"Could not acquire write lock for {self.EXPOSURE_HISTORY_PATH} within 30s"
+            )
+        try:
+            existing = self.read_exposure_history()
+            updated = pd.concat([existing, history_row], ignore_index=True)
+            self._atomic_write_parquet(
+                updated,
+                self.EXPOSURE_HISTORY_PATH,
+                self.EXPOSURE_HISTORY_SCHEMA,
+                _lock_already_held=True,
+            )
+        finally:
+            lock.release()
     
     # Public API - Portfolio Analytics
     

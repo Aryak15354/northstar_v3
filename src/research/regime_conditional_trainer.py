@@ -15,6 +15,17 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
+class ModelNotAvailableError(Exception):
+    """Raised by predict() when no trained model can be resolved for a regime.
+
+    Previously predict() silently returned np.zeros(len(frame)) in this
+    situation -- a flat prediction indistinguishable from a legitimate
+    "neutral" model output, with no exception anywhere in the call chain.
+    Callers must handle this explicitly rather than silently scoring on
+    fabricated zeros.
+    """
+
+
 def _safe_spearman(a: np.ndarray, b: np.ndarray) -> float:
     xa = np.asarray(a, dtype=float).reshape(-1)
     xb = np.asarray(b, dtype=float).reshape(-1)
@@ -288,11 +299,24 @@ class RegimeConditionalTrainer:
                 "oos_ic": None,
                 "backend": None,
             }
-            return np.zeros(len(frame), dtype=float)
+            raise ModelNotAvailableError(
+                f"No regime model, base-regime model, fallback, or prefix match "
+                f"found for regime={regime_key!r} in {self._registry_path}"
+            )
 
         model_path = Path(str(rec.get("model_path", "")))
         if not model_path.exists():
-            return np.zeros(len(frame), dtype=float)
+            self._last_prediction_meta = {
+                "requested_regime": regime_key,
+                "resolved_regime": str(rec.get("regime", regime_key)),
+                "model_path": str(model_path),
+                "train_ic": rec.get("train_ic"),
+                "oos_ic": rec.get("oos_ic"),
+                "backend": rec.get("backend"),
+            }
+            raise ModelNotAvailableError(
+                f"Model record for regime={regime_key!r} points at a missing file: {model_path}"
+            )
 
         with model_path.open("rb") as f:
             payload = pickle.load(f)
@@ -300,7 +324,10 @@ class RegimeConditionalTrainer:
         feats = [str(c) for c in list(payload.get("feature_cols", []))]
 
         if not feats:
-            return np.zeros(len(frame), dtype=float)
+            raise ModelNotAvailableError(
+                f"Model artifact for regime={regime_key!r} at {model_path} has no "
+                f"feature_cols recorded -- treating as unusable rather than scoring flat."
+            )
 
         missing_cols = [c for c in feats if c not in frame.columns]
         if missing_cols:

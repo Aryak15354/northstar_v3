@@ -1143,15 +1143,15 @@ class RiskCoordinatorOrgan(NorthstarOrgan):
         
         try:
             # Try to import existing risk coordinator
-            from src.volatility.risk_authority import create_risk_authority  # Updated: was UnifiedRiskCoordinator
-            self.risk_coordinator = UnifiedRiskCoordinator()
-            print(f"   🔗 {self.name}: Successfully wrapped UnifiedRiskCoordinator")
+            from src.volatility.risk_authority import create_risk_authority
+            self.risk_coordinator = create_risk_authority()
+            print(f"   🔗 {self.name}: Successfully wrapped UnifiedRiskAuthority")
         except ImportError:
             try:
                 # Fallback to emergency brake
-                from src.risk.emergency_brake import EmergencyBrake
-                self.emergency_brake = EmergencyBrake()
-                print(f"   🔗 {self.name}: Successfully wrapped EmergencyBrake")
+                from src.risk.emergency_brake import EmergencyBrakeEngine
+                self.emergency_brake = EmergencyBrakeEngine()
+                print(f"   🔗 {self.name}: Successfully wrapped EmergencyBrakeEngine")
             except ImportError as e:
                 print(f"   ⚠️ {self.name}: No risk components available - {e}")
                 self.risk_coordinator = None
@@ -1684,9 +1684,33 @@ class MemoryManagerOrgan(NorthstarOrgan):
             'timestamp': datetime.now().isoformat()
         }
 
+class OptionsOrganWrapper(NorthstarOrgan):
+    """Organ-bus adapter for the unified options suggestion brain
+    (src/options/options_organ.py). It reads regime + held equities +
+    directional candidates from UnifiedState, generates ranked option
+    suggestions (shorts / longs / hedges / opportunities), and writes the
+    aggregate options greeks back into PortfolioState. Advisory only -- it never
+    places an order -- so it is non-critical to system operation."""
+
+    def __init__(self, name: str = "options_organ"):
+        super().__init__(name)
+        self.is_critical = False
+        from src.options.options_organ import OptionsOrgan as _OptionsEngine
+        self._engine = _OptionsEngine()
+
+    def read_state(self, state: UnifiedState) -> None:
+        self._engine.read_state(state)
+
+    def think(self, state: UnifiedState) -> Any:
+        return self._engine.process()
+
+    def write_state(self, state: UnifiedState) -> None:
+        self._engine.write_state(state)
+
+
 def create_v3_organ_wrappers():
     """Create organ wrappers for existing V3 components"""
-    
+
     organs = [
         DataPipelineOrgan("data_pipeline_organ"),
         MarketBrainOrgan("market_brain_organ"),
@@ -1694,9 +1718,10 @@ def create_v3_organ_wrappers():
         CapitalAllocatorOrgan("capital_allocator_organ"),
         PortfolioGovernorOrgan("portfolio_governor_organ"),
         RiskCoordinatorOrgan("risk_coordinator_organ"),  # The Spinal Cord
-        MemoryManagerOrgan("memory_manager_organ")  # The Hippocampus
+        MemoryManagerOrgan("memory_manager_organ"),  # The Hippocampus
+        OptionsOrganWrapper("options_organ"),  # The options complement
     ]
-    
+
     return organs
 
 def main():

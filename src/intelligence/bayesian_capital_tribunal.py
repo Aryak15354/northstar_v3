@@ -18,7 +18,7 @@ Key Features:
 
 Usage:
     try:
-    from intelligence.bayesian_capital_tribunal import BayesianCapitalTribunal
+    from src.intelligence.bayesian_capital_tribunal import BayesianCapitalTribunal
 except ImportError:
     from BayesianCapitalTribunal import BayesianCapitalTribunal
     
@@ -42,7 +42,7 @@ import sys
 try:
     from src.volatility.regime_detector import VolatilityRegime, RegimeState
 except ImportError:
-    from volatility.regime_detector import VolatilityRegime, RegimeState
+    from src.volatility.regime_detector import VolatilityRegime, RegimeState
 
 # Legacy aliases for compatibility
 MarketRegime = VolatilityRegime
@@ -664,7 +664,7 @@ def main():
     
     # Mock regime context
     try:
-        from intelligence.regime_aware_specialists import RegimeContext
+        from src.intelligence.regime_aware_specialists import RegimeContext
     except ImportError:
         from RegimeContext import RegimeContext
     regime_context = RegimeContext(

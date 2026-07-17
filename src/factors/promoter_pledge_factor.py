@@ -8,6 +8,7 @@ import logging
 import numpy as np
 import pandas as pd
 
+from src.core.panel_math import coalesce_rowwise
 from .base_factor import BaseFactor
 
 logger = logging.getLogger(__name__)
@@ -36,10 +37,11 @@ class PromoterPledgeFactor(BaseFactor):
             try:
                 work = rows.copy()
                 work['pledge_pct'] = pd.to_numeric(work.get('pledge_pct'), errors='coerce')
-                if work['pledge_pct'].isna().all() and {'shares_pledged', 'total_promoter_shares'}.issubset(set(work.columns)):
+                # N10: per-row fallback where pledge_pct is missing but shares exist.
+                if {'shares_pledged', 'total_promoter_shares'}.issubset(set(work.columns)):
                     pledged = pd.to_numeric(work.get('shares_pledged'), errors='coerce')
                     total = pd.to_numeric(work.get('total_promoter_shares'), errors='coerce').replace(0.0, np.nan)
-                    work['pledge_pct'] = 100.0 * pledged / total
+                    work['pledge_pct'] = coalesce_rowwise(work['pledge_pct'], 100.0 * pledged / total)
                 work = work.dropna(subset=['pledge_pct']).sort_values(['availability_date', 'quarter_end'], kind='mergesort')
                 if len(work) < 2:
                     out[ticker] = np.nan

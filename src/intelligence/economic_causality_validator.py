@@ -20,7 +20,7 @@ Key Features:
 
 Usage:
     try:
-    from intelligence.economic_causality_validator import EconomicCausalityValidator
+    from src.intelligence.economic_causality_validator import EconomicCausalityValidator
 except ImportError:
     from EconomicCausalityValidator import EconomicCausalityValidator
     
@@ -44,7 +44,7 @@ import sys
 try:
     from src.volatility.regime_detector import VolatilityRegime, RegimeState
 except ImportError:
-    from volatility.regime_detector import VolatilityRegime, RegimeState
+    from src.volatility.regime_detector import VolatilityRegime, RegimeState
 
 # Legacy alias for compatibility
 MarketRegime = VolatilityRegime

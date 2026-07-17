@@ -187,10 +187,10 @@ class AdvancedShadowExecutor:
             import sys
             sys.path.append(os.path.dirname(os.path.dirname(__file__)))
             
-            from intelligence.regime_memory_system import RegimeMemorySystem
-            from intelligence.simple_tailwind_engine import SimpleTailwindEngine
-            from intelligence.no_edge_detector import NoEdgeDetector
-            from intelligence.capital_allocator import CapitalAllocator
+            from src.intelligence.regime_memory_system import RegimeMemorySystem
+            from src.intelligence.simple_tailwind_engine import SimpleTailwindEngine
+            from src.intelligence.no_edge_detector import NoEdgeDetector
+            from src.intelligence.capital_allocator import CapitalAllocator
             
             # Initialize components
             self.regime_memory = RegimeMemorySystem()

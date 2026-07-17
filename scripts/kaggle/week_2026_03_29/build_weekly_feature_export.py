@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
-"""Build a weekly Kaggle-ready Northstar feature export from the raw weekly bundle."""
+"""Build a weekly Kaggle-ready Northstar feature export from the raw weekly bundle.
+
+DEPRECATED as the source of truth. The chunked build path
+(``build_local_feature_chunks.py`` -> ``merge_chunked_feature_dataset.py``) is
+the canonical dataset builder: it is memory-bounded and additionally computes the
+~14-column macro/commodity plan-signal block (``crude_4w_return`` ...
+``stock_x_inrusd``) that this direct path does not. Use this script only for a
+quick single-shot export on a machine with enough RAM; the shipped Kaggle dataset
+must come from the chunked path. See ``path_status`` in the emitted manifest.
+"""
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -19,7 +29,9 @@ from src.research.reference_data import resolve_reference_root, validate_referen
 from scripts.load_screener_to_pipeline import build_pipeline_files  # noqa: E402
 
 from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
+    FAMILY_AUDIT_SPECS,
     attach_universe_annotations,
+    apply_export_quality_repairs,
     build_regime_window_audit,
     build_feature_unit_registry,
     build_market_cap_fields,
@@ -33,6 +45,7 @@ from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
     merge_regimes_into_panel,
     now_utc_iso,
     prepare_runtime_project,
+    repair_runtime_factor_families,
     resample_daily_panel_to_weekly,
     resolve_raw_bundle_dir,
     select_feature_columns,
@@ -44,6 +57,9 @@ from scripts.kaggle.week_2026_03_29.common import (  # noqa: E402
 REQUIRED_WEEKLY_BUNDLE_PATHS = (
     "data/processed/intelligent_market_state.parquet",
     "data/processed/market_state.parquet",
+    "data/processed/macro/rbi_macro_weekly.parquet",
+    "data/processed/sector_financials/credit_quarterly.parquet",
+    "data/processed/screener_fundamentals_quarterly.csv",
     "data/processed/regime_labels.parquet",
     "data/processed/sector_mapping.csv",
     "data/processed/valuation_posterior.parquet",
@@ -94,6 +110,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--test-weeks", type=int, default=13)
     parser.add_argument("--step-weeks", type=int, default=13)
     parser.add_argument("--target-windows", type=int, default=20)
+    parser.add_argument("--forward-buffer-days", type=int, default=10)
+    parser.add_argument("--target-horizon-days", type=int, default=5)
     parser.add_argument("--low-resource-mode", choices=["auto", "true", "false"], default="false")
     parser.add_argument("--rebuild-screener", choices=["auto", "true", "false"], default="auto")
     parser.add_argument("--profile", choices=["smoke", "full"], default="full")
@@ -133,6 +151,8 @@ def _effective_split_config(
     test_weeks: int,
     step_weeks: int,
     target_windows: int,
+    forward_buffer_days: int = 10,
+    target_horizon_days: int = 5,
 ) -> dict[str, int | bool]:
     dates = (
         pd.Series(pd.to_datetime(list(weekly_dates), errors="coerce"))
@@ -150,18 +170,20 @@ def _effective_split_config(
         "adjusted": False,
         "available_dates": available,
     }
-    if available >= config["train_weeks"] + config["test_weeks"]:
+    embargo_weeks = int(math.ceil(max(0, int(forward_buffer_days) + int(target_horizon_days)) / 7.0))
+    config["embargo_weeks"] = embargo_weeks
+    if available >= config["train_weeks"] + config["test_weeks"] + embargo_weeks:
         return config
 
     test_eff = min(config["test_weeks"], max(4, min(13, max(1, available // 5))))
-    train_cap = max(8, available - test_eff)
+    train_cap = max(8, available - test_eff - embargo_weeks)
     train_eff = min(config["train_weeks"], max(12, train_cap))
-    if train_eff + test_eff > available:
-        train_eff = max(8, available - test_eff)
-    if train_eff + test_eff > available:
-        test_eff = max(1, available - train_eff)
+    if train_eff + test_eff + embargo_weeks > available:
+        train_eff = max(8, available - test_eff - embargo_weeks)
+    if train_eff + test_eff + embargo_weeks > available:
+        test_eff = max(1, available - train_eff - embargo_weeks)
     step_eff = min(config["step_weeks"], max(1, min(test_eff, max(1, available // 8))))
-    remaining = max(0, available - train_eff - test_eff)
+    remaining = max(0, available - train_eff - test_eff - embargo_weeks)
     window_cap = max(1, (remaining // max(1, step_eff)) + 1)
 
     config.update(
@@ -181,16 +203,91 @@ def _weekly_feature_pit_lag_rules() -> list[dict[str, object]]:
         {"pattern": "sector_dummy", "lag": "price"},
         {"pattern": "re:^(open|high|low|close|adj_close|volume|turnover|vwap|ret_.*|mom_.*|res_mom.*|vol_.*|beta.*|bab.*|amihud.*|max_ret_.*|drawdown.*|price_.*|nifty_.*|india_vix.*|size_x_amihud|mom[0-9]+_x_.*)$", "lag": "price"},
         {"pattern": "re:^(days_since_earnings|days_since_earnings_available|earnings_.*|eps_.*|rev_.*|combined_sue.*)$", "lag": "earnings"},
-        {"pattern": "re:^(revenue|sales|gross_profit|operating_cash_flow|free_cash_flow|net_income|equity|total_assets|total_debt|working_capital|shares_outstanding|gross_margin.*|operating_margin.*|ebitda_margin.*|interest_coverage.*|asset_turnover.*|cash_conversion.*|accruals_ratio.*|debt_to_equity.*|roe.*|roa.*|piotroski.*|earnings_quality.*|sector_quality_composite.*)$", "lag": "fundamental"},
-        {"pattern": "re:^(bulk_.*|order_.*|rating_.*|announcement_.*|announcements_.*|insider_.*)$", "lag": "bulk"},
+        {"pattern": "re:^(revenue|sales|gross_profit|ebitda|operating_income|operating_cash_flow|free_cash_flow|net_income|equity|total_assets|total_debt|working_capital|shares_outstanding|gross_margin.*|ni_margin.*|operating_margin.*|ebitda_margin.*|interest_expense|interest_coverage.*|asset_turnover.*|cash_conversion.*|fcf_to_ocf.*|accruals_ratio.*|debt_to_equity.*|roe.*|roa.*|piotroski.*|earnings_quality.*|sector_quality_composite.*)$", "lag": "fundamental"},
+        # ratings-family flags that do not start with "rating_" (see the same fix in
+        # src/research/feature_pit_rules.py); missing here => feature_pit_lag_missing.
+        {"pattern": "re:^(bulk_.*|order_.*|rating_.*|recent_upgrade_flag|recent_downgrade_flag|watch_negative_flag|investment_grade_flag|announcement_.*|announcements_.*|insider_.*)$", "lag": "bulk"},
         {"pattern": "re:^(screener_.*(promoter|fii|dii|public|govt|institutional|free_float|ownership).*)$", "lag": "shareholding"},
         {"pattern": "re:^(pledge_.*|promoter_.*|fii_.*|dii_.*|public_.*|institutional_.*|free_float.*|ownership.*)$", "lag": "shareholding"},
         {"pattern": "re:^(screener_.*)$", "lag": "fundamental"},
-        {"pattern": "re:^(mkt_sent_.*|macro_sent_.*|sent_.*|event_.*|narrative_.*|topic_.*)$", "lag": "sentiment"},
+        {"pattern": "re:^(mkt_sent_.*|macro_sent_.*|macro_sentiment_.*|sent_.*|sentiment_.*|event_.*|narrative_.*|topic_.*)$", "lag": "sentiment"},
         {"pattern": "re:^(cpi_.*|wpi_.*|iip_.*|pmi_.*|repo_.*|macro_.*|fx_.*|rate_.*|policy_.*|credit_.*|oil_.*|gold_.*|copper_.*|steel_.*|coal_.*|crude_.*|inr_.*|inrusd_.*|dxy_.*|vix_.*|rbi_.*|gst_.*|power_.*|us_10y_.*|yield_curve_.*|commodity_basket|fii_proxy|stock_x_.*|political_.*|india_domestic_.*|gold_consumption_drag.*|oil_sector_impact.*|copper_activity_signal.*|dxy_fii_proxy.*|macro_linkage_score.*|regime_.*|.*_x_regime_modifier)$", "lag": "macro"},
         {"pattern": "re:^(international_revenue_proxy|.*_sensitivity_score|business_cycle_bucket)$", "lag": "market"},
         {"pattern": "re:^(posterior_.*|agreement_score.*|val_.*)$", "lag": "market"},
     ]
+
+
+def _feature_family_audit(features_df: pd.DataFrame) -> dict[str, object]:
+    specs = FAMILY_AUDIT_SPECS  # C.7: single source of truth shared with the merge path
+    rows: dict[str, object] = {}
+    for family, spec in specs.items():
+        prefixes = tuple(spec["prefixes"])
+        cols = [c for c in features_df.columns if str(c).startswith(prefixes)]
+        coverage = pd.Series(dtype=float)
+        if cols:
+            coverage = features_df[cols].notna().mean().sort_values(ascending=False)
+        core_prefixes = tuple(spec.get("core_prefixes", ()))
+        core_cols = [c for c in cols if str(c).startswith(core_prefixes)] if core_prefixes else cols
+        core_coverage = pd.Series(dtype=float)
+        if core_cols:
+            core_coverage = features_df[core_cols].notna().mean().sort_values(ascending=False)
+        max_cov = float(coverage.iloc[0]) if len(coverage) else 0.0
+        core_max_cov = float(core_coverage.iloc[0]) if len(core_coverage) else 0.0
+        median_cov = float(coverage.median()) if len(coverage) else 0.0
+        core_median_cov = float(core_coverage.median()) if len(core_coverage) else 0.0
+        passing = len(cols) >= int(spec["min_columns"]) and core_median_cov >= float(spec["min_core_median_coverage"])
+        rows[family] = {
+            "columns": int(len(cols)),
+            "core_columns": int(len(core_cols)),
+            "min_columns": int(spec["min_columns"]),
+            "max_coverage": max_cov,
+            "core_max_coverage": core_max_cov,
+            "core_median_coverage": core_median_cov,
+            "median_coverage": median_cov,
+            "min_core_median_coverage": float(spec["min_core_median_coverage"]),
+            "source_scope": str(spec.get("source_scope", "full_history_expected")),
+            "top_columns": coverage.head(12).round(6).to_dict() if len(coverage) else {},
+            "top_core_columns": core_coverage.head(12).round(6).to_dict() if len(core_coverage) else {},
+            "status": "PASS" if passing else "FAIL",
+        }
+    return rows
+
+
+def _enforce_feature_family_audit(audit: dict[str, object], *, enforce: bool) -> None:
+    failures = {
+        family: row
+        for family, row in audit.items()
+        if isinstance(row, dict) and row.get("status") != "PASS"
+    }
+    if not failures:
+        return
+    message = "required_feature_families_missing_or_dead:" + json.dumps(json_ready(failures), sort_keys=True)
+    if enforce:
+        raise RuntimeError(message)
+    print(f"[build_export] family audit warning: {message}", flush=True)
+
+
+def _load_reference_universe() -> list[str]:
+    """The Nifty-500 reference research universe (symbols, '.NS' normalised).
+    Used to keep out-of-universe delisted-backfill names out of the export so it
+    passes validate_reference_bundle. Returns [] if unreadable (filter no-ops)."""
+    for rel in (
+        "data/canonical/reference/universe/nifty500_universe_enriched.parquet",
+        "data/canonical/reference/universe/nifty500_universe_enriched.csv",
+    ):
+        p = PROJECT_ROOT / rel if "PROJECT_ROOT" in globals() else Path(rel)
+        try:
+            if not p.exists():
+                continue
+            df = pd.read_parquet(p) if p.suffix == ".parquet" else pd.read_csv(p)
+            col = next((c for c in ("symbol", "ticker", "nse_symbol") if c in df.columns), None)
+            if col is None:
+                continue
+            syms = {str(s).strip().upper() for s in df[col].dropna() if str(s).strip()}
+            return sorted(s if s.endswith(".NS") else f"{s}.NS" for s in syms)
+        except Exception:
+            continue
+    return []
 
 
 def _dataset_runtime_config(
@@ -208,23 +305,32 @@ def _dataset_runtime_config(
     smoke_profile = str(profile).strip().lower() == "smoke"
     return {
         "policy_config_path": str(policy_path),
+        "universe_whitelist": _load_reference_universe(),
+        "downcast_float32_features": True,  # memory guard for 8GB laptops
         "prices_path": "data/canonical/prices/equity_prices_daily.parquet",
         "fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
         "macro_features_path": "data/canonical/macro/macro_regime_features.parquet",
+        "rbi_macro_weekly_path": "data/processed/macro/rbi_macro_weekly.parquet",
+        "credit_quarterly_path": "data/processed/sector_financials/credit_quarterly.parquet",
         "valuation_posterior_path": "data/processed/valuation_posterior.parquet",
         "screener_fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
         "screener_quarterly_path": "data/canonical/fundamentals/fundamentals_quarterly_panel.parquet",
         "screener_shareholding_path": "data/canonical/fundamentals/shareholding_quarterly.parquet",
         "alternative_data_path": "data/canonical/alternative",
         "announcement_dates_path": "data/processed/alternative/earnings_dates_all.csv",
-        "use_sentiment_features": False,
+        "use_sentiment_features": True,
         "use_screener_features": True,
         "use_alternative_features": True,
         "use_macro_features": True,
         "enable_macro_features": True,
         "use_gap9_academic_factors": True,
         "strict_real_data_only": True,
-        "feature_pit_enforce": False,
+        # Enforcement ON: DatasetManager's PIT-registry and feature-budget
+        # enforcement mechanisms default True and are validated against the
+        # 14-rule lag catalog below; they were previously overridden to False,
+        # which is exactly what let the export exceed its declared budget and
+        # skip point-in-time validation.
+        "feature_pit_enforce": True,
         "feature_pit_lags": _weekly_feature_pit_lag_rules(),
         "pit_announcement_plus_days": 1,
         "pit_earnings_announcement_plus_days": 1,
@@ -233,8 +339,14 @@ def _dataset_runtime_config(
         "pit_shareholding_lag_days": 2,
         "pit_bulk_deal_lag_days": 1,
         "pit_macro_lag_days": 1,
-        "feature_budget_enforce": False,
-        "feature_budget": 320 if smoke_profile else 500,
+        "feature_budget_enforce": True,
+        # This budget applies to the PRE-REPAIR daily panel (before the merge-time
+        # RBI cap to 120 and dedup), where the RBI weekly pack alone contributes
+        # ~930 base columns — so it is a hard regression ceiling against unbounded
+        # growth, not the export budget. The declared 500-feature budget for the
+        # FINAL export is enforced in merge_chunked_feature_dataset.py after all
+        # repairs (measured 254 base names on the last real export).
+        "feature_budget": 1200 if smoke_profile else 1600,
         "feature_correlation_enforce": False,
         "feature_correlation_skip": True,
         "lookback_days": int(max(180, lookback_days)),
@@ -248,6 +360,15 @@ def _dataset_runtime_config(
             "feature_columns": "zscore_only",
             "allow_prior_cache_fallback": True,
             "max_cache_fallback_age_days": 7,
+            # This config only feeds weekly exports; daily-cadence valuation
+            # work is discarded by the weekly resample (tail(1) per week).
+            # Without this the from-scratch recompute cannot fit Kaggle's 12h
+            # cap (observed 2026-07-16: chunk 1 valuation alone > 1h).
+            "compute_cadence": "weekly_tail",
+            # export builds run on the marker-attested precomputed cache; the
+            # low-coverage retry would bypass it and recompute sparse dates
+            # uncached (the v13 killer). Never enable for bundle-driven builds.
+            "low_coverage_retry_enabled": False,
         },
     }
 
@@ -413,10 +534,19 @@ def main() -> int:
     weekly_panel = build_market_cap_fields(weekly_panel)
     regimes_df = build_plan_regime_labels(weekly_panel, runtime_root)
     weekly_panel = merge_regimes_into_panel(weekly_panel, regimes_df)
+    weekly_panel, runtime_factor_repairs = repair_runtime_factor_families(weekly_panel)
+    weekly_panel, export_quality_audit = apply_export_quality_repairs(weekly_panel)
 
     feature_cols = select_feature_columns(weekly_panel)
     features_df = cast_feature_frame(weekly_panel, feature_cols)
     metadata_df = cast_metadata_frame(weekly_panel)
+    family_audit = _feature_family_audit(features_df)
+    write_json(export_dir / "dataset_family_audit.json", family_audit)
+    write_json(export_dir / "export_quality_audit.json", export_quality_audit)
+    _enforce_feature_family_audit(
+        family_audit,
+        enforce=args.profile != "smoke" and int(effective_max_tickers) == 0,
+    )
     reference_root = resolve_reference_root(runtime_root, required=False)
     reference_audit = validate_reference_bundle(
         reference_root,
@@ -431,6 +561,8 @@ def main() -> int:
         test_weeks=int(args.test_weeks),
         step_weeks=int(args.step_weeks),
         target_windows=int(args.target_windows),
+        forward_buffer_days=int(args.forward_buffer_days),
+        target_horizon_days=int(args.target_horizon_days),
     )
     splits = generate_anchored_weekly_splits(
         features_df["date"].tolist(),
@@ -438,6 +570,8 @@ def main() -> int:
         test_weeks=int(split_config["test_weeks"]),
         step_weeks=int(split_config["step_weeks"]),
         target_windows=int(split_config["target_windows"]),
+        forward_buffer_days=int(args.forward_buffer_days),
+        target_horizon_days=int(args.target_horizon_days),
     )
     regime_window_audit = build_regime_window_audit(regimes_df, splits)
     for warning in regime_window_audit.get("warnings", []):
@@ -467,6 +601,14 @@ def main() -> int:
 
     manifest = {
         "generated_at": now_utc_iso(),
+        "builder": "build_weekly_feature_export.py",
+        "path_status": "deprecated_use_chunked",
+        "universe_annotation_pit": "current_snapshot_static",
+        "path_status_note": (
+            "Direct single-shot export. Canonical dataset is built via the chunked "
+            "path (build_local_feature_chunks.py -> merge_chunked_feature_dataset.py), "
+            "which also emits the plan-signal macro/commodity block absent here."
+        ),
         "raw_bundle_dir": str(raw_bundle_dir),
         "runtime_root": str(runtime_root),
         "profile": args.profile,
@@ -488,6 +630,9 @@ def main() -> int:
         "model_safe_feature_count": int(len(feature_cols)),
         "screener_rebuild": screener_rebuild,
         "dataset_metadata": json_ready(dataset_meta),
+        "dataset_family_audit": json_ready(family_audit),
+        "runtime_factor_repairs": json_ready(runtime_factor_repairs),
+        "export_quality_audit": json_ready(export_quality_audit),
         "reference_audit": json_ready(reference_audit),
         "regime_window_audit": regime_window_audit,
         "files": {
@@ -515,6 +660,8 @@ def main() -> int:
                     "screener_rebuild_enabled": bool(screener_rebuild.get("enabled")),
                     "feature_pit_missing_count": int(dataset_meta.get("feature_pit_registry_missing_count", 0) or 0),
                     "feature_pit_coverage_pct": round(float(dataset_meta.get("feature_pit_registry_coverage_pct", 0.0) or 0.0), 3),
+                    "dataset_family_audit": family_audit,
+                    "export_quality_audit": export_quality_audit,
                     "split_config_adjusted": bool(split_config["adjusted"]),
                     "regime_window_warnings": list(regime_window_audit.get("warnings") or []),
                 }

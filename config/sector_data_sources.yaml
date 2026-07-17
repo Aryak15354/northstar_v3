@@ -1,0 +1,1306 @@
+_generated_by: scripts/build_sector_source_registry.py
+companies:
+  360ONE:
+    bse:
+      security_code: 542772
+    category: amc
+    company_name: 360 ONE WAM Ltd.
+    ir_url: null
+    metrics_wanted: &id003
+    - revenue_from_ops
+    - profit_before_tax
+    - aum
+    nse:
+      symbol: 360ONE
+    screener_slug: 360ONE
+    subsector_raw: Wealth Management
+    supplement_docs: &id004
+    - investor_presentation
+    xbrl_taxonomy: nbfc
+  AADHARHFC:
+    bse:
+      security_code: 544176
+    category: hfc
+    company_name: Aadhar Housing Finance Ltd.
+    ir_url: null
+    metrics_wanted: &id001
+    - impairment_financial
+    - interest_earned
+    - gnpa_pct
+    - aum
+    - stage3_pct
+    nse:
+      symbol: AADHARHFC
+    screener_slug: AADHARHFC
+    subsector_raw: Affordable Housing Finance
+    supplement_docs: &id002
+    - investor_presentation
+    xbrl_taxonomy: nbfc
+  AAVAS:
+    bse:
+      security_code: 541988
+    category: hfc
+    company_name: Aavas Financiers Ltd.
+    ir_url: null
+    metrics_wanted: *id001
+    nse:
+      symbol: AAVAS
+    screener_slug: AAVAS
+    subsector_raw: Affordable Housing Finance
+    supplement_docs: *id002
+    xbrl_taxonomy: nbfc
+  ABCAPITAL:
+    bse:
+      security_code: 540691
+    category: diversified_financial
+    company_name: Aditya Birla Capital Ltd.
+    ir_url: null
+    metrics_wanted: &id005
+    - revenue_from_ops
+    - profit_before_tax
+    nse:
+      symbol: ABCAPITAL
+    screener_slug: ABCAPITAL
+    subsector_raw: Diversified Financial Services
+    supplement_docs: &id006
+    - investor_presentation
+    xbrl_taxonomy: generic
+  ABSLAMC:
+    bse:
+      security_code: 543374
+    category: amc
+    company_name: Aditya Birla Sun Life AMC Ltd.
+    ir_url: null
+    metrics_wanted: *id003
+    nse:
+      symbol: ABSLAMC
+    screener_slug: ABSLAMC
+    subsector_raw: Asset Management
+    supplement_docs: *id004
+    xbrl_taxonomy: nbfc
+  AIIL:
+    bse:
+      security_code: 539177
+    category: diversified_financial
+    company_name: Authum Investment & Infrastructure Ltd.
+    ir_url: null
+    metrics_wanted: *id005
+    nse:
+      symbol: AIIL
+    screener_slug: AIIL
+    subsector_raw: See Industry Column
+    supplement_docs: *id006
+    xbrl_taxonomy: generic
+  ANANDRATHI:
+    bse:
+      security_code: 543415
+    category: amc
+    company_name: Anand Rathi Wealth Ltd.
+    ir_url: null
+    metrics_wanted: *id003
+    nse:
+      symbol: ANANDRATHI
+    screener_slug: ANANDRATHI
+    subsector_raw: Wealth Management
+    supplement_docs: *id004
+    xbrl_taxonomy: nbfc
+  ANGELONE:
+    bse:
+      security_code: 543235
+    category: broker
+    company_name: Angel One Ltd.
+    ir_url: null
+    metrics_wanted: &id013
+    - revenue_from_ops
+    - profit_before_tax
+    nse:
+      symbol: ANGELONE
+    screener_slug: ANGELONE
+    subsector_raw: Retail Stockbroking
+    supplement_docs: &id014
+    - investor_presentation
+    xbrl_taxonomy: generic
+  APTUS:
+    bse:
+      security_code: 543335
+    category: hfc
+    company_name: Aptus Value Housing Finance India Ltd.
+    ir_url: null
+    metrics_wanted: *id001
+    nse:
+      symbol: APTUS
+    screener_slug: APTUS
+    subsector_raw: Affordable Housing Finance
+    supplement_docs: *id002
+    xbrl_taxonomy: nbfc
+  AUBANK:
+    bse:
+      security_code: 540611
+    category: sfb
+    company_name: AU Small Finance Bank Ltd.
+    ir_url: null
+    metrics_wanted:
+    - gnpa_pct
+    - nnpa_pct
+    - net_interest_income
+    - provisions
+    - roa
+    - cet1_ratio
+    - nim
+    nse:
+      symbol: AUBANK
+    screener_slug: AUBANK
+    subsector_raw: Small Finance Bank
+    supplement_docs:
+    - investor_presentation
+    - basel_pillar3
+    xbrl_taxonomy: banking
+  AXISBANK:
+    bse:
+      security_code: 532215
+    category: private_bank
+    company_name: Axis Bank Ltd.
+    ir_url: null
+    metrics_wanted: &id007
+    - gnpa_pct
+    - nnpa_pct
+    - net_interest_income
+    - provisions
+    - roa
+    - cet1_ratio
+    - casa_pct
+    - nim
+    nse:
+      symbol: AXISBANK
+    screener_slug: AXISBANK
+    subsector_raw: See Industry Column
+    supplement_docs: &id008
+    - investor_presentation
+    - basel_pillar3
+    xbrl_taxonomy: banking
+  BAJAJFINSV:
+    bse:
+      security_code: 532978
+    category: diversified_financial
+    company_name: Bajaj Finserv Ltd.
+    ir_url: null
+    metrics_wanted: *id005
+    nse:
+      symbol: BAJAJFINSV
+    screener_slug: BAJAJFINSV
+    subsector_raw: Diversified Financial Services
+    supplement_docs: *id006
+    xbrl_taxonomy: generic
+  BAJAJHFL:
+    bse:
+      security_code: 544252
+    category: hfc
+    company_name: Bajaj Housing Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id001
+    nse:
+      symbol: BAJAJHFL
+    screener_slug: BAJAJHFL
+    subsector_raw: See Industry Column
+    supplement_docs: *id002
+    xbrl_taxonomy: nbfc
+  BAJAJHLDNG:
+    bse:
+      security_code: 500490
+    category: diversified_financial
+    company_name: Bajaj Holdings & Investment Ltd.
+    ir_url: null
+    metrics_wanted: *id005
+    nse:
+      symbol: BAJAJHLDNG
+    screener_slug: BAJAJHLDNG
+    subsector_raw: See Industry Column
+    supplement_docs: *id006
+    xbrl_taxonomy: generic
+  BAJFINANCE:
+    bse:
+      security_code: 500034
+    category: nbfc
+    company_name: Bajaj Finance Ltd.
+    ir_url: null
+    metrics_wanted: &id011
+    - impairment_financial
+    - interest_earned
+    - profit_before_tax
+    - gnpa_pct
+    - aum
+    - stage3_pct
+    nse:
+      symbol: BAJFINANCE
+    screener_slug: BAJFINANCE
+    subsector_raw: Consumer Finance NBFC
+    supplement_docs: &id012
+    - investor_presentation
+    xbrl_taxonomy: nbfc
+  BANDHANBNK:
+    bse:
+      security_code: 541153
+    category: private_bank
+    company_name: Bandhan Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: BANDHANBNK
+    screener_slug: BANDHANBNK
+    subsector_raw: See Industry Column
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  BANKBARODA:
+    bse:
+      security_code: 532134
+    category: psu_bank
+    company_name: Bank of Baroda
+    ir_url: null
+    metrics_wanted: &id009
+    - gnpa_pct
+    - nnpa_pct
+    - net_interest_income
+    - provisions
+    - roa
+    - cet1_ratio
+    - casa_pct
+    - nim
+    nse:
+      symbol: BANKBARODA
+    screener_slug: BANKBARODA
+    subsector_raw: See Industry Column
+    supplement_docs: &id010
+    - investor_presentation
+    - basel_pillar3
+    xbrl_taxonomy: banking
+  BANKINDIA:
+    bse:
+      security_code: 532149
+    category: psu_bank
+    company_name: Bank of India
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: BANKINDIA
+    screener_slug: BANKINDIA
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  BSE:
+    bse:
+      security_code: null
+    category: exchange
+    company_name: BSE Ltd.
+    ir_url: null
+    metrics_wanted: &id019
+    - revenue_from_ops
+    - profit_before_tax
+    nse:
+      symbol: BSE
+    screener_slug: BSE
+    subsector_raw: See Industry Column
+    supplement_docs: &id020
+    - investor_presentation
+    xbrl_taxonomy: generic
+  CAMS:
+    bse:
+      security_code: 543232
+    category: amc
+    company_name: Computer Age Management Services Ltd.
+    ir_url: null
+    metrics_wanted: *id003
+    nse:
+      symbol: CAMS
+    screener_slug: CAMS
+    subsector_raw: See Industry Column
+    supplement_docs: *id004
+    xbrl_taxonomy: nbfc
+  CANBK:
+    bse:
+      security_code: 532483
+    category: psu_bank
+    company_name: Canara Bank
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: CANBK
+    screener_slug: CANBK
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  CANFINHOME:
+    bse:
+      security_code: 511196
+    category: hfc
+    company_name: Can Fin Homes Ltd.
+    ir_url: null
+    metrics_wanted: *id001
+    nse:
+      symbol: CANFINHOME
+    screener_slug: CANFINHOME
+    subsector_raw: Housing Finance
+    supplement_docs: *id002
+    xbrl_taxonomy: nbfc
+  CDSL:
+    bse:
+      security_code: null
+    category: depository
+    company_name: Central Depository Services (India) Ltd.
+    ir_url: null
+    metrics_wanted:
+    - revenue_from_ops
+    - profit_before_tax
+    nse:
+      symbol: CDSL
+    screener_slug: CDSL
+    subsector_raw: See Industry Column
+    supplement_docs:
+    - investor_presentation
+    xbrl_taxonomy: generic
+  CENTRALBK:
+    bse:
+      security_code: 532885
+    category: psu_bank
+    company_name: Central Bank of India
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: CENTRALBK
+    screener_slug: CENTRALBK
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  CGCL:
+    bse:
+      security_code: 531595
+    category: nbfc
+    company_name: Capri Global Capital Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: CGCL
+    screener_slug: CGCL
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  CHOICEIN:
+    bse:
+      security_code: 531358
+    category: broker
+    company_name: Choice International Ltd.
+    ir_url: null
+    metrics_wanted: *id013
+    nse:
+      symbol: CHOICEIN
+    screener_slug: CHOICEIN
+    subsector_raw: See Industry Column
+    supplement_docs: *id014
+    xbrl_taxonomy: generic
+  CHOLAFIN:
+    bse:
+      security_code: 511243
+    category: nbfc
+    company_name: Cholamandalam Investment and Finance Company Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: CHOLAFIN
+    screener_slug: CHOLAFIN
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  CHOLAHLDNG:
+    bse:
+      security_code: 504973
+    category: diversified_financial
+    company_name: Cholamandalam Financial Holdings Ltd.
+    ir_url: null
+    metrics_wanted: *id005
+    nse:
+      symbol: CHOLAHLDNG
+    screener_slug: CHOLAHLDNG
+    subsector_raw: See Industry Column
+    supplement_docs: *id006
+    xbrl_taxonomy: generic
+  CREDITACC:
+    bse:
+      security_code: 541770
+    category: nbfc
+    company_name: CreditAccess Grameen Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: CREDITACC
+    screener_slug: CREDITACC
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  CRISIL:
+    bse:
+      security_code: 500092
+    category: diversified_financial
+    company_name: CRISIL Ltd.
+    ir_url: null
+    metrics_wanted: *id005
+    nse:
+      symbol: CRISIL
+    screener_slug: CRISIL
+    subsector_raw: See Industry Column
+    supplement_docs: *id006
+    xbrl_taxonomy: generic
+  CUB:
+    bse:
+      security_code: 532210
+    category: private_bank
+    company_name: City Union Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: CUB
+    screener_slug: CUB
+    subsector_raw: See Industry Column
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  FEDERALBNK:
+    bse:
+      security_code: 500469
+    category: private_bank
+    company_name: Federal Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: FEDERALBNK
+    screener_slug: FEDERALBNK
+    subsector_raw: Private Sector Bank
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  FIVESTAR:
+    bse:
+      security_code: 543663
+    category: nbfc
+    company_name: Five-Star Business Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: FIVESTAR
+    screener_slug: FIVESTAR
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  GICRE:
+    bse:
+      security_code: 540755
+    category: general_insurer
+    company_name: General Insurance Corporation of India
+    ir_url: null
+    metrics_wanted: &id015
+    - gross_premium
+    - combined_ratio
+    nse:
+      symbol: GICRE
+    screener_slug: GICRE
+    subsector_raw: See Industry Column
+    supplement_docs: &id016
+    - public_disclosure
+    xbrl_taxonomy: insurance
+  GODIGIT:
+    bse:
+      security_code: 544179
+    category: general_insurer
+    company_name: Go Digit General Insurance Ltd.
+    ir_url: null
+    metrics_wanted: *id015
+    nse:
+      symbol: GODIGIT
+    screener_slug: GODIGIT
+    subsector_raw: See Industry Column
+    supplement_docs: *id016
+    xbrl_taxonomy: insurance
+  HDFCAMC:
+    bse:
+      security_code: 541729
+    category: amc
+    company_name: HDFC Asset Management Company Ltd.
+    ir_url: null
+    metrics_wanted: *id003
+    nse:
+      symbol: HDFCAMC
+    screener_slug: HDFCAMC
+    subsector_raw: See Industry Column
+    supplement_docs: *id004
+    xbrl_taxonomy: nbfc
+  HDFCBANK:
+    bse:
+      security_code: 500180
+    category: private_bank
+    company_name: HDFC Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: HDFCBANK
+    screener_slug: HDFCBANK
+    subsector_raw: Private Sector Bank (Largest)
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  HDFCLIFE:
+    bse:
+      security_code: 540777
+    category: life_insurer
+    company_name: HDFC Life Insurance Company Ltd.
+    ir_url: null
+    metrics_wanted: &id017
+    - apes
+    - embedded_value
+    - vnb_margin
+    nse:
+      symbol: HDFCLIFE
+    screener_slug: HDFCLIFE
+    subsector_raw: Life Insurance
+    supplement_docs: &id018
+    - public_disclosure
+    - embedded_value
+    xbrl_taxonomy: insurance
+  HOMEFIRST:
+    bse:
+      security_code: 543259
+    category: nbfc
+    company_name: Home First Finance Company India Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: HOMEFIRST
+    screener_slug: HOMEFIRST
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  HUDCO:
+    bse:
+      security_code: 540530
+    category: hfc
+    company_name: Housing & Urban Development Corporation Ltd.
+    ir_url: null
+    metrics_wanted: *id001
+    nse:
+      symbol: HUDCO
+    screener_slug: HUDCO
+    subsector_raw: See Industry Column
+    supplement_docs: *id002
+    xbrl_taxonomy: nbfc
+  ICICIBANK:
+    bse:
+      security_code: 532174
+    category: private_bank
+    company_name: ICICI Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: ICICIBANK
+    screener_slug: ICICIBANK
+    subsector_raw: Private Sector Bank
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  ICICIGI:
+    bse:
+      security_code: 540716
+    category: general_insurer
+    company_name: ICICI Lombard General Insurance Company Ltd.
+    ir_url: null
+    metrics_wanted: *id015
+    nse:
+      symbol: ICICIGI
+    screener_slug: ICICIGI
+    subsector_raw: General Insurance
+    supplement_docs: *id016
+    xbrl_taxonomy: insurance
+  ICICIPRULI:
+    bse:
+      security_code: 540133
+    category: life_insurer
+    company_name: ICICI Prudential Life Insurance Company Ltd.
+    ir_url: null
+    metrics_wanted: *id017
+    nse:
+      symbol: ICICIPRULI
+    screener_slug: ICICIPRULI
+    subsector_raw: Life Insurance
+    supplement_docs: *id018
+    xbrl_taxonomy: insurance
+  IDBI:
+    bse:
+      security_code: 500116
+    category: psu_bank
+    company_name: IDBI Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: IDBI
+    screener_slug: IDBI
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  IDFCFIRSTB:
+    bse:
+      security_code: 539437
+    category: private_bank
+    company_name: IDFC First Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: IDFCFIRSTB
+    screener_slug: IDFCFIRSTB
+    subsector_raw: See Industry Column
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  IEX:
+    bse:
+      security_code: 540750
+    category: exchange
+    company_name: Indian Energy Exchange Ltd.
+    ir_url: null
+    metrics_wanted: *id019
+    nse:
+      symbol: IEX
+    screener_slug: IEX
+    subsector_raw: Power Exchange
+    supplement_docs: *id020
+    xbrl_taxonomy: generic
+  IFCI:
+    bse:
+      security_code: 500106
+    category: nbfc
+    company_name: IFCI Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: IFCI
+    screener_slug: IFCI
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  IIFL:
+    bse:
+      security_code: 532636
+    category: nbfc
+    company_name: IIFL Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: IIFL
+    screener_slug: IIFL
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  INDIANB:
+    bse:
+      security_code: 532814
+    category: psu_bank
+    company_name: Indian Bank
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: INDIANB
+    screener_slug: INDIANB
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  INDUSINDBK:
+    bse:
+      security_code: 532187
+    category: private_bank
+    company_name: IndusInd Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: INDUSINDBK
+    screener_slug: INDUSINDBK
+    subsector_raw: See Industry Column
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  IOB:
+    bse:
+      security_code: 532388
+    category: psu_bank
+    company_name: Indian Overseas Bank
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: IOB
+    screener_slug: IOB
+    subsector_raw: Public Sector Bank
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  IREDA:
+    bse:
+      security_code: 544026
+    category: nbfc
+    company_name: Indian Renewable Energy Development Agency Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: IREDA
+    screener_slug: IREDA
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  IRFC:
+    bse:
+      security_code: 543257
+    category: nbfc
+    company_name: Indian Railway Finance Corporation Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: IRFC
+    screener_slug: IRFC
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  J&KBANK:
+    bse:
+      security_code: 532209
+    category: private_bank
+    company_name: Jammu & Kashmir Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: J&KBANK
+    screener_slug: J&KBANK
+    subsector_raw: See Industry Column
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  JIOFIN:
+    bse:
+      security_code: 543940
+    category: nbfc
+    company_name: Jio Financial Services Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: JIOFIN
+    screener_slug: JIOFIN
+    subsector_raw: Financial Services (Digital)
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  JMFINANCIL:
+    bse:
+      security_code: 523405
+    category: nbfc
+    company_name: JM Financial Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: JMFINANCIL
+    screener_slug: JMFINANCIL
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  KARURVYSYA:
+    bse:
+      security_code: 590003
+    category: private_bank
+    company_name: Karur Vysya Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: KARURVYSYA
+    screener_slug: KARURVYSYA
+    subsector_raw: See Industry Column
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  KFINTECH:
+    bse:
+      security_code: 543720
+    category: amc
+    company_name: Kfin Technologies Ltd.
+    ir_url: null
+    metrics_wanted: *id003
+    nse:
+      symbol: KFINTECH
+    screener_slug: KFINTECH
+    subsector_raw: See Industry Column
+    supplement_docs: *id004
+    xbrl_taxonomy: nbfc
+  KOTAKBANK:
+    bse:
+      security_code: 500247
+    category: private_bank
+    company_name: Kotak Mahindra Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: KOTAKBANK
+    screener_slug: KOTAKBANK
+    subsector_raw: Private Sector Bank
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  LICHSGFIN:
+    bse:
+      security_code: 500253
+    category: hfc
+    company_name: LIC Housing Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id001
+    nse:
+      symbol: LICHSGFIN
+    screener_slug: LICHSGFIN
+    subsector_raw: Housing Finance
+    supplement_docs: *id002
+    xbrl_taxonomy: nbfc
+  LICI:
+    bse:
+      security_code: 543526
+    category: life_insurer
+    company_name: Life Insurance Corporation of India
+    ir_url: null
+    metrics_wanted: *id017
+    nse:
+      symbol: LICI
+    screener_slug: LICI
+    subsector_raw: See Industry Column
+    supplement_docs: *id018
+    xbrl_taxonomy: insurance
+  LTF:
+    bse:
+      security_code: 533519
+    category: nbfc
+    company_name: L&T Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: LTF
+    screener_slug: LTF
+    subsector_raw: Retail Finance NBFC
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  M&MFIN:
+    bse:
+      security_code: 532720
+    category: nbfc
+    company_name: Mahindra & Mahindra Financial Services Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: M&MFIN
+    screener_slug: M&MFIN
+    subsector_raw: Rural Vehicle Finance
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  MAHABANK:
+    bse:
+      security_code: 532525
+    category: psu_bank
+    company_name: Bank of Maharashtra
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: MAHABANK
+    screener_slug: MAHABANK
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  MAHSCOOTER:
+    bse:
+      security_code: 500266
+    category: diversified_financial
+    company_name: Maharashtra Scooters Ltd.
+    ir_url: null
+    metrics_wanted: *id005
+    nse:
+      symbol: MAHSCOOTER
+    screener_slug: MAHSCOOTER
+    subsector_raw: See Industry Column
+    supplement_docs: *id006
+    xbrl_taxonomy: generic
+  MANAPPURAM:
+    bse:
+      security_code: 531213
+    category: nbfc
+    company_name: Manappuram Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: MANAPPURAM
+    screener_slug: MANAPPURAM
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  MCX:
+    bse:
+      security_code: 534091
+    category: exchange
+    company_name: Multi Commodity Exchange of India Ltd.
+    ir_url: null
+    metrics_wanted: *id019
+    nse:
+      symbol: MCX
+    screener_slug: MCX
+    subsector_raw: See Industry Column
+    supplement_docs: *id020
+    xbrl_taxonomy: generic
+  MFSL:
+    bse:
+      security_code: 500271
+    category: life_insurer
+    company_name: Max Financial Services Ltd.
+    ir_url: null
+    metrics_wanted: *id017
+    nse:
+      symbol: MFSL
+    screener_slug: MFSL
+    subsector_raw: See Industry Column
+    supplement_docs: *id018
+    xbrl_taxonomy: insurance
+  MOTILALOFS:
+    bse:
+      security_code: 532892
+    category: broker
+    company_name: Motilal Oswal Financial Services Ltd.
+    ir_url: null
+    metrics_wanted: *id013
+    nse:
+      symbol: MOTILALOFS
+    screener_slug: MOTILALOFS
+    subsector_raw: See Industry Column
+    supplement_docs: *id014
+    xbrl_taxonomy: generic
+  MUTHOOTFIN:
+    bse:
+      security_code: 533398
+    category: nbfc
+    company_name: Muthoot Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: MUTHOOTFIN
+    screener_slug: MUTHOOTFIN
+    subsector_raw: Gold Loan NBFC
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  NAM-INDIA:
+    bse:
+      security_code: 540767
+    category: amc
+    company_name: Nippon Life India Asset Management Ltd.
+    ir_url: null
+    metrics_wanted: *id003
+    nse:
+      symbol: NAM-INDIA
+    screener_slug: NAM-INDIA
+    subsector_raw: See Industry Column
+    supplement_docs: *id004
+    xbrl_taxonomy: nbfc
+  NIACL:
+    bse:
+      security_code: 540769
+    category: general_insurer
+    company_name: The New India Assurance Company Ltd.
+    ir_url: null
+    metrics_wanted: *id015
+    nse:
+      symbol: NIACL
+    screener_slug: NIACL
+    subsector_raw: See Industry Column
+    supplement_docs: *id016
+    xbrl_taxonomy: insurance
+  NIVABUPA:
+    bse:
+      security_code: 544286
+    category: general_insurer
+    company_name: Niva Bupa Health Insurance Company Ltd.
+    ir_url: null
+    metrics_wanted: *id015
+    nse:
+      symbol: NIVABUPA
+    screener_slug: NIVABUPA
+    subsector_raw: See Industry Column
+    supplement_docs: *id016
+    xbrl_taxonomy: insurance
+  NUVAMA:
+    bse:
+      security_code: 543988
+    category: amc
+    company_name: Nuvama Wealth Management Ltd.
+    ir_url: null
+    metrics_wanted: *id003
+    nse:
+      symbol: NUVAMA
+    screener_slug: NUVAMA
+    subsector_raw: See Industry Column
+    supplement_docs: *id004
+    xbrl_taxonomy: nbfc
+  PAYTM:
+    bse:
+      security_code: 543396
+    category: fintech
+    company_name: One 97 Communications Ltd.
+    ir_url: null
+    metrics_wanted: &id021
+    - revenue_from_ops
+    - profit_before_tax
+    nse:
+      symbol: PAYTM
+    screener_slug: PAYTM
+    subsector_raw: Digital Payments (Paytm)
+    supplement_docs: &id022
+    - investor_presentation
+    xbrl_taxonomy: generic
+  PFC:
+    bse:
+      security_code: 532810
+    category: nbfc
+    company_name: Power Finance Corporation Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: PFC
+    screener_slug: PFC
+    subsector_raw: Power Sector Lending (PSU NBFC)
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  PNB:
+    bse:
+      security_code: 532461
+    category: psu_bank
+    company_name: Punjab National Bank
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: PNB
+    screener_slug: PNB
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  PNBHOUSING:
+    bse:
+      security_code: 540173
+    category: hfc
+    company_name: PNB Housing Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id001
+    nse:
+      symbol: PNBHOUSING
+    screener_slug: PNBHOUSING
+    subsector_raw: See Industry Column
+    supplement_docs: *id002
+    xbrl_taxonomy: nbfc
+  POLICYBZR:
+    bse:
+      security_code: 543390
+    category: fintech
+    company_name: PB Fintech Ltd.
+    ir_url: null
+    metrics_wanted: *id021
+    nse:
+      symbol: POLICYBZR
+    screener_slug: POLICYBZR
+    subsector_raw: See Industry Column
+    supplement_docs: *id022
+    xbrl_taxonomy: generic
+  POONAWALLA:
+    bse:
+      security_code: 524000
+    category: nbfc
+    company_name: Poonawalla Fincorp Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: POONAWALLA
+    screener_slug: POONAWALLA
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  RBLBANK:
+    bse:
+      security_code: 540065
+    category: private_bank
+    company_name: RBL Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: RBLBANK
+    screener_slug: RBLBANK
+    subsector_raw: See Industry Column
+    supplement_docs: *id008
+    xbrl_taxonomy: banking
+  RECLTD:
+    bse:
+      security_code: 532955
+    category: nbfc
+    company_name: REC Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: RECLTD
+    screener_slug: RECLTD
+    subsector_raw: Power Sector Lending (PSU NBFC)
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  SAMMAANCAP:
+    bse:
+      security_code: 535789
+    category: hfc
+    company_name: Sammaan Capital Ltd.
+    ir_url: null
+    metrics_wanted: *id001
+    nse:
+      symbol: SAMMAANCAP
+    screener_slug: SAMMAANCAP
+    subsector_raw: See Industry Column
+    supplement_docs: *id002
+    xbrl_taxonomy: nbfc
+  SBFC:
+    bse:
+      security_code: 543959
+    category: nbfc
+    company_name: SBFC Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: SBFC
+    screener_slug: SBFC
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  SBICARD:
+    bse:
+      security_code: 543066
+    category: fintech
+    company_name: SBI Cards and Payment Services Ltd.
+    ir_url: null
+    metrics_wanted: *id021
+    nse:
+      symbol: SBICARD
+    screener_slug: SBICARD
+    subsector_raw: See Industry Column
+    supplement_docs: *id022
+    xbrl_taxonomy: generic
+  SBILIFE:
+    bse:
+      security_code: 540719
+    category: life_insurer
+    company_name: SBI Life Insurance Company Ltd.
+    ir_url: null
+    metrics_wanted: *id017
+    nse:
+      symbol: SBILIFE
+    screener_slug: SBILIFE
+    subsector_raw: Life Insurance
+    supplement_docs: *id018
+    xbrl_taxonomy: insurance
+  SBIN:
+    bse:
+      security_code: 500112
+    category: psu_bank
+    company_name: State Bank of India
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: SBIN
+    screener_slug: SBIN
+    subsector_raw: Public Sector Bank (Largest)
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  SHRIRAMFIN:
+    bse:
+      security_code: 511218
+    category: nbfc
+    company_name: Shriram Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: SHRIRAMFIN
+    screener_slug: SHRIRAMFIN
+    subsector_raw: Commercial Vehicle & Used Vehicle Finance
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  STARHEALTH:
+    bse:
+      security_code: 543412
+    category: general_insurer
+    company_name: Star Health and Allied Insurance Company Ltd.
+    ir_url: null
+    metrics_wanted: *id015
+    nse:
+      symbol: STARHEALTH
+    screener_slug: STARHEALTH
+    subsector_raw: See Industry Column
+    supplement_docs: *id016
+    xbrl_taxonomy: insurance
+  SUNDARMFIN:
+    bse:
+      security_code: 590071
+    category: nbfc
+    company_name: Sundaram Finance Ltd.
+    ir_url: null
+    metrics_wanted: *id011
+    nse:
+      symbol: SUNDARMFIN
+    screener_slug: SUNDARMFIN
+    subsector_raw: See Industry Column
+    supplement_docs: *id012
+    xbrl_taxonomy: nbfc
+  TATAINVEST:
+    bse:
+      security_code: 501301
+    category: diversified_financial
+    company_name: Tata Investment Corporation Ltd.
+    ir_url: null
+    metrics_wanted: *id005
+    nse:
+      symbol: TATAINVEST
+    screener_slug: TATAINVEST
+    subsector_raw: See Industry Column
+    supplement_docs: *id006
+    xbrl_taxonomy: generic
+  UCOBANK:
+    bse:
+      security_code: 532505
+    category: psu_bank
+    company_name: UCO Bank
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: UCOBANK
+    screener_slug: UCOBANK
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  UNIONBANK:
+    bse:
+      security_code: 532477
+    category: psu_bank
+    company_name: Union Bank of India
+    ir_url: null
+    metrics_wanted: *id009
+    nse:
+      symbol: UNIONBANK
+    screener_slug: UNIONBANK
+    subsector_raw: See Industry Column
+    supplement_docs: *id010
+    xbrl_taxonomy: banking
+  UTIAMC:
+    bse:
+      security_code: 543238
+    category: amc
+    company_name: UTI Asset Management Company Ltd.
+    ir_url: null
+    metrics_wanted: *id003
+    nse:
+      symbol: UTIAMC
+    screener_slug: UTIAMC
+    subsector_raw: Asset Management (PSU)
+    supplement_docs: *id004
+    xbrl_taxonomy: nbfc
+  YESBANK:
+    bse:
+      security_code: 532648
+    category: private_bank
+    company_name: Yes Bank Ltd.
+    ir_url: null
+    metrics_wanted: *id007
+    nse:
+      symbol: YESBANK
+    screener_slug: YESBANK
+    subsector_raw: Private Sector Bank (Turnaround)
+    supplement_docs: *id008
+    xbrl_taxonomy: banking

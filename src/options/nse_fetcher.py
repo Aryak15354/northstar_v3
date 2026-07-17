@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import time
 import json
 from typing import Optional, Dict, List
-from nse_session import get_nse_session
+from src.options.nse_session import get_nse_session
 
 # NSE API endpoints
 NIFTY_CHAIN_URL = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"

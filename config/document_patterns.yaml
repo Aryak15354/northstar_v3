@@ -1,0 +1,64 @@
+basel_pillar3:
+  filename:
+  - basel
+  - pillar
+  subject:
+  - basel
+  - pillar 3
+  - pillar iii
+  - capital adequacy
+earnings_transcript:
+  filename:
+  - transcript
+  - concall
+  - call
+  subject:
+  - transcript
+  - earnings call
+  - conference call
+  - concall
+embedded_value:
+  filename:
+  - embedded
+  - iev
+  subject:
+  - embedded value
+  - indian embedded value
+  - \biev\b
+financial_results:
+  filename:
+  - result
+  - outcome.*board
+  subject:
+  - financial result
+  - unaudited.*result
+  - audited.*result
+  - quarterly result
+investor_presentation:
+  filename:
+  - present
+  - investor
+  - earnings.?deck
+  subject:
+  - investor present
+  - earnings present
+  - analyst present
+  - investor update
+press_release:
+  filename:
+  - press
+  - release
+  - media
+  subject:
+  - press release
+  - media release
+  - news release
+public_disclosure:
+  filename:
+  - disclosure
+  - public
+  subject:
+  - public disclosure
+  - l-\d+
+  - irdai
+  - segment reporting

@@ -222,6 +222,7 @@ class IntegratedDataPipeline:
                 max_tickers = self._price_fetch_max_tickers()
                 if max_tickers > 0:
                     price_cmd.extend(["--max-tickers", str(max_tickers)])
+                price_fetch_ok = True
                 try:
                     price_result = subprocess.run(
                         price_cmd,
@@ -234,15 +235,24 @@ class IntegratedDataPipeline:
                         print(price_result.stdout[-4000:])
                     if price_result.returncode != 0:
                         err = (price_result.stderr or "").strip()
-                        print(f"⚠️ Price fetcher had issues: {err or 'non-zero exit'}")
-                        # Continue anyway - market-state refresh can still rely on current files + index proxy.
+                        print(f"❌ Price fetcher FAILED: {err or 'non-zero exit'}")
+                        price_fetch_ok = False
                 except subprocess.TimeoutExpired:
-                    print("⚠️ Price fetcher timed out; continuing with existing local price cache")
+                    print("❌ Price fetcher timed out")
+                    price_fetch_ok = False
 
             # Update market indices and create live market data
             print("📊 Updating market indices...")
             success = self.fetch_market_indices()
-            
+
+            # Honest status: a broken stock-price feed is a FAILED market
+            # update even when indices refreshed — otherwise the scheduler
+            # marks the day done and stale caches masquerade as success for
+            # months (this is exactly what froze the system at 2026-03-27).
+            if not self._fast_market_refresh_enabled() and not price_fetch_ok:
+                print("❌ Market data update failed (stock price feed broken)")
+                return False
+
             if success:
                 print("✅ Market data updated successfully")
                 return True

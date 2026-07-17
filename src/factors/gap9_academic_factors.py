@@ -13,6 +13,8 @@ from typing import ClassVar
 import numpy as np
 import pandas as pd
 
+from src.core.panel_math import group_rank_centered, group_zscore
+
 
 @dataclass
 class Gap9AcademicFactors:
@@ -72,21 +74,8 @@ class Gap9AcademicFactors:
         "cash_conversion_cs_z",
     ]
 
-    @staticmethod
-    def _group_zscore(values: pd.Series, groups: pd.Series, clip_abs: float = 6.0) -> pd.Series:
-        v = pd.to_numeric(values, errors="coerce")
-        g = pd.Series(groups, index=v.index)
-        mu = v.groupby(g, sort=False).transform("mean")
-        sd = v.groupby(g, sort=False).transform("std").replace(0.0, np.nan)
-        z = ((v - mu) / (sd + 1e-12)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
-        return z.clip(-clip_abs, clip_abs).astype(float)
-
-    @staticmethod
-    def _group_rank_centered(values: pd.Series, groups: pd.Series) -> pd.Series:
-        v = pd.to_numeric(values, errors="coerce")
-        g = pd.Series(groups, index=v.index)
-        ranked = v.groupby(g, sort=False).rank(method="average", pct=True)
-        return ranked.fillna(0.5).sub(0.5).astype(float)
+    _group_zscore = staticmethod(group_zscore)
+    _group_rank_centered = staticmethod(group_rank_centered)
 
     @staticmethod
     def _binary_signal(condition: pd.Series, *inputs: pd.Series) -> pd.Series:
@@ -117,35 +106,20 @@ class Gap9AcademicFactors:
         g = frame.groupby("ticker", sort=False)
         lag = int(max(21, self.factor_lookback_days))
 
+        # I.5: sign/magnitude sub-signals must be built from raw values or true
+        # ratios only. Coalescing a value with its OWN z-score as a fallback is a
+        # scale error: a z-score's sign reflects distance from the cross-sectional
+        # mean, not from zero, so "accruals_ratio < 0" and "ocf > 0" would flip
+        # meaning whenever the cross-sectional mean is nonzero (the normal case).
+        # We accept slightly reduced coverage for these sub-signals instead;
+        # min_piotroski_signals gating absorbs it.
         net_income = self._series_or_nan(frame, "net_income")
         total_assets = self._series_or_nan(frame, "total_assets").replace(0.0, np.nan)
-        operating_cash_flow = self._coalesce_numeric(
-            frame,
-            [
-                "operating_cash_flow",
-                "cash_conversion",
-                "cash_conversion_sector_z",
-                "cash_conversion_cs_z",
-            ],
-        )
+        operating_cash_flow = self._series_or_nan(frame, "operating_cash_flow")
         roe_qoq_change = self._series_or_nan(frame, "roe_qoq_change")
-        accruals_ratio = self._coalesce_numeric(
-            frame,
-            [
-                "accruals_ratio",
-                "accruals_ratio_sector_z",
-                "accruals_ratio_cs_z",
-            ],
-        )
+        accruals_ratio = self._series_or_nan(frame, "accruals_ratio")
         debt_to_equity = self._series_or_nan(frame, "debt_to_equity")
-        working_capital = self._coalesce_numeric(
-            frame,
-            [
-                "working_capital",
-                "cash_conversion_sector_z",
-                "cash_conversion_cs_z",
-            ],
-        )
+        working_capital = self._series_or_nan(frame, "working_capital")
         shares_outstanding = self._series_or_nan(frame, "shares_outstanding")
         gross_profit = self._series_or_nan(frame, "gross_profit")
         revenue = self._series_or_nan(frame, "revenue").replace(0.0, np.nan)
@@ -180,9 +154,15 @@ class Gap9AcademicFactors:
             index=frame.index,
         )
 
+        # I.6: normalize by the number of genuinely-available signals so a
+        # company with sparse disclosure is not systematically depressed by
+        # missing checks counting as "failed" (0). Only produce a score when at
+        # least min_piotroski_signals of the 9 have real data, then scale back to
+        # the 0-9 range.
         valid = signals.notna().sum(axis=1)
         score = signals.fillna(0.0).sum(axis=1)
-        return score.where(valid >= int(self.min_piotroski_signals)).astype(float)
+        normalized = score.where(valid <= 0, (score / valid.replace(0, np.nan)) * 9.0)
+        return normalized.where(valid >= int(self.min_piotroski_signals)).astype(float)
 
     def _compute_bab_signal(self, frame: pd.DataFrame) -> pd.Series:
         if "date" not in frame.columns:
@@ -269,15 +249,14 @@ class Gap9AcademicFactors:
 
     @staticmethod
     def _compute_earnings_quality_ratio(frame: pd.DataFrame) -> pd.Series:
-        operating_cash_flow = Gap9AcademicFactors._coalesce_numeric(
-            frame,
-            [
-                "operating_cash_flow",
-                "cash_conversion",
-                "cash_conversion_sector_z",
-                "cash_conversion_cs_z",
-            ],
-        )
+        # I.4: the numerator must be RAW operating cash flow only. Coalescing
+        # ``cash_conversion`` (which is itself operating_cash_flow / net_income)
+        # into the numerator and then dividing by net_income again produced
+        # op_cf / net_income^2 — a different, blown-up quantity precisely in the
+        # missing-data case the fallback was meant to handle. Compute the ratio
+        # from the raw figure, and use the already-computed cash_conversion ratio
+        # directly as the fallback (no second division).
+        operating_cash_flow = Gap9AcademicFactors._series_or_nan(frame, "operating_cash_flow")
         net_income = Gap9AcademicFactors._series_or_nan(frame, "net_income").replace(0.0, np.nan)
         ratio = (operating_cash_flow / net_income).replace([np.inf, -np.inf], np.nan)
         proxy = Gap9AcademicFactors._coalesce_numeric(

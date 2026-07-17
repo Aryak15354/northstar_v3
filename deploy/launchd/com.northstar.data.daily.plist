@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.northstar.data.daily</string>
+  <key>WorkingDirectory</key>
+  <string>/Users/aryakghoshal/Downloads/northstar/northstar_v3</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>scripts/run_daily_data_collection.sh</string>
+  </array>
+  <!-- 18:35 IST daily (after Indian market close + settlement) -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>18</integer>
+    <key>Minute</key><integer>35</integer>
+  </dict>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/logs/collection/launchd_daily.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/aryakghoshal/Downloads/northstar/northstar_v3/data/logs/collection/launchd_daily.log</string>
+</dict>
+</plist>

@@ -1,0 +1,130 @@
+# Cadence-aware data refresh manifest.
+#
+# Consumed by src/ingestion/refresh_scheduler.py (run via
+# scripts/daily_data_refresh.py, and once/day by the northstar daemon).
+#
+# Each source runs ONLY when it is "due" for its cadence tier, based on the
+# last successful run recorded in data/runtime/refresh_state.json:
+#   daily      -> once per (trading) calendar day
+#   weekly     -> once per ISO week
+#   monthly    -> once per calendar month
+#   quarterly  -> once per calendar quarter (~fundamentals; every 3 months)
+#
+# Flags:
+#   trading_day_only: true  -> skipped on weekends / NSE holidays
+#   requires_upstox: true   -> skipped (with a loud banner) when the manually
+#                              generated Upstox token is stale; the rest still run
+#   triggers_canonical: true-> if this source updated, the canonical rebuild in
+#                              `downstream` runs once at the end of the cycle
+#   prune: <key>            -> a post-run storage-hygiene hook (see scheduler)
+#   commands: list of argv lists, run in sequence; the source counts as
+#             "refreshed" only if all of them exit 0
+
+version: 1
+
+# Upstox daily token is generated manually each morning; freshness is inferred
+# from the mtime of this file. If it wasn't updated today (IST), the token is
+# treated as stale.
+upstox_env_file: .env.options
+upstox_token_max_age_hours: 20
+
+sources:
+  # ---------------- DAILY (trading days) ----------------
+  - name: equity_prices
+    cadence: daily
+    trading_day_only: true
+    requires_upstox: false
+    triggers_canonical: true
+    commands:
+      - ["python3", "scripts/force_market_update.py"]
+
+  - name: benchmark_nifty      # canonical NIFTY-50 index levels (NAV-vs-NIFTY comparisons)
+    cadence: daily
+    trading_day_only: true
+    triggers_canonical: false
+    commands:
+      - ["python3", "scripts/update_benchmark_nifty.py"]
+
+  - name: cross_asset          # forex, commodities, indices, rates (yfinance)
+    cadence: daily
+    trading_day_only: true
+    triggers_canonical: true
+    commands:
+      - ["python3", "scripts/update_cross_asset_market_data.py",
+         "--asset-classes", "forex", "commodities", "indices", "rates"]
+
+  - name: alt_data_nse_daily
+    cadence: daily
+    trading_day_only: true
+    triggers_canonical: true
+    commands:
+      - ["python3", "scripts/daily_alternative_data_pipeline.py", "--resume", "--nse-period", "1D"]
+
+  - name: news_sentiment
+    cadence: daily
+    trading_day_only: true
+    triggers_canonical: true
+    # RSS only serves a recent window, so the lookback is set dynamically to
+    # cover the whole gap since the last successful news refresh (never miss
+    # days between runs). first_run_days=90 backfills a long initial gap.
+    gap_lookback:
+      flag: "--rss-lookback-days"
+      buffer_days: 5
+      min_days: 30
+      first_run_days: 90
+    commands:
+      - ["python3", "scripts/build_news_sentiment_dataset.py", "--resume",
+         "--sources", "rss", "--sentiment-model", "auto"]
+
+  - name: rbi_macro            # attempt daily; rbi_daily_updater processes only if new
+    cadence: daily
+    trading_day_only: false
+    triggers_canonical: true
+    prune: rbi_macro           # delete raw .xlsx + prune versioned CSVs after processing
+    commands:
+      - ["python3", "src/ingestion/rbi_daily_updater.py"]
+
+  - name: options_suggestions  # unified OptionsOrgan: shorts/longs/hedges/opportunities
+    cadence: daily             # runs off the day's scores + prices + portfolio; advisory only
+    trading_day_only: true
+    triggers_canonical: false
+    commands:
+      - ["python3", "scripts/generate_options_suggestions.py"]
+
+  # ---------------- WEEKLY ----------------
+  - name: nse_weekly           # weekly-published NSE datasets (bulk deals, delivery, etc.)
+    cadence: weekly
+    trading_day_only: false
+    triggers_canonical: true
+    commands:
+      - ["python3", "scripts/daily_alternative_data_pipeline.py", "--resume", "--nse-period", "1W"]
+
+  # ---------------- MONTHLY ----------------
+  - name: gst_macro            # GST / e-way bill / CEA are published monthly
+    cadence: monthly
+    trading_day_only: false
+    triggers_canonical: true
+    commands:
+      - ["python3", "scripts/collect_macro_daily.py", "--force-gst"]
+
+  # ---------------- QUARTERLY (~every 3 months) ----------------
+  - name: fundamentals         # yfinance quarterly financials -> processed -> hybrid canonical
+    cadence: quarterly
+    trading_day_only: false
+    triggers_canonical: true
+    commands:
+      - ["python3", "scripts/update_financials_data.py", "--sleep-seconds", "0.3"]
+      - ["python3", "-m", "src.processing.fundamental_processor"]
+
+# Runs at most ONCE per cycle, after all due sources, iff any source with
+# triggers_canonical: true actually refreshed. First merges raw per-ticker
+# prices into the processed panel (with scale-sanitizing back-adjustment),
+# rebuilds every canonical panel, THEN advances the v3 intelligence chain
+# (scores, market state, valuation…). This chain being unscheduled was the
+# root cause of the 100-day intelligence freeze found in the 2026-07-06 audit.
+downstream:
+  canonical_rebuild:
+    commands:
+      - ["python3", "src/processing/price_processor.py"]
+      - ["python3", "scripts/build_canonical_training_datasets.py"]
+      - ["python3", "scripts/runners/refresh_v3_artifacts.py", "--quick", "--skip-integrity-audit"]

@@ -15,7 +15,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.alpha_os.strategy_lifecycle import StrategyLifecycleManager
+from src.alpha_os.strategy_lifecycle import (
+    PromotionCriteriaNotMetError,
+    StrategyLifecycleManager,
+)
 from src.alpha_os.strategy_registry import (
     StrategyFamily,
     StrategyRecord,
@@ -162,6 +165,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Promote candidate model through Alpha OS governance")
     parser.add_argument("--model-id", required=True)
     parser.add_argument("--override-freeze", action="store_true")
+    parser.add_argument(
+        "--force-quality-gate",
+        action="store_true",
+        help="Bypass the min_ic_mean/min_icir/min_hit_rate promotion criteria check. "
+             "Requires --reason. Use only for a deliberate, reviewed exception.",
+    )
     parser.add_argument("--reason", default="")
     parser.add_argument("--research-config", type=Path, default=PROJECT_ROOT / "config/research_policy.yaml")
     args = parser.parse_args()
@@ -187,12 +196,20 @@ def main() -> int:
         print(json.dumps({"ok": False, "blocked": True, "reason": "override_requires_reason"}, indent=2))
         return 2
 
+    if args.force_quality_gate and not args.reason.strip():
+        print(json.dumps({"ok": False, "blocked": True, "reason": "force_quality_gate_requires_reason"}, indent=2))
+        return 2
+
     legacy_registry = ModelRegistry()
     legacy_outcome = legacy_registry.promote_candidate(
         model_id=args.model_id,
         freeze_active=freeze_active,
         override=bool(args.override_freeze),
         reason=args.reason.strip() or "manual_promotion",
+        min_ic_mean=0.035,
+        min_icir=1.2,
+        min_hit_rate=0.55,
+        force_quality_gate=args.force_quality_gate,
     )
     if not legacy_outcome.get("ok"):
         print(json.dumps(legacy_outcome, indent=2))
@@ -220,10 +237,25 @@ def main() -> int:
 
     record = _ensure_alpha_os_record(strategy_registry, args.model_id, candidate)
     if record.status != StrategyStatus.ACTIVE:
-        lifecycle.promote_to_active(
-            strategy_id=args.model_id,
-            override_reason=args.reason.strip() or "manual_promotion",
-        )
+        try:
+            lifecycle.promote_to_active(
+                strategy_id=args.model_id,
+                override_reason=args.reason.strip() or "manual_promotion",
+                force=args.force_quality_gate,
+            )
+        except PromotionCriteriaNotMetError as exc:
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "blocked": True,
+                        "reason": "promotion_criteria_not_met",
+                        "message": str(exc),
+                    },
+                    indent=2,
+                )
+            )
+            return 2
         record = strategy_registry.get(args.model_id)
 
     result = {

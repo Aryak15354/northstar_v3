@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Optional
@@ -11,12 +12,37 @@ from typing import Any, Iterable, Optional
 import numpy as np
 import pandas as pd
 
+from src.core.panel_math import (
+    coalesce_rowwise,
+    group_rank_centered as _shared_group_rank_centered,
+    group_zscore as _shared_group_zscore,
+    normalize_ticker as _shared_normalize_ticker,
+    sector_string,
+)
 from src.factors.gap9_academic_factors import Gap9AcademicFactors
 from src.nlp.features.event_features import add_event_features
 from src.nlp.features.narrative_features import add_narrative_features
 from src.nlp.features.sentiment_features import add_sentiment_features
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_ratio_divide(
+    numerator: pd.Series,
+    denominator: pd.Series,
+    *,
+    min_abs_denominator: float = 1e-6,
+) -> pd.Series:
+    """Divide with an epsilon floor on the denominator (never a bare divide).
+
+    An exact-zero guard alone still lets a near-zero denominator blow the ratio
+    up to an absurd magnitude; the floor bounds it at source instead of relying
+    on a downstream clip.
+    """
+    den = pd.to_numeric(denominator, errors="coerce").astype(float)
+    num = pd.to_numeric(numerator, errors="coerce").astype(float)
+    safe_den = den.where(den.abs() >= float(min_abs_denominator))
+    return (num / safe_den).replace([np.inf, -np.inf], np.nan)
 
 
 DEFAULT_COMPANY_SENTIMENT_REDUCED = [
@@ -74,6 +100,7 @@ class FeatureFactory:
         use_screener_extended_features: bool = False,  # backward-compat alias
         config: Optional[dict[str, Any]] = None,
     ):
+        _init_started = time.monotonic()
         self.config = dict(config or {})
         self.target_horizon_days = int(max(1, target_horizon_days))
         self.enable_pit_fundamentals = bool(enable_pit_fundamentals)
@@ -95,6 +122,12 @@ class FeatureFactory:
             self.config.get(
                 "screener_fundamentals_path",
                 self.config.get("screener_annual_path", screener_fundamentals_path),
+            )
+        )
+        self.screener_quarterly_path = str(
+            self.config.get(
+                "screener_quarterly_path",
+                "data/canonical/fundamentals/fundamentals_quarterly_panel.parquet",
             )
         )
         self.screener_shareholding_path = str(
@@ -135,6 +168,12 @@ class FeatureFactory:
         )
         self.macro_features_path = str(
             self.config.get("macro_features_path", "data/canonical/macro/macro_regime_features.parquet")
+        )
+        self.rbi_macro_weekly_path = str(
+            self.config.get("rbi_macro_weekly_path", "data/processed/macro/rbi_macro_weekly.parquet")
+        )
+        self.credit_quarterly_path = str(
+            self.config.get("credit_quarterly_path", "data/processed/sector_financials/credit_quarterly.parquet")
         )
         self.announcement_dates_path = str(
             self.config.get(
@@ -189,6 +228,11 @@ class FeatureFactory:
                 logger.warning(f"Failed to initialize Academic Factor Library: {e}")
                 self._factor_registry = None
 
+        # G.4: surface construction cost. A fresh FeatureFactory (screener loads,
+        # Gap9/valuation/registry setup) is built per DatasetManager, which is
+        # per chunk in the chunked build — this makes the repeated cost visible.
+        logger.debug("FeatureFactory initialized in %.2fs", time.monotonic() - _init_started)
+
     @staticmethod
     def _as_date(df: pd.DataFrame, preferred: Iterable[str]) -> pd.Series:
         for c in preferred:
@@ -227,56 +271,38 @@ class FeatureFactory:
         if ldf.empty or rdf.empty or "ticker" not in ldf.columns or "ticker" not in rdf.columns:
             return left
 
+        # F.1: a single vectorized merge_asof with by="ticker" replaces the old
+        # per-ticker Python loop (which scanned the full right frame once per
+        # ticker and concatenated hundreds of small frames). Same match semantics
+        # (backward, exact matches allowed, matched within ticker), same output.
         ldf["ticker"] = ldf["ticker"].astype(str)
         rdf["ticker"] = rdf["ticker"].astype(str)
-        ldf[left_on] = pd.to_datetime(ldf[left_on], errors="coerce")
-        rdf[right_on] = pd.to_datetime(rdf[right_on], errors="coerce")
-        ldf = ldf.dropna(subset=["ticker", left_on]).sort_values(["ticker", left_on], kind="mergesort")
-        rdf = rdf.dropna(subset=["ticker", right_on]).sort_values(["ticker", right_on], kind="mergesort")
-
-        out = []
-        for ticker, lgrp in ldf.groupby("ticker", sort=True):
-            rgrp = rdf[rdf["ticker"] == str(ticker)].copy()
-            if rgrp.empty:
-                out.append(lgrp)
-                continue
-            l = lgrp.sort_values(left_on, kind="mergesort")
-            r = rgrp.sort_values(right_on, kind="mergesort").drop(columns=["ticker"], errors="ignore")
-            l[left_on] = pd.to_datetime(l[left_on], errors="coerce").astype("datetime64[ns]")
-            r[right_on] = pd.to_datetime(r[right_on], errors="coerce").astype("datetime64[ns]")
-            merged = pd.merge_asof(
-                l,
-                r,
-                left_on=left_on,
-                right_on=right_on,
-                direction="backward",
-                allow_exact_matches=True,
-            )
-            out.append(merged)
-        merged_all = pd.concat(out, ignore_index=True) if out else ldf
-        if "ticker" not in merged_all.columns and "ticker_x" in merged_all.columns:
-            merged_all = merged_all.rename(columns={"ticker_x": "ticker"})
-        if "ticker_y" in merged_all.columns:
-            merged_all = merged_all.drop(columns=["ticker_y"], errors="ignore")
+        ldf[left_on] = pd.to_datetime(ldf[left_on], errors="coerce").astype("datetime64[ns]")
+        rdf[right_on] = pd.to_datetime(rdf[right_on], errors="coerce").astype("datetime64[ns]")
+        ldf = ldf.dropna(subset=["ticker", left_on])
+        # Drop a duplicate right-hand ticker key only if the asof key is a
+        # different column; merge_asof(by=...) keeps a single ticker column.
+        rdf = rdf.dropna(subset=["ticker", right_on])
+        # merge_asof requires both frames globally sorted by the on-key.
+        ldf = ldf.sort_values([left_on, "ticker"], kind="mergesort")
+        rdf = rdf.sort_values([right_on, "ticker"], kind="mergesort")
+        merged_all = pd.merge_asof(
+            ldf,
+            rdf,
+            left_on=left_on,
+            right_on=right_on,
+            by="ticker",
+            direction="backward",
+            allow_exact_matches=True,
+            suffixes=("", "_rmerge"),
+        )
+        drop_dupes = [c for c in merged_all.columns if str(c).endswith("_rmerge")]
+        if drop_dupes:
+            merged_all = merged_all.drop(columns=drop_dupes, errors="ignore")
         return merged_all.sort_values([left_on, "ticker"], kind="mergesort").reset_index(drop=True)
 
-    @staticmethod
-    def _group_zscore(values: pd.Series, groups: pd.Series, clip_abs: float = 6.0) -> pd.Series:
-        v = pd.to_numeric(values, errors="coerce")
-        mu = v.groupby(groups, sort=False).transform("mean")
-        sigma = v.groupby(groups, sort=False).transform("std").replace(0.0, np.nan)
-        z = (v - mu) / (sigma + 1e-12)
-        z = z.replace([np.inf, -np.inf], np.nan).fillna(0.0)
-        if float(clip_abs) > 0.0:
-            z = z.clip(lower=-float(clip_abs), upper=float(clip_abs))
-        return z.astype(float)
-
-    @staticmethod
-    def _group_rank_centered(values: pd.Series, groups: pd.Series) -> pd.Series:
-        v = pd.to_numeric(values, errors="coerce")
-        r = v.groupby(groups, sort=False).rank(method="average", pct=True)
-        r = r.fillna(0.5) - 0.5
-        return r.astype(float)
+    _group_zscore = staticmethod(_shared_group_zscore)
+    _group_rank_centered = staticmethod(_shared_group_rank_centered)
 
     @staticmethod
     def _concat_new_columns(frame: pd.DataFrame, new_cols: dict[str, pd.Series]) -> pd.DataFrame:
@@ -317,16 +343,7 @@ class FeatureFactory:
             out.loc[:, list(source_df.columns)] = source_df
         return self._concat_new_columns(out, derived)
 
-    @staticmethod
-    def _normalize_ticker(value: object) -> str:
-        s = str(value or "").strip().upper()
-        if not s:
-            return ""
-        if s.endswith(".NS"):
-            return s
-        if "." in s:
-            s = s.split(".", 1)[0]
-        return f"{s}.NS"
+    _normalize_ticker = staticmethod(_shared_normalize_ticker)
 
     def _ensure_primary_ticker_column(self, frame: pd.DataFrame) -> pd.DataFrame:
         if frame.empty:
@@ -847,7 +864,243 @@ class FeatureFactory:
                 coerce_source=True,
             )
 
+        out = self._merge_rbi_weekly_macro_features(out)
         return self._merge_rbi_dbie_macro_features(out)
+
+    def _merge_rbi_weekly_macro_features(self, panel: pd.DataFrame) -> pd.DataFrame:
+        if panel.empty or "date" not in panel.columns:
+            return panel
+
+        path = Path(self.rbi_macro_weekly_path)
+        weekly = self._safe_load_table(path)
+        if weekly.empty or "date" not in weekly.columns:
+            return panel
+
+        macro = weekly.copy()
+        macro["date"] = pd.to_datetime(macro["date"], errors="coerce").dt.normalize()
+        macro = macro.dropna(subset=["date"]).sort_values("date", kind="mergesort")
+        if macro.empty:
+            return panel
+
+        # F.2: skip columns with no non-null data. A blanket prefix-and-merge of
+        # every numeric column imports empty/legacy-schema series that become
+        # zeroed cross-sectional signals downstream (a root cause of the RBI
+        # column bloat and dead macro columns that repairs then re-drop each build).
+        numeric_cols = [
+            c for c in macro.columns
+            if c != "date"
+            and pd.api.types.is_numeric_dtype(macro[c])
+            and bool(pd.to_numeric(macro[c], errors="coerce").notna().any())
+        ]
+        if not numeric_cols:
+            return panel
+
+        rename = {c: f"rbi_{c}" if not str(c).startswith("rbi_") else str(c) for c in numeric_cols}
+        macro = macro[["date"] + numeric_cols].rename(columns=rename)
+        repo_candidates = [
+            col
+            for col in macro.columns
+            if col != "date"
+            and (
+                "policy_repo" in str(col).lower()
+                or "repo_rate" in str(col).lower()
+                or "repo rate" in str(col).lower()
+            )
+        ]
+        if repo_candidates and "rbi_rate_chg" not in macro.columns:
+            repo = pd.to_numeric(macro[repo_candidates[0]], errors="coerce")
+            macro["rbi_rate_chg"] = repo.diff()
+
+        out = panel.copy()
+        out["_rbi_orig_order"] = np.arange(len(out), dtype=int)
+        out["date"] = pd.to_datetime(out["date"], errors="coerce").dt.normalize()
+        out = pd.merge_asof(
+            out.sort_values("date", kind="mergesort"),
+            macro.sort_values("date", kind="mergesort"),
+            on="date",
+            direction="backward",
+            allow_exact_matches=True,
+        )
+        out = out.sort_values("_rbi_orig_order", kind="mergesort").drop(columns=["_rbi_orig_order"], errors="ignore")
+        return out.reset_index(drop=True)
+
+    def _prepare_credit_quarterly_frame(self) -> pd.DataFrame:
+        xbrl = self._safe_load_table(Path(self.credit_quarterly_path))
+        frames: list[pd.DataFrame] = []
+        if not xbrl.empty:
+            work = xbrl.copy()
+            if "ticker" not in work.columns and "symbol" in work.columns:
+                work["ticker"] = work["symbol"]
+            if "ticker" in work.columns:
+                work["ticker"] = work["ticker"].map(self._normalize_ticker)
+                work["availability_date"] = self._as_date(work, ["availability_date", "date", "Date", "period_end"])
+                work["period_end"] = self._as_date(work, ["period_end", "date", "Date"])
+                preferred_basis = work.get("basis", pd.Series("", index=work.index)).astype(str).str.lower()
+                work["_basis_rank"] = np.select(
+                    [
+                        preferred_basis.eq("standalone"),
+                        preferred_basis.eq("consolidated"),
+                    ],
+                    [2, 1],
+                    default=0,
+                )
+                value_cols = [
+                    "gnpa_pct",
+                    "nnpa_pct",
+                    "roa",
+                    "cet1_ratio",
+                    "at1_ratio",
+                    "provision_coverage_ratio",
+                    "credit_cost_to_nii",
+                    "net_interest_income",
+                    "provisions",
+                    "operating_profit_pre_prov",
+                    "interest_earned",
+                    "interest_expended",
+                ]
+                keep = ["ticker", "availability_date", "period_end", "_basis_rank"] + [
+                    c for c in value_cols if c in work.columns
+                ]
+                work = work[keep].dropna(subset=["ticker", "availability_date"]).copy()
+                if not work.empty:
+                    work = work.sort_values(
+                        ["ticker", "period_end", "_basis_rank", "availability_date"],
+                        kind="mergesort",
+                    )
+                    work = work.drop_duplicates(subset=["ticker", "period_end"], keep="last")
+                    for c in value_cols:
+                        if c in work.columns:
+                            work[c] = pd.to_numeric(work[c], errors="coerce")
+                    work = work.rename(
+                        columns={
+                            "gnpa_pct": "credit_gnpa_pct",
+                            "nnpa_pct": "credit_nnpa_pct",
+                            "roa": "credit_roa",
+                            "cet1_ratio": "credit_cet1_ratio",
+                            "at1_ratio": "credit_at1_ratio",
+                            "provision_coverage_ratio": "credit_provision_coverage_ratio",
+                            "credit_cost_to_nii": "credit_cost_to_nii",
+                            "net_interest_income": "credit_net_interest_income",
+                            "provisions": "credit_provisions",
+                            "operating_profit_pre_prov": "credit_operating_profit_pre_prov",
+                            "interest_earned": "credit_interest_earned",
+                            "interest_expended": "credit_interest_expended",
+                        }
+                    )
+                    frames.append(work.drop(columns=["_basis_rank"], errors="ignore"))
+
+        screener = self._safe_load_table(Path(self.screener_quarterly_path))
+        if not screener.empty and "ticker" in screener.columns:
+            sq = screener.copy()
+            sq["ticker"] = sq["ticker"].map(self._normalize_ticker)
+            sq["availability_date"] = self._as_date(sq, ["availability_date", "date", "Date"])
+            keep = [
+                "ticker",
+                "availability_date",
+                "gross_npa_pct",
+                "net_npa_pct",
+                "financing_margin_pct",
+                "financing_profit",
+            ]
+            sq = sq[[c for c in keep if c in sq.columns]].dropna(subset=["ticker", "availability_date"]).copy()
+            if not sq.empty:
+                sq = sq.rename(
+                    columns={
+                        "gross_npa_pct": "credit_screener_gnpa_pct",
+                        "net_npa_pct": "credit_screener_nnpa_pct",
+                        "financing_margin_pct": "credit_screener_financing_margin_pct",
+                        "financing_profit": "credit_screener_financing_profit",
+                    }
+                )
+                for c in sq.columns:
+                    if c not in {"ticker", "availability_date"}:
+                        sq[c] = pd.to_numeric(sq[c], errors="coerce")
+                frames.append(sq)
+
+        if not frames:
+            return pd.DataFrame()
+
+        merged = pd.concat(frames, ignore_index=True, sort=False)
+        merged["availability_date"] = pd.to_datetime(merged["availability_date"], errors="coerce").dt.normalize()
+        merged = merged.dropna(subset=["ticker", "availability_date"]).sort_values(
+            ["ticker", "availability_date"], kind="mergesort"
+        )
+        value_cols = [c for c in merged.columns if c not in {"ticker", "availability_date", "period_end"}]
+        collapsed = merged.groupby(["ticker", "availability_date"], as_index=False)[value_cols].last()
+
+        collapsed["credit_gnpa_pct"] = pd.to_numeric(
+            collapsed.get("credit_gnpa_pct", pd.Series(np.nan, index=collapsed.index)),
+            errors="coerce",
+        ).where(
+            pd.to_numeric(collapsed.get("credit_gnpa_pct", pd.Series(np.nan, index=collapsed.index)), errors="coerce").notna(),
+            pd.to_numeric(collapsed.get("credit_screener_gnpa_pct", pd.Series(np.nan, index=collapsed.index)), errors="coerce"),
+        )
+        collapsed["credit_nnpa_pct"] = pd.to_numeric(
+            collapsed.get("credit_nnpa_pct", pd.Series(np.nan, index=collapsed.index)),
+            errors="coerce",
+        ).where(
+            pd.to_numeric(collapsed.get("credit_nnpa_pct", pd.Series(np.nan, index=collapsed.index)), errors="coerce").notna(),
+            pd.to_numeric(collapsed.get("credit_screener_nnpa_pct", pd.Series(np.nan, index=collapsed.index)), errors="coerce"),
+        )
+        collapsed = collapsed.sort_values(["ticker", "availability_date"], kind="mergesort")
+        for base in [
+            "credit_gnpa_pct",
+            "credit_nnpa_pct",
+            "credit_net_interest_income",
+            "credit_provisions",
+            "credit_operating_profit_pre_prov",
+        ]:
+            if base not in collapsed.columns:
+                continue
+            collapsed[base] = pd.to_numeric(collapsed[base], errors="coerce")
+            numeric = collapsed[base]
+            grp = collapsed.groupby("ticker", sort=False)[base]
+            if base.endswith("_pct"):
+                # B.1/F.4: for a metric ALREADY on a percentage scale (e.g. GNPA%
+                # moving 0.01% -> 100%), pct_change yields a legitimate-but-absurd
+                # ~9999% "relative change" that no inf-filter or ratio bound
+                # catches, and it also poisons the cross-sectional z/rank derived
+                # from it. Use absolute percentage-point diffs instead (same
+                # pattern as the _chg_4q term below).
+                collapsed[f"{base}_qoq"] = (numeric - grp.shift(1)).replace([np.inf, -np.inf], np.nan)
+                collapsed[f"{base}_yoy"] = (numeric - grp.shift(4)).replace([np.inf, -np.inf], np.nan)
+                collapsed[f"{base}_chg_4q"] = numeric - grp.shift(4)
+            else:
+                collapsed[f"{base}_qoq"] = grp.pct_change(1, fill_method=None).replace([np.inf, -np.inf], np.nan)
+                collapsed[f"{base}_yoy"] = grp.pct_change(4, fill_method=None).replace([np.inf, -np.inf], np.nan)
+
+        return collapsed.reset_index(drop=True)
+
+    def _merge_credit_feature_pack(self, panel: pd.DataFrame) -> pd.DataFrame:
+        if panel.empty or "date" not in panel.columns or "ticker" not in panel.columns:
+            return panel
+        credit = self._prepare_credit_quarterly_frame()
+        if credit.empty:
+            return panel
+
+        credit_cols = [c for c in credit.columns if c not in {"ticker", "availability_date"}]
+        if not credit_cols:
+            return panel
+
+        out = self._merge_asof_by_ticker(
+            panel,
+            credit[["ticker", "availability_date"] + credit_cols],
+            left_on="date",
+            right_on="availability_date",
+        )
+        out = out.drop(columns=["availability_date"], errors="ignore")
+        numeric_credit_cols = [
+            c for c in credit_cols
+            if c in out.columns and pd.api.types.is_numeric_dtype(out[c])
+        ]
+        out = self._append_cross_sectional_transforms(
+            out,
+            numeric_credit_cols,
+            groups=out["date"],
+            clip_abs=6.0,
+            coerce_source=True,
+        )
+        return out
 
     def _prepare_screener_annual_frame(self, raw: pd.DataFrame) -> pd.DataFrame:
         out = raw.copy()
@@ -1006,29 +1259,28 @@ class FeatureFactory:
             ["ticker", "screener_availability_date"], kind="mergesort"
         )
 
-        frames: list[pd.DataFrame] = []
-        for ticker, group in left.groupby("ticker", sort=False):
-            rt = right[right["ticker"] == ticker]
-            if rt.empty:
-                frames.append(group)
-                continue
-            merged = pd.merge_asof(
-                group.sort_values("date", kind="mergesort"),
-                rt.drop(columns=["ticker"], errors="ignore").sort_values("screener_availability_date", kind="mergesort"),
-                left_on="date",
-                right_on="screener_availability_date",
-                direction="backward",
-                suffixes=("", "_screener"),
-            )
-            frames.append(merged)
-        out = pd.concat(frames, ignore_index=True).sort_values(["date", "ticker"], kind="mergesort")
+        # F.1: single vectorized asof-merge matched within ticker, replacing the
+        # per-ticker Python loop over the full right frame.
+        left = left.dropna(subset=["ticker", "date"]).sort_values(["date", "ticker"], kind="mergesort")
+        merged = pd.merge_asof(
+            left,
+            right.sort_values(["screener_availability_date", "ticker"], kind="mergesort"),
+            left_on="date",
+            right_on="screener_availability_date",
+            by="ticker",
+            direction="backward",
+            suffixes=("", "_screener"),
+        )
+        out = merged.sort_values(["date", "ticker"], kind="mergesort")
         out = self._drop_screener_collision_columns(out)
 
         op = self._series_or_nan(out, "screener_raw_operating_profit")
         sales = self._series_or_nan(out, "screener_raw_sales")
         net_profit = self._series_or_nan(out, "screener_raw_net_profit")
         cfo = self._series_or_nan(out, "screener_raw_cash_from_operating_activity")
-        out["screener_opm_pct"] = (op / sales.replace(0.0, np.nan)) * 100.0
+        # B.2: route OPM% through the epsilon-floored divide (same as canonical
+        # operating_margin) instead of a bare exact-zero-guarded division.
+        out["screener_opm_pct"] = _safe_ratio_divide(op, sales) * 100.0
         out["screener_pat_growth_1y"] = self._series_or_nan(out, "screener_pat_growth_1y")
         out["screener_revenue_growth_1y"] = self._series_or_nan(out, "screener_revenue_growth_1y")
         out["screener_roce"] = self._series_or_nan(out, "screener_raw_roce")
@@ -1081,24 +1333,18 @@ class FeatureFactory:
             ["ticker", "screener_shareholding_availability_date"], kind="mergesort"
         )
 
-        frames: list[pd.DataFrame] = []
-        for ticker, group in left.groupby("ticker", sort=False):
-            rt = right[right["ticker"] == ticker]
-            if rt.empty:
-                frames.append(group)
-                continue
-            merged = pd.merge_asof(
-                group.sort_values("date", kind="mergesort"),
-                rt.drop(columns=["ticker"], errors="ignore").sort_values(
-                    "screener_shareholding_availability_date", kind="mergesort"
-                ),
-                left_on="date",
-                right_on="screener_shareholding_availability_date",
-                direction="backward",
-                suffixes=("", "_screener"),
-            )
-            frames.append(merged)
-        out = pd.concat(frames, ignore_index=True).sort_values(["date", "ticker"], kind="mergesort")
+        # F.1: single vectorized asof-merge matched within ticker.
+        left = left.dropna(subset=["ticker", "date"]).sort_values(["date", "ticker"], kind="mergesort")
+        merged = pd.merge_asof(
+            left,
+            right.sort_values(["screener_shareholding_availability_date", "ticker"], kind="mergesort"),
+            left_on="date",
+            right_on="screener_shareholding_availability_date",
+            by="ticker",
+            direction="backward",
+            suffixes=("", "_screener"),
+        )
+        out = merged.sort_values(["date", "ticker"], kind="mergesort")
         out = self._drop_screener_collision_columns(out)
 
         out["screener_promoter_pct"] = self._series_or_nan(out, "screener_raw_promoter_pct")
@@ -1116,11 +1362,14 @@ class FeatureFactory:
             + pd.to_numeric(out["screener_fii_pct"], errors="coerce")
             + pd.to_numeric(out["screener_dii_pct"], errors="coerce")
         )
-        if free_float.isna().all():
-            promoter = pd.to_numeric(out["screener_promoter_pct"], errors="coerce")
-            govt = pd.to_numeric(out["screener_govt_pct"], errors="coerce")
-            free_float = 100.0 - promoter - govt.fillna(0.0)
-        out["screener_free_float_pct"] = free_float
+        # F.3: fall back PER ROW where the public/fii/dii sum is missing but the
+        # promoter-based estimate is available — not only when the entire column
+        # is empty (the whole-column .isna().all() guard almost never fires and
+        # left ~40% of rows unfilled).
+        promoter = pd.to_numeric(out["screener_promoter_pct"], errors="coerce")
+        govt = pd.to_numeric(out["screener_govt_pct"], errors="coerce")
+        promoter_fallback = 100.0 - promoter - govt.fillna(0.0)
+        out["screener_free_float_pct"] = coalesce_rowwise(free_float, promoter_fallback)
         out["screener_shareholding_availability_date"] = pd.to_datetime(
             out.get("screener_shareholding_availability_date", pd.NaT), errors="coerce"
         )
@@ -1180,20 +1429,22 @@ class FeatureFactory:
         debt = to_num("total_debt")
         interest = to_num("interest_expense")
 
-        out["roe"] = net_income / (equity + eps)
-        out["operating_margin"] = op_inc / (revenue + eps)
-        out["ebitda_margin"] = ebitda / (revenue + eps)
+        safe_divide = _safe_ratio_divide
+
+        out["roe"] = safe_divide(net_income, equity)
+        out["operating_margin"] = safe_divide(op_inc, revenue)
+        out["ebitda_margin"] = safe_divide(ebitda, revenue)
         # CRITICAL: Accruals formula for Indian market - INDIA SIGN CORRECTION (Phase 0.2)
         # Formula: (Net_Income - Operating_Cash_Flow) / Total_Assets
         # Indian market behavior: High accruals → HIGHER returns (Sehgal et al. 2012)
         # This is OPPOSITE to US Sloan effect - we LONG high accruals in India
         # Reference: Northstar V3 Signal Engineering Plan, Phase 0.2
         # Sign: POSITIVE for India (high accruals = positive signal)
-        out["accruals_ratio"] = (net_income - op_cf) / (total_assets + eps)
-        out["cash_conversion"] = op_cf / (net_income + eps)
-        out["asset_turnover"] = revenue / (total_assets + eps)
-        out["debt_to_equity"] = debt / (equity + eps)
-        out["interest_coverage"] = op_inc / (interest.abs() + eps)
+        out["accruals_ratio"] = safe_divide(net_income - op_cf, total_assets)
+        out["cash_conversion"] = safe_divide(op_cf, net_income)
+        out["asset_turnover"] = safe_divide(revenue, total_assets)
+        out["debt_to_equity"] = safe_divide(debt, equity)
+        out["interest_coverage"] = safe_divide(op_inc, interest.abs(), min_abs_denominator=1.0)
 
         if "ticker" in out.columns:
             g = out.groupby("ticker", sort=False)
@@ -1213,7 +1464,7 @@ class FeatureFactory:
         if sector_col is None:
             sector = pd.Series("UNKNOWN", index=out.index, dtype="object")
         else:
-            sector = out[sector_col].astype(str).fillna("UNKNOWN")
+            sector = sector_string(out[sector_col])
         out["sector_name"] = sector
 
         # Sector-relative factors: cross-sectional de-biasing from broad beta.
@@ -1270,6 +1521,12 @@ class FeatureFactory:
         out = self._concat_new_columns(out, sector_z_updates)
 
         # Residual momentum engine: sector-neutral daily return accumulation.
+        # B.3: ret_1d_sector_resid is NOT a regression residual — it is the
+        # sector-mean-relative return, identical to ret_1d_sector_rel, and is
+        # dropped from the export by EXACT_DUPLICATE_DROP_PAIRS. It survives here
+        # only as the base series for the res_mom_* features (which ARE exported
+        # and correctly named). Kept as an internal intermediate, not a shipped
+        # feature.
         if "ret_1d" in out.columns and "ticker" in out.columns:
             ret_1d = pd.to_numeric(out["ret_1d"], errors="coerce")
             sec_ret_1d = ret_1d.groupby(sector_group, sort=False).transform("mean")
@@ -1533,6 +1790,22 @@ class FeatureFactory:
         if base.empty:
             return out
 
+        # Weekly exports keep only each ticker's last row per W-FRI week
+        # (resample_daily_panel_to_weekly tail(1)), so valuations computed on
+        # any other day are discarded. "weekly_tail" restricts the compute to
+        # exactly the surviving (ticker, date) rows — ~5x cheaper, identical
+        # weekly output. Off-anchor rows keep NaN val_* in the daily panel.
+        cadence = str((self.config.get("valuation", {}) or {}).get("compute_cadence", "daily")).lower()
+        if cadence == "weekly_tail":
+            week = base["date"].dt.to_period("W-FRI")
+            tail_mask = base.groupby(["ticker", week])["date"].transform("max").eq(base["date"])
+            n_before = len(base)
+            base = base.loc[tail_mask]
+            logger.info(
+                "[valuation] weekly_tail cadence: %d of %d daily rows selected (%d dates)",
+                len(base), n_before, base["date"].nunique(),
+            )
+
         valuation_rows: list[pd.DataFrame] = []
         try:
             for valuation_date, group in base.groupby("date", sort=True):
@@ -1559,7 +1832,24 @@ class FeatureFactory:
                 critical_coverage = 0.0
                 if not computed.empty and "val_discount_to_fair_pct" in computed.columns:
                     critical_coverage = float(pd.to_numeric(computed["val_discount_to_fair_pct"], errors="coerce").notna().mean())
-                if computed.empty or (len(tickers) >= 10 and critical_coverage < 0.40):
+                # G.5 retry heals a partially-poisoned cache by recomputing the
+                # whole date uncached. With a marker-attested precomputed cache
+                # (the export path) it is pure waste: cache rows ARE fresh
+                # computes, so the retry re-pays ~116ms/ticker to produce the
+                # same values — and on sparse 2017-18 dates it alone can blow
+                # Kaggle's 12h cap. Gate it.
+                retry_enabled = bool((self.config.get("valuation", {}) or {}).get("low_coverage_retry_enabled", True))
+                if retry_enabled and (computed.empty or (len(tickers) >= 10 and critical_coverage < 0.40)):
+                    # G.5: this uncached recompute doubles valuation cost on the
+                    # dates most likely to be sparse; count/log it so its real
+                    # frequency is visible rather than silently multiplying cost.
+                    self._valuation_retry_count = getattr(self, "_valuation_retry_count", 0) + 1
+                    logger.debug(
+                        "Valuation low-coverage retry #%d for %s (coverage=%.2f)",
+                        self._valuation_retry_count,
+                        valuation_date,
+                        critical_coverage,
+                    )
                     computed = self._valuation_block.compute(
                         as_of_date=pd.Timestamp(valuation_date).to_pydatetime(),
                         tickers=tickers,
@@ -1573,7 +1863,18 @@ class FeatureFactory:
                 valuation_rows.append(frame)
         except Exception as e:
             logger.warning(f"Valuation feature block failed for {as_of_date}: {e}")
+            try:
+                self._valuation_block.flush_cache()
+            except Exception:
+                pass
             return out
+
+        # I.1: persist the batched valuation cache once at the end of the daily
+        # loop instead of rewriting the whole file per date.
+        try:
+            self._valuation_block.flush_cache()
+        except Exception:
+            pass
 
         if not valuation_rows:
             return out
@@ -1639,192 +1940,11 @@ class FeatureFactory:
         ]
         return self._merge_asof_by_ticker(panel, ref[keep], left_on="date", right_on="et500_availability_date")
 
-    def _compute_piotroski_features(self, fundamentals: pd.DataFrame) -> pd.DataFrame:
-        if fundamentals is None or fundamentals.empty or "ticker" not in fundamentals.columns:
-            return pd.DataFrame(columns=["ticker", "availability_date", "piotroski_f_score", "piotroski_f_score_norm"])
-        f = fundamentals.copy()
-        f["ticker"] = f["ticker"].map(self._normalize_ticker)
-        f["fundamental_date"] = self._as_date(f, ["fundamental_date", "date", "Date", "timestamp", "fiscal_quarter_end_date"])
-        ann = self._as_date(
-            f,
-            [
-                "announcement_date",
-                "announcementDate",
-                "results_announcement_date",
-                "results_announced_at",
-                "report_announcement_date",
-            ],
-        )
-        availability = ann.where(ann.notna(), f["fundamental_date"]) + pd.Timedelta(
-            days=int(self.pit_financials_plus_days)
-        )
-        f["availability_date"] = pd.to_datetime(availability, errors="coerce")
-
-        for col in [
-            "net_income",
-            "total_assets",
-            "operating_cash_flow",
-            "total_debt",
-            "shares_outstanding",
-            "revenue",
-            "gross_profit",
-            "cost_of_revenue",
-            "working_capital",
-            "cash_and_equivalents",
-            "receivables",
-            "inventory",
-            "payables",
-            "deferred_revenue",
-            "lease_liabilities",
-        ]:
-            if col in f.columns:
-                f[col] = pd.to_numeric(f[col], errors="coerce")
-
-        f = f.dropna(subset=["ticker", "availability_date"]).sort_values(
-            ["ticker", "availability_date"], kind="mergesort"
-        )
-        if f.empty:
-            return pd.DataFrame(columns=["ticker", "availability_date", "piotroski_f_score", "piotroski_f_score_norm"])
-
-        def series_or_value(column: str, default: float = 0.0) -> pd.Series:
-            if column in f.columns:
-                return pd.to_numeric(f[column], errors="coerce")
-            return pd.Series(default, index=f.index, dtype=float)
-
-        net_income = series_or_value("net_income")
-        total_assets = series_or_value("total_assets")
-        operating_cash_flow = series_or_value("operating_cash_flow")
-        total_debt = series_or_value("total_debt")
-        shares_outstanding = series_or_value("shares_outstanding")
-        revenue = series_or_value("revenue")
-        gross_profit_series = series_or_value("gross_profit", default=np.nan)
-        cost_of_revenue = series_or_value("cost_of_revenue", default=np.nan)
-        working_capital = series_or_value("working_capital", default=np.nan)
-        cash_and_equivalents = series_or_value("cash_and_equivalents").fillna(0.0)
-        receivables = series_or_value("receivables").fillna(0.0)
-        inventory = series_or_value("inventory").fillna(0.0)
-        payables = series_or_value("payables").fillna(0.0)
-        deferred_revenue = series_or_value("deferred_revenue").fillna(0.0)
-        lease_liabilities = series_or_value("lease_liabilities").fillna(0.0)
-
-        roa = net_income / total_assets.replace(0.0, np.nan)
-        cfo = operating_cash_flow
-        roa_prev = roa.groupby(f["ticker"], sort=False).shift(4)
-        debt_ratio = total_debt / total_assets.replace(0.0, np.nan)
-        debt_prev = debt_ratio.groupby(f["ticker"], sort=False).shift(4)
-
-        # Liquidity proxy (current ratio) using available balance sheet items.
-        cur_assets = (
-            cash_and_equivalents
-            + receivables
-            + inventory
-        )
-        cur_liab = (
-            payables
-            + deferred_revenue
-            + lease_liabilities
-        ).replace(0.0, np.nan)
-        cur_ratio = cur_assets / cur_liab
-        if cur_ratio.isna().all():
-            cur_ratio = working_capital / total_assets.replace(0.0, np.nan)
-        cur_ratio_prev = cur_ratio.groupby(f["ticker"], sort=False).shift(4)
-
-        if "gross_profit" in f.columns and "revenue" in f.columns:
-            gross_margin = gross_profit_series / revenue.replace(0.0, np.nan)
-        elif "cost_of_revenue" in f.columns and "revenue" in f.columns:
-            gross_margin = (revenue - cost_of_revenue) / revenue.replace(0.0, np.nan)
-        else:
-            gross_margin = pd.Series(np.nan, index=f.index, dtype=float)
-        gross_margin_prev = gross_margin.groupby(f["ticker"], sort=False).shift(4)
-
-        asset_turnover = revenue / total_assets.replace(0.0, np.nan)
-        asset_turnover_prev = asset_turnover.groupby(f["ticker"], sort=False).shift(4)
-
-        shares_prev = shares_outstanding.groupby(f["ticker"], sort=False).shift(4)
-
-        score = pd.DataFrame(
-            {
-                "roa_pos": (roa > 0.0).astype(float),
-                "cfo_pos": (cfo > 0.0).astype(float),
-                "roa_change": (roa > roa_prev).astype(float),
-                "accruals_quality": (cfo > net_income).astype(float),
-                "gross_margin_inc": (gross_margin > gross_margin_prev).astype(float),
-                "asset_turnover_inc": (asset_turnover > asset_turnover_prev).astype(float),
-                "leverage_dec": (debt_ratio < debt_prev).astype(float),
-                "liquidity_inc": (cur_ratio > cur_ratio_prev).astype(float),
-                "no_equity_issuance": (shares_outstanding <= shares_prev).astype(float),
-            },
-            index=f.index,
-        )
-        f_score = score.sum(axis=1)
-        out = pd.DataFrame(
-            {
-                "ticker": f["ticker"].astype(str),
-                "availability_date": f["availability_date"],
-                "piotroski_f_score": f_score,
-                "piotroski_f_score_norm": f_score / 9.0,
-            }
-        )
-        out = out.dropna(subset=["ticker", "availability_date"]).drop_duplicates(
-            subset=["ticker", "availability_date"], keep="last"
-        )
-        return out.reset_index(drop=True)
-
-    def _compute_earnings_quality_features(self, fundamentals: pd.DataFrame) -> pd.DataFrame:
-        if fundamentals is None or fundamentals.empty or "ticker" not in fundamentals.columns:
-            return pd.DataFrame(
-                columns=["ticker", "availability_date", "earnings_quality_score", "accruals_volatility"]
-            )
-        f = fundamentals.copy()
-        f["ticker"] = f["ticker"].map(self._normalize_ticker)
-        f["fundamental_date"] = self._as_date(f, ["fundamental_date", "date", "Date", "timestamp", "fiscal_quarter_end_date"])
-        ann = self._as_date(
-            f,
-            [
-                "announcement_date",
-                "announcementDate",
-                "results_announcement_date",
-                "results_announced_at",
-                "report_announcement_date",
-            ],
-        )
-        availability = ann.where(ann.notna(), f["fundamental_date"]) + pd.Timedelta(
-            days=int(self.pit_financials_plus_days)
-        )
-        f["availability_date"] = pd.to_datetime(availability, errors="coerce")
-
-        for col in ["net_income", "operating_cash_flow", "total_assets"]:
-            if col in f.columns:
-                f[col] = pd.to_numeric(f[col], errors="coerce")
-        f = f.dropna(subset=["ticker", "availability_date"]).sort_values(
-            ["ticker", "availability_date"], kind="mergesort"
-        )
-        if f.empty:
-            return pd.DataFrame(
-                columns=["ticker", "availability_date", "earnings_quality_score", "accruals_volatility"]
-            )
-
-        # INDIA SIGN CORRECTION (Phase 0.2): In India, high accruals OUTPERFORM (Sehgal et al. 2012)
-        # So we want POSITIVE accruals to contribute POSITIVELY to the score
-        accruals = (f["net_income"] - f["operating_cash_flow"]) / f["total_assets"].replace(0.0, np.nan)
-        cash_flow_ratio = f["operating_cash_flow"] / f["net_income"].replace(0.0, np.nan)
-        accruals_vol = accruals.groupby(f["ticker"], sort=False).rolling(8, min_periods=4).std().reset_index(level=0, drop=True)
-
-        # INDIA SIGN: +accruals (high accruals = good in India), +cash_flow_ratio, -accruals_vol
-        score = (accruals + cash_flow_ratio - accruals_vol) / 3.0
-        score = self._winsorize_series(score, lower_q=0.05, upper_q=0.95)
-        out = pd.DataFrame(
-            {
-                "ticker": f["ticker"].astype(str),
-                "availability_date": f["availability_date"],
-                "earnings_quality_score": score,
-                "accruals_volatility": accruals_vol,
-            }
-        )
-        out = out.dropna(subset=["ticker", "availability_date"]).drop_duplicates(
-            subset=["ticker", "availability_date"], keep="last"
-        )
-        return out.reset_index(drop=True)
+    # H.1: _compute_piotroski_features and _compute_earnings_quality_features
+    # were removed as dead code — they were never called from build_features()
+    # and their column names (piotroski_f_score) did not even match the export
+    # (piotroski_fscore). Gap9AcademicFactors is the real, wired-in producer of
+    # piotroski_fscore / earnings_quality_ratio and their cs_z/cs_rank variants.
 
     def _compute_sue_features(self, screener_quarterly: pd.DataFrame) -> pd.DataFrame:
         if screener_quarterly is None or screener_quarterly.empty or "ticker" not in screener_quarterly.columns:
@@ -2051,7 +2171,19 @@ class FeatureFactory:
 
         if isinstance(fundamentals, pd.DataFrame) and not fundamentals.empty:
             f = fundamentals.copy()
-            f["fundamental_date"] = self._as_date(f, ["date", "Date", "timestamp", "fiscal_quarter_end_date"])
+            # The canonical fundamentals panel dates its rows with `report_date`
+            # (not `date`), so the old candidate list left fundamental_date all-NaN
+            # and the merge_asof below matched nothing — silently emptying the
+            # entire fundamentals family (accruals_ratio, roe, operating_margin,
+            # earnings_quality...). Include report_date, and prefer the canonical
+            # PIT-correct availability_date when it is already present.
+            f["fundamental_date"] = self._as_date(
+                f, ["date", "Date", "timestamp", "report_date", "fiscal_quarter_end_date", "screener_report_date"]
+            )
+            existing_avail = (
+                pd.to_datetime(f["availability_date"], errors="coerce")
+                if "availability_date" in f.columns else pd.Series(pd.NaT, index=f.index)
+            )
             ann = self._as_date(
                 f,
                 [
@@ -2070,7 +2202,10 @@ class FeatureFactory:
                     availability = f["fundamental_date"] + pd.Timedelta(days=int(self.pit_fundamental_lag_days))
             else:
                 availability = f["fundamental_date"]
-            f["availability_date"] = pd.to_datetime(availability, errors="coerce")
+            availability = pd.to_datetime(availability, errors="coerce")
+            # Fall back to the canonical availability_date wherever our computed one
+            # is missing (e.g. fundamental_date still NaN for an odd row).
+            f["availability_date"] = availability.fillna(existing_avail)
             needed = [
                 "fundamental_date",
                 "availability_date",
@@ -2115,12 +2250,18 @@ class FeatureFactory:
                 if c not in non_numeric_cols:
                     f[c] = pd.to_numeric(f[c], errors="coerce")
             panel = self._merge_asof_by_ticker(panel, f, left_on="date", right_on="availability_date")
+            def _safe_ratio(numerator: pd.Series, denominator: pd.Series, *, min_abs_denominator: float = 1e-6) -> pd.Series:
+                den = pd.to_numeric(denominator, errors="coerce").astype(float)
+                num = pd.to_numeric(numerator, errors="coerce").astype(float)
+                safe_den = den.where(den.abs() >= float(min_abs_denominator))
+                return (num / safe_den).replace([np.inf, -np.inf], np.nan)
+
             if {"net_income", "revenue"}.issubset(set(panel.columns)):
-                panel["ni_margin"] = panel["net_income"] / (panel["revenue"] + 1e-12)
+                panel["ni_margin"] = _safe_ratio(panel["net_income"], panel["revenue"])
             if {"total_debt", "equity"}.issubset(set(panel.columns)):
-                panel["debt_to_equity"] = panel["total_debt"] / (panel["equity"] + 1e-12)
+                panel["debt_to_equity"] = _safe_ratio(panel["total_debt"], panel["equity"])
             if {"free_cash_flow", "operating_cash_flow"}.issubset(set(panel.columns)):
-                panel["fcf_to_ocf"] = panel["free_cash_flow"] / (panel["operating_cash_flow"] + 1e-12)
+                panel["fcf_to_ocf"] = _safe_ratio(panel["free_cash_flow"], panel["operating_cash_flow"])
             panel = self._add_fundamental_factor_features(panel)
 
             # Canonical academic factor features are merged later via FactorRegistry.
@@ -2157,6 +2298,7 @@ class FeatureFactory:
                         "alternative_data_path": self.alternative_data_path,
                     }
                 )
+                print("[progress]   ...alternative/bulk-deal features", flush=True)
                 alt_features = alt_loader.get_features_as_of_frame(panel)
                 if isinstance(alt_features, pd.DataFrame) and not alt_features.empty:
                     # Debug coverage for alternative features.
@@ -2221,10 +2363,15 @@ class FeatureFactory:
             m = m.dropna(subset=["date"]).sort_values("date")
 
             # Prefix numeric macro columns to prevent collisions.
+            # F.2: skip all-null columns so a legacy/aspirational macro schema
+            # (e.g. never-populated sentiment_* fields) does not import ~76 dead
+            # macro_* columns that repairs then discard every build.
             macro_numeric = [
                 c
                 for c in m.columns
-                if c != "date" and pd.api.types.is_numeric_dtype(m[c])
+                if c != "date"
+                and pd.api.types.is_numeric_dtype(m[c])
+                and bool(pd.to_numeric(m[c], errors="coerce").notna().any())
             ]
             rename = {c: f"macro_{c}" for c in macro_numeric}
             m = m.rename(columns=rename)
@@ -2380,6 +2527,8 @@ class FeatureFactory:
         if bool(self.use_macro_features):
             panel = self._merge_macro_feature_pack(panel)
             panel = self._ensure_primary_ticker_column(panel)
+        panel = self._merge_credit_feature_pack(panel)
+        panel = self._ensure_primary_ticker_column(panel)
         panel = self.apply_sentiment_feature_mode(panel)
         panel = self._add_et500_features(panel, et500_membership)
         panel = self._ensure_primary_ticker_column(panel)
@@ -2391,9 +2540,11 @@ class FeatureFactory:
         # Gap 9: Add academic factor features before structural transforms so the
         # canonical factor outputs are the only source of these signals.
         if self.use_academic_factors:
+            print("[progress]   ...academic factor features", flush=True)
             as_of_date = pd.to_datetime(panel["date"], errors="coerce").max() if "date" in panel.columns else None
             panel = self._add_academic_factor_features(panel, as_of_date)
         if self.use_valuation_features:
+            print("[progress]   ...valuation features", flush=True)
             as_of_date = pd.to_datetime(panel["date"], errors="coerce").max() if "date" in panel.columns else None
             panel = self._add_valuation_features(panel, as_of_date)
 
@@ -2631,7 +2782,7 @@ class FeatureFactory:
         # Static categorical ids for embeddings.
         # ------------------------------------------------------------------
         ticker_codes = (
-            df["ticker"].astype(str).fillna("UNKNOWN").astype("category").cat.codes.astype(np.int64)
+            sector_string(df["ticker"]).astype("category").cat.codes.astype(np.int64)
             if "ticker" in df.columns
             else np.zeros(len(df), dtype=np.int64)
         )
@@ -2644,7 +2795,7 @@ class FeatureFactory:
         if sector_col is None:
             sector_codes = np.zeros(len(df), dtype=np.int64)
         else:
-            sector_codes = df[sector_col].astype(str).fillna("UNKNOWN").astype("category").cat.codes.astype(np.int64)
+            sector_codes = sector_string(df[sector_col]).astype("category").cat.codes.astype(np.int64)
 
         def _to_numeric_frame(frame: pd.DataFrame) -> pd.DataFrame:
             if frame.empty:

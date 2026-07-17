@@ -9,7 +9,7 @@ and what the best strategy made on each day. This catches:
 
 Usage:
     try:
-    from intelligence.strategy_regret import StrategyRegret
+    from src.intelligence.strategy_regret import StrategyRegret
 except ImportError:
     from StrategyRegret import StrategyRegret
     

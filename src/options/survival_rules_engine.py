@@ -295,8 +295,9 @@ class SurvivalRulesEngine:
     ) -> Tuple[bool, str]:
         """
         Check single-trade trauma rule
-        
-        If any trade loses >80% of max loss, block short-vol for 2 weeks.
+
+        If any trade loses more than config.trauma_loss_threshold_pct of max loss,
+        block short-vol for config.trauma_cooldown_weeks weeks.
         Applies to iron condors and calendar spreads only.
         
         Args:

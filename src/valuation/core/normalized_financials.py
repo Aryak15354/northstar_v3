@@ -504,18 +504,34 @@ class FinancialNormalizer:
             )
             .reset_index()
             .sort_values(["ticker", "period_end"], kind="mergesort")
+            .reset_index(drop=True)
         )
         wide.columns.name = None
 
         lag_days = self.reporting_lag_days if str(frequency).lower() == "annual" else self.quarterly_reporting_lag_days
         wide["available_date"] = pd.to_datetime(wide["period_end"], errors="coerce") + pd.Timedelta(days=int(lag_days))
 
+        # PIT-CRITICAL: the Screener key-ratios JSON is a *current-day* snapshot
+        # with no as-of date (Current Price, Market Cap, today's ROE/ROCE/Book
+        # Value, implied shares). Broadcasting/backfilling it into every
+        # historical period stamps today's price and ratios onto years of
+        # history — a direct look-ahead leak into the entire val_* feature family.
+        # Attach the snapshot ONLY to the most-recent statement row, and only
+        # where that row is missing the field. Historical rows compute their own
+        # values from the statements (e.g. ROCE via capital employed) or stay
+        # NaN. A present-day valuation query resolves to the global-latest row and
+        # still sees the snapshot; a historical as-of query resolves to an older
+        # row that never carried it.
         metadata = self._load_metadata_key_ratios(str(wide["ticker"].iloc[0]))
-        for key, value in metadata.items():
-            if key not in wide.columns:
-                wide[key] = value
-            else:
-                wide[key] = pd.to_numeric(wide[key], errors="coerce").fillna(value)
+        if metadata and len(wide):
+            latest_idx = wide.index[-1]
+            for key, value in metadata.items():
+                if key not in wide.columns:
+                    wide[key] = np.nan
+                    wide[key] = pd.to_numeric(wide[key], errors="coerce")
+                current_latest = pd.to_numeric(pd.Series([wide.at[latest_idx, key]]), errors="coerce").iloc[0]
+                if pd.isna(current_latest):
+                    wide.at[latest_idx, key] = value
 
         if "equity_capital" in wide.columns and "face_value" in wide.columns and "shares_outstanding" in wide.columns:
             implied_shares = pd.to_numeric(wide["equity_capital"], errors="coerce") / pd.to_numeric(

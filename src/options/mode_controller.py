@@ -37,6 +37,10 @@ class ModeController:
         self.mode_history = []
         self.mode_entered_at = datetime.now()
         self.constraints_active = {}
+        # Injected later by runtime wiring when the UnifiedState bridge is
+        # active; must exist from birth — transition_to_mode() dereferences it
+        # and crashed daemon startup when no bridge was wired (2026-07-06).
+        self.options_bridge = None
         
         # Mode transition thresholds
         self.thresholds = {

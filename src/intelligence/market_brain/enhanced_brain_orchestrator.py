@@ -29,10 +29,10 @@ from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
-from src.enhanced_regime_memory import EnhancedRegimeMemoryEngine
-from src.market_tensor import MarketTensorEngine
-from src.market_pulse import MarketPulseEngine
-from src.anticipatory_capital_allocator import AnticipatoryCapitalAllocator
+from src.intelligence.market_brain.enhanced_regime_memory import EnhancedRegimeMemoryEngine
+from src.intelligence.market_brain.market_tensor import MarketTensorEngine
+from src.intelligence.market_brain.market_pulse import MarketPulseEngine
+from src.intelligence.anticipatory_capital_allocator import AnticipatoryCapitalAllocator
 
 class EnhancedMarketBrainOrchestrator:
     """

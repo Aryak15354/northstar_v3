@@ -137,7 +137,7 @@ def create_market_brain_data():
     """Create comprehensive market brain data"""
     print("🧠 Creating market brain data...")
     
-    data_path = Path("data/processed")
+    data_path = Path("data/testing/sample_processed")  # NEVER canonical: sample data must not overwrite production artifacts
     intelligence_path = Path("data/intelligence")
     intelligence_path.mkdir(parents=True, exist_ok=True)
     
@@ -238,7 +238,7 @@ def create_comprehensive_strategy_data():
     """Create comprehensive strategy performance data"""
     print("📊 Creating comprehensive strategy data...")
     
-    data_path = Path("data/processed")
+    data_path = Path("data/testing/sample_processed")  # NEVER canonical: sample data must not overwrite production artifacts
     backtests_path = Path("data/backtests")
     backtests_path.mkdir(parents=True, exist_ok=True)
     
@@ -356,7 +356,7 @@ def create_risk_management_data():
     """Create comprehensive risk management data"""
     print("🛡️ Creating risk management data...")
     
-    data_path = Path("data/processed")
+    data_path = Path("data/testing/sample_processed")  # NEVER canonical: sample data must not overwrite production artifacts
     
     # Portfolio risk metrics
     portfolio_risk = {
@@ -648,7 +648,7 @@ def create_portfolio_analytics_data():
     """Create comprehensive portfolio analytics data"""
     print("📋 Creating portfolio analytics data...")
     
-    data_path = Path("data/processed")
+    data_path = Path("data/testing/sample_processed")  # NEVER canonical: sample data must not overwrite production artifacts
     
     # Current portfolio positions
     positions = {
@@ -745,7 +745,7 @@ def create_system_health_data():
     """Create comprehensive system health data"""
     print("🏥 Creating system health data...")
     
-    data_path = Path("data/processed")
+    data_path = Path("data/testing/sample_processed")  # NEVER canonical: sample data must not overwrite production artifacts
     
     # System health metrics
     system_health = {

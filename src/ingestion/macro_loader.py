@@ -169,28 +169,45 @@ class MacroLoader(BaseLoader):
         release_calendar: pd.DataFrame,
         as_of_date: datetime
     ) -> pd.DataFrame:
-        """Apply release lags to compute actual availability dates."""
-        if 'release_date' not in df.columns:
-            # Compute release dates based on calendar
-            df['release_date'] = df['period_date']
-            
-            # Apply default conservative lag if no calendar or calendar is empty
-            if release_calendar.empty or 'indicator' not in release_calendar.columns:
-                df['release_date'] = df['period_date'] + timedelta(days=45)
-            else:
-                # Apply indicator-specific lags
-                for _, row in release_calendar.iterrows():
-                    if 'indicator' in row and 'lag_days' in row:
-                        indicator = row['indicator']
-                        lag_days = row.get('lag_days', 45)
-                        
-                        # Find columns matching this indicator
-                        matching_cols = [c for c in df.columns if indicator in c]
-                        if matching_cols:
-                            # For simplicity, apply same lag to all rows
-                            # In production, this would be more sophisticated
-                            df['release_date'] = df['period_date'] + timedelta(days=lag_days)
-        
+        """Compute a single, POINT-IN-TIME-SAFE availability date per period row.
+
+        This frame is WIDE (one row per period, one column per indicator) and PIT
+        filtering downstream is row-level (`df[df.release_date <= as_of]`). A row
+        therefore becomes fully available only once its SLOWEST-releasing
+        indicator has printed — i.e. period_date + MAX applicable lag.
+
+        The previous loop overwrote the single release_date column on every
+        indicator that matched a column, so the LAST-iterated indicator's lag won
+        for ALL indicators. Depending on calendar order that applied e.g. repo's
+        0-day lag to CPI/GDP (a LOOK-AHEAD) or over-lagged everything. Using the
+        max applicable lag is both look-ahead-safe and correct for a row-as-unit
+        availability model. (A per-indicator availability surface would require a
+        long-format melt — deliberately out of scope here to keep the wide
+        contract downstream consumers depend on.)
+        """
+        if 'release_date' in df.columns:
+            return df
+
+        default_lag = 45
+        if release_calendar.empty or 'indicator' not in release_calendar.columns:
+            df['release_date'] = df['period_date'] + timedelta(days=default_lag)
+            return df
+
+        # Collect the lag of every calendar indicator that actually matches a
+        # column present in this frame; the row's availability is the slowest.
+        applicable_lags = []
+        for _, row in release_calendar.iterrows():
+            indicator = row.get('indicator')
+            if not indicator:
+                continue
+            if any(str(indicator) in str(c) for c in df.columns):
+                try:
+                    applicable_lags.append(int(row.get('lag_days', default_lag)))
+                except (TypeError, ValueError):
+                    applicable_lags.append(default_lag)
+
+        effective_lag = max(applicable_lags) if applicable_lags else default_lag
+        df['release_date'] = df['period_date'] + timedelta(days=int(effective_lag))
         return df
     
     def load_yield_curve(

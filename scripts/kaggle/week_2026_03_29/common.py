@@ -9,6 +9,7 @@ import os
 import re
 import stat
 import shutil
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,8 +20,18 @@ import pandas as pd
 import yaml
 from scipy.stats import spearmanr
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.core.panel_math import (  # noqa: E402
+    coalesce_rowwise,
+    group_rank_centered,
+    group_zscore,
+    normalize_ticker as _shared_normalize_ticker,
+    sector_string,
+)
+
 WEEK_ID = "2026_03_29"
 WEEK_SLUG = "week_2026_03_29"
 RAW_BUNDLE_MANIFEST = "northstar_weekly_raw_manifest.json"
@@ -74,8 +85,83 @@ NON_FEATURE_COLUMNS = {
     "week_source_date",
     "week_of_year",
     "calendar_year",
+    # regime_code / plan_regime_code encode a hindsight-curated regime label
+    # (R5 "Recovery", event overlays only knowable after the fact) and are
+    # computed per-chunk, so they are NOT model-safe training inputs. They stay
+    # in northstar_regime_labels.parquet for regime-sliced *evaluation* only.
+    "regime_code",
+    "plan_regime_code",
 }
 MODEL_EXCLUDED_UNIT_KINDS = {"absolute_scale", "inr_per_share", "count", "text_blob"}
+MIN_MODEL_COVERAGE = 0.05
+# Families whose low coverage is a KNOWN, documented limitation (credit history
+# only exists for a subset of banks/quarters). These columns are still SHIPPED in
+# the export (so the limited history is available), but they are NOT marked
+# model_safe — a documented-low-coverage column must not be silently rubber-
+# stamped as safe to train on. (A.2: previously this exemption both included them
+# in the feature set AND forced model_safe=True, the exact stub-registry failure.)
+LOW_COVERAGE_DOCUMENTED_FAMILIES = ("credit_",)
+RATIO_SANITY_BOUNDS = {
+    "interest_coverage": (-500.0, 500.0),
+    "cash_conversion": (-100.0, 100.0),
+    "ni_margin": (-5.0, 5.0),
+    "operating_margin": (-5.0, 5.0),
+    "operating_margin_change": (-5.0, 5.0),
+    "ebitda_margin": (-5.0, 5.0),
+    "gross_margin": (-5.0, 5.0),
+    "debt_to_equity": (-50.0, 50.0),
+    "fcf_to_ocf": (-100.0, 100.0),
+    # B.2: Screener OPM% is a bare division with only an exact-zero guard.
+    "screener_opm_pct": (-500.0, 500.0),
+    # B.1 backstop: credit GNPA/NNPA % change columns are now absolute
+    # percentage-point diffs at source; keep a bound as a defense-in-depth net.
+    "credit_gnpa_pct_qoq": (-100.0, 100.0),
+    "credit_gnpa_pct_yoy": (-100.0, 100.0),
+    "credit_nnpa_pct_qoq": (-100.0, 100.0),
+    "credit_nnpa_pct_yoy": (-100.0, 100.0),
+}
+DEAD_DEFAULT_FLAG_COLUMNS = {
+    "insider_buy_flag_30d",
+    "insider_sell_flag_30d",
+    "institutional_buy_flag",
+    "order_win_flag_30d",
+}
+EXACT_DUPLICATE_DROP_PAIRS = (
+    ("ret_1d_sector_rel", "ret_1d_sector_resid"),
+    ("macro_activity_composite", "macro_macro_activity_composite"),
+    # B.4: the first pair drops macro_macro_activity_composite, so the second
+    # pair must compare two still-live columns (power_yoy_growth is row-identical
+    # to macro_activity_composite) — otherwise it was a silent no-op.
+    ("macro_activity_composite", "power_yoy_growth"),
+    ("mkt_sent_polarity", "mkt_sent_policy_weight"),
+    ("rbi_wholesale_price_index_2011_12_100", "rbi_wpi_monthly_all_commodity"),
+    ("rbi_marginal_standing_facility_msf_rate", "rbi_bank_rate"),
+    ("rbi_balance_sheet_assets", "rbi_balance_sheet_liabilities"),
+)
+RBI_CORE_HINTS = (
+    "policy_repo",
+    "repo_rate",
+    "reverse_repo",
+    "marginal_standing_facility",
+    "msf",
+    "bank_rate",
+    "10_year",
+    "yield",
+    "consumer_price",
+    "cpi",
+    "wholesale_price",
+    "wpi",
+    "iip",
+    "bank_credit",
+    "non_food_credit",
+    "deposit",
+    "money_supply",
+    "m3",
+    "forex",
+    "liquidity",
+    "call_money",
+    "rupee",
+)
 RAW_ABSOLUTE_FEATURE_NAMES = {
     "revenue",
     "sales",
@@ -145,6 +231,41 @@ QUALITY_PROXY_FALLBACKS = {
     "accruals_ratio": "val_accruals_ratio_zscore",
 }
 
+# Single source of truth for the feature-family coverage audit, shared by both
+# build paths (direct export and chunked merge) so their thresholds cannot drift.
+FAMILY_AUDIT_SPECS = {
+    "sentiment": {
+        "prefixes": ("sent_", "sentiment_", "event_", "narrative_", "topic_", "mkt_sent_", "macro_sentiment_"),
+        "core_prefixes": ("sentiment_polarity", "sent_northstar", "mkt_sent_polarity"),
+        "min_columns": 10,
+        "min_core_median_coverage": 0.20,
+    },
+    "rbi_macro": {
+        "prefixes": ("rbi_",),
+        "core_prefixes": ("rbi_policy_repo", "rbi_10_year", "rbi_bank_credit", "rbi_consumer_price"),
+        "min_columns": 20,
+        "min_core_median_coverage": 0.50,
+    },
+    "credit_quality": {
+        "prefixes": ("credit_",),
+        "core_prefixes": ("credit_gnpa", "credit_nnpa", "credit_cet1", "credit_provision", "credit_cost"),
+        "min_columns": 6,
+        "min_core_median_coverage": 0.005,
+        "source_scope": "limited_to_available_quarterly_credit_history",
+    },
+}
+
+# Keep the RBI-cap "core signal" hints in sync with what the family audit calls
+# core, so a series the audit measures can never be dropped by the cap before the
+# audit sees it (E.5). Any core_prefix added to FAMILY_AUDIT_SPECS["rbi_macro"]
+# is automatically protected here.
+RBI_CORE_HINTS = tuple(
+    dict.fromkeys(
+        list(RBI_CORE_HINTS)
+        + [str(p).removeprefix("rbi_") for p in FAMILY_AUDIT_SPECS["rbi_macro"]["core_prefixes"]]
+    )
+)
+
 
 @dataclass
 class ExportArtifacts:
@@ -185,14 +306,7 @@ def _clean_text(value: Any) -> str:
 
 
 def _normalize_ticker(value: Any) -> str:
-    text = _clean_text(value).upper()
-    if not text:
-        return ""
-    if text.endswith(".NS"):
-        return text
-    if "." in text:
-        text = text.split(".", 1)[0]
-    return f"{text}.NS"
+    return _shared_normalize_ticker(value)
 
 
 def now_utc_iso() -> str:
@@ -234,7 +348,14 @@ def write_json(path: Path, payload: Any) -> None:
 def stabilize_sparse_event_features(
     features_df: pd.DataFrame,
     feature_candidates: Sequence[str] | None = None,
+    *,
+    max_hold_weeks: int = 26,
 ) -> tuple[pd.DataFrame, list[str], list[dict[str, Any]]]:
+    """Forward-fill sparse event features, but only for ``max_hold_weeks`` weeks
+    after each real observation so a stale event does not persist indefinitely
+    (a 2021 eps_sue silently held into 2026). The ``_raw_available`` flag still
+    marks the weeks that carry a genuine observation.
+    """
     candidates = [str(name) for name in (feature_candidates or SPARSE_EVENT_FEATURES)]
     present = [feature for feature in candidates if feature in features_df.columns]
     if not present:
@@ -255,6 +376,13 @@ def stabilize_sparse_event_features(
         raw_flag_name = f"{feature}_raw_available"
         raw_available = numeric.notna()
         stabilized = numeric.groupby(ticker_groups, sort=False).ffill()
+        # N7: null out values held longer than max_hold_weeks since the last real
+        # observation. weeks_held resets to 0 at each real obs (obs_run increments
+        # there) and counts weekly rows within the held streak.
+        if int(max_hold_weeks) > 0:
+            obs_run = raw_available.groupby(ticker_groups, sort=False).cumsum()
+            weeks_held = work.groupby([ticker_groups, obs_run], sort=False).cumcount()
+            stabilized = stabilized.mask(weeks_held > int(max_hold_weeks), np.nan)
         work[feature] = stabilized.astype("float32")
         work[raw_flag_name] = raw_available.astype("float32")
         derived_features.append(raw_flag_name)
@@ -522,6 +650,8 @@ def build_runtime_policy_dict(
                 "prices_path": "data/canonical/prices/equity_prices_daily.parquet",
                 "fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
                 "macro_features_path": "data/canonical/macro/macro_regime_features.parquet",
+                "rbi_macro_weekly_path": "data/processed/macro/rbi_macro_weekly.parquet",
+                "credit_quarterly_path": "data/processed/sector_financials/credit_quarterly.parquet",
                 "valuation_posterior_path": "data/processed/valuation_posterior.parquet",
                 "screener_fundamentals_path": "data/canonical/fundamentals/fundamentals_annual_panel.parquet",
                 "screener_quarterly_path": "data/canonical/fundamentals/fundamentals_quarterly_panel.parquet",
@@ -533,7 +663,11 @@ def build_runtime_policy_dict(
                 "use_macro_features": True,
                 "use_screener_features": True,
                 "use_alternative_features": True,
-                "use_sentiment_features": False,
+                # C.8: keep this in sync with _dataset_runtime_config (the
+                # in-memory config that DatasetManager actually runs). It was
+                # False here while the runtime config used True, making the
+                # written research_policy.yaml misrepresent what runs.
+                "use_sentiment_features": True,
                 "use_gap9_academic_factors": gap9_enabled,
                 "lookback_days": int(max(180, lookback_days)),
                 "max_tickers": int(max(0, max_tickers)),
@@ -606,6 +740,15 @@ def select_feature_columns(panel: pd.DataFrame) -> list[str]:
         if pd.api.types.is_numeric_dtype(panel[column]):
             if infer_feature_unit_kind(name) in MODEL_EXCLUDED_UNIT_KINDS:
                 continue
+            series = pd.to_numeric(panel[column], errors="coerce").replace([np.inf, -np.inf], np.nan)
+            coverage = float(series.notna().mean()) if len(series) else 0.0
+            if coverage <= 0.0:
+                continue
+            clean = series.dropna()
+            if not clean.empty and clean.nunique(dropna=True) <= 1:
+                continue
+            if coverage < MIN_MODEL_COVERAGE and not name.startswith(LOW_COVERAGE_DOCUMENTED_FAMILIES):
+                continue
             feature_cols.append(name)
     return sorted(dict.fromkeys(feature_cols))
 
@@ -619,6 +762,189 @@ def cast_feature_frame(panel: pd.DataFrame, feature_cols: Sequence[str]) -> pd.D
     for column in numeric_cols:
         out[column] = pd.to_numeric(out[column], errors="coerce").astype("float32")
     return out.sort_values(["date", "ticker"], kind="mergesort").reset_index(drop=True)
+
+
+def _series_exactly_equal(left: pd.Series, right: pd.Series) -> bool:
+    l_num = pd.to_numeric(left, errors="coerce").replace([np.inf, -np.inf], np.nan)
+    r_num = pd.to_numeric(right, errors="coerce").replace([np.inf, -np.inf], np.nan)
+    both_missing = l_num.isna() & r_num.isna()
+    if bool(both_missing.all()):
+        return True
+    return bool(((l_num.eq(r_num)) | both_missing).all())
+
+
+def _rank_rbi_columns_by_quality(frame: pd.DataFrame, columns: Sequence[str], *, max_columns: int = 120) -> list[str]:
+    if len(columns) <= max_columns:
+        return list(columns)
+    scores: list[tuple[int, float, float, str]] = []
+    for col in columns:
+        lower = str(col).lower()
+        is_core = any(hint in lower for hint in RBI_CORE_HINTS)
+        # C.6: only drop staleness (_age_weeks) columns for NON-core series. The
+        # blanket exclusion was eliminating the RBI staleness signal wholesale
+        # instead of just deduplicating redundant release-group copies; keep the
+        # age-weeks column for core signals (e.g. repo/CPI) so staleness survives.
+        if ("_age_weeks" in lower) and not is_core:
+            continue
+        series = pd.to_numeric(frame[col], errors="coerce").replace([np.inf, -np.inf], np.nan)
+        coverage = float(series.notna().mean()) if len(series) else 0.0
+        clean = series.dropna()
+        if clean.empty or clean.nunique(dropna=True) <= 1:
+            continue
+        variance = float(clean.var()) if len(clean) > 1 else 0.0
+        core = 1 if is_core else 0
+        scores.append((core, coverage, variance if np.isfinite(variance) else 0.0, str(col)))
+    scores.sort(key=lambda row: (row[0], row[1], row[2], row[3]), reverse=True)
+    return [row[3] for row in scores[:max_columns]]
+
+
+def apply_export_quality_repairs(
+    panel: pd.DataFrame,
+    *,
+    max_rbi_columns: int = 120,
+    signal_audit: dict[str, Any] | None = None,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Repair/prune dataset defects that should never reach model training.
+
+    ``signal_audit`` (the plan_signal_audit dict) is optional; when provided, any
+    column dropped as fully-dead that also appears in the audit keeps its
+    status/notes in ``audit["dead_columns_dropped_detail"]`` so a genuinely
+    unavailable signal leaves a diagnostic trail instead of vanishing silently.
+    """
+    if panel is None or panel.empty:
+        return pd.DataFrame() if panel is None else panel, {"status": "empty"}
+
+    out = panel.copy()
+    audit: dict[str, Any] = {
+        "derived_columns": [],
+        "ratio_nulls_added": {},
+        "ratio_cs_recomputed": [],
+        "dead_default_flags_nullified": [],
+        "duplicate_columns_dropped": [],
+        "dead_columns_dropped": [],
+        "dead_columns_dropped_detail": {},
+        "constant_columns_dropped": [],
+        "rbi_columns_before": 0,
+        "rbi_columns_after": 0,
+        "rbi_columns_dropped": [],
+    }
+
+    signal_notes: dict[str, dict[str, Any]] = {}
+    if isinstance(signal_audit, dict):
+        for row in signal_audit.get("signals", []) or []:
+            name = str(row.get("signal", "")).strip()
+            if name:
+                signal_notes[name] = {
+                    "status": row.get("status"),
+                    "source": row.get("source"),
+                    "notes": row.get("notes"),
+                }
+
+    # C.3: this vix_india_4w / rbi_rate_chg derivation is a FALLBACK that only
+    # fires when the column is absent. The canonical chunked path already produces
+    # both (with a full audit trail) in build_local_feature_chunks' plan-signal
+    # block, so this branch is effectively only for the deprecated direct-export
+    # path. Kept as a safety net; the plan-signal block is the source of truth.
+    if "vix_india_4w" not in out.columns and "india_vix" in out.columns and "date" in out.columns:
+        by_date = (
+            out[["date", "india_vix"]]
+            .drop_duplicates("date", keep="last")
+            .sort_values("date", kind="mergesort")
+            .copy()
+        )
+        by_date["vix_india_4w"] = pd.to_numeric(by_date["india_vix"], errors="coerce").pct_change(4)
+        out = out.merge(by_date[["date", "vix_india_4w"]], on="date", how="left")
+        audit["derived_columns"].append("vix_india_4w")
+
+    if "rbi_rate_chg" not in out.columns:
+        repo_cols = [
+            col
+            for col in out.columns
+            if str(col).startswith("rbi_")
+            and ("policy_repo" in str(col).lower() or "repo_rate" in str(col).lower())
+        ]
+        if repo_cols and "date" in out.columns:
+            by_date = (
+                out[["date", repo_cols[0]]]
+                .drop_duplicates("date", keep="last")
+                .sort_values("date", kind="mergesort")
+                .copy()
+            )
+            by_date["rbi_rate_chg"] = pd.to_numeric(by_date[repo_cols[0]], errors="coerce").diff()
+            out = out.merge(by_date[["date", "rbi_rate_chg"]], on="date", how="left")
+            audit["derived_columns"].append("rbi_rate_chg")
+
+    # C.2: apply the numeric sanity bound ONLY to the raw metric — the *_cs_z /
+    # *_cs_rank / *_sector_z derivatives live in a different (standardized) scale,
+    # so the raw bound essentially never fires on them. After nulling raw
+    # outliers, recompute the cross-sectional derivatives from the cleaned raw
+    # column so a single corrupted value no longer distorts every other ticker's
+    # z-score on that date.
+    has_date = "date" in out.columns
+    for base, (lo, hi) in RATIO_SANITY_BOUNDS.items():
+        if base not in out.columns:
+            continue
+        series = pd.to_numeric(out[base], errors="coerce").replace([np.inf, -np.inf], np.nan)
+        bad = series.notna() & ((series < lo) | (series > hi))
+        if not bool(bad.any()):
+            continue
+        out.loc[bad, base] = np.nan
+        audit["ratio_nulls_added"][base] = int(bad.sum())
+        if has_date:
+            z_col = f"{base}_cs_z"
+            rank_col = f"{base}_cs_rank"
+            if z_col in out.columns:
+                out[z_col] = group_zscore(out[base], out["date"]).astype(out[z_col].dtype if out[z_col].notna().any() else "float32")
+                audit["ratio_cs_recomputed"].append(z_col)
+            if rank_col in out.columns:
+                out[rank_col] = group_rank_centered(out[base], out["date"]).astype("float32")
+                audit["ratio_cs_recomputed"].append(rank_col)
+
+    for col in sorted(DEAD_DEFAULT_FLAG_COLUMNS):
+        if col not in out.columns:
+            continue
+        series = pd.to_numeric(out[col], errors="coerce")
+        clean = series.dropna()
+        if not clean.empty and clean.nunique(dropna=True) == 1 and float(clean.iloc[0]) == 0.0:
+            related = [c for c in out.columns if c == col or str(c).startswith(f"{col}_")]
+            out.loc[:, related] = np.nan
+            audit["dead_default_flags_nullified"].extend(related)
+
+    for keep, drop in EXACT_DUPLICATE_DROP_PAIRS:
+        if keep in out.columns and drop in out.columns and _series_exactly_equal(out[keep], out[drop]):
+            out = out.drop(columns=[drop])
+            audit["duplicate_columns_dropped"].append({"kept": keep, "dropped": drop})
+
+    numeric_cols = [c for c in out.columns if c not in NON_FEATURE_COLUMNS and pd.api.types.is_numeric_dtype(out[c])]
+    dead_cols: list[str] = []
+    constant_cols: list[str] = []
+    for col in numeric_cols:
+        series = pd.to_numeric(out[col], errors="coerce").replace([np.inf, -np.inf], np.nan)
+        clean = series.dropna()
+        if clean.empty:
+            dead_cols.append(str(col))
+        elif clean.nunique(dropna=True) <= 1 and str(col) not in {"nifty_above_200d"}:
+            constant_cols.append(str(col))
+    if dead_cols or constant_cols:
+        out = out.drop(columns=sorted(set(dead_cols + constant_cols)), errors="ignore")
+        audit["dead_columns_dropped"] = sorted(set(dead_cols))
+        audit["constant_columns_dropped"] = sorted(set(constant_cols))
+        # E.4: keep a diagnostic trail for dropped-dead columns that a signal
+        # audit already explained (e.g. a genuinely unavailable macro signal).
+        audit["dead_columns_dropped_detail"] = {
+            col: signal_notes[col] for col in dead_cols if col in signal_notes
+        }
+
+    rbi_cols = [c for c in out.columns if str(c).startswith("rbi_") and pd.api.types.is_numeric_dtype(out[c])]
+    audit["rbi_columns_before"] = int(len(rbi_cols))
+    keep_rbi = set(_rank_rbi_columns_by_quality(out, rbi_cols, max_columns=max_rbi_columns))
+    drop_rbi = [c for c in rbi_cols if c not in keep_rbi]
+    if drop_rbi:
+        out = out.drop(columns=drop_rbi, errors="ignore")
+    audit["rbi_columns_after"] = int(len([c for c in out.columns if str(c).startswith("rbi_")]))
+    audit["rbi_columns_dropped"] = sorted(str(c) for c in drop_rbi)
+    audit["status"] = "PASS"
+    return out, audit
 
 
 def cast_metadata_frame(panel: pd.DataFrame) -> pd.DataFrame:
@@ -700,12 +1026,14 @@ def resample_daily_panel_to_weekly(panel: pd.DataFrame) -> pd.DataFrame:
     weekly["calendar_year"] = weekly["date"].dt.year
     weekly["week_of_year"] = weekly["date"].dt.isocalendar().week.astype(int)
     if "close" in weekly.columns:
-        weekly["forward_return_1w"] = (
-            pd.to_numeric(weekly["close"], errors="coerce")
-            .groupby(weekly["ticker"], sort=False)
-            .shift(-1)
-            / pd.to_numeric(weekly["close"], errors="coerce")
-        ) - 1.0
+        close = pd.to_numeric(weekly["close"], errors="coerce")
+        next_close = close.groupby(weekly["ticker"], sort=False).shift(-1)
+        weekly["forward_return_1w"] = (next_close / close) - 1.0
+        if "volume" in weekly.columns:
+            volume = pd.to_numeric(weekly["volume"], errors="coerce")
+            next_volume = volume.groupby(weekly["ticker"], sort=False).shift(-1)
+            suspended_like = close.eq(next_close) & ((volume.fillna(0.0) <= 0.0) | (next_volume.fillna(0.0) <= 0.0))
+            weekly.loc[suspended_like, "forward_return_1w"] = np.nan
         weekly["forward_return_5d"] = pd.to_numeric(weekly["forward_return_1w"], errors="coerce")
         weekly["target_weekly_return"] = pd.to_numeric(weekly["forward_return_1w"], errors="coerce")
     elif "target_weekly_return" not in weekly.columns:
@@ -766,6 +1094,12 @@ def _business_cycle_bucket(text: str, broad_sector: str) -> str:
 
 
 def attach_universe_annotations(panel: pd.DataFrame, raw_bundle_dir: Path) -> pd.DataFrame:
+    # N9: these annotations (sector text, conglomerate flags, and the derived
+    # *_sensitivity_score columns) come from the CURRENT enriched universe
+    # snapshot and are time-invariant per ticker — they describe the company as it
+    # is today, merged onto all history. Treat them as static descriptors, not
+    # point-in-time signals; the export manifest records this via
+    # universe_annotation_pit="current_snapshot_static".
     universe_path = raw_bundle_dir / "data" / "canonical" / "reference" / "universe" / "nifty500_universe_enriched.parquet"
     if not universe_path.exists():
         return panel
@@ -844,6 +1178,8 @@ def generate_anchored_weekly_splits(
     test_weeks: int = 13,
     step_weeks: int = 13,
     target_windows: int = 20,
+    forward_buffer_days: int = 10,
+    target_horizon_days: int = 5,
 ) -> list[dict[str, Any]]:
     dates = (
         pd.Series(pd.to_datetime(list(weekly_dates), errors="coerce"))
@@ -852,23 +1188,29 @@ def generate_anchored_weekly_splits(
         .sort_values()
         .tolist()
     )
-    if len(dates) < train_weeks + test_weeks:
-        raise ValueError(f"insufficient_weekly_dates:{len(dates)}<{train_weeks + test_weeks}")
+    embargo_weeks = int(math.ceil(max(0, int(forward_buffer_days) + int(target_horizon_days)) / 7.0))
+    required_dates = int(train_weeks) + int(embargo_weeks) + int(test_weeks)
+    if len(dates) < required_dates:
+        raise ValueError(f"insufficient_weekly_dates:{len(dates)}<{required_dates}")
     anchor = pd.Timestamp(anchor_start).normalize()
     dates = [pd.Timestamp(value).normalize() for value in dates if pd.Timestamp(value).normalize() >= anchor]
-    if len(dates) < train_weeks + test_weeks:
-        raise ValueError(f"insufficient_anchor_aligned_dates:{len(dates)}<{train_weeks + test_weeks}")
+    if len(dates) < required_dates:
+        raise ValueError(f"insufficient_anchor_aligned_dates:{len(dates)}<{required_dates}")
 
     windows: list[dict[str, Any]] = []
-    for test_start_idx in range(train_weeks, len(dates) - test_weeks + 1, step_weeks):
+    for test_start_idx in range(train_weeks + embargo_weeks, len(dates) - test_weeks + 1, step_weeks):
         test_end_idx = test_start_idx + test_weeks - 1
+        train_end_idx = test_start_idx - embargo_weeks - 1
         windows.append(
             {
                 "window_id": len(windows) + 1,
                 "train_start": str(dates[0].date()),
-                "train_end": str(dates[test_start_idx - 1].date()),
+                "train_end": str(dates[train_end_idx].date()),
                 "test_start": str(dates[test_start_idx].date()),
                 "test_end": str(dates[test_end_idx].date()),
+                "forward_buffer_days": int(forward_buffer_days),
+                "target_horizon_days": int(target_horizon_days),
+                "embargo_weeks": int(embargo_weeks),
             }
         )
     if target_windows > 0 and len(windows) > target_windows:
@@ -921,7 +1263,7 @@ def infer_feature_unit_kind(feature_name: str) -> str:
     name = str(feature_name)
     lower = name.lower()
     if lower.endswith("_cs_rank") or lower.endswith("_rank"):
-        return "rank_0_1"
+        return "rank_centered_minus_half_to_half"
     if lower.endswith("_cs_z") or lower.endswith("_ts_z") or lower.endswith("_zscore"):
         return "standardized_score"
     if lower.startswith("screener_") and any(token in lower for token in SCREENER_DAYS_HINTS):
@@ -953,32 +1295,53 @@ def build_feature_unit_registry(features_df: pd.DataFrame) -> list[dict[str, Any
     feature_cols = select_feature_columns(features_df)
     rows: list[dict[str, Any]] = []
     for feature in feature_cols:
-        series = pd.to_numeric(features_df[feature], errors="coerce")
+        series = pd.to_numeric(features_df[feature], errors="coerce").replace([np.inf, -np.inf], np.nan)
+        clean = series.dropna()
+        coverage = float(series.notna().mean())
+        unit_kind = infer_feature_unit_kind(feature)
+        is_constant = bool(not clean.empty and clean.nunique(dropna=True) <= 1)
+        # A.2: a low-coverage column is NOT model_safe — even for documented
+        # families. The documented families are still shipped (so their limited
+        # history is available), but flagged unsafe with a distinct reason code so
+        # nothing downstream trains on them blind.
+        below_min_coverage = coverage < MIN_MODEL_COVERAGE
+        is_documented_family = str(feature).startswith(LOW_COVERAGE_DOCUMENTED_FAMILIES)
+        model_safe = bool(
+            unit_kind not in MODEL_EXCLUDED_UNIT_KINDS
+            and coverage > 0.0
+            and not below_min_coverage
+            and not is_constant
+        )
+        reason = None
+        if not model_safe:
+            if unit_kind in MODEL_EXCLUDED_UNIT_KINDS:
+                reason = "excluded_unit_kind"
+            elif coverage <= 0.0:
+                reason = "no_coverage"
+            elif is_constant:
+                reason = "constant"
+            elif below_min_coverage:
+                reason = "low_coverage_documented" if is_documented_family else "low_coverage"
         rows.append(
             {
                 "feature": feature,
-                "unit_kind": infer_feature_unit_kind(feature),
-                "model_safe": infer_feature_unit_kind(feature) not in MODEL_EXCLUDED_UNIT_KINDS,
-                "coverage": float(series.notna().mean()),
-                "min": None if series.dropna().empty else float(series.min()),
-                "max": None if series.dropna().empty else float(series.max()),
+                "unit_kind": unit_kind,
+                "model_safe": model_safe,
+                "model_safe_reason": reason,
+                "coverage": coverage,
+                "min": None if clean.empty else float(clean.min()),
+                "max": None if clean.empty else float(clean.max()),
+                "unique_non_null": int(clean.nunique(dropna=True)),
             }
         )
     return rows
 
 
-def _group_rank_centered(values: pd.Series, groups: pd.Series) -> pd.Series:
-    numeric = pd.to_numeric(values, errors="coerce")
-    ranked = numeric.groupby(groups, sort=False).rank(method="average", pct=True)
-    return ranked.fillna(0.5).sub(0.5).astype(float)
-
-
-def _group_zscore(values: pd.Series, groups: pd.Series, clip_abs: float = 6.0) -> pd.Series:
-    numeric = pd.to_numeric(values, errors="coerce")
-    mu = numeric.groupby(groups, sort=False).transform("mean")
-    sigma = numeric.groupby(groups, sort=False).transform("std").replace(0.0, np.nan)
-    z = ((numeric - mu) / (sigma + 1e-12)).replace([np.inf, -np.inf], np.nan).fillna(0.0)
-    return z.clip(lower=-float(clip_abs), upper=float(clip_abs)).astype(float)
+# Single source of truth in src/core/panel_math. Thin re-exports keep the
+# historical import names working for notebook/experiment code while ensuring the
+# NaN-vs-degenerate-group semantics stay identical everywhere.
+_group_rank_centered = group_rank_centered
+_group_zscore = group_zscore
 
 
 def _first_available_numeric(df: pd.DataFrame, candidates: Sequence[str]) -> pd.Series:
@@ -1080,7 +1443,14 @@ def repair_dead_quality_factor_families(features_df: pd.DataFrame) -> tuple[pd.D
         if raw_dead:
             work[raw_col] = proxy.astype("float32")
         if z_dead:
-            work[z_col] = proxy.astype("float32")
+            # C.1: the z-score column must actually be a z-score. Only assign the
+            # proxy raw when it is already standardized (a *_zscore source);
+            # otherwise standardize it cross-sectionally so a future non-scaled
+            # proxy cannot silently produce a "z-score" that isn't one.
+            if str(proxy_name).endswith("_zscore"):
+                work[z_col] = proxy.astype("float32")
+            else:
+                work[z_col] = _group_zscore(proxy, work["date"]).astype("float32")
 
         ranking_source = pd.to_numeric(work[z_col], errors="coerce") if z_col in work.columns else proxy
         work[rank_col] = _group_rank_centered(ranking_source, work["date"]).astype("float32")
@@ -1138,21 +1508,22 @@ def repair_missing_revision_factor_families(features_df: pd.DataFrame) -> tuple[
     work["__eps_signal"] = eps_signal.reindex(work.index)
     work["__rev_signal"] = rev_signal.reindex(work.index)
 
-    work["__eps_revision_accel_raw"] = (
-        work.groupby("ticker", sort=False)["__eps_signal"]
-        .transform(lambda s: _sparse_event_projection(s)[0])
-        .astype(float)
+    # C.5: compute the sparse-event projection once per group and unpack both the
+    # acceleration and direction outputs, instead of rerunning the whole function
+    # a second time via a separate .transform for the direction column.
+    def _project_pair(group: pd.DataFrame, col: str) -> pd.DataFrame:
+        accel, direction = _sparse_event_projection(group[col])
+        return pd.DataFrame({"accel": accel, "direction": direction}, index=group.index)
+
+    eps_proj = work.groupby("ticker", sort=False, group_keys=False).apply(
+        lambda g: _project_pair(g, "__eps_signal")
     )
-    work["eps_revision_direction"] = (
-        work.groupby("ticker", sort=False)["__eps_signal"]
-        .transform(lambda s: _sparse_event_projection(s)[1])
-        .astype(float)
+    work["__eps_revision_accel_raw"] = eps_proj["accel"].reindex(work.index).astype(float)
+    work["eps_revision_direction"] = eps_proj["direction"].reindex(work.index).astype(float)
+    rev_proj = work.groupby("ticker", sort=False, group_keys=False).apply(
+        lambda g: _project_pair(g, "__rev_signal")
     )
-    work["__rev_revision_accel_raw"] = (
-        work.groupby("ticker", sort=False)["__rev_signal"]
-        .transform(lambda s: _sparse_event_projection(s)[0])
-        .astype(float)
-    )
+    work["__rev_revision_accel_raw"] = rev_proj["accel"].reindex(work.index).astype(float)
 
     derived_accel = _group_zscore(work["__eps_revision_accel_raw"], work["date"]).astype("float32")
     eps_revision_composite = _mean_of_available(
@@ -1596,12 +1967,20 @@ def build_plan_regime_labels(weekly_panel: pd.DataFrame, raw_bundle_dir: Path) -
         market["market_return_4w"] = pd.to_numeric(market["market_mean_return"], errors="coerce").rolling(4).mean()
     market["market_vol_13w"] = pd.to_numeric(market["market_mean_return"], errors="coerce").rolling(13).std()
 
-    vol_threshold = float(market["market_vol_13w"].median(skipna=True) or 0.04)
-    calm_threshold = float(market["market_vol_13w"].quantile(0.35) or 0.02)
+    # PIT-safe thresholds: use an EXPANDING (past-only) window shifted by one row
+    # so a given week's regime label never depends on future volatility. Full-
+    # sample median/quantile here would let 2026 data decide a 2019 week's label
+    # (look-ahead). Fixed constants act as the warmup fallback until enough
+    # history has accrued.
+    _vol = pd.to_numeric(market["market_vol_13w"], errors="coerce")
+    market["_vol_threshold"] = _vol.expanding(min_periods=26).median().shift(1).fillna(0.04)
+    market["_calm_threshold"] = _vol.expanding(min_periods=26).quantile(0.35).shift(1).fillna(0.02)
 
     def _fallback_bucket(row: pd.Series) -> tuple[str, str]:
         ret = float(pd.to_numeric(row.get("market_return_4w"), errors="coerce") or 0.0)
         vol = float(pd.to_numeric(row.get("market_vol_13w"), errors="coerce") or 0.0)
+        calm_threshold = float(pd.to_numeric(row.get("_calm_threshold"), errors="coerce") or 0.02)
+        vol_threshold = float(pd.to_numeric(row.get("_vol_threshold"), errors="coerce") or 0.04)
         if abs(ret) < 0.01:
             return "R6", PLAN_REGIME_LABELS["R6"]
         if ret > 0 and vol <= calm_threshold:
@@ -1715,7 +2094,8 @@ def build_plan_regime_labels(weekly_panel: pd.DataFrame, raw_bundle_dir: Path) -
 
 
 def merge_regimes_into_panel(panel: pd.DataFrame, regimes: pd.DataFrame) -> pd.DataFrame:
-    out = panel.merge(
+    base = panel.drop(columns=["regime_code", "plan_regime_code"], errors="ignore").copy()
+    out = base.merge(
         regimes[
             ["date", "plan_regime_id", "plan_regime_label", "major_event_id", "subtle_period_id"]
         ],
@@ -1723,4 +2103,7 @@ def merge_regimes_into_panel(panel: pd.DataFrame, regimes: pd.DataFrame) -> pd.D
         how="left",
         sort=False,
     )
+    regime_num = out["plan_regime_id"].astype(str).str.extract(r"R(\d+)")[0]
+    out["regime_code"] = pd.to_numeric(regime_num, errors="coerce").astype(float)
+    out["plan_regime_code"] = out["regime_code"]
     return out
