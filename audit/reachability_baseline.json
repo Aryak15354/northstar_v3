@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-17T19:44:45.822346+00:00",
+  "generated_at": "2026-07-17T19:55:59.810919+00:00",
   "entrypoints": [
     "scripts/run_complete_v3_system.py",
     "scripts/northstar_v3_unified.py"
@@ -22,6 +22,7 @@
     "scripts/audit_v3_screenshot_fixes.py",
     "scripts/automation_dashboard.py",
     "scripts/backfill_60days_nse.py",
+    "scripts/backfill_availability_date_canonical.py",
     "scripts/backfill_historical_sentiment.py",
     "scripts/backfill_nse_announcements_history.py",
     "scripts/backfill_nse_corporate_filings.py",
@@ -1657,6 +1658,7 @@
     "scripts/audit_v3_screenshot_fixes.py",
     "scripts/automation_dashboard.py",
     "scripts/backfill_60days_nse.py",
+    "scripts/backfill_availability_date_canonical.py",
     "scripts/backfill_historical_sentiment.py",
     "scripts/backfill_nse_announcements_history.py",
     "scripts/backfill_nse_corporate_filings.py",

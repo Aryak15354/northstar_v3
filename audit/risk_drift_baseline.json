@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-17T19:45:33.285413+00:00",
+  "generated_at": "2026-07-17T19:55:34.933283+00:00",
   "allowlist": [
     "config/options_trading.yaml:portfolio_risk_cap_pct_symbol:a801f6e691ade6d5",
     "config/portfolio_governor_config.yaml:literal_0_02:66692df1b31273ca",
@@ -71,10 +71,8 @@
     "scripts/institutional_dual_engine_validator.py:literal_0_02:c6f5ad0004f0ef23",
     "scripts/institutional_walk_forward_complete.py:literal_0_02:7a58b2ba4fc7431f",
     "scripts/institutional_walk_forward_complete.py:literal_0_02:7ac9f99d44a171dd",
-    "scripts/kaggle/week_2026_03_29/common.py:literal_0_02:4a2ab878149c4b9c",
-    "scripts/kaggle/week_2026_03_29/common.py:literal_0_02:9f30fc58df4152d1",
-    "scripts/kaggle/week_2026_03_29/common.py:literal_0_04:33a18d1f2c75394c",
-    "scripts/kaggle/week_2026_03_29/common.py:literal_0_04:99ce3ac607379625",
+    "scripts/kaggle/week_2026_03_29/common.py:literal_0_02:29790c11f41028e4",
+    "scripts/kaggle/week_2026_03_29/common.py:literal_0_04:192bee04d6b659a3",
     "scripts/launch_live_operation.py:literal_0_02:9f202db2f8f2135e",
     "scripts/macro_conditioned_signal_audit.py:literal_0_02:34ba32ac4f356174",
     "scripts/northstar_daemon.py:portfolio_risk_cap_pct_symbol:35c6c7e645a3b515",
@@ -197,7 +195,7 @@
     "src/diagnostics/alpha_diagnostics_engine.py:literal_0_02:cc0499bbe933f394",
     "src/execution/enhanced_transaction_cost_model.py:literal_0_02:b6d96e48919af5a1",
     "src/factors/tests/test_amihud_factor.py:literal_0_04:796e0dbe01d8c091",
-    "src/ingestion/document_extractor.py:literal_0_02:e42622a851c41adb",
+    "src/ingestion/document_extractor.py:literal_0_02:3cb624151db3d5b2",
     "src/intelligence/bayesian_capital_tribunal.py:literal_0_02:447e3ba8de623061",
     "src/intelligence/bayesian_capital_tribunal.py:literal_0_04:82a1a639ecbf9464",
     "src/intelligence/bayesian_kelly_allocator.py:literal_0_02:b7501b98e96caeaa",
@@ -403,6 +401,6 @@
     "src/volatility/monte_carlo_engine.py:literal_0_04:1c50010ed5eeaeac",
     "src/volatility/risk_authority.py:literal_0_02:16c64285e21450ff"
   ],
-  "count": 401,
+  "count": 399,
   "id_scheme": "stable_source_hash_v1"
 }

@@ -39,6 +39,11 @@ if str(PROJECT_ROOT) not in sys.path:
 FILINGS_INDEX = PROJECT_ROOT / "data" / "processed" / "sector_financials" / "filings_index.parquet"
 EXTRACT_OUT = PROJECT_ROOT / "data" / "processed" / "sector_financials" / "extracted_metrics.parquet"
 
+# Data-reconciliation tolerance (not a risk parameter): a prose-extracted PCR is
+# flagged as conflicting with the independent XBRL figure only when it deviates
+# by more than this relative fraction. Named so the check reads intentionally.
+PCR_XBRL_CONFLICT_REL_TOL = 0.02
+
 try:
     import pdfplumber
 except ImportError as exc:  # pragma: no cover
@@ -175,7 +180,7 @@ def cross_check(extractions: pd.DataFrame) -> pd.DataFrame:
     for i, r in extractions.iterrows():
         if r["metric"] == "pcr_pct" and r["symbol"] in pcr_xbrl.index:
             ref = pcr_xbrl[r["symbol"]]
-            if ref and abs(r["value"] - ref) / ref > 0.02:
+            if ref and abs(r["value"] - ref) / ref > PCR_XBRL_CONFLICT_REL_TOL:
                 extractions.at[i, "xbrl_conflict"] = True
     return extractions
 

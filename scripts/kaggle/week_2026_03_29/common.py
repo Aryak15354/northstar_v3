@@ -35,6 +35,13 @@ from src.core.panel_math import (  # noqa: E402
 WEEK_ID = "2026_03_29"
 WEEK_SLUG = "week_2026_03_29"
 RAW_BUNDLE_MANIFEST = "northstar_weekly_raw_manifest.json"
+
+# Cold-start fallbacks for the regime bucketer's volatility gates, used only in
+# the offline weekly build before enough expanding-window history has accrued to
+# compute data-driven thresholds. These are regime-labelling cutoffs on 13-week
+# realized market vol, not portfolio risk limits.
+FALLBACK_VOL_THRESHOLD = 0.04   # "high vol" regime cutoff
+FALLBACK_CALM_THRESHOLD = 0.02  # "calm" regime cutoff
 FEATURE_EXPORT_FILES = (
     "northstar_features.parquet",
     "northstar_walk_forward_splits.json",
@@ -1973,14 +1980,14 @@ def build_plan_regime_labels(weekly_panel: pd.DataFrame, raw_bundle_dir: Path) -
     # (look-ahead). Fixed constants act as the warmup fallback until enough
     # history has accrued.
     _vol = pd.to_numeric(market["market_vol_13w"], errors="coerce")
-    market["_vol_threshold"] = _vol.expanding(min_periods=26).median().shift(1).fillna(0.04)
-    market["_calm_threshold"] = _vol.expanding(min_periods=26).quantile(0.35).shift(1).fillna(0.02)
+    market["_vol_threshold"] = _vol.expanding(min_periods=26).median().shift(1).fillna(FALLBACK_VOL_THRESHOLD)
+    market["_calm_threshold"] = _vol.expanding(min_periods=26).quantile(0.35).shift(1).fillna(FALLBACK_CALM_THRESHOLD)
 
     def _fallback_bucket(row: pd.Series) -> tuple[str, str]:
         ret = float(pd.to_numeric(row.get("market_return_4w"), errors="coerce") or 0.0)
         vol = float(pd.to_numeric(row.get("market_vol_13w"), errors="coerce") or 0.0)
-        calm_threshold = float(pd.to_numeric(row.get("_calm_threshold"), errors="coerce") or 0.02)
-        vol_threshold = float(pd.to_numeric(row.get("_vol_threshold"), errors="coerce") or 0.04)
+        calm_threshold = float(pd.to_numeric(row.get("_calm_threshold"), errors="coerce") or FALLBACK_CALM_THRESHOLD)
+        vol_threshold = float(pd.to_numeric(row.get("_vol_threshold"), errors="coerce") or FALLBACK_VOL_THRESHOLD)
         if abs(ret) < 0.01:
             return "R6", PLAN_REGIME_LABELS["R6"]
         if ret > 0 and vol <= calm_threshold:
