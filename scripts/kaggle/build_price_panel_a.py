@@ -39,7 +39,9 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.core.panel_math import normalize_ticker  # noqa: E402
 
 LIVE_PRICES = PROJECT_ROOT / "data/canonical/prices/equity_prices_daily.parquet"
-DELISTED_PRICES = PROJECT_ROOT / "data/processed/delisted_prices.parquet"
+# D1 survivorship: merged + split-adjusted delisted panel (327 names) — supersedes the old 91-name
+# delisted_prices.parquet. Built by scripts/build_delisted_panel_merged.py.
+DELISTED_PRICES = PROJECT_ROOT / "data/processed/delisted_prices_merged.parquet"
 SECTOR_MAP = PROJECT_ROOT / "data/processed/sector_mapping.csv"
 OUT_DIR = PROJECT_ROOT / "data/kaggle_upload"
 
@@ -57,12 +59,15 @@ def _load_daily() -> pd.DataFrame:
     live["is_delisted"] = False
     dl = pd.read_parquet(
         DELISTED_PRICES,
-        columns=["date", "ticker", "close", "adj_close", "volume", "delisting_date"],
+        columns=["date", "ticker", "close", "adj_close", "volume", "delisting_date",
+                 "quarantine_discontinuity"],
     )
+    # C29: drop names with an unresolved corporate-action discontinuity (fake-return risk)
+    dl = dl[~dl["quarantine_discontinuity"].fillna(False)].copy()
     dl["close"] = pd.to_numeric(dl["adj_close"], errors="coerce").fillna(
         pd.to_numeric(dl["close"], errors="coerce")
     )
-    dl = dl.drop(columns=["adj_close", "delisting_date"])
+    dl = dl.drop(columns=["adj_close", "delisting_date", "quarantine_discontinuity"])
     dl["is_delisted"] = True
 
     df = pd.concat([live, dl], ignore_index=True)
@@ -186,7 +191,11 @@ def build() -> dict:
     if "date" not in panel.columns:  # pandas names stack levels by index names
         panel = panel.rename(columns={panel.columns[0]: "date", panel.columns[1]: "ticker"})
 
-    delisted_set = set(daily.loc[daily["is_delisted"], "ticker"].unique())
+    # is_delisted from the official master (robust: canonical prices now include delisted names,
+    # so the per-source flag is unreliable after live-wins dedup). Ticker = SYMBOL.NS.
+    _dl = pd.read_csv(PROJECT_ROOT / "data/universe/official_nse_delisting_data.csv")
+    delisted_set = set(_dl["original_symbol"].astype(str).str.strip().str.upper().map(normalize_ticker))
+    delisted_set |= set(daily.loc[daily["is_delisted"], "ticker"].unique())
     panel["is_delisted"] = panel["ticker"].isin(delisted_set)
     sector_map = pd.read_csv(SECTOR_MAP)
     sector_map["ticker"] = sector_map["ticker"].map(normalize_ticker)
