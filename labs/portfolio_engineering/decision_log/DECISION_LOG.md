@@ -24,6 +24,22 @@ first entry.
   capital level. Carries a disclosed caveat that the cost model does not capture intraday adverse
   selection or information leakage from working a multi-day order.
 
+## 2026-07-26 (same day) — PORT-004 closed: Sleeve-2 and combined-book extension
+
+Closes the Sleeve-2 gap flagged in PORT-001/002/003. Same two overlay mechanisms, unchanged, applied
+to two new bases. **Genuinely mixed result, four sub-tests**: vol-targeting REJECTED on both Sleeve-2
+alone (+0.064 Sharpe delta, below the +0.15 bar) and the combined book (+0.135, close but still
+below) — PORT-001's Sleeve-1 vol-targeting result does not generalize. Drawdown de-gross VALIDATED on
+both: a marginal result on Sleeve-2 alone (+2.2pp maxDD for +1.7pp CAGR cost), and the **strongest
+result in this whole overlay programme** on the combined book (+9.2pp maxDD improvement for only
++0.4pp CAGR cost, concentrated in the GFC window). Closed INCONCLUSIVE at the registry level (a
+summary label for a mixed result, not a null finding) — see the findings doc for the four sub-results.
+
+**Practical takeaway for a future capital-allocation decision**: the combined-book drawdown de-gross
+overlay is the standout candidate across all of Portfolio Engineering's work this session.
+Vol-targeting stays validated for Sleeve-1 alone only; it should not be assumed to extend without
+further, Sleeve-2-specific calibration work (not attempted here).
+
 ## Cross-referenced finding (not owned here, not duplicated)
 
 `ALPHA-002` (Alpha Engine, joint) found Delivery and the liquidity-decile gradient collapse into

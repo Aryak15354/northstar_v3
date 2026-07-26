@@ -16,11 +16,13 @@ return), **Market Science** (build theory, never portfolios), **Microstructure**
 who and why, never what predicts), **Portfolio Engineering** (extract more from validated signals,
 never discover new ones) — each with a concrete charter, and a shared `research_os/` providing
 permanent per-lab experiment IDs, a four-outcome verdict schema, mandatory pre-registration with power
-disclosure, and the Gen-8 rolling-window artifact check (with its own conservatism caveat). **Ten
-experiments ran this session, all pre-registered before code, all closed with a verdict**: 2 REJECTED/
-INCONCLUSIVE in Microstructure, 3 INCONCLUSIVE in Alpha Engine, 3 INCONCLUSIVE in Market Science, 3
-VALIDATED in Portfolio Engineering. **Nothing in this entire session — or any prior Gen-N session — has
-been committed to git.** That remains true as of this document; see "Before touching git" below.
+disclosure, and the Gen-8 rolling-window artifact check (with its own conservatism caveat). **Twelve
+experiments have run across two sessions, all pre-registered before code, all closed with a verdict**:
+2 REJECTED/INCONCLUSIVE in Microstructure, 3 INCONCLUSIVE in Alpha Engine, 4 INCONCLUSIVE in Market
+Science, 4 mostly-VALIDATED-with-one-mixed-result in Portfolio Engineering. A live BSE/NSE
+verification also ran (with explicit go-ahead) — real, concrete findings, but the 2010-2022
+institutional-ownership gap remains open. This document, all four decision logs, and the git history
+are the full record; all work is committed locally (4 commits so far), nothing pushed to any remote.
 
 ## Start here
 
@@ -66,6 +68,10 @@ been committed to git.** That remains true as of this document; see "Before touc
 - One open paragraph recorded, not dismissed: whether detecting broad market-beta exposure would even
   count as answering Gen-7 Lab 5's original transmission question — a definitional question this lab
   owns, unscheduled, no experiment ID assigned yet because no pre-registration exists.
+- **MSCI-004** (same-day follow-up) — tested the OTHER operationalization MSCI-001's own
+  pre-registration named (volatility-regime stability, not rank stability) against the same outcome.
+  **Does not replicate** (r=+0.069, wrong-signed, NW p=0.44) — a useful negative suggesting MSCI-001's
+  surprise is specific to `res_mom_52w_ex4w`'s own construction, not a general regularity.
 
 ### Microstructure Lab — 2 experiments
 
@@ -95,8 +101,12 @@ overlays on Sleeve-1 (Config-4+G-05, 80% of the frozen book) — no new predicti
   leak in the vol/drawdown trailing calculations (present in both PORT-001 and PORT-002), and a 2x
   overstatement of the short leg's notional in PORT-003's first pass. Both are documented in the
   findings doc with before/after numbers.
-- **Scope limitation, stated plainly**: all three test Sleeve-1 alone; Sleeve-2 (sector rotation)'s own
-  overlay behavior is untested this session.
+- **PORT-004** (same-day follow-up) — closed the Sleeve-2 gap: same two overlays, applied to Sleeve-2
+  alone and the combined 80/20 book. **Mixed, informative result**: vol-targeting does NOT generalize
+  from Sleeve-1 (REJECTED on both new bases, +0.064 and +0.135 Sharpe delta, both below the +0.15
+  bar); drawdown de-gross DOES generalize, and the combined-book result (+9.2pp maxDD improvement for
+  only +0.4pp CAGR cost) is the strongest result across this entire overlay programme — the standout
+  candidate if this book ever moves beyond paper trading.
 
 ---
 
@@ -114,18 +124,19 @@ overlays on Sleeve-1 (Config-4+G-05, 80% of the frozen book) — no new predicti
    NSE record links to, and finding BSE's real endpoint outside this sandbox. The 2010-2022 gap
    remains open — do not treat it as resolved without re-running section 1's coverage diagnostic
    against real landed data.
-2. **MSCI-001's reversed-sign finding** — a real, exploratory, statistically live-looking lead
-   (stability predicts *lower*, not higher, future IC) worth its own fresh pre-registration, not an
-   extension of this session's contract.
+2. ~~MSCI-001's reversed-sign finding~~ — **closed same-day as MSCI-004**: tested the other named
+   operationalization (regime stability); does not replicate (r=+0.069, wrong-signed). No longer
+   open, but see MSCI-004's findings for why this narrows rather than closes the underlying question.
 3. **Market Science's market-beta-vs-transmission definitional question** — needs a pre-registered
    answer before any future cross-asset transmission scan is legitimate.
 4. **`research_os.power_precheck`'s known limitation** (documented in `RESEARCH_OS_README.md`): its
    correlation-power formula understates power for designs that test the mean of an already-aggregated
-   weekly statistic (used by `ALPHA-001`, `ALPHA-002`, `MSCI-001..003`). A dedicated NW-mean-test power
+   weekly statistic (used by `ALPHA-001`, `ALPHA-002`, `MSCI-001..004`). A dedicated NW-mean-test power
    calculator, modeled on `G8-09`'s own `se_sharpe` approach, would let these close more precisely
    instead of carrying a disclosed caveat in every findings doc.
-5. **Portfolio Engineering's Sleeve-2 gap** — none of PORT-001/002/003 has been tested against the
-   sector-rotation sleeve or the combined 80/20 book; only Sleeve-1 was in scope this session.
+5. ~~Portfolio Engineering's Sleeve-2 gap~~ — **closed same-day as PORT-004**: drawdown de-gross
+   generalizes (strongly, on the combined book); vol-targeting does not (REJECTED on both new bases).
+   No longer open; see PORT-004's findings for the practical allocation takeaway.
 6. **ALPHA-002's implication for capital allocation** — cross-referenced in Portfolio Engineering's
    decision log, not yet acted on: a future book should not size Delivery and the liquidity tilt as
    independent ₹5–10cr sleeves.

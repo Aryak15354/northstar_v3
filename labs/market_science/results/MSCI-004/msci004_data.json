@@ -1,0 +1,33 @@
+{
+  "experiment": "MSCI-004",
+  "n_weeks": 1078,
+  "n_eff_blocks": 82,
+  "predictor_window": 52,
+  "horizon": 13,
+  "pearson_r": 0.06915654351232128,
+  "nw_t": 0.7764665529714093,
+  "nw_p": 0.43747356202313736,
+  "permutation": {
+    "n_perm": 4000,
+    "block": 52,
+    "p_value": 0.511872031992002
+  },
+  "power": {
+    "n": 82,
+    "meaningful_effect": 0.15,
+    "min_detectable_effect": 0.30516299817474124,
+    "power_at_meaningful_effect": 0.2692275433624991,
+    "adequately_powered": false,
+    "required_n_for_meaningful_effect": 347
+  },
+  "rolling_window_artifact_check": {
+    "verdict": "EXCEEDS_CONSTRUCTION",
+    "n_lags_exceeding_null": 1,
+    "max_excess_over_null": 0.00017523390461637867,
+    "survives_differencing": false,
+    "caveat": "Gen-8 correction: differencing is a one-way conservative screen, not a clean discriminator -- a highly persistent series can legitimately fail it."
+  },
+  "direction_supported": false,
+  "ci_excludes_zero": false,
+  "verdict": "INCONCLUSIVE"
+}

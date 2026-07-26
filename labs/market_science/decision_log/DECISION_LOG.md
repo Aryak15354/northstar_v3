@@ -18,6 +18,17 @@ item is later reopened (with a link to the reopening experiment).
 
 ---
 
+## 2026-07-26 (same day) — MSCI-004 closed
+
+Follow-up to MSCI-001's reversed-sign flag, using the OTHER operationalization MSCI-001's own
+pre-registration named but never tested (volatility-regime-classification stability, not rank
+stability). Result: **does not replicate** — r=+0.069, NW p=0.44, perm p=0.51, wrong-signed vs. the
+primary hypothesis and far from significant. A useful, honest negative: MSCI-001's surprise looks
+specific to `res_mom_52w_ex4w`'s own rank-stability construction, not a general "quiet markets carry
+less information" regularity. Closed **INCONCLUSIVE** (also underpowered by the standard gate, but
+the point estimate itself gives no reason to prioritize further data accrual here the way MSCI-001's
+own result does).
+
 ## 2026-07-26 — Explicit reasoned pauses (Phase 3, Northstar Institute restructuring)
 
 ### PAUSED — No further representation-learning passes on this panel
