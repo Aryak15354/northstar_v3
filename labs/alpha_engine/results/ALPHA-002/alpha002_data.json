@@ -1,0 +1,44 @@
+{
+  "experiment": "ALPHA-002",
+  "n_weeks": 338,
+  "univariate_ic_delivery": {
+    "mean": 0.034434819932839,
+    "t": 5.590337403732625,
+    "p": 2.266288122222815e-08,
+    "n": 338
+  },
+  "univariate_ic_liquidity": {
+    "mean": -0.008691951126005586,
+    "t": -1.5173369926938534,
+    "p": 0.1291816229354946,
+    "n": 338
+  },
+  "raw_overlap_delivery_vs_liquidity": {
+    "mean": -0.20547034762138922,
+    "t": -17.916436180897445,
+    "p": 8.777421949720319e-72,
+    "n": 338
+  },
+  "partial_coef_delivery": {
+    "mean": 0.0005613335398882883,
+    "t": 1.6686052243287763,
+    "p": 0.09519564283635287,
+    "n": 338
+  },
+  "partial_coef_liquidity": {
+    "mean": -0.0009066069966841912,
+    "t": -2.988010702723798,
+    "p": 0.0028079972095897783,
+    "n": 338
+  },
+  "partial_to_univariate_ratio": 0.016301335130635277,
+  "power": {
+    "n": 338,
+    "meaningful_effect": 0.03,
+    "min_detectable_effect": 0.151882622927125,
+    "power_at_meaningful_effect": 0.08521513914975642,
+    "adequately_powered": false
+  },
+  "verdict": "INCONCLUSIVE",
+  "outcome": "Underpowered at the pre-registered effect size; no claim either way."
+}

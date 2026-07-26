@@ -1,0 +1,30 @@
+{
+  "experiment": "MICRO-001",
+  "n_breach_events": 102,
+  "n_simulated": 89,
+  "mean_drag": -0.0043051411490057975,
+  "median_drag": -0.0013605336473270224,
+  "bootstrap_ci95": [
+    -0.009302362417253046,
+    -0.0013183272221439749
+  ],
+  "mean_days_to_unwind": 6.134831460674158,
+  "mean_unliquidated_frac_at_day20": 0.015044288554170138,
+  "tier_exposure_source": "results/gen8/G8-12/g8_12_data.json (rows_from_truncated_names)",
+  "annualized_drag_by_tier": {
+    "ALL": -0.01937313517052609,
+    "FNO_LARGE": -0.02367827631953189,
+    "NON_FNO_TAIL": -0.010762852872514495,
+    "SMALL_ADV_Q1": -0.03444112919204638
+  },
+  "differential_small_vs_all": -0.01506799402152029,
+  "prior_crude_bound": "[0, -2.29]%/yr (results/gen8/G8-12)",
+  "gates": {
+    "direction": true,
+    "material": false,
+    "concentration": true,
+    "ci_excludes_zero": true
+  },
+  "verdict": "REJECTED",
+  "outcome": "The exit-fill drag is real (mean -0.431%, 95% CI [-0.930%, -0.132%], excludes zero) but the annualized SMALL_ADV_Q1-vs-ALL differential (-0.015%/yr) is far below the pre-registered 0.5%/yr materiality bar. The hypothesis that exit-fill realism is a MATERIAL driver of the G8-07/G8-11 tier effect is REJECTED -- this mechanism, while genuine, does not explain a meaningful share of the lead. G8-12's crude bound (0 to -2.29%/yr) is superseded by this far smaller modeled figure."
+}

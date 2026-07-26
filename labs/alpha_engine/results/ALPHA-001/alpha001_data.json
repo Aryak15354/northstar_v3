@@ -1,0 +1,30 @@
+{
+  "experiment": "ALPHA-001",
+  "n_holdout_weeks": 53,
+  "signal": "res_mom_52w_ex4w",
+  "decile_0_ic": {
+    "mean": 0.030059842917231645,
+    "t": 1.1851187873459814,
+    "p": 0.2359704838796941,
+    "n": 52
+  },
+  "decile_9_ic": {
+    "mean": 0.025945449801638435,
+    "t": 1.2267392225887677,
+    "p": 0.2199206207014206,
+    "n": 52
+  },
+  "difference": 0.0041143931155932095,
+  "direction_matches_g9_01": true,
+  "economic_readout": {
+    "n_weeks": 53,
+    "mean_weekly_return": 0.00131155077789752,
+    "annualized_sharpe": 0.33831946780250516,
+    "capital_cr": 5.0,
+    "note": "descriptive only, not gated -- 41% power applies here too"
+  },
+  "power_at_meaningful_effect": 0.409,
+  "pre_committed_rule": "INCONCLUSIVE regardless of direction",
+  "verdict": "INCONCLUSIVE",
+  "outcome": "Directionally CONSISTENT with G9-01 (decile-0 IC +0.03006 > decile-9 IC +0.02595 on the fresh 53-week window) but the design has only 40.9% power -- per the pre-committed outcome rule, this cannot be called VALIDATED. G9-01's own finding is unaffected either way; it stands on its much larger, better-powered sample (810 weeks, sign test p=0.00027)."
+}

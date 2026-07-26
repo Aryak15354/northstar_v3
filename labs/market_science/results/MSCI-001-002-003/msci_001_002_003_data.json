@@ -1,0 +1,116 @@
+{
+  "MSCI-001": {
+    "experiment": "MSCI-001",
+    "name": "Primitive stability predicts future IC",
+    "n_weeks": 1052,
+    "n_eff_blocks": 80,
+    "predictor_window": 52,
+    "horizon": 13,
+    "pearson_r": -0.2271359893233801,
+    "nw_beta": -3.288716499749751,
+    "nw_t": -3.0783979679041797,
+    "nw_p": 0.0020811678309862196,
+    "permutation": {
+      "n_perm": 4000,
+      "block": 52,
+      "null_mean": 0.009251785872434429,
+      "null_sd": 0.12060235432877024,
+      "n_ge": 122,
+      "p_value": 0.03074231442139465
+    },
+    "power": {
+      "n": 80,
+      "meaningful_effect": 0.15,
+      "min_detectable_effect": 0.308846943210609,
+      "power_at_meaningful_effect": 0.2636420981386326,
+      "adequately_powered": false,
+      "required_n_for_meaningful_effect": 347
+    },
+    "rolling_window_artifact_check": {
+      "verdict": "EXCEEDS_CONSTRUCTION",
+      "n_lags_exceeding_null": 7,
+      "max_excess_over_null": 0.011787190971567996,
+      "survives_differencing": true,
+      "caveat": "Gen-8 correction: differencing is a one-way conservative screen, not a clean discriminator -- a highly persistent series can legitimately fail it."
+    },
+    "direction_supported": false,
+    "ci_excludes_zero": true,
+    "verdict": "INCONCLUSIVE"
+  },
+  "MSCI-002": {
+    "experiment": "MSCI-002",
+    "name": "Interaction complexity predicts factor decay",
+    "n_weeks": 1027,
+    "n_eff_blocks": 79,
+    "predictor_window": 104,
+    "horizon": 13,
+    "pearson_r": -0.05158953971334136,
+    "nw_beta": -0.10387234252678242,
+    "nw_t": -0.5846273908115573,
+    "nw_p": 0.5587982859897007,
+    "permutation": {
+      "n_perm": 4000,
+      "block": 104,
+      "null_mean": 0.030739621897084655,
+      "null_sd": 0.08145665379963486,
+      "n_ge": 2078,
+      "p_value": 0.5196200949762559
+    },
+    "power": {
+      "n": 79,
+      "meaningful_effect": 0.15,
+      "min_detectable_effect": 0.3107396137488467,
+      "power_at_meaningful_effect": 0.26084577360046646,
+      "adequately_powered": false,
+      "required_n_for_meaningful_effect": 347
+    },
+    "rolling_window_artifact_check": {
+      "verdict": "EXCEEDS_CONSTRUCTION",
+      "n_lags_exceeding_null": 14,
+      "max_excess_over_null": 0.002905801697949406,
+      "survives_differencing": true,
+      "caveat": "Gen-8 correction: differencing is a one-way conservative screen, not a clean discriminator -- a highly persistent series can legitimately fail it."
+    },
+    "direction_supported": true,
+    "ci_excludes_zero": false,
+    "verdict": "INCONCLUSIVE"
+  },
+  "MSCI-003": {
+    "experiment": "MSCI-003",
+    "name": "Structural redundancy forecasts crowding",
+    "n_weeks": 1053,
+    "n_eff_blocks": 81,
+    "predictor_window": 52,
+    "horizon": 13,
+    "pearson_r": -0.18882855886641037,
+    "nw_beta": -0.21382968932041446,
+    "nw_t": -1.9986835909289322,
+    "nw_p": 0.04564259954113771,
+    "permutation": {
+      "n_perm": 4000,
+      "block": 52,
+      "null_mean": 0.006877008932036318,
+      "null_sd": 0.10023786231664027,
+      "n_ge": 263,
+      "p_value": 0.06598350412396901
+    },
+    "power": {
+      "n": 81,
+      "meaningful_effect": 0.15,
+      "min_detectable_effect": 0.30698840901332963,
+      "power_at_meaningful_effect": 0.2664360511523274,
+      "adequately_powered": false,
+      "required_n_for_meaningful_effect": 347
+    },
+    "rolling_window_artifact_check": {
+      "verdict": "EXCEEDS_CONSTRUCTION",
+      "n_lags_exceeding_null": 22,
+      "max_excess_over_null": 0.05003495832692639,
+      "survives_differencing": true,
+      "caveat": "Gen-8 correction: differencing is a one-way conservative screen, not a clean discriminator -- a highly persistent series can legitimately fail it."
+    },
+    "direction_supported": true,
+    "ci_excludes_zero": false,
+    "verdict": "INCONCLUSIVE"
+  }
+}

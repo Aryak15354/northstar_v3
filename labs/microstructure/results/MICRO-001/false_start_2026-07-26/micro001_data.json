@@ -1,0 +1,30 @@
+{
+  "experiment": "MICRO-001",
+  "n_breach_events": 102,
+  "n_simulated": 89,
+  "mean_drag": -0.1999998494106298,
+  "median_drag": -0.19999988685232906,
+  "bootstrap_ci95": [
+    -0.19999987928166962,
+    -0.19999981174298742
+  ],
+  "mean_days_to_unwind": 19.786516853932586,
+  "mean_unliquidated_frac_at_day20": 0.9999992417666432,
+  "tier_exposure_source": "results/gen8/G8-12/g8_12_data.json (rows_from_truncated_names)",
+  "annualized_drag_by_tier": {
+    "ALL": -0.899999322347834,
+    "FNO_LARGE": -1.0999991717584638,
+    "NON_FNO_TAIL": -0.4999996235265745,
+    "SMALL_ADV_Q1": -1.5999987952850383
+  },
+  "differential_small_vs_all": -0.6999994729372043,
+  "prior_crude_bound": "[0, -2.29]%/yr (results/gen8/G8-12)",
+  "gates": {
+    "direction": true,
+    "material": true,
+    "concentration": true,
+    "ci_excludes_zero": true
+  },
+  "verdict": "VALIDATED",
+  "outcome": "The crude 0-to--2.29%/yr bound is replaced with a modeled point estimate: mean per-position drag -20.000% (95% CI [-20.000%, -20.000%]), translating to a SMALL_ADV_Q1-vs-ALL differential of -0.700%/yr."
+}
