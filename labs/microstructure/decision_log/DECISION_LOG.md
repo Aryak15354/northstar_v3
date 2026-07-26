@@ -35,9 +35,23 @@ best-effort and need live verification (`run_scrape.py --verify`) before any rea
 see `MICRO-002_DATA_ACQUISITION.md` section 5 and the scraper's own `README.md` for the full status
 and runbook.
 
+## 2026-07-26 (same day) — live verification run, gap NOT resolved
+
+With the user's go-ahead, a real 2-request verification ran from this sandbox's Bash (the browsing
+tool itself stays policy-blocked from both domains). Result: **NSE's endpoint is confirmed working
+but confirmed shallow** (a 2010-2022 request for RELIANCE returned only 6 records, all from
+late-2021+; a 2015-2016 window returned zero) — the same recent-only ceiling as Screener.in's free
+tier, from a different vendor. **BSE's guessed endpoint is confirmed wrong** (301-redirects to a
+sales page, not shareholding data); the real endpoint needs a live browser session this sandbox
+cannot provide. See `MICRO-002_DATA_ACQUISITION.md` section 6 for full detail.
+
+**Updated conclusion: this scraping approach, as built, does not close the 2010-2022 gap.** The two
+undone leads worth a future look: parsing the XBRL filing archive linked from each NSE record (if
+NSE's own filing index reaches back further than the summary API), and finding BSE's real endpoint
+via a browser session outside this sandbox. Neither was pursued further this session.
+
 ## Open item carried forward
 
-Whether to run the verification/full scrape from this sandbox (a plain `curl` reached `bseindia.com`
-successfully, unlike the browsing tool) or entirely in a separate environment is still the user's
-call, asked and pending as of this entry. Once real data lands, section 1's coverage diagnostic must
-be re-run against it before `ALPHA-002` or any other experiment treats the ownership gap as resolved.
+The 2010-2022 institutional-ownership gap remains open. `ALPHA-002` and any future experiment should
+continue to treat it as unresolved — do not assume a future scraper run has closed it without
+re-running section 1's coverage diagnostic against real landed data first.

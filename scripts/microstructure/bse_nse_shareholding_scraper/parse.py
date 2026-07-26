@@ -113,10 +113,35 @@ def parse_bse_json(raw: bytes) -> dict[str, float]:
     return _category_pct_from_records(records, _LABEL_KEYS, _VALUE_KEYS)
 
 
-def parse_nse_json(raw: bytes) -> dict[str, float]:
+def parse_nse_json(raw: bytes) -> list[dict]:
+    """NSE's `corporate-share-holdings-master` endpoint -- CONFIRMED LIVE 2026-07-26 -- returns one
+    FLAT record per filing (not label/value category rows like the BSE guess assumed):
+    `pr_and_prgrp` (promoter+promoter group %), `public_val` (public %), `date` (quarter-end,
+    'DD-MON-YYYY'), `submissionDate` (the REAL filing date -- use this instead of the 21-day
+    estimate in quarters.py wherever a real record provides it), `symbol`, and an `xbrl` URL to the
+    full filing (the FII/DII/govt breakdown this schema wants is NOT in this summary record -- it
+    would require fetching and parsing that XBRL document, a follow-up task, not built here).
+    Returns one dict per filing found in the requested window (usually 0 or 1 per quarter, but the
+    API can return several years' history in a single wide-range response -- see run_scrape.py's
+    per-quarter cache keys, which store each returned record under its OWN true quarter, not
+    necessarily the quarter requested)."""
     payload = json.loads(raw)
     records = _extract_records(payload)
-    return _category_pct_from_records(records, _LABEL_KEYS, _VALUE_KEYS)
+    out = []
+    for rec in records:
+        if not isinstance(rec, dict) or "pr_and_prgrp" not in rec:
+            continue
+        try:
+            promoter = float(rec["pr_and_prgrp"]) if rec.get("pr_and_prgrp") not in (None, "") else None
+            public = float(rec["public_val"]) if rec.get("public_val") not in (None, "") else None
+        except (TypeError, ValueError):
+            promoter, public = None, None
+        out.append(dict(
+            promoter_pct=promoter, public_pct=public,
+            quarter_end_raw=rec.get("date"), submission_date_raw=rec.get("submissionDate"),
+            symbol=rec.get("symbol"), xbrl_url=rec.get("xbrl"),
+        ))
+    return out
 
 
 def parse_bse_csv(raw: bytes) -> dict[str, float]:
@@ -129,32 +154,56 @@ def parse_bse_csv(raw: bytes) -> dict[str, float]:
     return _category_pct_from_records(records, ["__label"], ["__value"])
 
 
-def parse_cached_entry(source: str, path) -> dict[str, float]:
-    raw = path.read_bytes()
-    if path.suffix == ".csv":
-        return parse_bse_csv(raw)
-    if source == "bse":
-        return parse_bse_json(raw)
-    return parse_nse_json(raw)
+def _nse_quarter_label(quarter_end_raw: str | None) -> str | None:
+    """'31-DEC-2022' -> 'Q4-2022', matching the canonical schema's own quarter label convention."""
+    if not quarter_end_raw:
+        return None
+    try:
+        ts = pd.to_datetime(quarter_end_raw, format="%d-%b-%Y")
+    except (ValueError, TypeError):
+        return None
+    return f"Q{ts.quarter}-{ts.year}"
 
 
 def build_normalized_table(source: str) -> pd.DataFrame:
     """Walk every cached entry for `source` and emit rows matching the canonical schema. Network-free
-    -- operates purely on what's already in data/raw/exchanges/shareholding_pattern_scrape/."""
+    -- operates purely on what's already in data/raw/exchanges/shareholding_pattern_scrape/.
+
+    NSE responses can bundle several quarters' filings into one cached file (a wide date-range
+    request returns everything it has), so rows are keyed by each filing's OWN true quarter (parsed
+    from its `date` field), not by the cache file's request-window label -- one cached file can
+    legitimately produce zero, one, or several output rows.
+    """
     rows = []
     for identifier, quarter_label, path in cache.iter_cached(source):
+        raw = path.read_bytes()
         try:
-            cats = parse_cached_entry(source, path)
+            if path.suffix == ".csv":
+                cats = parse_bse_csv(raw)
+                filings = [dict(cats, quarter=quarter_label)] if cats else []
+            elif source == "bse":
+                cats = parse_bse_json(raw)
+                filings = [dict(cats, quarter=quarter_label)] if cats else []
+            else:
+                filings = []
+                for f in parse_nse_json(raw):
+                    q = _nse_quarter_label(f.get("quarter_end_raw")) or quarter_label
+                    filings.append(dict(f, quarter=q))
         except Exception as exc:
             rows.append(dict(identifier=identifier, quarter=quarter_label, parse_error=str(exc)[:200]))
             continue
-        if not cats:
-            continue
-        row = dict(identifier=identifier, quarter=quarter_label, record_origin=f"{source}_scrape")
-        for cat in ("promoter_pct", "fii_pct", "dii_pct", "public_pct", "govt_pct", "n_shareholders"):
-            row[cat] = cats.get(cat)
-        rows.append(row)
-    return pd.DataFrame(rows)
+        for f in filings:
+            row = dict(identifier=identifier, quarter=f["quarter"], record_origin=f"{source}_scrape")
+            for cat in ("promoter_pct", "fii_pct", "dii_pct", "public_pct", "govt_pct", "n_shareholders"):
+                row[cat] = f.get(cat)
+            if source == "nse":
+                row["availability_date_raw"] = f.get("submission_date_raw")
+                row["xbrl_url"] = f.get("xbrl_url")
+            rows.append(row)
+    df = pd.DataFrame(rows)
+    if len(df):
+        df = df.drop_duplicates(subset=["identifier", "quarter"], keep="last")
+    return df
 
 
 if __name__ == "__main__":

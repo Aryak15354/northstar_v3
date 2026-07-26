@@ -13,32 +13,44 @@ found. `data/raw/exchanges/{bse,nse}/` has pledge/bulk-deals/announcements/credi
 but not shareholding pattern. This scraper is a genuine data-acquisition task, not redundant with
 anything already on disk.
 
-## Before you run anything — endpoints are NOT live-verified
+## Verified live 2026-07-26 — read this before running anything
 
-This session's browsing tool is blocked from `bseindia.com`/`nseindia.com` by environment policy (a
-plain `curl` from this same sandbox's Bash *did* reach `bseindia.com`, getting an HTTP 200 — so the
-block is specific to the interactive browsing tool, not a full network block; this was not used to
-run the actual scrape here, since the endpoint shapes still were not confirmed against a real
-response). The endpoint URLs in `fetch_bse.py` and `fetch_nse.py` are best-effort matches to each
-exchange's publicly observed API family (BSE's `ddl*`/`DwnldExcel_*` convention, modeled directly on
-this repo's own working `scrape_bse_promoter_pledge.py`; NSE's `/api/corporate-share-holdings-master`,
-matching its "Corporate filings > Shareholding Pattern" page) — **neither has been confirmed against a
-live response.**
+The interactive browsing tool in this session is blocked from `bseindia.com`/`nseindia.com` by
+environment policy, but a plain `requests`/`curl` call from the same sandbox's Bash was not — so a
+real, live 2-request verification WAS run here (with the user's explicit go-ahead), and the results
+are concrete, not guesses:
 
-**Run this first, always:**
-```bash
-python3 run_scrape.py --verify
-```
-This does exactly two requests (one BSE, one NSE) and prints the raw response. Compare what comes
-back against a known value in `data/canonical/fundamentals/shareholding_quarterly.parquet` for the
-same ticker/quarter (any `active_screener` row, 2023+) before trusting anything at scale. If the
-response doesn't look like real promoter/FII/DII/public percentages:
+**NSE — CONFIRMED WORKING, but with a real, load-bearing limitation.** `/api/corporate-share-
+holdings-master` returned a genuine filing for RELIANCE (promoter 50.49%, public 49.51%, real
+submission date) — captured as ground truth in
+`test_parse.py::test_parse_nse_json_real_verified_payload`. **But a request spanning 2010-2022
+returned only 6 records, all from late-2021 onward; a 2015-2016 window returned zero.** This endpoint
+does not reach the 2010-2022 gap by itself — it has the same kind of recent-only ceiling already
+documented for Screener.in's free tier, just from a different vendor. It also only returns
+promoter/public percentages, not the FII/DII/govt breakdown; each record's `xbrl` URL points to the
+full filing, which likely has that breakdown — parsing it is a real follow-up task, not built here.
+
+**BSE — CONFIRMED WRONG.** The guessed `ddlqtrid` endpoint 301-redirects to a generic BSE sales
+page (`/members/showinterest.aspx`), not shareholding data. `bseindia.com/robots.txt` also returns
+the site's Angular SPA shell (HTML, not real robots.txt directives) — `robots_check.py` now detects
+this via Content-Type and fails closed honestly rather than misparsing it, but the underlying problem
+is that **the real BSE endpoint has not been found.** Finding it needs an actual browser session on
+BSE's live shareholding-pattern page with dev-tools network inspection, which this sandbox cannot do.
+
+**Bottom line: this scrape, as currently scoped, does not solve MICRO-002's 2010-2022 gap.** The
+honest state of play is: NSE gives a working but shallow (recent-only) source; BSE's real endpoint is
+still unknown; and the deeper regulatory archive (XBRL filings, or a genuinely historical NSE/BSE
+endpoint) has not been located. See `labs/microstructure/protocols/MICRO-002_DATA_ACQUISITION.md`
+section 6 for the full, current recommendation.
+
+**Still run `--verify` first if anything here changes** (a fixed BSE endpoint, or evidence of a
+deeper NSE archive): it does exactly two requests and prints the raw response for inspection before
+any volume is sent. If a response doesn't look like real promoter/FII/DII/public percentages:
 1. Fix the URL/params in `fetch_bse.py` or `fetch_nse.py` — nothing else needs to change.
-2. Update `_CATEGORY_KEYWORDS` in `parse.py` if the real field/category labels differ from the
-   best-effort guesses there (see that file's own disclosure comment).
-3. Re-run `python3 test_parse.py` (17 tests, network-free) — these test the matching/aggregation
-   *logic*, not the keyword guesses, so they should still pass; add a test using the real payload
-   shape once you've seen one.
+2. Update `_CATEGORY_KEYWORDS` in `parse.py` if BSE's real field/category labels differ from the
+   still-unverified guesses there (see that file's own disclosure comment).
+3. Re-run `python3 test_parse.py` (19 tests, network-free, includes the one real ground-truth
+   fixture) — add a new test using any new real payload shape you capture.
 
 ## The guardrails, and where each one lives
 
@@ -118,5 +130,5 @@ every other closed experiment this session was held to.
 - `checkpoint.py` — resumable per-unit progress manifest
 - `fetch_nse.py` / `fetch_bse.py` — per-exchange fetchers (endpoint URLs need live verification)
 - `parse.py` — cache → canonical schema (network-free, keyword-matching logic unit-tested)
-- `test_parse.py` — 17 tests, run with `python3 test_parse.py`
+- `test_parse.py` — 19 tests (incl. one real ground-truth NSE fixture), run with `python3 test_parse.py`
 - `run_scrape.py` — CLI: `--verify`, then small `--limit-tickers` test, then the full run

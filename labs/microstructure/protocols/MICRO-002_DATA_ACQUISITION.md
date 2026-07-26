@@ -119,12 +119,34 @@ synthetic fixtures). Universe derived from `panel_a_weekly.parquet` itself (532 
 verified count), 2010-2022 quarters. Full details and the exact runbook are in that directory's
 `README.md`.
 
-**Not yet executed, and not a silent gap**: this environment's browsing tool is policy-blocked from
-`bseindia.com`/`nseindia.com`, so the exact BSE/NSE endpoint URLs the fetchers use could not be
-confirmed against a live response in this session. The scraper is built to be verified
-(`run_scrape.py --verify`) before any volume is sent, and the user was asked whether to attempt that
-verification from this same sandbox (a plain `curl` reached `bseindia.com` successfully, suggesting
-the block may be specific to the interactive browsing tool rather than the whole network) or to run
-it entirely in a separate environment. **This document will be updated again once real data lands and
-section 1's coverage table is re-run against it — until then, the 2010-2022 gap remains open exactly
-as characterized above.**
+**Not yet executed at volume, and not a silent gap**: this environment's browsing tool is
+policy-blocked from `bseindia.com`/`nseindia.com`, but with the user's explicit go-ahead, a real
+2-request live verification WAS run from this sandbox's Bash (`requests`, not the blocked browsing
+tool). The result changes this document's conclusion materially — see section 6.
+
+## 6. Live verification result, 2026-07-26 — the gap is NOT resolved by this approach as scoped
+
+**NSE — confirmed working, but confirmed shallow.** `/api/corporate-share-holdings-master` returned a
+real filing for RELIANCE (promoter 50.49%, public 49.51%, genuine submission date) — this is real
+data, not a guess; captured as a ground-truth test fixture in the scraper's `test_parse.py`. **But a
+request spanning 2010-2022 returned only 6 records, all from late-2021 onward; a 2015-2016 window
+returned zero records.** This endpoint has the same kind of recent-only ceiling already documented in
+section 3, Option 1 for Screener.in's free tier — it is a different vendor with the same limitation,
+not a solution to the 2010-2022 gap. It also only reports promoter/public percentages, not the
+FII/DII/govt breakdown this document's target schema wants; each record links to its full XBRL
+filing, which likely has that detail — parsing it is a real, undone follow-up task.
+
+**BSE — confirmed wrong, not merely unverified.** The endpoint guessed by analogy to this repo's own
+working `ConsolidatePledge` pattern (`ddlqtrid`) 301-redirects to a generic BSE sales/contact page,
+not shareholding data. The real BSE shareholding-pattern endpoint has not been found, and finding it
+needs a live browser session with dev-tools network inspection on bseindia.com — not available in
+this sandbox.
+
+**Updated, honest conclusion**: neither exchange's public API, as currently understood, reaches the
+2010-2022 institutional-ownership gap. The most promising undone leads are (a) parsing the XBRL
+filing archive linked from each NSE summary record, if NSE's own filing index reaches back further
+than the summary API's ~2-year window, and (b) finding BSE's real endpoint via a live browser session
+outside this sandbox. **Option 2 (BSE/NSE scraping) is not closed as a direction, but is not the quick
+win it looked like on paper** — this document and `scripts/microstructure/bse_nse_shareholding_scraper/
+README.md` should both be updated again if either lead is pursued further. Until then, the 2010-2022
+gap remains open exactly as characterized in sections 1-3 above.

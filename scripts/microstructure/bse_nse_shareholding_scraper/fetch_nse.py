@@ -5,12 +5,24 @@ Reuses `scripts/nse_csv_scraper_common.py` verbatim (create_nse_session, bootstr
 nse_request) -- this is the already-working session/cookie/retry infrastructure this repo's other
 NSE scrapers (fetch_nse_microstructure.py, scrape_nse_*.py) rely on, not reinvented here.
 
-ENDPOINT DISCLOSURE: this environment's browsing policy blocks nseindia.com, so the exact URL/params
-below could not be verified against a live response in this session. `/api/corporate-share-holdings-
-master` is the endpoint NSE's own "Corporate filings > Shareholding Pattern" page calls, per its
-publicly observable structure -- but **run `run_scrape.py --verify` first** and inspect the raw cached
-response for one ticker before committing to the full backfill. If the shape differs, only this file
-needs to change; nothing downstream does (the parser and cache are endpoint-agnostic).
+ENDPOINT STATUS, updated 2026-07-26 after a live check from this sandbox's Bash (the interactive
+browsing tool is policy-blocked from nseindia.com, but a plain `requests`/`curl` call was not):
+**CONFIRMED WORKING.** A real request for RELIANCE returned a genuine filing record (promoter 50.49%,
+public 49.51%, real submission date) -- see `test_parse.py::test_parse_nse_json_real_verified_payload`
+for the exact captured fixture.
+
+**CONFIRMED LIMITATION, load-bearing for MICRO-002's actual goal**: this endpoint only serves
+recent history. A request spanning 2010-2022 for RELIANCE returned just 6 records, all from
+late-2021 onward; a 2015-2016 window returned zero. **This endpoint alone does not reach the
+2010-2022 gap** -- it appears to have the same kind of recent-only ceiling already documented for
+Screener.in's free tier (`MICRO-002_DATA_ACQUISITION.md` section 3, Option 1), just via a different
+vendor. Whether NSE exposes a genuinely deeper historical archive through some other endpoint is an
+open question this session did not resolve (further guessing against live NSE infrastructure without
+a browser session to observe real network calls was judged not worth the additional requests).
+
+**Also confirmed**: this summary record has `promoter_pct`/`public_pct` only -- no FII/DII/govt
+breakdown. Each record includes an `xbrl` URL to the full regulatory filing, which likely does have
+that breakdown; parsing it is a real follow-up task, not built here.
 """
 from __future__ import annotations
 

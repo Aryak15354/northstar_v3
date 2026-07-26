@@ -102,14 +102,18 @@ overlays on Sleeve-1 (Config-4+G-05, 80% of the frozen book) — no new predicti
 
 ## Open items for a future session
 
-1. **MICRO-002 sourcing** — the user authorized BSE/NSE Regulation-31 archive scraping (Option 2)
-   same-day. A resumable, rate-limited, tested scraper now exists at
-   `scripts/microstructure/bse_nse_shareholding_scraper/` (see its README), but has **not been run**:
-   this session's browsing tool is policy-blocked from both exchange domains, so the exact endpoint
-   URLs are best-effort and need live `--verify` before any volume is sent. Whether to verify/run from
-   this sandbox (a plain `curl` reached `bseindia.com`, unlike the browsing tool) or a separate
-   environment is pending. Re-run `MICRO-002_DATA_ACQUISITION.md` section 1's coverage diagnostic
-   once real data lands, before treating the ownership gap as resolved.
+1. **MICRO-002 sourcing — live-verified, gap NOT resolved.** The user authorized BSE/NSE
+   Regulation-31 archive scraping; a resumable, rate-limited, tested scraper exists at
+   `scripts/microstructure/bse_nse_shareholding_scraper/`, and a real 2-request verification ran
+   from this sandbox's Bash (the browsing tool itself stayed policy-blocked). Result: **NSE's
+   endpoint works but only reaches ~2 years back** (a 2010-2022 request for RELIANCE returned 6
+   records, all from late-2021+) — the same recent-only ceiling as Screener.in's free tier, a
+   different vendor. **BSE's guessed endpoint is confirmed wrong** (redirects to a sales page); its
+   real endpoint needs a live browser session this sandbox can't provide. See
+   `MICRO-002_DATA_ACQUISITION.md` section 6. Two undone leads: parsing the XBRL filing archive each
+   NSE record links to, and finding BSE's real endpoint outside this sandbox. The 2010-2022 gap
+   remains open — do not treat it as resolved without re-running section 1's coverage diagnostic
+   against real landed data.
 2. **MSCI-001's reversed-sign finding** — a real, exploratory, statistically live-looking lead
    (stability predicts *lower*, not higher, future IC) worth its own fresh pre-registration, not an
    extension of this session's contract.

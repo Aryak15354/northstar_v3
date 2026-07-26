@@ -139,6 +139,34 @@ def test_parse_bse_csv_end_to_end():
     assert abs(out["public_pct"] - 40.0) < 1e-6
 
 
+def test_parse_nse_json_real_verified_payload():
+    """This fixture is a REAL response from NSE's `corporate-share-holdings-master` endpoint,
+    captured 2026-07-26 (RELIANCE, quarter ended 31-DEC-2022) -- the one payload in this whole
+    scraper that is ground truth, not a best-effort guess. Confirms `parse_nse_json`'s flat-record
+    extraction against the real field names (`pr_and_prgrp`, `public_val`, `submissionDate`)."""
+    real_payload = [{
+        "broadcastDate": "20-JAN-2023 20:40:15", "date": "31-DEC-2022", "employeeTrusts": "0",
+        "isin": None, "name": "Reliance Industries Limited", "pr_and_prgrp": "50.49",
+        "public_val": "49.51", "recordId": "175390", "submissionDate": "20-JAN-2023",
+        "symbol": "RELIANCE",
+        "xbrl": "https://nsearchives.nseindia.com/corporate/xbrl/SHP_175390_776223_20012023081637_WEB.xml",
+    }]
+    out = parse.parse_nse_json(json.dumps(real_payload).encode())
+    assert len(out) == 1
+    assert abs(out[0]["promoter_pct"] - 50.49) < 1e-9
+    assert abs(out[0]["public_pct"] - 49.51) < 1e-9
+    assert out[0]["quarter_end_raw"] == "31-DEC-2022"
+    assert out[0]["submission_date_raw"] == "20-JAN-2023"
+    assert out[0]["symbol"] == "RELIANCE"
+
+
+def test_nse_quarter_label_from_real_date_format():
+    assert parse._nse_quarter_label("31-DEC-2022") == "Q4-2022"
+    assert parse._nse_quarter_label("30-SEP-2022") == "Q3-2022"
+    assert parse._nse_quarter_label(None) is None
+    assert parse._nse_quarter_label("garbage") is None
+
+
 def test_dict_wrapped_table_key_variant():
     payload = {"Table": [{"Category": "Promoter", "Percentage": "50"},
                          {"Category": "Public", "Percentage": "50"}]}

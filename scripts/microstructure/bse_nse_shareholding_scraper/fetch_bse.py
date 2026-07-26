@@ -6,13 +6,23 @@ Mirrors the proven dual-path resilience pattern already working in this repo's
 retry/backoff-on-403/429 logic) rather than inventing a new one: primary JSON API, CSV-download
 fallback if the JSON path comes back empty.
 
-ENDPOINT DISCLOSURE: this environment's browsing policy blocks bseindia.com, so the exact endpoint
-names below (`ShareholdingPattern`, `ddlqtrid`, `DwnldExcel_Shp`) are a best-effort match to BSE's
-observed `ddl*`/`DwnldExcel_*`/`ConsolidatePledge`-style API family (the pledge-scraper's own
-`ConsolidatePledge` + `DwnldExcel_ConPldge` pair is the confirmed working precedent this pattern is
-modeled on) -- they have NOT been confirmed live in this session. **Run `run_scrape.py --verify`
-first** and inspect the raw cached response before the full backfill; if a name is wrong, only this
-file needs to change.
+ENDPOINT STATUS, updated 2026-07-26 after a live check from this sandbox's Bash (the interactive
+browsing tool is policy-blocked from bseindia.com, but a plain `requests`/`curl` call was not):
+**CONFIRMED WRONG.** `ddlqtrid`, guessed by analogy to the working `ConsolidatePledge` pattern,
+returns an HTTP 301 redirect to `https://www.bseindia.com/members/showinterest.aspx` -- a generic
+sales/contact page, not shareholding data. This is not a permissions issue (see robots_check.py's own
+disclosure below) -- the path itself does not resolve to real data on BSE's current infrastructure.
+`www.bseindia.com/robots.txt` also returned the site's Angular SPA shell (HTML, not robots.txt
+directives), which is a separate, real quirk worth knowing about but not the cause of the wrong
+endpoint.
+
+**The real BSE shareholding-pattern endpoint has NOT been found.** Discovering it needs an actual
+browser session on bseindia.com's live shareholding-pattern page with dev-tools network inspection --
+this sandbox cannot do that (the browsing tool is domain-blocked) and guessing further via blind
+curl probes against BSE's live infrastructure was judged not worth the additional requests. **Do not
+run the BSE path until this is fixed** -- `run_scrape.py --verify` will keep failing at the robots.txt
+gate (which is, correctly, refusing to proceed against paths that don't resolve to real data) until a
+real endpoint replaces the guess below.
 """
 from __future__ import annotations
 
