@@ -42,7 +42,7 @@ absolute → cut sizing; Sleeve-2 live Sharpe <0 over a full year → drop it.
 
 ---
 
-## 2. The Delivery Overlay (newly recovered, 2026-07-25)
+## 2. The Delivery Overlay (recovered 2026-07-25 — **DO NOT INTEGRATE**, see the correction below)
 
 **Status: recovered, validated, NOT YET integrated into the frozen book above** — this is the one open
 item before the overlay can be formally added to Section 1's spec. See
