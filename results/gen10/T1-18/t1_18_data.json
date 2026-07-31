@@ -1,0 +1,59 @@
+{
+  "economic_limits": {
+    "n_weeks": 1033,
+    "mean_names": 262.1868344627299,
+    "k_features": 15,
+    "oracle_ic": 0.35344413842286426,
+    "oracle_shuffled_ic": 0.2127819139490607,
+    "attainable_ceiling": 0.14066222447380355,
+    "ceiling_t": 32.308321250423106,
+    "deployed_ic": 0.028435254656710415,
+    "deployed_t": 4.970361699716204,
+    "capture_rate": 0.2021527440155484,
+    "reading": "substantial nominal headroom remains -- BUT note that every Gen-10 attempt to claim it failed, so the binding constraint is estimation, not information"
+  },
+  "geometry": {
+    "eras": [
+      {
+        "era": "2005-2009",
+        "eff_dim_levels": 6.206365447421506,
+        "pc1_levels": 0.2941415088505626,
+        "eff_dim_diff": 7.344515086961618,
+        "pc1_diff": 0.2663411427529508
+      },
+      {
+        "era": "2010-2014",
+        "eff_dim_levels": 6.032329944124932,
+        "pc1_levels": 0.2979243433575358,
+        "eff_dim_diff": 7.423675403225008,
+        "pc1_diff": 0.2596425375195612
+      },
+      {
+        "era": "2015-2019",
+        "eff_dim_levels": 5.8596233437131096,
+        "pc1_levels": 0.2966420586870473,
+        "eff_dim_diff": 7.179689664979636,
+        "pc1_diff": 0.2668076608037537
+      },
+      {
+        "era": "2020-2025",
+        "eff_dim_levels": 6.063811020026228,
+        "pc1_levels": 0.2984497426694816,
+        "eff_dim_diff": 7.212115780188527,
+        "pc1_diff": 0.2667629739752145
+      }
+    ],
+    "mean_levels": 6.040532438821444,
+    "mean_diff": 7.2899989838386965,
+    "range_levels": 0.3467421037083964,
+    "stable": true
+  },
+  "networks": {
+    "verdict": "DO NOT OPEN \u2014 charter gate unmet",
+    "reasons": [
+      "Gen-7/T1-10/T1-16 answered the cross-asset question negatively",
+      "Gen-2/3 macro waves answered the macro arm negatively",
+      "Pillar 5 shows little headroom left to propagate"
+    ]
+  }
+}
