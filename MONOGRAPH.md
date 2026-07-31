@@ -467,7 +467,40 @@ above rather than quietly folded in. **A remediation programme is not exempt fro
 exists to fix** — which is the strongest available argument for the standing rule that produced the
 catch: measure the direction of a bias, never reason about it from the outside.
 
-Full record: `results/gen10/GEN10_SYNTHESIS.md` (findings G10-F01–F40), `GEN10_REMEDIATION_CHARTER.md`
+### The closing statement
+
+The programme's last open question turned out to be a quantity nobody had measured: **how much
+predictability is even available** in the feature basis everything here is built on. MSRP's Economic
+Limits pillar — the one its charter says "runs regardless" — answers it. A per-date oracle with
+perfect foresight of that week's returns reaches **IC +0.353**; the same oracle on a *shuffled* target
+reaches **+0.213**, so **60% of it is overfitting**. The attainable ceiling is **+0.141**. The
+deployed momentum composite realises **+0.028** — **20% of it.**
+
+Read naively that is five-fold headroom, and an earlier draft of this section said so before the
+number was corrected. The right reading is the opposite, and Gen-10 is its own evidence:
+**eighteen experiments set out to claim exactly that headroom and not one survived out of sample.**
+The ceiling is computed knowing each week's answer in advance. The gap between it and the book is not
+an inventory of missed opportunities — it is the price of not knowing the answer in advance.
+
+So the programme closes on a sharper claim than "the market has no more signal", which its own
+ceiling contradicts, and sharper than "we have more to find", which fourteen consecutive out-of-sample
+failures contradict:
+
+> **The binding constraint is estimation, not information.**
+
+Two consequences follow, and they point in opposite directions. More modelling on this feature basis
+is not justified — that is what eighteen experiments established. And a **genuinely new data source**
+is the one route this bound does not close, because the ceiling is basis-specific: it bounds what
+these fifteen features can deliver, not what any data could.
+
+Alongside it, MSRP's Geometry pillar reports that the shape of the state space **does not change** —
+effective dimension 6.04, varying by 0.35 across four eras spanning the GFC, COVID and the 2022 rate
+cycle, PC1 constant at 29–30%. And it produced a third sighting of the Rolling-Window Persistence
+Principle with the sign reversed: differencing *raises* effective dimension by +1.25, so overlapping
+windows manufacture apparent common structure as well as apparent persistence. A reader who knew the
+principle only as "windows create spurious persistence" would have predicted the wrong direction.
+
+Full record: `results/gen10/GEN10_SYNTHESIS.md` (findings G10-F01–F57), `GEN10_REMEDIATION_CHARTER.md`
 (the pre-registrations, written before results), `RESEARCH_INFERENCE_STANDARD.md` (the six rules),
 `archive_addenda/GEN10_ADDENDUM_001–004.md` (corrections against permanent IDs, Archive v1.0 unmodified
 per `archive/GEN7_INTERFACE_RULE.md`), and `REMEDIATION_PLAN_FEASIBILITY_REVIEW.md` (the review that

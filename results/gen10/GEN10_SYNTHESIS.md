@@ -2,7 +2,7 @@
 
 ```
 Version:      v1.0
-Status:       Tier 0 + Tier 1 COMPLETE (14 experiments); record propagated 2026-07-31
+Status:       COMPLETE — Tier 0, Tier 1 and the full remaining backlog (18 experiments)
 Freeze Date:  2026-07-31
 Owner:        Aryak
 Charter:      GEN10_REMEDIATION_CHARTER.md
@@ -10,7 +10,7 @@ Source plan:  Northstar_Remediation_Priority_Plan.md (v2, 2026-07-30)
 Review:       REMEDIATION_PLAN_FEASIBILITY_REVIEW.md
 ```
 
-Fourteen experiments. **Zero new deployable alpha. Eight verdicts corrected. Three questions
+Eighteen experiments. **Zero new deployable alpha. Eight verdicts corrected. Three questions
 permanently closed.** The programme's certified state is unchanged: momentum remains the only
 scalable stock-selection edge, sector rotation the modest diversifier, delivery a validated but
 capacity-bound signal that does not improve the book in either integration architecture.
@@ -35,6 +35,10 @@ capacity-bound signal that does not improve the book in either integration archi
 | **T1-12** | Is the same defect in Delivery / G9-01? | **No — both clean, verified.** One latent vulnerability recorded |
 | **T1-13** | Tier sweep: common dates x 3 configs x net of cost | **Non-F&O lead ~86% artifact. Tier effect absent from the certified book** |
 | **T1-14** | Full-window check + G8-11 re-run with empty weeks excluded | **Zero-fill DILUTES, not flatters — T1-13 §3b corrected. Both small tiers tie at 15/17** |
+| **T1-15** | Do the two tiers overlap? Paper C Q2 | **Strict nesting from 2015 (100%).** Q2 **clears** its bar — the one upward revision |
+| **T1-16** | G2-B03b; T1-10's rates channel | **Both closed negative.** T1-10's blocker was receiver size (10 names), not history |
+| **T1-17** | G5-08A/B/C/D + G5-09 construction branch | **0/5 promote. Gen-5's sequencing rule vindicated** |
+| **T1-18** | MSRP Geometry / Networks / Economic Limits | **Ceiling +0.141, book captures 20%. Shape stable. Networks does not open** |
 
 ## 2. The five findings that generalise
 
@@ -122,6 +126,24 @@ production config — **both tiers are negative** (−0.284, −0.013). The F&O-
 a long book drawn from a disjoint non-F&O universe, so the tier effect and the short leg are
 structurally incompatible. Any small-cap tilt of the certified book must redesign the short leg first,
 which makes it a different strategy rather than a tilt.
+
+### G10-F — the constraint is estimation, not information
+
+MSRP's Economic Limits pillar puts the attainable ceiling in the 15-feature basis at **IC +0.141**
+against the deployed book's **+0.028** — a 20% capture rate, nominally 5× headroom. **60% of the raw
+oracle was overfitting**, visible only because the null was measured rather than approximated.
+
+The temptation is to read 5× headroom as opportunity. Gen-10 is the evidence against that reading:
+**eighteen experiments tried to claim exactly this headroom and none succeeded out of sample** — the
+DS battery (14 deduped items, first-ever split, zero new alpha), the construction branch (0/5), the
+conditional-momentum roles (all four closed), liquidity sizing (t = 0.50), cross-asset transmission
+(0/15 at adequate power). The ceiling is computed with perfect foresight of each week's returns; the
+gap is the price of not having it.
+
+**This is the closing statement of the programme.** Not "the market has no more signal" — the ceiling
+says otherwise — but **the binding constraint is estimation, not information**, and no amount of
+further modelling on this feature basis has been able to move it. A genuinely new data source is the
+one route this bound does not close.
 
 ## 3. Corrections against the permanent record (all applied — see §3b)
 

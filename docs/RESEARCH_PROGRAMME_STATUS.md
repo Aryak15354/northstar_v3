@@ -37,9 +37,21 @@ incident that motivated it.
 already carried a *"corrected"* label. **A finding that has been corrected once is not thereby more
 trustworthy than one that never has.**
 
-**Still genuinely open:** G5-08A/B/C/D and G5-09 (never run); MSRP's three unopened pillars; Paper C
-Q2; G2-B03b; the duration/rates channel in T1-10 (US 10Y untestable on 440 weeks); and a net-of-cost
-re-check of the SMALL_ADV_Q1 tier ordering on the longer 1,070-week window.
+**The backlog is now empty.** Everything listed as open on 2026-07-31 was subsequently run:
+
+| was open | outcome |
+|---|---|
+| G5-08A/B/C/D + G5-09 (never run) | **0/5 promote** (T1-17). Gen-5's sequencing rule vindicated. Risk parity / shrinkage are real but sub-gate (+0.06 vs a +0.15 bar) |
+| MSRP's three unopened pillars | **Geometry + Economic Limits run; Networks does not open** by its own charter gate (T1-18) |
+| Paper C Q2 | **CLEARS its bar** — the one Gen-10 revision that goes upward (T1-15) |
+| G2-B03b | **REJECTED**, wrong-signed, 46–59% composition artifact (T1-16) |
+| duration/rates channel | **Covered and null.** Its blocker was receiver size (Real Estate: 10 names/date), not history length — correcting T1-10's own diagnosis (T1-16) |
+| SMALL_ADV_Q1 on the longer window | **Holds** at +0.228 across 1,070 weeks, identical date index verified (T1-14) |
+
+**The closing statement:** the attainable ceiling in the 15-feature basis is IC **+0.141**; the
+deployed book captures **20%** of it. Nominally 5× headroom — but eighteen experiments tried to claim
+it and none survived out of sample. **The binding constraint is estimation, not information.** A
+genuinely new data source is the one route that bound does not close.
 
 
 ---
