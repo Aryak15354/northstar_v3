@@ -151,3 +151,29 @@ exchange publication**, or an **API you already hold credentials for**. I have n
 scraping any site whose terms prohibit it, and I would not — the two places where scraping is
 the only route (§3's consensus vendors) are also the two where it would breach terms *and*
 reintroduce a look-ahead bug you have already fixed once.
+
+---
+
+## BUILT — 2026-07-31
+
+The §1 recommendation is done. `data/processed/iv_surface_weekly.parquet`:
+
+```
+112,706 rows | 847 weeks | 427 underlyings | 2010-01-08 .. 2026-07-17
+median 141 names/week (212 in the recent era)
+
+  iv_atm            100% coverage   median 31.7%
+  iv_skew_25d        94%            median +2.2%   <- correctly signed: equity put skew
+  iv_term_slope      64%            median +2.9%
+  pcr_oi            100%            median 0.554
+  pcr_vol           100%            median 0.429
+  oi_concentration  100%            median 0.106
+```
+
+Sanity checks that passed without being tuned for: median skew is **positive** (equity options
+carry put skew, as they must); IV spikes in the right places (Sept 2011 Euro crisis 39.7%,
+March 2021 45.5%) and troughs in calm markets (Dec 2025 20.1%).
+
+**Not yet tested for signal.** Next step is Gen-11's sign-stability screen, then the A0–A7 gate
+if anything clears. `vrp` (IV − trailing realised vol) still needs the realised-vol join from
+PANEL-A and is the feature with the strongest external prior.
