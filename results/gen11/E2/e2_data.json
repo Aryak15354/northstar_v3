@@ -1,0 +1,64 @@
+{
+  "matched_dates": 270,
+  "price_only": 0.1174059937055838,
+  "price_all_micro": 0.14094162868353316,
+  "blocks": [
+    {
+      "block": "delivery (DEPLOYED)",
+      "k": 3,
+      "ceiling": 0.1288611043713981,
+      "incremental": 0.011455110665814311,
+      "t": 20.99686451612794,
+      "boot": [
+        0.11640909695121429,
+        0.1417668189701082
+      ],
+      "cols": [
+        "delivery_pct",
+        "delivery_pct_4w_avg",
+        "delivery_pct_z52"
+      ]
+    },
+    {
+      "block": "futures OI (rejected individually)",
+      "k": 4,
+      "ceiling": 0.14397608256336009,
+      "incremental": 0.026570088857776286,
+      "t": 25.917186708012675,
+      "boot": [
+        0.13338001667365545,
+        0.15413679048781684
+      ],
+      "cols": [
+        "fut_oi",
+        "fut_oi_chg_1w_pct",
+        "fut_oi_chg_4w_pct",
+        "fut_oi_z52"
+      ]
+    },
+    {
+      "block": "market-level (CONTROL, must be ~0)",
+      "k": 9,
+      "ceiling": 0.1174059937055838,
+      "incremental": 0.0,
+      "t": 17.27025046684084,
+      "boot": [
+        0.1029073169687466,
+        0.13249244564686055
+      ],
+      "cols": [
+        "partoi_client_net_long_ratio",
+        "partoi_dii_net_long_ratio",
+        "partoi_fii_net_long_ratio",
+        "partoi_pro_net_long_ratio",
+        "partoi_fii_net_long_ratio_chg_1w",
+        "nifty50_pe",
+        "nifty50_pb",
+        "nifty50_div_yield",
+        "nifty50_pe_z52"
+      ]
+    }
+  ],
+  "oi_over_delivery": 0.01208052431213505,
+  "verdict": "NEW \u2014 futures OI adds beyond the deployed delivery signal"
+}

@@ -1,0 +1,48 @@
+{
+  "m_screened": 25,
+  "rows": [
+    {
+      "cand": "macro_linkage_score",
+      "raw_t": 11.67464632667855,
+      "mom_t": 12.26096889633599,
+      "mom_p": 1.608394180018715e-32,
+      "disc_t": 13.483600836521079,
+      "oos_t": 3.6214541782733654,
+      "lock_t": null,
+      "n_weeks": 1121,
+      "a2": "SURVIVES",
+      "sign_flip": false,
+      "by_clean": true,
+      "a4_t": 1.5075765415781686
+    },
+    {
+      "cand": "operating_margin_cs_z",
+      "raw_t": 6.734502571722896,
+      "mom_t": 6.46398947698196,
+      "mom_p": 1.5830857496726658e-10,
+      "disc_t": 6.228766278831776,
+      "oos_t": 2.052477033168505,
+      "lock_t": null,
+      "n_weeks": 1013,
+      "a2": "SURVIVES",
+      "sign_flip": false,
+      "by_clean": true,
+      "a4_t": 0.40987766507978013
+    },
+    {
+      "cand": "screener_roce_cs_z",
+      "raw_t": 6.875033602504759,
+      "mom_t": 7.051475731276663,
+      "mom_p": 3.4186169936763364e-12,
+      "disc_t": 7.453024784162119,
+      "oos_t": 2.082532522350793,
+      "lock_t": null,
+      "n_weeks": 945,
+      "a2": "SURVIVES",
+      "sign_flip": false,
+      "by_clean": true,
+      "a4_t": 0.20073904898265352
+    }
+  ],
+  "survivors": []
+}

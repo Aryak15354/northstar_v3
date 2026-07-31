@@ -1,0 +1,206 @@
+{
+  "experiment": "E1",
+  "max_per_family": 12,
+  "price_basis": [
+    "mom_60d_cs_z",
+    "mom_20d_cs_z",
+    "mom_63d_1m_lag_cs_z",
+    "res_mom_60d",
+    "res_mom_20d_cs_z",
+    "ret_20d_cs_z",
+    "ret_5d_cs_z",
+    "vol_60d",
+    "vol_20d",
+    "vol_z20",
+    "amihud_illiquidity_cs_z",
+    "max_ret_20d_cs_z",
+    "price_to_sma20_cs_z"
+  ],
+  "rows": [
+    {
+      "family": "microstructure",
+      "k_family": 12,
+      "n_dates": 270,
+      "ceiling_price": 0.1174059937055838,
+      "ceiling_aug": 0.15142445456920198,
+      "incremental": 0.03401846086361818,
+      "t_aug": 22.29780519492941,
+      "boot": [
+        0.13819943692084583,
+        0.16471125046401391
+      ],
+      "features": [
+        "partoi_client_net_long_ratio",
+        "partoi_dii_net_long_ratio",
+        "partoi_fii_net_long_ratio",
+        "partoi_pro_net_long_ratio",
+        "nifty50_pe",
+        "nifty50_pb",
+        "nifty50_div_yield",
+        "partoi_fii_net_long_ratio_chg_1w",
+        "nifty50_pe_z52",
+        "delivery_pct",
+        "delivery_pct_4w_avg",
+        "fut_oi"
+      ]
+    },
+    {
+      "family": "liquidity_exposure",
+      "k_family": 8,
+      "n_dates": 1063,
+      "ceiling_price": 0.12426921699340301,
+      "ceiling_aug": 0.13801649218487128,
+      "incremental": 0.013747275191468261,
+      "t_aug": 36.321763678035964,
+      "boot": [
+        0.12983553886307247,
+        0.146496761093126
+      ],
+      "features": [
+        "mom20_x_liquidity",
+        "mom20_x_liquidity_cs_rank",
+        "mom20_x_liquidity_cs_z",
+        "amihud_illiquidity",
+        "amihud_illiquidity_cs_rank",
+        "amihud_illiquidity_cs_z",
+        "amihud_liquidity_rank",
+        "fii_proxy"
+      ]
+    },
+    {
+      "family": "macro_market",
+      "k_family": 12,
+      "n_dates": 1062,
+      "ceiling_price": 0.1250612980641601,
+      "ceiling_aug": 0.12852628426999213,
+      "incremental": 0.0034649862058320213,
+      "t_aug": 32.53347724028373,
+      "boot": [
+        0.11997814916908497,
+        0.1374955720595174
+      ],
+      "features": [
+        "commodity_basket",
+        "copper_4w_return",
+        "crude_4w_return",
+        "gold_4w_return",
+        "macro_linkage_score",
+        "inrusd_4w_return",
+        "inrusd_vol_4w",
+        "macro_crude_wti",
+        "macro_crude_yoy",
+        "macro_macro_activity_composite",
+        "macro_us_10y",
+        "macro_usdinr"
+      ]
+    },
+    {
+      "family": "macro_rbi",
+      "k_family": 12,
+      "n_dates": 341,
+      "ceiling_price": 0.11882423338653587,
+      "ceiling_aug": 0.1205173625278461,
+      "incremental": 0.001693129141310229,
+      "t_aug": 20.7858963790684,
+      "boot": [
+        0.10853761297631416,
+        0.13264098000563107
+      ],
+      "features": [
+        "rbi_repo_rate_ts_z",
+        "rbi_10_year_g_sec_yield_fbil",
+        "rbi_182_day_treasury_bill_primary_yield",
+        "rbi_364_day_treasury_bill_primary_yield",
+        "rbi_91_day_treasury_bill_primary_yield",
+        "rbi_all_india_new_consumer_price_index_rural_urban_combined_base_2012_100",
+        "rbi_all_india_new_consumer_price_index_rural_urban_combined_base_2012_100_age_weeks",
+        "rbi_bank_credit_crore",
+        "rbi_bop_other_investment_loans_banking_capital_rupee_debt_service_other_capital_net_inr",
+        "rbi_bop_other_investment_loans_banking_capital_rupee_debt_service_other_capital_net_inr_age_weeks",
+        "rbi_bop_other_investment_loans_banking_capital_rupee_debt_service_other_capital_net_usd",
+        "rbi_bop_other_investment_loans_banking_capital_rupee_debt_service_other_capital_net_usd_age_weeks"
+      ]
+    },
+    {
+      "family": "events_flows",
+      "k_family": 12,
+      "n_dates": 1071,
+      "ceiling_price": 0.125129106153933,
+      "ceiling_aug": 0.11906471540397315,
+      "incremental": -0.006064390749959847,
+      "t_aug": 30.7653166903083,
+      "boot": [
+        0.1102512739165925,
+        0.127261484310489
+      ],
+      "features": [
+        "bulk_buy_count_5d_cs_rank",
+        "bulk_buy_count_5d_cs_z",
+        "bulk_net_volume_5d",
+        "bulk_net_volume_5d_cs_rank",
+        "bulk_net_volume_5d_cs_z",
+        "insider_buy_flag_30d_cs_rank",
+        "insider_sell_flag_30d_cs_rank",
+        "institutional_buy_flag_cs_rank",
+        "order_win_count_90d_cs_rank",
+        "order_win_flag_30d_cs_rank",
+        "bulk_net_volume_21d",
+        "bulk_net_volume_21d_cs_rank"
+      ]
+    },
+    {
+      "family": "earnings",
+      "k_family": 12,
+      "n_dates": 283,
+      "ceiling_price": 0.11966759926472476,
+      "ceiling_aug": 0.10174690143852227,
+      "incremental": -0.01792069782620248,
+      "t_aug": 17.785959934447703,
+      "boot": [
+        0.08957723232818307,
+        0.11416704484452403
+      ],
+      "features": [
+        "rev_sue",
+        "rev_sue_cs_rank",
+        "rev_sue_cs_z",
+        "rev_sue_decay",
+        "rev_sue_decay_cs_rank",
+        "rev_sue_decay_cs_z",
+        "eps_sue",
+        "eps_sue_cs_rank",
+        "eps_sue_cs_z",
+        "eps_sue_decay",
+        "eps_sue_decay_cs_rank",
+        "eps_sue_decay_cs_z"
+      ]
+    },
+    {
+      "family": "fundamentals",
+      "k_family": 12,
+      "n_dates": 588,
+      "ceiling_price": 0.1194546516862134,
+      "ceiling_aug": 0.10151930889138663,
+      "incremental": -0.017935342794826767,
+      "t_aug": 25.213960953878164,
+      "boot": [
+        0.09335054305935953,
+        0.10998154126172158
+      ],
+      "features": [
+        "accruals_ratio",
+        "accruals_ratio_cs_rank",
+        "accruals_ratio_cs_z",
+        "accruals_ratio_sector_z",
+        "cash_conversion_sector_z",
+        "cash_conversion",
+        "cash_conversion_cs_rank",
+        "cash_conversion_cs_z",
+        "operating_margin_sector_z",
+        "operating_margin",
+        "operating_margin_cs_rank",
+        "operating_margin_cs_z"
+      ]
+    }
+  ]
+}

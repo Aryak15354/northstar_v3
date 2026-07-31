@@ -1,0 +1,229 @@
+{
+  "rows": [
+    {
+      "family": "microstructure",
+      "feature": "delivery_pct_z52",
+      "n_weeks": 270,
+      "share_positive": 0.6222222222222222,
+      "snr": 0.3053923448841544,
+      "t": 4.748348995864033,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "microstructure",
+      "feature": "delivery_pct_4w_avg",
+      "n_weeks": 288,
+      "share_positive": 0.6180555555555556,
+      "snr": 0.18540021649142846,
+      "t": 3.366160039081895,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "macro_market",
+      "feature": "india_vix_z",
+      "n_weeks": 216,
+      "share_positive": 0.3888888888888889,
+      "snr": 0.0860659720144203,
+      "t": -1.3839808183722069,
+      "verdict": "borderline"
+    },
+    {
+      "family": "price (POSITIVE CONTROL)",
+      "feature": "mom_60d_cs_z",
+      "n_weeks": 1071,
+      "share_positive": 0.6050420168067226,
+      "snr": 0.19041961224716727,
+      "t": 5.649325196766862,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "liquidity_exposure",
+      "feature": "res_mom20_x_liquidity_cs_z",
+      "n_weeks": 1071,
+      "share_positive": 0.415499533146592,
+      "snr": 0.08579883283336381,
+      "t": -2.804387612098758,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "liquidity_exposure",
+      "feature": "macro_linkage_score",
+      "n_weeks": 1071,
+      "share_positive": 0.5798319327731093,
+      "snr": 0.1293814698826236,
+      "t": 3.3312909261960293,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "fundamentals",
+      "feature": "operating_margin_cs_z",
+      "n_weeks": 929,
+      "share_positive": 0.5715823466092572,
+      "snr": 0.07865274836425554,
+      "t": 2.1356357840563875,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "liquidity_exposure",
+      "feature": "mom20_x_liquidity_cs_z",
+      "n_weeks": 1071,
+      "share_positive": 0.4323062558356676,
+      "snr": 0.12997373805389703,
+      "t": -4.172560403026135,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "fundamentals",
+      "feature": "screener_roce_cs_z",
+      "n_weeks": 854,
+      "share_positive": 0.563231850117096,
+      "snr": 0.09278447219233141,
+      "t": 2.1527060322061398,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "price (POSITIVE CONTROL)",
+      "feature": "res_mom_60d",
+      "n_weeks": 1071,
+      "share_positive": 0.44351073762838467,
+      "snr": 0.0713249627220563,
+      "t": -2.102394453389721,
+      "verdict": "CAPTURABLE"
+    },
+    {
+      "family": "earnings",
+      "feature": "combined_revision_score_cs_z",
+      "n_weeks": 284,
+      "share_positive": 0.545774647887324,
+      "snr": 0.05519053347194338,
+      "t": 0.8068814846240635,
+      "verdict": "borderline"
+    },
+    {
+      "family": "liquidity_exposure",
+      "feature": "oil_sensitivity_score",
+      "n_weeks": 1071,
+      "share_positive": 0.5396825396825397,
+      "snr": 0.06877511999001722,
+      "t": 1.8250904992061916,
+      "verdict": "borderline"
+    },
+    {
+      "family": "macro_market",
+      "feature": "stock_x_inrusd",
+      "n_weeks": 1065,
+      "share_positive": 0.5389671361502347,
+      "snr": 0.01265412159225938,
+      "t": 0.428557889625504,
+      "verdict": "borderline"
+    },
+    {
+      "family": "fundamentals",
+      "feature": "accruals_ratio_cs_z",
+      "n_weeks": 918,
+      "share_positive": 0.5337690631808278,
+      "snr": 0.037387681896863825,
+      "t": 1.0081870594401663,
+      "verdict": "borderline"
+    },
+    {
+      "family": "events_flows",
+      "feature": "bulk_net_pressure_21d_cs_z",
+      "n_weeks": 782,
+      "share_positive": 0.47570332480818417,
+      "snr": 0.062454938421592505,
+      "t": -1.7748965450215382,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "fundamentals",
+      "feature": "val_composite_score_zscore",
+      "n_weeks": 526,
+      "share_positive": 0.47718631178707227,
+      "snr": 0.025175630299113703,
+      "t": -0.4976564053463998,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "earnings",
+      "feature": "eps_sue_cs_z",
+      "n_weeks": 284,
+      "share_positive": 0.5211267605633803,
+      "snr": 0.04909019329720497,
+      "t": 0.7409694413103736,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "liquidity_exposure",
+      "feature": "fx_sensitivity_score",
+      "n_weeks": 1071,
+      "share_positive": 0.5191409897292251,
+      "snr": 0.05705341928092188,
+      "t": 1.6556571629142187,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "microstructure",
+      "feature": "fut_oi_z52",
+      "n_weeks": 791,
+      "share_positive": 0.5183312262958281,
+      "snr": 0.040609668305267396,
+      "t": 1.176020268086775,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "liquidity_exposure",
+      "feature": "international_revenue_proxy",
+      "n_weeks": 1071,
+      "share_positive": 0.5172735760971056,
+      "snr": 0.042638644250928386,
+      "t": 1.105097739155257,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "earnings",
+      "feature": "rev_sue_cs_z",
+      "n_weeks": 284,
+      "share_positive": 0.5140845070422535,
+      "snr": 0.02599102617352172,
+      "t": -0.3566530797554567,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "macro_market",
+      "feature": "stock_x_crude",
+      "n_weeks": 1071,
+      "share_positive": 0.4911297852474323,
+      "snr": 0.0016989578215251054,
+      "t": -0.055700146847126146,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "events_flows",
+      "feature": "event_positive_flag_cs_z",
+      "n_weeks": 463,
+      "share_positive": 0.5053995680345572,
+      "snr": 0.011711026965034609,
+      "t": 0.2552171860546702,
+      "verdict": "coin flip \u2014 no fixed rule can capture it"
+    },
+    {
+      "family": "liquidity_exposure",
+      "feature": "rate_sensitivity_score",
+      "n_weeks": 1071,
+      "share_positive": 0.5032679738562091,
+      "snr": 0.06986326323793449,
+      "t": 2.102529233557641,
+      "verdict": "borderline"
+    },
+    {
+      "family": "microstructure",
+      "feature": "fut_oi_chg_4w_pct",
+      "n_weeks": 806,
+      "share_positive": 0.5,
+      "snr": 0.06827065535080303,
+      "t": 2.065564019598112,
+      "verdict": "borderline"
+    }
+  ]
+}
