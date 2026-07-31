@@ -44,19 +44,18 @@
 >
 > Evidence: `results/gen10/T1-13/`.
 >
-> ### This document's central claim is the one affected
+> ### This document's central claim — revised twice, final
 >
-> G8-11 **moved** the finding from the micro-cap tier to the non-F&O tail ("CORRECTED — non-F&O tail is
-> the real source", "non-F&O beats all in 16/17 signals"). The tier it moved the finding *to* is
-> precisely the one measured on the shorter, later, easier window. **On common dates the micro-cap tier
-> leads, by more than two to one.**
+> G8-11 **moved** G8-07's finding from the micro-cap tier to the non-F&O tail ("CORRECTED — non-F&O
+> tail is the real source"; "non-F&O beats all in 16/17 signals") and concluded the bottom ADV quintile
+> "is not an advantage at all", losing to the full universe by −0.096 on average.
 >
-> **The mechanism here is NOT G8-07's, and this correction was revised once.** This document's own
-> output reports all four tiers at **1,070 weeks**, which looks like clean coverage and is not.
+> **This document has its own version of the index-alignment defect, distinct from G8-07's.**
 > `backtest` never skips a date — it records `port = 0.0` whenever the tier is too thin to hold
-> anything, gating only the rebalance on `len(gg) >= 40`. Measured directly:
+> anything, gating only the rebalance on `len(gg) >= 40`. So every tier reports 1,070 weeks, which
+> reads as clean coverage and is not:
 >
-> | tier | weeks below the 40-name threshold |
+> | tier | weeks the tier held nothing |
 > |---|---|
 > | ALL / FNO_LARGE | 0 / 1,070 |
 > | **NON_FNO_TAIL** | **447 / 1,070 (41.8%)** |
@@ -64,20 +63,33 @@
 >
 > NON_FNO_TAIL's median name count is **0.0 for every year 2005-09 and 2013** — `fno_ok` is
 > `adv_rank <= 190` and the early panel has fewer than 190 names, so the non-F&O tail is **empty by
-> construction**. The tier therefore sits flat at 0.0% through the whole GFC while ALL takes the
-> drawdown. **The 16/17 sign test at p = 0.00027 is computed over Sharpes in which the winning tier
-> spent two fifths of the sample not trading.**
+> construction**. The 16/17 sign test is computed over Sharpes in which the winning tier spent two
+> fifths of the sample not trading.
 >
-> Zero-fill is worse than truncation: it awards the favoured group a risk-free return through the
-> hardest periods rather than merely omitting them.
+> **Direction of the bias (stated backwards on first writing, corrected by T1-14):** zero-padding
+> scales Sharpe by **√(n/(n+k))** — zeros shrink the mean linearly and the standard deviation only as
+> a square root — so a filled tier is **diluted, not flattered**. Re-running this document's own
+> battery with empty weeks EXCLUDED therefore *raises* both thin tiers:
 >
-> **Net effect:** G8-11's correction of G8-07 is not supported — but for its own reason, not G8-07's.
-> The implied mechanism is a **continuous size/ADV gradient** rather than a discrete F&O-eligibility
-> discontinuity, pointing at capital/impact cost rather than shortability as the binding constraint.
-> That reading is consistent with G9-01 (verified clean in T1-12).
+> | tier | as published (zero-filled) | **empty weeks excluded** | sign test |
+> |---|---|---|---|
+> | FNO_LARGE | 0 / 17 | **0 / 17** | p = 0.00002 |
+> | NON_FNO_TAIL | 16 / 17 | **15 / 17** | p = 0.00235 |
+> | **SMALL_ADV_Q1** | 5 / 17 | **15 / 17** | p = 0.00235 |
 >
-> **Recommended fix for this document specifically:** re-run with empty-book weeks **excluded** rather
-> than zero-filled, and report the excluded count per tier. Evidence: `results/gen10/T1-13/` §3b.
+> **This document's non-F&O finding SURVIVES its own correction almost intact (16 → 15 of 17).** What
+> does not survive is the companion claim: once its 185 empty weeks stop being scored as zeros, the
+> micro-cap tier goes from 5/17 to 15/17 and **ties** the tier this document elevated above it.
+>
+> **Final reading.** The ranking dispute between the two small tiers is unanswerable on this evidence
+> and, more usefully, unimportant. What survives every correction across G8-07, G8-11, T1-11, T1-13 and
+> T1-14 is the **monotone size gradient**: large caps lose 0/17, both smaller tiers win 15/17. The
+> mechanism is a continuous size/ADV constraint — capital and impact cost — not a discrete
+> F&O-eligibility discontinuity. That is consistent with G9-01 (Spearman −0.818, verified clean in
+> T1-12), and it is long-only: the effect is absent from the certified `config4_secbal40_short` book
+> (T1-13, T1-14).
+>
+> Evidence: `results/gen10/T1-11/`, `T1-13/`, `T1-14/`.
 
 ---
 

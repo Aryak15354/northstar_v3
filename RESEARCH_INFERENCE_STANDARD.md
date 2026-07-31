@@ -99,8 +99,8 @@ the shared index or reports the coverage difference alongside the result.
 > **NON_FNO_TAIL 712 weeks against every other tier's 1,070.** The excluded weeks are harder for
 > *everyone* (ALL scores **+0.58** there vs **+1.01** on the common window), so the short-window tier
 > collected a free ~+0.43 Sharpe. On common dates its lead halves and loses significance while
-> SMALL_ADV_Q1's rises to t = 3.51 — **the ordering reverses, and G8-11's correction of G8-07 does not
-> survive.** — `results/gen10/T1-11/`
+> SMALL_ADV_Q1's rises to t = 3.51. (G8-11's separate evidence has its own version of this defect —
+> see 6c — and the two tiers ultimately land at parity, 15/17 each.) — `results/gen10/T1-11/`, `T1-14/`
 >
 > The precedent for elevating a twice-seen bug to standing law is the **Rolling-Window Persistence
 > Principle** (M-01→M-01B, G6-00→G6-00B). This one has been seen five times.
@@ -121,8 +121,9 @@ carry the reconciliation step.
 
 **A group that cannot form a book must be excluded, not filled.** Recording a synthetic value (0.0, the
 market return, the previous value) for a period in which a group has no position makes coverage look
-uniform while crediting that group with a return it never earned. Report the count of filled periods
-per group, always.
+uniform while scoring that group on a return it never earned. **The bias runs in whichever direction
+the fill value sits relative to the truth**, so it cannot be reasoned about from the outside — it has
+to be measured. Report the count of filled periods per group, always.
 
 > **Why.** `g8_11_smallcap_deep_dive.backtest` records `port = 0.0` whenever a tier is too thin to hold
 > anything, and gates only the rebalance. Every tier therefore reports **1,070 weeks**, which reads as
@@ -131,9 +132,13 @@ per group, always.
 > `adv_rank <= 190` and the early panel has fewer than 190 names, so the non-F&O tail is empty by
 > construction. The tier sits flat at 0.0% through the entire GFC while `ALL` takes the drawdown.
 >
-> **This is worse than truncation.** Truncation removes hard periods from a comparison; zero-fill
-> awards the favoured group a risk-free return through them. I nearly retracted a correct finding on
-> the strength of that uniform `n_weeks` column. — `results/gen10/T1-13/` §3b
+> **Direction of the bias, stated correctly** (my first write-up of this rule got it backwards):
+> padding with zeros scales Sharpe by **√(n/(n+k))** — zeros shrink the mean linearly and the standard
+> deviation only as a square root, so a filled group is **diluted, not flattered**. Correcting G8-11
+> RAISES both thin tiers and moves `SMALL_ADV_Q1` from 7/17 to 15/17 wins. The rule stands either way:
+> **a filled period is not an observed one, and the bias runs in whichever direction the fill value
+> happens to sit relative to the truth.** Report the filled count per group and let the reader judge.
+> — `results/gen10/T1-13/` §3b, corrected in `results/gen10/T1-14/` §1
 
 **Audit outcome (T1-12):** Delivery is clean on all three of its load-bearing artifacts, and G9-01's
 liquidity gradient is identical to three decimals on a common cell set (−0.818, p = 0.0038). The

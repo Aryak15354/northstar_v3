@@ -72,7 +72,7 @@ Gen-10 adds eight corrections to the table above, taking the total to **21**:
 | 16 | Multiplicity uncounted across selected resolutions | AEP (Paper D) | Monthly clears its own null by 5% but fails Bonferroni/BH/BY at m = 5 |
 | 17 | Universe-composition artifact in pooled ICs | Gen-2/3 (deep search) | A pooled cross-sectional IC exceeded the IC of either constituent group; 36% was composition |
 | 18 | Truncated per-tier date sets | Gen-8 (G8-07) | `NON_FNO_TAIL` measured on 712 weeks against every other tier's 1,070 |
-| 19 | Zero-filled per-tier date sets | Gen-8/9 (G8-11) | 41.8% of the winning tier's sample is synthetic 0.0% returns for weeks it was empty by construction |
+| 19 | Zero-filled per-tier date sets | Gen-8/9 (G8-11) | 41.8% of a tier's sample is synthetic 0.0% returns for weeks it was empty by construction. Correcting it moves the micro-cap tier 5/17 → 15/17, tying the tier G8-11 elevated. **(Gen-10's own first reading of this bias had its direction backwards; corrected by T1-14 — zero-fill dilutes Sharpe by √(n/(n+k)), it does not inflate it.)** |
 | 20 | Full-sample evaluation mistaken for evidence | Gen-2/3 (all 28 DS items) | `"lockbox_used": false` throughout; 14 items given a first split produced no new alpha |
 | 21 | Signal orthogonality read as sleeve-return orthogonality | ARP / handbook / plan | Delivery's 0.14 is a ranking correlation; the sleeves' returns correlate at 0.842 |
 

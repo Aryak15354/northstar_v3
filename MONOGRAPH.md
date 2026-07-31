@@ -433,6 +433,16 @@ Three checks came back clean, and they matter more than the corrections because 
   size/ADV-constraint story better. The mechanism relocates from shortability to capital and impact
   cost. That is a real update, not a downgrade.
 
+The tier dispute itself resolves, and not in favour of any of the four analyses that fought over it.
+G8-07 said micro-caps; G8-11 "corrected" that to the non-F&O tail and dismissed micro-caps outright;
+Gen-10's own T1-11 and T1-13 reversed it back. **All four were arguing about which small tier leads,
+on evidence that could not support the distinction**, because each compared groups over different
+observation sets. Measured cleanly — G8-11's own 17-signal battery with empty weeks excluded rather
+than zero-filled — large caps lose in **0 of 17** signals and *both* smaller tiers win in **15 of
+17**, at identical significance. The ranking question is unanswerable here and was never the
+interesting one. **What survives every correction is the monotone gradient**, which is exactly what
+G9-01 measured directly and what T1-12 verified clean.
+
 One genuinely new result came out of the re-testing, and it is a constraint rather than an
 opportunity: **the small/illiquid tier advantage does not exist in the certified production book.**
 Under `config4_secbal40_short` both tiers are *negative*. The F&O-only short leg cannot hedge a long
@@ -450,6 +460,12 @@ carried a "corrected" label. G8-11's correction of G8-07 is the sharpest case: i
 because someone had already checked it, and it was the single most wrong thing in the record.
 
 **A finding that has been corrected once is not thereby more trustworthy than one that never has.**
+
+And the same applies to this addendum. Gen-10's first account of G8-11's zero-fill asserted the bias
+ran one way; two experiments later it turned out to run the other, and the correction is recorded
+above rather than quietly folded in. **A remediation programme is not exempt from the failure mode it
+exists to fix** — which is the strongest available argument for the standing rule that produced the
+catch: measure the direction of a bias, never reason about it from the outside.
 
 Full record: `results/gen10/GEN10_SYNTHESIS.md` (findings G10-F01–F40), `GEN10_REMEDIATION_CHARTER.md`
 (the pre-registrations, written before results), `RESEARCH_INFERENCE_STANDARD.md` (the six rules),

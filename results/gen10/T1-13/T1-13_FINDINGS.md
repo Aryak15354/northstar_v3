@@ -81,7 +81,14 @@ what the long leg owns. In a NON_FNO_TAIL or SMALL_ADV_Q1 book the long leg is b
 uncorrelated drag. **The tier effect and the F&O short leg are structurally incompatible.**
 
 
-## 3b. G8-11 — a second, more severe version of the same defect
+## 3b. G8-11 — a second version of the same defect
+
+> **⚠ CORRECTED 2026-07-31 by T1-14.** The mechanism identified below is real; **the direction of its
+> bias is backwards.** Padding with zeros scales Sharpe by √(n/(n+k)) — it *dilutes* a thin tier, it
+> does not flatter it. Re-running G8-11 with empty weeks excluded RAISES both thin tiers
+> (NON_FNO_TAIL 0.748→0.868, SMALL_ADV_Q1 0.477→0.528) and takes SMALL_ADV_Q1 from 7/17 to **15/17**.
+> The paragraphs below about the GFC and "worse than truncation" are wrong. See
+> `results/gen10/T1-14/`.
 
 **I nearly retracted §4's claim about G8-11 and would have been wrong to.** G8-11's own output reports
 **all four tiers at 1,070 weeks**, which looks like clean, like-for-like coverage. It is not. Checking
@@ -105,10 +112,12 @@ NON_FNO_TAIL's median name count by year is **0.0 for every year from 2005 to 20
 2013** — `fno_ok` is `adv_rank <= 190`, and the early panel has fewer than 190 names, so *every* name
 is F&O-eligible and the non-F&O tail is empty by construction.
 
-**This is worse than truncation.** Truncation removes hard weeks from the comparison; zero-fill
+~~**This is worse than truncation.** Truncation removes hard weeks from the comparison; zero-fill
 *credits the tier with a flat, risk-free 0.0% return through them* — including the whole of 2008.
 A book sitting at zero through the GFC while `ALL` takes the drawdown will show a materially better
-Sharpe, and 41.8% of NON_FNO_TAIL's sample is exactly that.
+Sharpe, and 41.8% of NON_FNO_TAIL's sample is exactly that.~~ **[WRONG — corrected by T1-14.]** Zeros
+shrink the mean linearly and the standard deviation only as a square root, so the Sharpe is diluted
+toward zero, not inflated. G8-11 *understated* its thin tiers.
 
 So G8-11's 16/17 sign test (p = 0.00027) is computed over Sharpes in which the winning tier spent two
 fifths of the sample not trading. **Equal `n_weeks` is not evidence of equal coverage when empty
@@ -123,8 +132,9 @@ re-run.** +0.299 native → **+0.042** common. Roughly 86% of it was the 358-wee
 Its uniform 1,070-week coverage is produced by recording `0.0` for weeks in which the tier cannot form
 a book, not by the tier actually trading. **41.8% of NON_FNO_TAIL's sample is synthetic zeros**,
 including all of 2005-09 and 2013 when the tier is *empty by construction*. Its 16/17 sign test at
-p = 0.00027 rests on that. G8-11's correction of G8-07 is therefore **not supported either** — but for
-a reason unrelated to G8-07's, and one that flatters the tier more, not less.
+p = 0.00027 rests on that. **[Revised by T1-14]** Corrected, its non-F&O result survives almost intact
+(16→15 of 17) — but its dismissal of the micro-cap tier does not: SMALL_ADV_Q1 goes 7/17 → **15/17**,
+tying it. The defect understated both thin tiers rather than flattering one.
 
 **G10-F39 — the micro-cap tier lead does survive, including the cost test designed to break it.**
 +0.228 native → **+0.279** common at ₹10cr, decaying gracefully to +0.227 at ₹100cr, with the strongest
