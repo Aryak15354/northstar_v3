@@ -23,6 +23,26 @@
 >
 > **Recommended fix:** re-run `g8_07_capital_scale_sweep.py` with a common-date restriction across all
 > four tiers and all three configs, net of cost. Evidence: `results/gen10/T1-11/`.
+>
+> ### ✅ SETTLED 2026-07-31 by T1-13 (common dates x 3 configs x NET of cost)
+>
+> The re-run prescribed above has been done. It reproduces this document's native leads almost exactly
+> (+0.299 / +0.228 / −0.153 against the published +0.296 / +0.222 / −0.153), which validates it, and
+> then corrects them:
+>
+> | tier | published (native) | **common index, net of cost** |
+> |---|---|---|
+> | NON_FNO_TAIL | +0.296 | **+0.042** — ~86% was the coverage gap |
+> | SMALL_ADV_Q1 | +0.222 | **+0.279** — survives, incl. the cost test meant to break it |
+> | FNO_LARGE | −0.153 | −0.272 |
+>
+> **And a third fact:** under `config4_secbal40_short` — the certified production config — BOTH tiers
+> are negative (−0.284 and −0.013). The advantage exists only in the two long-only configs. The
+> F&O-only short leg cannot hedge a long book drawn from a disjoint non-F&O universe, so the tier
+> effect and the short leg are structurally incompatible. "3/3 configs won" becomes 2/3, and the
+> failing config is the deployed one.
+>
+> Evidence: `results/gen10/T1-13/`.
 
 ---
 

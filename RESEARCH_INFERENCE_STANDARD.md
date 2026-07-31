@@ -9,7 +9,7 @@ Origin:     Gen-10 Remediation Programme. Every rule below exists because its vi
 Enforcement: src/research/gen10/inference.py makes rules 1-3 structural rather than remembered.
 ```
 
-Five rules. Each is followed by the specific incident that motivated it, so nobody has to take them
+Six rules (one with three corollaries). Each is followed by the specific incident that motivated it, so nobody has to take them
 on trust.
 
 ---
@@ -83,6 +83,62 @@ under a stock-level label, and forfeits the power the stock dimension was suppos
 > the sector-level design G8-10 measured at 1.49 series and called a false remedy. Only interacting
 > the shock with each stock's own rolling exposure realises the gain. — `results/gen10/T1-10/`
 
+## Rule 6 — Cross-group comparisons run on an explicitly common index
+
+**Any Sharpe, IC or mean compared across groups must be computed on an explicitly constructed common
+index.** A per-group `dropna()`, `continue`-on-empty, or minimum-count filter applied *before* a
+cross-group comparison is **banned without a reconciliation step** that either restricts all groups to
+the shared index or reports the coverage difference alongside the result.
+
+> **Why.** This is the fifth appearance of one defect class — an implicit assumption that two things
+> share an index, breaking silently. It has now shown up as pooled stock-weeks (Rule 1), pooled
+> multi-universe cross-sections (Rule 5), mismatched estimation eras (T1-06's Sharpe-baseline trap),
+> and twice as per-group date sets:
+>
+> `g8_07_capital_scale_sweep.backtest` computes `r = s_net[pre].dropna()` per config × tier, giving
+> **NON_FNO_TAIL 712 weeks against every other tier's 1,070.** The excluded weeks are harder for
+> *everyone* (ALL scores **+0.58** there vs **+1.01** on the common window), so the short-window tier
+> collected a free ~+0.43 Sharpe. On common dates its lead halves and loses significance while
+> SMALL_ADV_Q1's rises to t = 3.51 — **the ordering reverses, and G8-11's correction of G8-07 does not
+> survive.** — `results/gen10/T1-11/`
+>
+> The precedent for elevating a twice-seen bug to standing law is the **Rolling-Window Persistence
+> Principle** (M-01→M-01B, G6-00→G6-00B). This one has been seen five times.
+
+### 6b — Latent compliance is not compliance
+
+Code that is correct **because of its current data** rather than because of its structure must still
+carry the reconciliation step.
+
+> **Why.** `scripts/arp/delivery_capacity_recovery.py` compares CONTROL and ADD Sharpes with no
+> reconciliation, and is clean only because both selectors happen to run on the same filtered frame
+> and `s_add` is a superset of `s_control` — 338/338 identical dates. Change the delivery threshold,
+> add a minimum-names floor, or alter the momentum cut, and it silently acquires G8-07's defect. That
+> is exactly how G8-07 acquired it: nothing in the code is wrong until the data shifts under it.
+> — `results/gen10/T1-12/`
+
+### 6c — Equal n is not equal coverage
+
+**A group that cannot form a book must be excluded, not filled.** Recording a synthetic value (0.0, the
+market return, the previous value) for a period in which a group has no position makes coverage look
+uniform while crediting that group with a return it never earned. Report the count of filled periods
+per group, always.
+
+> **Why.** `g8_11_smallcap_deep_dive.backtest` records `port = 0.0` whenever a tier is too thin to hold
+> anything, and gates only the rebalance. Every tier therefore reports **1,070 weeks**, which reads as
+> clean like-for-like coverage. In fact **41.8% of NON_FNO_TAIL's sample is synthetic zeros** — the
+> tier's median name count is *0.0* for every year 2005-09 and 2013, because `fno_ok` is
+> `adv_rank <= 190` and the early panel has fewer than 190 names, so the non-F&O tail is empty by
+> construction. The tier sits flat at 0.0% through the entire GFC while `ALL` takes the drawdown.
+>
+> **This is worse than truncation.** Truncation removes hard periods from a comparison; zero-fill
+> awards the favoured group a risk-free return through them. I nearly retracted a correct finding on
+> the strength of that uniform `n_weeks` column. — `results/gen10/T1-13/` §3b
+
+**Audit outcome (T1-12):** Delivery is clean on all three of its load-bearing artifacts, and G9-01's
+liquidity gradient is identical to three decimals on a common cell set (−0.818, p = 0.0038). The
+defect bites in exactly one place, and it is now recorded there.
+
 ---
 
 ## How to comply
@@ -98,12 +154,16 @@ from src.research.gen10.inference import (
 )
 ```
 
+**Rule 6 has no helper yet** — it is a review check. Before any cross-group comparison, print the
+per-group index length. If they differ, either restrict to the intersection or say so in the output.
+Three lines, and it would have caught G8-07.
+
 `TestResult.fragile` implements Rule 3. `python src/research/gen10/inference.py` runs the calibration
 self-test.
 
 ## What these rules do not do
 
-They do not make results correct — T0-01 through T1-10 produced no new alpha and these rules would not
+They do not make results correct — T0-01 through T1-12 produced no new alpha and these rules would not
 have found any. What they do is stop a full-sample fit, a missing standard error, an uncorrected
-selection, or a universe artifact from entering the permanent record as a finding. Four of those five
-things had already happened.
+selection, a universe artifact, or a misaligned index from entering the permanent record as a finding.
+**All six had already happened**, and the sixth had happened five times.

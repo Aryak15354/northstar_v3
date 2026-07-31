@@ -2,7 +2,7 @@
 
 ```
 Version:      v1.0
-Status:       Tier 0 + Tier 1 COMPLETE (11 experiments); record propagated 2026-07-31
+Status:       Tier 0 + Tier 1 COMPLETE (13 experiments); record propagated 2026-07-31
 Freeze Date:  2026-07-31
 Owner:        Aryak
 Charter:      GEN10_REMEDIATION_CHARTER.md
@@ -10,7 +10,7 @@ Source plan:  Northstar_Remediation_Priority_Plan.md (v2, 2026-07-30)
 Review:       REMEDIATION_PLAN_FEASIBILITY_REVIEW.md
 ```
 
-Eleven experiments. **Zero new deployable alpha. Eight verdicts corrected. Three questions
+Thirteen experiments. **Zero new deployable alpha. Eight verdicts corrected. Three questions
 permanently closed.** The programme's certified state is unchanged: momentum remains the only
 scalable stock-selection edge, sector rotation the modest diversifier, delivery a validated but
 capacity-bound signal that does not improve the book in either integration architecture.
@@ -31,7 +31,9 @@ capacity-bound signal that does not improve the book in either integration archi
 | **T1-08** | Exit realism on the small-cap lead | **Lead survives** to −45%; but 2/3 of one lead is a date artifact |
 | **T1-09** | DS momentum-quality + cross-factor clusters | **Nothing promotes.** Largest deep-search t is A04 rediscovered |
 | **T1-10** | Gen-7 CAIT redesign at adequate power | **NULL. Cross-asset transmission retired permanently** |
-| **T1-11** | Is G8-07's tier lead a date-coverage artifact? | **Yes, half of it. G8-11's correction reverses** |
+| **T1-11** | Is G8-07's tier lead a date-coverage artifact? | **Yes. Ordering reverses on common dates** |
+| **T1-12** | Is the same defect in Delivery / G9-01? | **No — both clean, verified.** One latent vulnerability recorded |
+| **T1-13** | Tier sweep: common dates x 3 configs x net of cost | **Reversal holds. Non-F&O lead ~86% artifact. Tier effect absent from the certified book** |
 
 ## 2. The five findings that generalise
 
@@ -94,6 +96,21 @@ common window's **+1.01**. Half that tier's lead was the window. **G8-11's corre
 moving the finding from the micro-cap tier to the non-F&O tail — does not survive, and the ordering
 reverses.** The liquidity story is strengthened but relocates from a discrete F&O boundary to the
 extreme of a continuous size gradient.
+
+**T1-13 then settled it net of cost, and found the defect twice more.** Reproducing G8-07's published
+leads almost exactly (+0.299 / +0.228 / −0.153 vs +0.296 / +0.222 / −0.153) validates the re-run; on a
+common index across all three configs, net of cost, NON_FNO_TAIL's lead collapses to **+0.042** while
+SMALL_ADV_Q1 holds at **+0.279**. And **G8-11 has the same defect in a worse form**: it reports all
+four tiers at 1,070 weeks, but records `port = 0.0` whenever a tier is too thin to trade — **41.8% of
+NON_FNO_TAIL's sample is synthetic zeros**, the tier being *empty by construction* through 2005-09 and
+2013. Zero-fill awards the favoured group a risk-free return through the GFC rather than merely
+omitting it. Both G8-07's truncation and G8-11's zero-fill flatter the same tier.
+
+**A separate result nobody was looking for:** under `config4_secbal40_short` — the certified
+production config — **both tiers are negative** (−0.284, −0.013). The F&O-only short leg cannot hedge
+a long book drawn from a disjoint non-F&O universe, so the tier effect and the short leg are
+structurally incompatible. Any small-cap tilt of the certified book must redesign the short leg first,
+which makes it a different strategy rather than a tilt.
 
 ## 3. Corrections against the permanent record (all applied — see §3b)
 

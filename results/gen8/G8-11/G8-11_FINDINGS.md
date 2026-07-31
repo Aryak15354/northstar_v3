@@ -24,6 +24,26 @@
 > **Recommended fix:** re-run `g8_07_capital_scale_sweep.py` with a common-date restriction across all
 > four tiers and all three configs, net of cost. Evidence: `results/gen10/T1-11/`.
 >
+> ### ✅ SETTLED 2026-07-31 by T1-13 (common dates x 3 configs x NET of cost)
+>
+> The re-run prescribed above has been done. It reproduces this document's native leads almost exactly
+> (+0.299 / +0.228 / −0.153 against the published +0.296 / +0.222 / −0.153), which validates it, and
+> then corrects them:
+>
+> | tier | published (native) | **common index, net of cost** |
+> |---|---|---|
+> | NON_FNO_TAIL | +0.296 | **+0.042** — ~86% was the coverage gap |
+> | SMALL_ADV_Q1 | +0.222 | **+0.279** — survives, incl. the cost test meant to break it |
+> | FNO_LARGE | −0.153 | −0.272 |
+>
+> **And a third fact:** under `config4_secbal40_short` — the certified production config — BOTH tiers
+> are negative (−0.284 and −0.013). The advantage exists only in the two long-only configs. The
+> F&O-only short leg cannot hedge a long book drawn from a disjoint non-F&O universe, so the tier
+> effect and the short leg are structurally incompatible. "3/3 configs won" becomes 2/3, and the
+> failing config is the deployed one.
+>
+> Evidence: `results/gen10/T1-13/`.
+>
 > ### This document's central claim is the one affected
 >
 > G8-11 **moved** the finding from the micro-cap tier to the non-F&O tail ("CORRECTED — non-F&O tail is
@@ -31,16 +51,34 @@
 > precisely the one measured on the shorter, later, easier window. **On common dates the micro-cap tier
 > leads, by more than two to one.**
 >
-> So G8-11's correction of G8-07 does not survive: G8-07's original micro-cap reading was closer to
-> right. The mechanism this implies is a **continuous size/liquidity gradient** rather than a discrete
-> F&O-eligibility discontinuity — which points at ADV-driven capacity limits rather than shortability
-> as the binding constraint.
+> **The mechanism here is NOT G8-07's, and this correction was revised once.** This document's own
+> output reports all four tiers at **1,070 weeks**, which looks like clean coverage and is not.
+> `backtest` never skips a date — it records `port = 0.0` whenever the tier is too thin to hold
+> anything, gating only the rebalance on `len(gg) >= 40`. Measured directly:
 >
-> **Caveat before acting on it:** T1-11 is gross of cost, and a cost model penalises the least liquid
-> tier most — i.e. works against the tier this elevates. Re-check net of cost first.
+> | tier | weeks below the 40-name threshold |
+> |---|---|
+> | ALL / FNO_LARGE | 0 / 1,070 |
+> | **NON_FNO_TAIL** | **447 / 1,070 (41.8%)** |
+> | SMALL_ADV_Q1 | 296 / 1,070 (27.7%) |
+>
+> NON_FNO_TAIL's median name count is **0.0 for every year 2005-09 and 2013** — `fno_ok` is
+> `adv_rank <= 190` and the early panel has fewer than 190 names, so the non-F&O tail is **empty by
+> construction**. The tier therefore sits flat at 0.0% through the whole GFC while ALL takes the
+> drawdown. **The 16/17 sign test at p = 0.00027 is computed over Sharpes in which the winning tier
+> spent two fifths of the sample not trading.**
+>
+> Zero-fill is worse than truncation: it awards the favoured group a risk-free return through the
+> hardest periods rather than merely omitting them.
+>
+> **Net effect:** G8-11's correction of G8-07 is not supported — but for its own reason, not G8-07's.
+> The implied mechanism is a **continuous size/ADV gradient** rather than a discrete F&O-eligibility
+> discontinuity, pointing at capital/impact cost rather than shortability as the binding constraint.
+> That reading is consistent with G9-01 (verified clean in T1-12).
+>
+> **Recommended fix for this document specifically:** re-run with empty-book weeks **excluded** rather
+> than zero-filled, and report the excluded count per tier. Evidence: `results/gen10/T1-13/` §3b.
 
-> **This document's central claim is the one affected.** G8-11 moved the finding from the micro-cap tier to the non-F&O tail; the non-F&O tail is the tier measured on the shorter, later, easier window. On common dates the micro-cap tier leads.
->
 ---
 
 # G8-11 — Small-Capital Deep Dive: Findings
