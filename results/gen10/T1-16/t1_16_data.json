@@ -1,0 +1,136 @@
+{
+  "g2_b03b": {
+    "rows": [
+      {
+        "col": "order_win_flag_30d",
+        "testable": false,
+        "n_dates": 130
+      },
+      {
+        "col": "order_win_flag_30d_cs_z",
+        "testable": true,
+        "ic": -0.012117194404218283,
+        "t": -1.6786501759587154,
+        "p": 0.09842166570854866,
+        "n_dates": 61,
+        "ic_corrected": -0.004942179759439002,
+        "t_corrected": -0.774750950898786,
+        "composition_share": 0.5921349782323777,
+        "fragile": false,
+        "by_clean": false
+      },
+      {
+        "col": "order_win_count_90d_cs_z",
+        "testable": true,
+        "ic": -0.005204264892758783,
+        "t": -0.7059607104061177,
+        "p": 0.4825226447337536,
+        "n_dates": 72,
+        "ic_corrected": -0.0027908983310477795,
+        "t_corrected": -0.4110902954601664,
+        "composition_share": 0.463728617094215,
+        "fragile": false,
+        "by_clean": false
+      }
+    ],
+    "verdict": "REJECTED"
+  },
+  "rates_channel": {
+    "104w/52w": {
+      "^TNX|lag1": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "^TNX|lag2": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "^TNX|lag4": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "DX-Y.NYB|lag1": {
+        "n_dates": 388,
+        "testable": true,
+        "t": -0.8333151028386848,
+        "p": 0.4051810412395631
+      },
+      "DX-Y.NYB|lag2": {
+        "n_dates": 388,
+        "testable": true,
+        "t": -3.0718150473976986,
+        "p": 0.002278028162333275
+      },
+      "DX-Y.NYB|lag4": {
+        "n_dates": 388,
+        "testable": true,
+        "t": -0.658175896449353,
+        "p": 0.5108164433537794
+      }
+    },
+    "52w/26w": {
+      "^TNX|lag1": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "^TNX|lag2": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "^TNX|lag4": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "DX-Y.NYB|lag1": {
+        "n_dates": 413,
+        "testable": true,
+        "t": -0.6608590892809768,
+        "p": 0.5090720365047905
+      },
+      "DX-Y.NYB|lag2": {
+        "n_dates": 413,
+        "testable": true,
+        "t": -0.7969693671133528,
+        "p": 0.42592785131054844
+      },
+      "DX-Y.NYB|lag4": {
+        "n_dates": 413,
+        "testable": true,
+        "t": 0.6477673424623784,
+        "p": 0.5174962384756836
+      }
+    },
+    "26w/13w": {
+      "^TNX|lag1": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "^TNX|lag2": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "^TNX|lag4": {
+        "n_dates": 0,
+        "testable": false
+      },
+      "DX-Y.NYB|lag1": {
+        "n_dates": 426,
+        "testable": true,
+        "t": -0.668722572753942,
+        "p": 0.5040355176692697
+      },
+      "DX-Y.NYB|lag2": {
+        "n_dates": 426,
+        "testable": true,
+        "t": -0.5065631661336218,
+        "p": 0.6127240482696962
+      },
+      "DX-Y.NYB|lag4": {
+        "n_dates": 426,
+        "testable": true,
+        "t": 2.348513737123893,
+        "p": 0.019305843423987137
+      }
+    }
+  }
+}

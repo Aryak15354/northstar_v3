@@ -34,9 +34,12 @@ Scope:        Paper A (executed, audited, re-analysed) + Paper B Laboratory 1 (e
 > | H-A3 stable through time | UNCHANGED/MOOT | **closed with H-A1** |
 > | H-A4 directional | WITHDRAWN | **closed with H-A1** |
 >
-> **This does not invite a fourth re-run.** One channel remains formally uncovered: US 10Y was
-> untestable (440 weeks of history against the others' 1,067), so the duration/discount-rate channel
-> needs longer rates history rather than a better design.
+> **This does not invite a fourth re-run.** **[Updated 2026-07-31 by T1-16]** The one channel T1-10
+> could not test — duration/rates — is now covered. Its blocker was not history length but receiver
+> size (`Real Estate` has a median of 10 names per date and never reaches 15); widened to
+> Real Estate + Industrials it is **null**, best |t| = 1.45. T1-10's single surviving candidate
+> (DXY lag 2) is also retired as a window artifact, swinging −3.07 → −0.51 across exposure windows.
+> **No uncovered channel, no outstanding candidate.**
 >
 > Evidence: `results/gen10/T1-10/`. Gen-7 is not in Archive v1.0, so this is applied here directly
 > rather than by addendum.

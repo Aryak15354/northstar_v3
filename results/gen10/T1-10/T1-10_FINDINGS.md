@@ -79,6 +79,10 @@ beta-residualised receiver universe, date-clustered inference, BY at m = 15: zer
 |r| = 0.0138 against a pre-registered floor of 0.11, zero effects classified as beta. Per the frozen
 contract §3 and G8-10 §6, this does not invite a fourth re-run.
 
+**G10-F29b — [added 2026-07-31] the null is now complete.** T1-16 covered the one channel this
+experiment could not test and retired its one surviving candidate. There is no uncovered carrier
+channel and no outstanding candidate.
+
 **G10-F30 — H-A2, H-A3 and H-A4 stay closed.** They were marked UNTESTABLE/UNCHANGED/WITHDRAWN only
 because H-A1 was unresolved. H-A1 is now resolved negative, so they close with it rather than becoming
 live again.
@@ -100,9 +104,18 @@ interaction form, and a reader could implement the collapsed version believing i
 
 ## 6. Threats to validity
 
-- **US 10Y untested**, and DXY tested on 440 weeks against the others' 1,067. The duration/discount-rate
+- ~~**US 10Y untested**, and DXY tested on 440 weeks against the others' 1,067. The duration/discount-rate
   channel is therefore not covered by this null. That channel remains formally open, and closing it
-  needs a longer rates history rather than a better design.
+  needs a longer rates history rather than a better design.~~
+  **[CORRECTED 2026-07-31 by T1-16 — this diagnosis was wrong.]** `^TNX` yields **zero** usable dates at
+  a 104w, 52w *or* 26w exposure window, so history length was never the binding constraint. The actual
+  blocker is the receiver: **`Real Estate` has a median of 10 names per date and never reaches 15** in
+  1,123 weeks, so a cross-sectional regression inside it could not run at any history length. Widening
+  the receiver to Real Estate + Industrials makes it testable, and it is **null** (best |t| = 1.45, no
+  complement separation). **The duration/rates channel is covered, not open.**
+- **[Added by T1-16]** This experiment's one "channel-specific candidate" — DXY at lag 2, t = −2.51 —
+  is a window artifact: it swings −3.07 → −0.80 → −0.51 across 104w/52w/26w exposure windows.
+  **Retired**, which makes this null cleaner rather than weaker.
 - **Beta-residualisation removes genuine market-level transmission along with the confound.** That was
   decided in contract §1 point 3 before any result — market-level effects were ruled not to count as
   an answer. A reader who rejects that decision should reject this design's scope, not its result.
