@@ -1,0 +1,790 @@
+{
+  "experiment": "T1-09",
+  "windows": {
+    "discovery": [
+      "2005-01-07",
+      "2017-12-31"
+    ],
+    "oos": [
+      "2018-01-05",
+      "2025-07-10"
+    ],
+    "lockbox": [
+      "2025-07-11",
+      "2026-06-26"
+    ]
+  },
+  "dropped_duplicates": [
+    [
+      "DS-U-03",
+      "DS-F4-01",
+      "identical spec `pa_mom_smooth`"
+    ]
+  ],
+  "ds_f2_03_cost_prestage": {
+    "turnover": {
+      "weekly_turnover": 0.3933354639080514,
+      "annual_two_way_pct": 4090.6888246437347
+    },
+    "a04_reference_pct": 4187.0,
+    "control_mom_turnover": {
+      "weekly_turnover": 0.21502591211295224,
+      "annual_two_way_pct": 2236.2694859747035
+    },
+    "matches_a04": true
+  },
+  "results": [
+    {
+      "id": "DS-F4-01",
+      "cluster": "momentum-quality",
+      "mechanism": "smooth vs jumpy momentum",
+      "archived_t": 3.06,
+      "windows": {
+        "full": {
+          "pooled": {
+            "estimate": 0.014459205349189234,
+            "se": 0.004838200651892811,
+            "t": 2.9885501634853595,
+            "p": 0.0028641646031877135,
+            "n": 1121,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.004042027916373119,
+            "boot_ci_hi": 0.024540120940149873,
+            "boot_p": 0.0065,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-01 full",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.008671593728947047,
+            "se": 0.0044299530253977095,
+            "t": 1.9574911244501365,
+            "p": 0.05053781367853769,
+            "n": 1121,
+            "nw_lags": 6,
+            "boot_ci_lo": -0.00033729099695814854,
+            "boot_ci_hi": 0.017308465520658782,
+            "boot_p": 0.056,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-01 full (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "disc": {
+          "pooled": {
+            "estimate": 0.014448026383939066,
+            "se": 0.006761091652039003,
+            "t": 2.136936921951331,
+            "p": 0.03296089460064326,
+            "n": 678,
+            "nw_lags": 6,
+            "boot_ci_lo": -3.915976347314635e-05,
+            "boot_ci_hi": 0.029716583348396237,
+            "boot_p": 0.056,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-01 disc",
+            "notes": [],
+            "fragile": true
+          },
+          "corrected": {
+            "estimate": 0.008247685937139917,
+            "se": 0.006368944808325927,
+            "t": 1.2949846772667852,
+            "p": 0.19576696409038868,
+            "n": 678,
+            "nw_lags": 6,
+            "boot_ci_lo": -0.005439733044419107,
+            "boot_ci_hi": 0.021837918552471657,
+            "boot_p": 0.2065,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-01 disc (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "oos": {
+          "pooled": {
+            "estimate": 0.01393167455544342,
+            "se": 0.007001783805284582,
+            "t": 1.9897321800950947,
+            "p": 0.047316587069167304,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": -0.0007698938312982001,
+            "boot_ci_hi": 0.02887677155173056,
+            "boot_p": 0.065,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-01 oos",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.007990074064937992,
+            "se": 0.005890364022664976,
+            "t": 1.3564652429278972,
+            "p": 0.17573389313146628,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": -0.003819580344847256,
+            "boot_ci_hi": 0.01985977507679623,
+            "boot_p": 0.196,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-01 oos (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "lock": {
+          "pooled": {
+            "estimate": 0.01866256632150241,
+            "se": 0.01707035517821563,
+            "t": 1.093273463068811,
+            "p": 0.27951316349605765,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.014928834772579832,
+            "boot_ci_hi": 0.05153333932111368,
+            "boot_p": 0.299,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-01 lock",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.019545421006138864,
+            "se": 0.017046199470223098,
+            "t": 1.146614589385833,
+            "p": 0.25699858082377824,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.013964584564179849,
+            "boot_ci_hi": 0.052170412098040075,
+            "boot_p": 0.2785,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-01 lock (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        }
+      },
+      "sign_flip": false,
+      "composition_share": 0.4002717632450468,
+      "verdict": "KILL (OOS |t|<2)",
+      "by_pass_oos": false
+    },
+    {
+      "id": "DS-F4-02",
+      "cluster": "momentum-quality",
+      "mechanism": "momentum w/ declining participation",
+      "archived_t": 6.33,
+      "windows": {
+        "full": {
+          "pooled": {
+            "estimate": 0.013137776205071746,
+            "se": 0.0020891664622080825,
+            "t": 6.288525324681961,
+            "p": 4.5856496366162033e-10,
+            "n": 1121,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.008800754523661922,
+            "boot_ci_hi": 0.01761399057977903,
+            "boot_p": 0.0,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-02 full",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.00926171126632739,
+            "se": 0.002050393021014395,
+            "t": 4.517041938498857,
+            "p": 6.935186969694998e-06,
+            "n": 1121,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.005215761716854223,
+            "boot_ci_hi": 0.01345906897354428,
+            "boot_p": 0.0,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-02 full (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "disc": {
+          "pooled": {
+            "estimate": 0.015866764171537637,
+            "se": 0.002619656596787719,
+            "t": 6.05681072511329,
+            "p": 2.3025023048957373e-09,
+            "n": 678,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.010425066737514472,
+            "boot_ci_hi": 0.021520453126004663,
+            "boot_p": 0.0,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-02 disc",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.0111159869249186,
+            "se": 0.0025853680383278324,
+            "t": 4.299576215117215,
+            "p": 1.9628267256296723e-05,
+            "n": 678,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.005852226648158053,
+            "boot_ci_hi": 0.01618293255932775,
+            "boot_p": 0.0,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-02 disc (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "oos": {
+          "pooled": {
+            "estimate": 0.008923985258098026,
+            "se": 0.003556614474500742,
+            "t": 2.5091235842621726,
+            "p": 0.01250670720193188,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": 0.0012836176754206887,
+            "boot_ci_hi": 0.016459126273956456,
+            "boot_p": 0.021,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-02 oos",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.006020488026278643,
+            "se": 0.003478650591714903,
+            "t": 1.7306963914736453,
+            "p": 0.0842948761160697,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": -0.0011126960102589463,
+            "boot_ci_hi": 0.013045448098905907,
+            "boot_p": 0.111,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-02 oos (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "lock": {
+          "pooled": {
+            "estimate": 0.009246643066833041,
+            "se": 0.00895841311333597,
+            "t": 1.0321742199037458,
+            "p": 0.306957473611589,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.010600943120061103,
+            "boot_ci_hi": 0.02645300341382679,
+            "boot_p": 0.3525,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-02 lock",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.009523684081509137,
+            "se": 0.008982923601458939,
+            "t": 1.0601987174823988,
+            "p": 0.29414888272675144,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.010311682348253843,
+            "boot_ci_hi": 0.026958143722708494,
+            "boot_p": 0.3345,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F4-02 lock (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        }
+      },
+      "sign_flip": false,
+      "composition_share": 0.29503204181907355,
+      "verdict": "KILL (OOS |t|<2)",
+      "by_pass_oos": false
+    },
+    {
+      "id": "DS-U-01",
+      "cluster": "momentum-quality",
+      "mechanism": "unconditional 3m momentum",
+      "archived_t": 2.91,
+      "windows": {
+        "full": {
+          "pooled": {
+            "estimate": 0.013828950541654743,
+            "se": 0.004879175606529047,
+            "t": 2.8342801442009167,
+            "p": 0.004675405908660127,
+            "n": 1121,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.003220350998732149,
+            "boot_ci_hi": 0.024008907344042756,
+            "boot_p": 0.012,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-U-01 full",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.008883883485965013,
+            "se": 0.004461265112683216,
+            "t": 1.9913372690424636,
+            "p": 0.046686402405179434,
+            "n": 1121,
+            "nw_lags": 6,
+            "boot_ci_lo": -0.00038328231530090104,
+            "boot_ci_hi": 0.01785163695926898,
+            "boot_p": 0.0545,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-U-01 full (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "disc": {
+          "pooled": {
+            "estimate": 0.013845266503220051,
+            "se": 0.0068034918168596815,
+            "t": 2.03502361374349,
+            "p": 0.04223755788071905,
+            "n": 678,
+            "nw_lags": 6,
+            "boot_ci_lo": -0.0009716529877961189,
+            "boot_ci_hi": 0.029083828059899768,
+            "boot_p": 0.0695,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-U-01 disc",
+            "notes": [],
+            "fragile": true
+          },
+          "corrected": {
+            "estimate": 0.008571696589535525,
+            "se": 0.0064224634056846705,
+            "t": 1.3346431187055918,
+            "p": 0.1824418584944129,
+            "n": 678,
+            "nw_lags": 6,
+            "boot_ci_lo": -0.005135408473461676,
+            "boot_ci_hi": 0.02251813187998856,
+            "boot_p": 0.1995,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-U-01 disc (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "oos": {
+          "pooled": {
+            "estimate": 0.013434711104211683,
+            "se": 0.007090974867354642,
+            "t": 1.8946211706464042,
+            "p": 0.058880181058413895,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": -0.0015182831767693924,
+            "boot_ci_hi": 0.028809609698834806,
+            "boot_p": 0.0825,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-U-01 oos",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.008246250869700164,
+            "se": 0.005904988720510991,
+            "t": 1.3964888435869138,
+            "p": 0.16335955471301356,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": -0.003699109629548977,
+            "boot_ci_hi": 0.020178188896834644,
+            "boot_p": 0.1815,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-U-01 oos (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "lock": {
+          "pooled": {
+            "estimate": 0.016642276767858663,
+            "se": 0.016922803713059962,
+            "t": 0.9834231401629503,
+            "p": 0.33013416045580063,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.016890124629454096,
+            "boot_ci_hi": 0.04943543959240994,
+            "boot_p": 0.349,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-U-01 lock",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.017935152139984905,
+            "se": 0.016872912987323775,
+            "t": 1.0629552913275357,
+            "p": 0.29290922342781034,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.015112814658002243,
+            "boot_ci_hi": 0.05076191390061819,
+            "boot_p": 0.3175,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-U-01 lock (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        }
+      },
+      "sign_flip": false,
+      "composition_share": 0.3575880209271479,
+      "verdict": "KILL (OOS |t|<2)",
+      "by_pass_oos": false
+    },
+    {
+      "id": "DS-F2-06",
+      "cluster": "momentum-quality",
+      "mechanism": "momentum in low-vol names",
+      "archived_t": 3.38,
+      "windows": {
+        "full": {
+          "pooled": {
+            "estimate": 0.017360112294232396,
+            "se": 0.005195221551264693,
+            "t": 3.3415537957195216,
+            "p": 0.0008606123506329444,
+            "n": 1121,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.007133931421134035,
+            "boot_ci_hi": 0.02715562888671931,
+            "boot_p": 0.0005,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-06 full",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.018197358866989956,
+            "se": 0.005138682473110848,
+            "t": 3.5412499141971048,
+            "p": 0.0004146034370433415,
+            "n": 1121,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.008304125188646367,
+            "boot_ci_hi": 0.027801904467643156,
+            "boot_p": 0.0005,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-06 full (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "disc": {
+          "pooled": {
+            "estimate": 0.021423761091963554,
+            "se": 0.006722704153636972,
+            "t": 3.1867773149549254,
+            "p": 0.0015048239466115799,
+            "n": 678,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.008533858682166226,
+            "boot_ci_hi": 0.034242717828299025,
+            "boot_p": 0.0015,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-06 disc",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.021705074205363748,
+            "se": 0.006681750800161052,
+            "t": 3.2484112105528666,
+            "p": 0.0012178517649053247,
+            "n": 678,
+            "nw_lags": 6,
+            "boot_ci_lo": 0.008981466518299723,
+            "boot_ci_hi": 0.034234858590783866,
+            "boot_p": 0.001,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-06 disc (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "oos": {
+          "pooled": {
+            "estimate": 0.00942227096061413,
+            "se": 0.008659288353533537,
+            "t": 1.0881114678170116,
+            "p": 0.2772161498549056,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": -0.0069521635557599475,
+            "boot_ci_hi": 0.02772181167334914,
+            "boot_p": 0.2965,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-06 oos",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.011258893240879022,
+            "se": 0.008530953796287571,
+            "t": 1.3197695720469818,
+            "p": 0.18768414949399734,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": -0.005102797931626462,
+            "boot_ci_hi": 0.028878157031944376,
+            "boot_p": 0.202,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-06 oos (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "lock": {
+          "pooled": {
+            "estimate": 0.02434991460632326,
+            "se": 0.02170657431292129,
+            "t": 1.1217760230285838,
+            "p": 0.267316158683681,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.01750981456297379,
+            "boot_ci_hi": 0.06636385706577101,
+            "boot_p": 0.2645,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-06 lock",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.024896329965383178,
+            "se": 0.02154911102280888,
+            "t": 1.155329792446259,
+            "p": 0.2534467671170183,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.016513690326799522,
+            "boot_ci_hi": 0.06654727351307443,
+            "boot_p": 0.249,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-06 lock (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        }
+      },
+      "sign_flip": false,
+      "composition_share": -0.04822817724720139,
+      "verdict": "KILL (OOS |t|<2)",
+      "by_pass_oos": false
+    },
+    {
+      "id": "DS-F2-03",
+      "cluster": "cross-factor",
+      "mechanism": "reversal after liquidity shocks",
+      "archived_t": -8.91,
+      "turnover": {
+        "weekly_turnover": 0.3933354639080514,
+        "annual_two_way_pct": 4090.6888246437347
+      },
+      "verdict": "RETIRED (cost, pre-stage)"
+    },
+    {
+      "id": "DS-F2-04",
+      "cluster": "cross-factor",
+      "mechanism": "value when price weak",
+      "archived_t": 2.2,
+      "windows": {
+        "full": {
+          "pooled": {
+            "estimate": 0.015031111708013507,
+            "se": 0.0067614065507176965,
+            "t": 2.2230746805807757,
+            "p": 0.02659874438669084,
+            "n": 576,
+            "nw_lags": 5,
+            "boot_ci_lo": 0.0012296187358102192,
+            "boot_ci_hi": 0.028520697146430938,
+            "boot_p": 0.0325,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-04 full",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.013978153863089447,
+            "se": 0.006459525665649217,
+            "t": 2.1639597993120705,
+            "p": 0.03087847390376488,
+            "n": 576,
+            "nw_lags": 5,
+            "boot_ci_lo": 0.0016013076096491306,
+            "boot_ci_hi": 0.026622087559722087,
+            "boot_p": 0.0305,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-04 full (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "disc": {
+          "pooled": {
+            "estimate": -0.0030999359478008546,
+            "se": 0.013349104263380967,
+            "t": -0.23222052106556285,
+            "p": 0.8167263858518697,
+            "n": 133,
+            "nw_lags": 4,
+            "boot_ci_lo": -0.027794795485160853,
+            "boot_ci_hi": 0.020092308475008213,
+            "boot_p": 0.8075,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-04 disc",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.00036622162894480635,
+            "se": 0.013195612238887591,
+            "t": 0.02775328816237475,
+            "p": 0.9779008375015815,
+            "n": 133,
+            "nw_lags": 4,
+            "boot_ci_lo": -0.023305924384052587,
+            "boot_ci_hi": 0.023598571931701,
+            "boot_p": 0.9755,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-04 disc (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "oos": {
+          "pooled": {
+            "estimate": 0.021702102518046707,
+            "se": 0.008542598305543306,
+            "t": 2.540456865912117,
+            "p": 0.011456698347874814,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": 0.0050534673596716465,
+            "boot_ci_hi": 0.03765014297804454,
+            "boot_p": 0.0105,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-04 oos",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.01884430358727145,
+            "se": 0.008145040247830875,
+            "t": 2.3135924456960075,
+            "p": 0.02120803245185032,
+            "n": 392,
+            "nw_lags": 5,
+            "boot_ci_lo": 0.0032117508520739598,
+            "boot_ci_hi": 0.033586051114017794,
+            "boot_p": 0.015,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-04 oos (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        },
+        "lock": {
+          "pooled": {
+            "estimate": 0.011038973290176128,
+            "se": 0.016288836106530254,
+            "t": 0.6777017840919011,
+            "p": 0.501084914940171,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.017142271704950418,
+            "boot_ci_hi": 0.04125599538605089,
+            "boot_p": 0.4835,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-04 lock",
+            "notes": [],
+            "fragile": false
+          },
+          "corrected": {
+            "estimate": 0.012073375338812848,
+            "se": 0.01617733077629968,
+            "t": 0.7463144263886066,
+            "p": 0.4589722854120804,
+            "n": 51,
+            "nw_lags": 3,
+            "boot_ci_lo": -0.015332390220841003,
+            "boot_ci_hi": 0.04246429556585667,
+            "boot_p": 0.4355,
+            "n_pooled": null,
+            "t_naive_pooled": null,
+            "label": "DS-F2-04 lock (corr)",
+            "notes": [],
+            "fragile": false
+          }
+        }
+      },
+      "sign_flip": false,
+      "composition_share": 0.07005189405669165,
+      "verdict": "SURVIVES stage 1",
+      "by_pass_oos": false
+    }
+  ],
+  "n_survivors": 1
+}

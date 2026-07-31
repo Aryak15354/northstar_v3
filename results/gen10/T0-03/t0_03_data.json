@@ -1,0 +1,294 @@
+{
+  "experiment": "T0-03",
+  "same_construct": {
+    "mean_per_date_spearman": 0.9691076182725068,
+    "median": 0.9742857064412372,
+    "n_dates": 1121
+  },
+  "endpoints": {
+    "ledger": {
+      "label": "LEDGER config (F-01 battery)",
+      "cfg": {
+        "horizon": 4,
+        "relativity": "sector",
+        "close_filter": true,
+        "exclude_lockbox": true,
+        "winsor": false,
+        "signal": "ret_13w"
+      },
+      "ic": 0.011282458178583355,
+      "t": 1.3852794636699153,
+      "n_dates": 1070,
+      "boot_ci": [
+        -0.004861513016481066,
+        0.027771523321595635
+      ]
+    },
+    "deepsearch": {
+      "label": "deepsearch config (DS-U-01)",
+      "cfg": {
+        "horizon": 1,
+        "relativity": "raw",
+        "close_filter": false,
+        "exclude_lockbox": false,
+        "winsor": true,
+        "signal": "ret_13w"
+      },
+      "ic": 0.0047306681229630975,
+      "t": 0.9081514727176206,
+      "n_dates": 1122,
+      "boot_ci": [
+        -0.005001887385777043,
+        0.0144089777681616
+      ]
+    },
+    "archived_ledger_t": 1.17,
+    "archived_deepsearch_t": 2.91
+  },
+  "single_axis": [
+    {
+      "label": "LEDGER + horizon=1",
+      "cfg": {
+        "horizon": 1,
+        "relativity": "sector",
+        "close_filter": true,
+        "exclude_lockbox": true,
+        "winsor": false,
+        "signal": "ret_13w"
+      },
+      "ic": -0.004203898360359005,
+      "t": -0.921874728211219,
+      "n_dates": 1070,
+      "boot_ci": [
+        -0.01275508643796127,
+        0.0046472032021137415
+      ],
+      "axis": "horizon",
+      "delta_t": -2.3071541918811342
+    },
+    {
+      "label": "LEDGER + relativity=raw",
+      "cfg": {
+        "horizon": 4,
+        "relativity": "raw",
+        "close_filter": true,
+        "exclude_lockbox": true,
+        "winsor": false,
+        "signal": "ret_13w"
+      },
+      "ic": 0.024342214977470748,
+      "t": 2.5552803285218415,
+      "n_dates": 1070,
+      "boot_ci": [
+        0.005897297236228259,
+        0.04274867471321646
+      ],
+      "axis": "relativity",
+      "delta_t": 1.1700008648519262
+    },
+    {
+      "label": "LEDGER + close_filter=False",
+      "cfg": {
+        "horizon": 4,
+        "relativity": "sector",
+        "close_filter": false,
+        "exclude_lockbox": true,
+        "winsor": false,
+        "signal": "ret_13w"
+      },
+      "ic": 0.011282458178583355,
+      "t": 1.3852794636699153,
+      "n_dates": 1070,
+      "boot_ci": [
+        -0.004861513016481066,
+        0.027771523321595635
+      ],
+      "axis": "close_filter",
+      "delta_t": 0.0
+    },
+    {
+      "label": "LEDGER + exclude_lockbox=False",
+      "cfg": {
+        "horizon": 4,
+        "relativity": "sector",
+        "close_filter": true,
+        "exclude_lockbox": false,
+        "winsor": false,
+        "signal": "ret_13w"
+      },
+      "ic": 0.011917277480765537,
+      "t": 1.5102103432349094,
+      "n_dates": 1119,
+      "boot_ci": [
+        -0.003693071470925753,
+        0.027802979789038403
+      ],
+      "axis": "exclude_lockbox",
+      "delta_t": 0.12493087956499416
+    },
+    {
+      "label": "LEDGER + winsor=True",
+      "cfg": {
+        "horizon": 4,
+        "relativity": "sector",
+        "close_filter": true,
+        "exclude_lockbox": true,
+        "winsor": true,
+        "signal": "ret_13w"
+      },
+      "ic": 0.011589044296455641,
+      "t": 1.4157838022627234,
+      "n_dates": 1070,
+      "boot_ci": [
+        -0.004488961717667253,
+        0.027977339151521508
+      ],
+      "axis": "winsor",
+      "delta_t": 0.0305043385928081
+    }
+  ],
+  "cumulative_walk": [
+    {
+      "step": "LEDGER config",
+      "t": 1.3852794636699153,
+      "ic": 0.011282458178583355,
+      "delta_t": 0.0
+    },
+    {
+      "step": "+ horizon=1",
+      "t": -0.921874728211219,
+      "ic": -0.004203898360359005,
+      "delta_t": -2.3071541918811342
+    },
+    {
+      "step": "+ relativity=raw",
+      "t": 0.8333331058973539,
+      "ic": 0.004492210454722137,
+      "delta_t": 1.7552078341085728
+    },
+    {
+      "step": "+ exclude_lockbox=False",
+      "t": 0.9082761041473482,
+      "ic": 0.004731401888253044,
+      "delta_t": 0.07494299824999429
+    },
+    {
+      "step": "+ winsor=True",
+      "t": 0.9081514727176206,
+      "ic": 0.0047306681229630975,
+      "delta_t": -0.0001246314297275175
+    },
+    {
+      "step": "+ close_filter=False",
+      "t": 0.9081514727176206,
+      "ic": 0.0047306681229630975,
+      "delta_t": 0.0
+    }
+  ],
+  "signal_transform_control": {
+    "ledger_csz": {
+      "label": "LEDGER + cs-z signal",
+      "cfg": {
+        "horizon": 4,
+        "relativity": "sector",
+        "close_filter": true,
+        "exclude_lockbox": true,
+        "winsor": false,
+        "signal": "ret_13w_csz"
+      },
+      "ic": 0.011282462719125905,
+      "t": 1.3852799120185888,
+      "n_dates": 1070,
+      "boot_ci": [
+        -0.0048615176236888056,
+        0.027771536590856814
+      ]
+    },
+    "deepsearch_csz": {
+      "label": "deepsearch + cs-z signal",
+      "cfg": {
+        "horizon": 1,
+        "relativity": "raw",
+        "close_filter": false,
+        "exclude_lockbox": false,
+        "winsor": true,
+        "signal": "ret_13w_csz"
+      },
+      "ic": 0.004730669352153166,
+      "t": 0.908151675514961,
+      "n_dates": 1122,
+      "boot_ci": [
+        -0.005001889230892348,
+        0.014408975891905701
+      ]
+    }
+  },
+  "panel_decomposition": [
+    {
+      "universe": "enriched FULL (as DS-U-01 ran)",
+      "ic": 0.013828950541654743,
+      "t": 2.8342801442009167,
+      "n_dates": 1121,
+      "median_names_per_date": 450.0,
+      "n_rows": 491676
+    },
+    {
+      "universe": "enriched restricted to PANEL-A universe",
+      "ic": 0.008584323533501265,
+      "t": 1.6690338551970931,
+      "n_dates": 1121,
+      "median_names_per_date": 266.0,
+      "n_rows": 316143
+    },
+    {
+      "universe": "enriched rows NOT in PANEL-A",
+      "ic": 0.004974431634465576,
+      "t": 0.8334101042526451,
+      "n_dates": 937,
+      "median_names_per_date": 181.0,
+      "n_rows": 175533
+    }
+  ],
+  "composition_artifact": {
+    "union_ic": 0.013828950541654743,
+    "within_group_ic": 0.008883883485965013,
+    "within_group_t": 1.9913372690424636,
+    "composition_ic": 0.00494506705568973,
+    "composition_share": 0.3575880209271479,
+    "group_stats": {
+      "extra": {
+        "n": 175533.0,
+        "mean_ret": 0.0017204772140082866,
+        "mean_sig": -0.12461485713720322
+      },
+      "panel_a": {
+        "n": 316143.0,
+        "mean_ret": 0.0034631914146732506,
+        "mean_sig": 0.053743332624435425
+      }
+    }
+  },
+  "delivery_contamination_check": [
+    {
+      "signal": "delivery_pct_4w_avg",
+      "union_ic": 0.025033954193564682,
+      "union_t": 4.05242143147056,
+      "within_ic": 0.027895019196063034,
+      "within_t": 4.372169351923251,
+      "composition_share": -0.11428737866884119,
+      "rows_in_panel_a": 137530,
+      "rows_outside": 8479
+    },
+    {
+      "signal": "delivery_pct_z52",
+      "union_ic": 0.031782469531594804,
+      "union_t": 7.932692544166714,
+      "within_ic": 0.03210095385046034,
+      "within_t": 8.01022842377957,
+      "composition_share": -0.010020754320205836,
+      "rows_in_panel_a": 131455,
+      "rows_outside": 5011
+    }
+  ],
+  "dominant_axis": "horizon"
+}

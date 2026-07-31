@@ -1,0 +1,38 @@
+{
+  "experiment": "T1-04a-stage1b",
+  "pairwise_signal_corr": {
+    "DS-U-02~DS-F5-01": 0.9242953346060467,
+    "DS-U-02~DS-F1-05": 0.7770362771873479,
+    "DS-F5-01~DS-F1-05": 0.7223597821362642
+  },
+  "incremental": [
+    {
+      "id": "DS-F5-01",
+      "col": "rel_deliv_sector",
+      "raw_ic": 0.04119528248341624,
+      "raw_t": 3.92056244730576,
+      "resid_ic": 0.0059900600077348485,
+      "resid_t": 0.6132501429044906,
+      "t_retained": 0.15641891977155492,
+      "verdict": "REDUNDANT with DS-U-02"
+    },
+    {
+      "id": "DS-F1-05",
+      "col": "dv_deliv_price",
+      "raw_ic": 0.03642916028925231,
+      "raw_t": 2.919854385573509,
+      "resid_ic": 0.003106202272780044,
+      "resid_t": 0.27088229505366673,
+      "t_retained": 0.09277253564151997,
+      "verdict": "REDUNDANT with DS-U-02"
+    }
+  ],
+  "incumbent": {
+    "id": "DS-U-02",
+    "t": 3.068520836874171
+  },
+  "reverse_check": {
+    "challenger": "DS-F5-01",
+    "incumbent_residual_t": 1.442730420870675
+  }
+}

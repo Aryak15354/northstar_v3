@@ -1,0 +1,431 @@
+{
+  "experiment": "T0-01",
+  "what_would_settle_2a": {
+    "current_t": 2.5200487026338583,
+    "current_n_dates": 985,
+    "by_rank1_p_threshold": 0.0019638097909945294,
+    "t_required": 3.0956515652910133,
+    "n_dates_required": 1487,
+    "extra_weeks_required": 502,
+    "extra_years_required": 9.7
+  },
+  "question": "Do consistency_mom_26w's four candidate roles survive date-clustered inference?",
+  "window": [
+    "2005-09-30",
+    "2025-07-04"
+  ],
+  "n_dates": 1032,
+  "n_rows": 270603,
+  "lockbox_boundary": "2025-07-11",
+  "defect": "original used pooled stock-week two-sample SE; forward returns overlap and stocks within a week share a market factor",
+  "results": {
+    "2a_confirms": {
+      "1w": {
+        "estimate": 0.0011815313706875629,
+        "se": 0.0007343890961362452,
+        "t": 1.6088628996587975,
+        "p": 0.10796610960223457,
+        "n": 988,
+        "nw_lags": 6,
+        "boot_ci_lo": -9.519777736801038e-05,
+        "boot_ci_hi": 0.0025813132743537385,
+        "boot_p": 0.0906,
+        "n_pooled": 62477,
+        "t_naive_pooled": -0.3666809680976323,
+        "label": "2a confirms 1w",
+        "notes": [],
+        "fragile": false
+      },
+      "4w": {
+        "estimate": 0.006503409212814256,
+        "se": 0.0025806680664612323,
+        "t": 2.5200487026338583,
+        "p": 0.011891156425602817,
+        "n": 985,
+        "nw_lags": 6,
+        "boot_ci_lo": 0.0014087501926562523,
+        "boot_ci_hi": 0.011721922011346114,
+        "boot_p": 0.014,
+        "n_pooled": 62078,
+        "t_naive_pooled": 1.517722922751209,
+        "label": "2a confirms 4w",
+        "notes": [],
+        "fragile": false
+      },
+      "8w": {
+        "estimate": 0.01037763186414523,
+        "se": 0.004687730613129872,
+        "t": 2.213785885024729,
+        "p": 0.02707312086544687,
+        "n": 981,
+        "nw_lags": 7,
+        "boot_ci_lo": 0.0012431245210139026,
+        "boot_ci_hi": 0.019933864281793095,
+        "boot_p": 0.0286,
+        "n_pooled": 61580,
+        "t_naive_pooled": 1.9657973382977554,
+        "label": "2a confirms 8w",
+        "notes": [],
+        "fragile": false
+      },
+      "13w": {
+        "estimate": 0.013549740028225836,
+        "se": 0.007360350864343519,
+        "t": 1.8409095269990716,
+        "p": 0.06593851235755671,
+        "n": 976,
+        "nw_lags": 12,
+        "boot_ci_lo": -0.00022866344123636503,
+        "boot_ci_hi": 0.028347480528589444,
+        "boot_p": 0.0634,
+        "n_pooled": 60951,
+        "t_naive_pooled": 1.9097395933191892,
+        "label": "2a confirms 13w",
+        "notes": [],
+        "fragile": false
+      }
+    },
+    "2b_warns": {
+      "1w": {
+        "estimate": 0.0003310389773988014,
+        "se": 0.0006892251153136179,
+        "t": 0.48030602780365717,
+        "p": 0.6311178768782143,
+        "n": 973,
+        "nw_lags": 6,
+        "boot_ci_lo": -0.000980257164539486,
+        "boot_ci_hi": 0.0016167426587069455,
+        "boot_p": 0.6146,
+        "n_pooled": 61695,
+        "t_naive_pooled": 1.48974363901959,
+        "label": "2b warns 1w",
+        "notes": [],
+        "fragile": false
+      },
+      "4w": {
+        "estimate": 0.0012936674923163442,
+        "se": 0.00227388009428412,
+        "t": 0.568925114199404,
+        "p": 0.5695389331925679,
+        "n": 969,
+        "nw_lags": 6,
+        "boot_ci_lo": -0.0027293690326295602,
+        "boot_ci_hi": 0.005439164959834176,
+        "boot_p": 0.5318,
+        "n_pooled": 61253,
+        "t_naive_pooled": 2.254627396588832,
+        "label": "2b warns 4w",
+        "notes": [],
+        "fragile": false
+      },
+      "8w": {
+        "estimate": -0.0006341738270526153,
+        "se": 0.0037877132733981165,
+        "t": -0.1674292062988367,
+        "p": 0.8670674615131911,
+        "n": 965,
+        "nw_lags": 7,
+        "boot_ci_lo": -0.007605853067719729,
+        "boot_ci_hi": 0.006094376263443299,
+        "boot_p": 0.8608,
+        "n_pooled": 60687,
+        "t_naive_pooled": 2.0260202832680623,
+        "label": "2b warns 8w",
+        "notes": [],
+        "fragile": false
+      },
+      "13w": {
+        "estimate": -0.002363493746512162,
+        "se": 0.005138953970877561,
+        "t": -0.45991728275950217,
+        "p": 0.645679843879591,
+        "n": 960,
+        "nw_lags": 12,
+        "boot_ci_lo": -0.011897474978919494,
+        "boot_ci_hi": 0.006960407341368616,
+        "boot_p": 0.6296,
+        "n_pooled": 60030,
+        "t_naive_pooled": 2.0690397429416625,
+        "label": "2b warns 13w",
+        "notes": [],
+        "fragile": false
+      }
+    },
+    "2c_delays_crosscorr": {
+      "-4": -0.1846407541213204,
+      "-3": -0.18155811653505663,
+      "-2": -0.1788711169219435,
+      "-1": -0.17929629961037857,
+      "0": -0.18010807756580993,
+      "1": -0.1795483738069345,
+      "2": -0.17699115565651455,
+      "3": -0.17533939073336702,
+      "4": -0.1725781714245571
+    },
+    "2d_exits": {
+      "4w": {
+        "estimate": 0.0025984913499618326,
+        "se": 0.0023440247395082763,
+        "t": 1.1085596948549858,
+        "p": 0.2682096748702868,
+        "n": 453,
+        "nw_lags": 5,
+        "boot_ci_lo": -0.0021304069066445824,
+        "boot_ci_hi": 0.0075555035726697535,
+        "boot_p": 0.297,
+        "n_pooled": 48072,
+        "t_naive_pooled": 0.791132810482684,
+        "label": "2d exits 4w",
+        "notes": [],
+        "fragile": false
+      }
+    }
+  },
+  "multiplicity": {
+    "m": 9,
+    "tests": [
+      "2a_1w",
+      "2a_4w",
+      "2a_8w",
+      "2a_13w",
+      "2b_1w",
+      "2b_4w",
+      "2b_8w",
+      "2b_13w",
+      "2d_4w"
+    ],
+    "p": [
+      0.10796610960223457,
+      0.011891156425602817,
+      0.02707312086544687,
+      0.06593851235755671,
+      0.6311178768782143,
+      0.5695389331925679,
+      0.8670674615131911,
+      0.645679843879591,
+      0.2682096748702868
+    ],
+    "bh_pass": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "by_pass": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "lockbox": {
+    "2a confirms": {
+      "1w": {
+        "estimate": -0.00018062304807709,
+        "se": 0.0015718038976312609,
+        "t": -0.11491449305431324,
+        "p": 0.9089641435229505,
+        "n": 52,
+        "nw_lags": 3,
+        "boot_ci_lo": -0.003223681320941467,
+        "boot_ci_hi": 0.002587314054910549,
+        "boot_p": 0.899,
+        "n_pooled": 5572,
+        "t_naive_pooled": 0.7746885840151143,
+        "label": "LB 2a confirms 1w",
+        "notes": [],
+        "fragile": false
+      },
+      "4w": {
+        "estimate": 0.006130599036714586,
+        "se": 0.004589603923516147,
+        "t": 1.3357577557624767,
+        "p": 0.18792771609513073,
+        "n": 49,
+        "nw_lags": 3,
+        "boot_ci_lo": -0.0026431063756683923,
+        "boot_ci_hi": 0.014612528067222928,
+        "boot_p": 0.1822,
+        "n_pooled": 5277,
+        "t_naive_pooled": 3.040295692353687,
+        "label": "LB 2a confirms 4w",
+        "notes": [],
+        "fragile": false
+      },
+      "8w": {
+        "estimate": 0.017432946376100367,
+        "se": 0.011719616180010379,
+        "t": 1.4875014768687527,
+        "p": 0.14401436479660654,
+        "n": 45,
+        "nw_lags": 7,
+        "boot_ci_lo": -0.004348868106868312,
+        "boot_ci_hi": 0.03992098957686351,
+        "boot_p": 0.1356,
+        "n_pooled": 4842,
+        "t_naive_pooled": 4.843154675383802,
+        "label": "LB 2a confirms 8w",
+        "notes": [],
+        "fragile": false
+      },
+      "13w": {
+        "estimate": 0.028621418553973904,
+        "se": 0.021434757871936272,
+        "t": 1.3352807027247486,
+        "p": 0.18952630077838795,
+        "n": 40,
+        "nw_lags": 12,
+        "boot_ci_lo": -0.004148117521904472,
+        "boot_ci_hi": 0.06188733868557812,
+        "boot_p": 0.0942,
+        "n_pooled": 4306,
+        "t_naive_pooled": 6.223768938834518,
+        "label": "LB 2a confirms 13w",
+        "notes": [],
+        "fragile": false
+      }
+    },
+    "2b warns": {
+      "1w": {
+        "estimate": -0.0023370831541885836,
+        "se": 0.0013907027132662865,
+        "t": -1.6805052092690407,
+        "p": 0.09897488594185275,
+        "n": 52,
+        "nw_lags": 3,
+        "boot_ci_lo": -0.005281627607108852,
+        "boot_ci_hi": 0.00013387566771427424,
+        "boot_p": 0.0906,
+        "n_pooled": 5538,
+        "t_naive_pooled": -1.1109596550145717,
+        "label": "LB 2b warns 1w",
+        "notes": [],
+        "fragile": false
+      },
+      "4w": {
+        "estimate": -0.009310271430568354,
+        "se": 0.005634986390099497,
+        "t": -1.6522260722627873,
+        "p": 0.10501609178488712,
+        "n": 49,
+        "nw_lags": 3,
+        "boot_ci_lo": -0.020385087148003547,
+        "boot_ci_hi": -1.9034510975270062e-05,
+        "boot_p": 0.074,
+        "n_pooled": 5188,
+        "t_naive_pooled": -2.7549234877171505,
+        "label": "LB 2b warns 4w",
+        "notes": [],
+        "fragile": true
+      },
+      "8w": {
+        "estimate": -0.011539743009118244,
+        "se": 0.008241542160860154,
+        "t": -1.4001921950871707,
+        "p": 0.16846803475700825,
+        "n": 45,
+        "nw_lags": 7,
+        "boot_ci_lo": -0.02704126970179292,
+        "boot_ci_hi": 0.0015018578663122055,
+        "boot_p": 0.1192,
+        "n_pooled": 4757,
+        "t_naive_pooled": -2.3631553554350697,
+        "label": "LB 2b warns 8w",
+        "notes": [],
+        "fragile": false
+      },
+      "13w": {
+        "estimate": -0.01602306839420689,
+        "se": 0.011315991628393572,
+        "t": -1.4159667946380001,
+        "p": 0.16472259823162416,
+        "n": 40,
+        "nw_lags": 12,
+        "boot_ci_lo": -0.03461084808415393,
+        "boot_ci_hi": 0.0011979216297105485,
+        "boot_p": 0.086,
+        "n_pooled": 4220,
+        "t_naive_pooled": -3.0828724967308356,
+        "label": "LB 2b warns 13w",
+        "notes": [],
+        "fragile": false
+      }
+    }
+  },
+  "lockbox_power": [
+    {
+      "horizon": "1w",
+      "discovery_effect_pct": 0.1182,
+      "lockbox_n_dates": 52,
+      "lockbox_mde_pct": 0.3081,
+      "adequately_powered": false
+    },
+    {
+      "horizon": "4w",
+      "discovery_effect_pct": 0.6503,
+      "lockbox_n_dates": 49,
+      "lockbox_mde_pct": 0.8996,
+      "adequately_powered": false
+    },
+    {
+      "horizon": "8w",
+      "discovery_effect_pct": 1.0378,
+      "lockbox_n_dates": 45,
+      "lockbox_mde_pct": 2.297,
+      "adequately_powered": false
+    },
+    {
+      "horizon": "13w",
+      "discovery_effect_pct": 1.355,
+      "lockbox_n_dates": 40,
+      "lockbox_mde_pct": 4.2012,
+      "adequately_powered": false
+    }
+  ],
+  "verdicts": {
+    "2a Confirms": {
+      "archived_verdict": "NOT CONFIRMED (near-miss, t=1.97-1.91)",
+      "corrected_best_t": 2.5200487026338583,
+      "corrected_best_horizon": "2a confirms 4w",
+      "effects_by_horizon_pct": [
+        0.1182,
+        0.6503,
+        1.0378,
+        1.355
+      ],
+      "monotone_in_horizon": true,
+      "sign_stable": true,
+      "bootstrap_ci_excludes_zero": true,
+      "survives_declared_BY": false,
+      "lockbox_best_t": 1.4875014768687527,
+      "verdict": "UNRESOLVED \u2014 coherent effect, fails declared multiplicity correction"
+    },
+    "2b Warns": {
+      "archived_verdict": "CONFIRMED (t=2.25/2.03/2.07)",
+      "corrected_best_t": 0.568925114199404,
+      "corrected_best_horizon": "2b warns 4w",
+      "effects_by_horizon_pct": [
+        0.0331,
+        0.1294,
+        -0.0634,
+        -0.2363
+      ],
+      "monotone_in_horizon": false,
+      "sign_stable": false,
+      "bootstrap_ci_excludes_zero": false,
+      "survives_declared_BY": false,
+      "lockbox_best_t": -1.6805052092690407,
+      "verdict": "RETIRE"
+    }
+  }
+}

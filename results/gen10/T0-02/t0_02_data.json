@@ -1,0 +1,198 @@
+{
+  "experiment": "T0-02",
+  "part_a_ds_battery": {
+    "rows": [
+      {
+        "id": "DS-U-02",
+        "column": "delivery_pct_4w_avg",
+        "archived_t": 4.06,
+        "gen10_t": 4.05242143147056,
+        "gen10_ic": 0.025033954193564682,
+        "n_dates": 338,
+        "n_pooled": 146009,
+        "naive_pooled_t": 4.5404364590096975,
+        "boot_ci": [
+          0.013033846830342042,
+          0.03697752658163593
+        ],
+        "agrees_with_archive": true
+      },
+      {
+        "id": "DS-U-01",
+        "column": "mom_60d_cs_z",
+        "archived_t": 2.91,
+        "gen10_t": 2.8342801442009167,
+        "gen10_ic": 0.013828950541654743,
+        "n_dates": 1121,
+        "n_pooled": 491676,
+        "naive_pooled_t": 9.00053541221368,
+        "boot_ci": [
+          0.0035121945081739987,
+          0.02480729122432123
+        ],
+        "agrees_with_archive": true
+      },
+      {
+        "id": "DS-F1-05",
+        "column": "dv_deliv_price",
+        "archived_t": 4.21,
+        "gen10_t": 4.173825943336894,
+        "gen10_ic": 0.02299810910976664,
+        "n_dates": 338,
+        "n_pooled": 145706,
+        "naive_pooled_t": 6.619966391721276,
+        "boot_ci": [
+          0.012408182378164401,
+          0.03377017482222639
+        ],
+        "agrees_with_archive": true
+      },
+      {
+        "id": "DS-F5-01",
+        "column": "rel_deliv_sector",
+        "archived_t": 4.93,
+        "gen10_t": 4.884564986599027,
+        "gen10_ic": 0.026231891532023665,
+        "n_dates": 338,
+        "n_pooled": 144135,
+        "naive_pooled_t": 7.2182033996423725,
+        "boot_ci": [
+          0.01591619818667951,
+          0.03666752159583982
+        ],
+        "agrees_with_archive": true
+      },
+      {
+        "id": "DS-U-04",
+        "column": "rel_deliv_sector",
+        "archived_t": 4.93,
+        "gen10_t": 4.884564986599027,
+        "gen10_ic": 0.026231891532023665,
+        "n_dates": 338,
+        "n_pooled": 144135,
+        "naive_pooled_t": 7.2182033996423725,
+        "boot_ci": [
+          0.01591619818667951,
+          0.03666752159583982
+        ],
+        "agrees_with_archive": true
+      },
+      {
+        "id": "DS-F4-02",
+        "column": "pa_mom_declpart",
+        "archived_t": 6.33,
+        "gen10_t": 6.288525324681961,
+        "gen10_ic": 0.013137776205071746,
+        "n_dates": 1121,
+        "n_pooled": 491676,
+        "naive_pooled_t": 8.103570247569367,
+        "boot_ci": [
+          0.008565549730439074,
+          0.017557879964970432
+        ],
+        "agrees_with_archive": true
+      }
+    ],
+    "verdict": "CLEAN"
+  },
+  "part_b_paper_c": {
+    "q3": {
+      "fixed_sharpe": 0.6917965653893028,
+      "scaled_sharpe": 0.7270941949505242,
+      "paired_test": {
+        "estimate": 0.03529762956122132,
+        "se": 0.07097954094249287,
+        "t": 0.49729300996493087,
+        "p": 0.6189824402976614,
+        "n": 1032,
+        "nw_lags": 0,
+        "boot_ci_lo": -0.15600065353105452,
+        "boot_ci_hi": 0.20940726405895227,
+        "boot_p": null,
+        "n_pooled": null,
+        "t_naive_pooled": null,
+        "label": "Q3 scaled vs fixed",
+        "notes": [
+          "corr(a,b)=0.946; SR_a=0.6918 SR_b=0.7271"
+        ],
+        "fragile": false
+      },
+      "mde_80pct_power": 0.19923556216607316,
+      "annual_return_given_up": 0.03256828142373129,
+      "single_regime_decomposition": {
+        "CRASH": 0.8164066793735191,
+        "RECOVERY": 0.6939884922347719,
+        "STRONG_UP": 0.594113547438626,
+        "STRESS": 0.7774891514352709,
+        "NORMAL_UP": 0.5030100268144054
+      },
+      "archived_verdict": "ACCEPTED (robustness untested)",
+      "gen10_verdict": "RETIRE \u2014 not significant, and not a liquidity rule"
+    },
+    "q1_q4": {
+      "100cr": {
+        "persistent_bps": 3.636783333961677,
+        "other_bps": 3.893968872557761,
+        "diff_bps": -0.2571855385960839,
+        "t": -1.75358093680912,
+        "n_persistent": 638,
+        "n_other": 393
+      },
+      "500cr": {
+        "persistent_bps": 3.8964950587256877,
+        "other_bps": 4.202165084488833,
+        "diff_bps": -0.3056700257631455,
+        "t": -1.7534246484549323,
+        "n_persistent": 638,
+        "n_other": 393
+      }
+    }
+  },
+  "part_c_classification": [
+    {
+      "result": "AEP Paper B Sub-study 2a/2b",
+      "class": "DEFECTIVE",
+      "note": "pooled stock-week two-sample SE; both verdicts changed \u2014 see T0-01"
+    },
+    {
+      "result": "AEP Paper B Sub-study 1 (Prototype 1)",
+      "class": "CLEAN",
+      "note": "alternate-split replication counting, not a pooled t; rejection stands"
+    },
+    {
+      "result": "AEP Paper C Q1/Q4 execution",
+      "class": "NO-TEST",
+      "note": "two means reported, no test; supplied here"
+    },
+    {
+      "result": "AEP Paper C Q2 universe",
+      "class": "NO-TEST",
+      "note": "name-level correlation, no SE; names share a market factor"
+    },
+    {
+      "result": "AEP Paper C Q3 sizing",
+      "class": "NO-TEST",
+      "note": "two point Sharpes, no test; supplied here \u2014 paired t=0.50"
+    },
+    {
+      "result": "AEP Paper C Sub-studies 2+3",
+      "class": "CLEAN",
+      "note": "clean null on matched Sharpes; a null is not manufactured by a bad SE"
+    },
+    {
+      "result": "AEP Paper D resolutions",
+      "class": "CLEAN (multiplicity gap)",
+      "note": "MI vs permutation null on non-overlapping windows; m=5 uncorrected \u2014 T1-07"
+    },
+    {
+      "result": "AEP Paper A redundancy",
+      "class": "CLEAN",
+      "note": "time-series MI with permutation nulls; not stock-week pooled"
+    },
+    {
+      "result": "Gen-2/3 DS battery (28 items)",
+      "class": "CLEAN",
+      "note": "per-date IC then NW HAC; verified empirically in Part A"
+    }
+  ]
+}

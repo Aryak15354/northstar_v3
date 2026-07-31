@@ -1,0 +1,164 @@
+{
+  "experiment": "T1-08",
+  "replaces": "remediation plan item 2.3",
+  "n_failure_exits": 711,
+  "exit_exposure_by_tier": {
+    "ALL": 0.002443223405461687,
+    "FNO_LARGE": 0.002088483284360214,
+    "NON_FNO_TAIL": 0.0031413826163229504,
+    "SMALL_ADV_Q1": 0.006959963153136248
+  },
+  "sweep": [
+    {
+      "gap": 0.0,
+      "ALL": 1.060650140687354,
+      "FNO_LARGE": 0.8316362497085249,
+      "NON_FNO_TAIL": 1.2650344026210447,
+      "SMALL_ADV_Q1": 1.5156214195538142
+    },
+    {
+      "gap": -0.1,
+      "ALL": 1.048317515590094,
+      "FNO_LARGE": 0.8277265826164703,
+      "NON_FNO_TAIL": 1.2379156729635794,
+      "SMALL_ADV_Q1": 1.4925184943018848
+    },
+    {
+      "gap": -0.2,
+      "ALL": 1.010703059661726,
+      "FNO_LARGE": 0.814722538824008,
+      "NON_FNO_TAIL": 1.1472116283338365,
+      "SMALL_ADV_Q1": 1.4019868169600778
+    },
+    {
+      "gap": -0.35,
+      "ALL": 0.9541760188376412,
+      "FNO_LARGE": 0.7950661310378652,
+      "NON_FNO_TAIL": 1.0089956809768459,
+      "SMALL_ADV_Q1": 1.26167908416118
+    },
+    {
+      "gap": -0.5,
+      "ALL": 0.8976423417685777,
+      "FNO_LARGE": 0.7752485971994102,
+      "NON_FNO_TAIL": 0.8711540725022917,
+      "SMALL_ADV_Q1": 1.1193902857065583
+    }
+  ],
+  "leads": [
+    {
+      "NON_FNO_TAIL": 0.20438426193369064,
+      "SMALL_ADV_Q1": 0.45497127886646016,
+      "FNO_LARGE": -0.22901389097882918,
+      "gap": 0.0
+    },
+    {
+      "NON_FNO_TAIL": 0.1895981573734855,
+      "SMALL_ADV_Q1": 0.4442009787117909,
+      "FNO_LARGE": -0.22059093297362364,
+      "gap": -0.1
+    },
+    {
+      "NON_FNO_TAIL": 0.1365085686721106,
+      "SMALL_ADV_Q1": 0.39128375729835185,
+      "FNO_LARGE": -0.1959805208377179,
+      "gap": -0.2
+    },
+    {
+      "NON_FNO_TAIL": 0.05481966213920464,
+      "SMALL_ADV_Q1": 0.30750306532353877,
+      "FNO_LARGE": -0.15910988779977608,
+      "gap": -0.35
+    },
+    {
+      "NON_FNO_TAIL": -0.026488269266286002,
+      "SMALL_ADV_Q1": 0.22174794393798059,
+      "FNO_LARGE": -0.12239374456916752,
+      "gap": -0.5
+    }
+  ],
+  "breakeven_gap": {
+    "NON_FNO_TAIL": -0.4511334217798758,
+    "SMALL_ADV_Q1": null
+  },
+  "significance_at_worst": {
+    "NON_FNO_TAIL@0.0": {
+      "estimate": 0.20438426193369058,
+      "se": 0.09895080559991139,
+      "t": 2.0655138752490725,
+      "p": 0.03887440405711811,
+      "n": 643,
+      "nw_lags": 0,
+      "boot_ci_lo": -0.04948291648561322,
+      "boot_ci_hi": 0.46962102119565335,
+      "boot_p": null,
+      "n_pooled": null,
+      "t_naive_pooled": null,
+      "label": "NON_FNO_TAIL vs ALL @ +0%",
+      "notes": [
+        "corr(a,b)=0.929; SR_a=1.0607 SR_b=1.2650"
+      ],
+      "fragile": true
+    },
+    "SMALL_ADV_Q1@0.0": {
+      "estimate": 0.45497127886646016,
+      "se": 0.14524820360832455,
+      "t": 3.1323711244879355,
+      "p": 0.0017340053523781545,
+      "n": 643,
+      "nw_lags": 0,
+      "boot_ci_lo": 0.11986913930498663,
+      "boot_ci_hi": 0.8205444195449716,
+      "boot_p": null,
+      "n_pooled": null,
+      "t_naive_pooled": null,
+      "label": "SMALL_ADV_Q1 vs ALL @ +0%",
+      "notes": [
+        "corr(a,b)=0.861; SR_a=1.0607 SR_b=1.5156"
+      ],
+      "fragile": false
+    },
+    "NON_FNO_TAIL@-0.5": {
+      "estimate": -0.026488269266285974,
+      "se": 0.113128442720215,
+      "t": -0.23414332089584017,
+      "p": 0.81487371530152,
+      "n": 643,
+      "nw_lags": 0,
+      "boot_ci_lo": -0.32827543952928223,
+      "boot_ci_hi": 0.2789346134883817,
+      "boot_p": null,
+      "n_pooled": null,
+      "t_naive_pooled": null,
+      "label": "NON_FNO_TAIL vs ALL @ -50%",
+      "notes": [
+        "corr(a,b)=0.915; SR_a=0.8976 SR_b=0.8712"
+      ],
+      "fragile": false
+    },
+    "SMALL_ADV_Q1@-0.5": {
+      "estimate": 0.22174794393798064,
+      "se": 0.15464459618334797,
+      "t": 1.4339197709506406,
+      "p": 0.1515951591160179,
+      "n": 643,
+      "nw_lags": 0,
+      "boot_ci_lo": -0.15615942136869715,
+      "boot_ci_hi": 0.6347946482154002,
+      "boot_p": null,
+      "n_pooled": null,
+      "t_naive_pooled": null,
+      "label": "SMALL_ADV_Q1 vs ALL @ -50%",
+      "notes": [
+        "corr(a,b)=0.847; SR_a=0.8976 SR_b=1.1194"
+      ],
+      "fragile": false
+    }
+  },
+  "g8_07_reference": {
+    "NON_FNO_TAIL": 0.296,
+    "SMALL_ADV_Q1": 0.222,
+    "FNO_LARGE": -0.153
+  },
+  "lead_survives_stress": false
+}

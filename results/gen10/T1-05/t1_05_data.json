@@ -1,0 +1,151 @@
+{
+  "experiment": "T1-05''",
+  "cross_section_used": {
+    "original_design": 0.22310666671593932,
+    "E1": 0.334660000073909,
+    "E2": 1.0
+  },
+  "discovery": [
+    {
+      "estimator": "E1 conditional IC",
+      "horizon": 1,
+      "estimate": 0.005966370395206293,
+      "t": 1.1932756339722033,
+      "p": 0.23303622412643446,
+      "n_dates": 1031,
+      "boot_lo": -0.0035585484725564765,
+      "boot_hi": 0.01557384199345597,
+      "fragile": false,
+      "by_m8": false,
+      "by_m17": false
+    },
+    {
+      "estimator": "E1 conditional IC",
+      "horizon": 4,
+      "estimate": 0.01676857029755506,
+      "t": 1.8817649232447793,
+      "p": 0.060150557674279806,
+      "n_dates": 1028,
+      "boot_lo": -0.0006754413168511941,
+      "boot_hi": 0.03504407190830833,
+      "fragile": false,
+      "by_m8": false,
+      "by_m17": false
+    },
+    {
+      "estimator": "E1 conditional IC",
+      "horizon": 8,
+      "estimate": 0.016751167918954108,
+      "t": 1.5172244590499677,
+      "p": 0.12951896747078895,
+      "n_dates": 1024,
+      "boot_lo": -0.004377393262916419,
+      "boot_hi": 0.03875135406808841,
+      "fragile": false,
+      "by_m8": false,
+      "by_m17": false
+    },
+    {
+      "estimator": "E1 conditional IC",
+      "horizon": 13,
+      "estimate": 0.018817603420978195,
+      "t": 1.3620164198023046,
+      "p": 0.1734940036103363,
+      "n_dates": 1019,
+      "boot_lo": -0.00884217920662502,
+      "boot_hi": 0.04617607168461127,
+      "fragile": false,
+      "by_m8": false,
+      "by_m17": false
+    },
+    {
+      "estimator": "E2 Fama-MacBeth",
+      "horizon": 1,
+      "estimate": 0.0003671273403594964,
+      "t": 0.19965240031409806,
+      "p": 0.8417918510456688,
+      "n_dates": 1031,
+      "boot_lo": -0.003305126537399894,
+      "boot_hi": 0.004134599667157781,
+      "fragile": false,
+      "by_m8": false,
+      "by_m17": false
+    },
+    {
+      "estimator": "E2 Fama-MacBeth",
+      "horizon": 4,
+      "estimate": 0.0068135421688414665,
+      "t": 1.0489240571218463,
+      "p": 0.2944598463995483,
+      "n_dates": 1028,
+      "boot_lo": -0.006560916966320372,
+      "boot_hi": 0.0199679666120713,
+      "fragile": false,
+      "by_m8": false,
+      "by_m17": false
+    },
+    {
+      "estimator": "E2 Fama-MacBeth",
+      "horizon": 8,
+      "estimate": 0.015607396311814927,
+      "t": 1.3872395237586652,
+      "p": 0.1656708772734983,
+      "n_dates": 1024,
+      "boot_lo": -0.007958560425088041,
+      "boot_hi": 0.03817482568066669,
+      "fragile": false,
+      "by_m8": false,
+      "by_m17": false
+    },
+    {
+      "estimator": "E2 Fama-MacBeth",
+      "horizon": 13,
+      "estimate": 0.018409450967974184,
+      "t": 1.1161488645829003,
+      "p": 0.2646218033997341,
+      "n_dates": 1019,
+      "boot_lo": -0.014431925613496264,
+      "boot_hi": 0.052010057932041505,
+      "fragile": false,
+      "by_m8": false,
+      "by_m17": false
+    }
+  ],
+  "lockbox": [
+    {
+      "estimator": "E1 conditional IC",
+      "horizon": 4,
+      "estimate": 0.030467256201409224,
+      "t": 1.1647201244591325,
+      "n_dates": 49
+    },
+    {
+      "estimator": "E1 conditional IC",
+      "horizon": 8,
+      "estimate": 0.033981204137253716,
+      "t": 0.7618907733892141,
+      "n_dates": 45
+    },
+    {
+      "estimator": "E2 Fama-MacBeth",
+      "horizon": 4,
+      "estimate": -0.012933020309691255,
+      "t": -1.3192266299043658,
+      "n_dates": 49
+    },
+    {
+      "estimator": "E2 Fama-MacBeth",
+      "horizon": 8,
+      "estimate": -0.02358909046086863,
+      "t": -1.1406597333307513,
+      "n_dates": 45
+    }
+  ],
+  "multiplicity": {
+    "m_local": 8,
+    "m_family": 17
+  },
+  "sign_consistent": true,
+  "established": false,
+  "verdict": "UNRESOLVED \u2014 close and stop"
+}

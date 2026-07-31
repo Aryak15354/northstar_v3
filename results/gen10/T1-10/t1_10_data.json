@@ -1,0 +1,292 @@
+{
+  "experiment": "T1-10",
+  "contract": "docs/gen10_protocols/T1-10_CAIT_REDESIGN_CONTRACT.md",
+  "n_receivers": 491,
+  "m_tests": 15,
+  "results": [
+    {
+      "carrier": "CL=F",
+      "label": "Crude oil",
+      "lag": 1,
+      "channel": [
+        "Energy",
+        "Materials"
+      ],
+      "r_channel": 0.006422640488450299,
+      "t_channel": 0.47203461433194166,
+      "p_channel": 0.6370180515087294,
+      "n_channel": 889,
+      "r_other": -0.0007143240737842223,
+      "t_other": 1.2690058712694294,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "CL=F",
+      "label": "Crude oil",
+      "lag": 2,
+      "channel": [
+        "Energy",
+        "Materials"
+      ],
+      "r_channel": 0.011195401885088701,
+      "t_channel": 1.8601051177874874,
+      "p_channel": 0.06320110286997162,
+      "n_channel": 889,
+      "r_other": 0.0016988331158234395,
+      "t_other": 1.3790202830778893,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "CL=F",
+      "label": "Crude oil",
+      "lag": 4,
+      "channel": [
+        "Energy",
+        "Materials"
+      ],
+      "r_channel": 0.01039951229254613,
+      "t_channel": -1.6614964016835096,
+      "p_channel": 0.09696675599115825,
+      "n_channel": 889,
+      "r_other": -0.0013795228746608422,
+      "t_other": -1.2492491183367207,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "HG=F",
+      "label": "Copper",
+      "lag": 1,
+      "channel": [
+        "Materials",
+        "Industrials"
+      ],
+      "r_channel": 0.013427055871547033,
+      "t_channel": 1.355715195691077,
+      "p_channel": 0.17578169628421716,
+      "n_channel": 518,
+      "r_other": -0.0006842919067184069,
+      "t_other": 0.37270888937310986,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "HG=F",
+      "label": "Copper",
+      "lag": 2,
+      "channel": [
+        "Materials",
+        "Industrials"
+      ],
+      "r_channel": 0.003198645377034242,
+      "t_channel": -0.6909902424660126,
+      "p_channel": 0.48988180082028254,
+      "n_channel": 518,
+      "r_other": -0.0008538985900908206,
+      "t_other": 0.18217959059623903,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "HG=F",
+      "label": "Copper",
+      "lag": 4,
+      "channel": [
+        "Materials",
+        "Industrials"
+      ],
+      "r_channel": 0.013831537040110238,
+      "t_channel": 1.1087646351248108,
+      "p_channel": 0.2680472375444572,
+      "n_channel": 518,
+      "r_other": 0.0019653907475063737,
+      "t_other": -0.3460037358503545,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "GC=F",
+      "label": "Gold",
+      "lag": 1,
+      "channel": [
+        "Consumer Goods"
+      ],
+      "r_channel": -0.006772239766907842,
+      "t_channel": 0.6070375056198524,
+      "p_channel": 0.5439881338837806,
+      "n_channel": 851,
+      "r_other": -0.0014238260864659704,
+      "t_other": 0.2884120782747818,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "GC=F",
+      "label": "Gold",
+      "lag": 2,
+      "channel": [
+        "Consumer Goods"
+      ],
+      "r_channel": 0.0001108887315985753,
+      "t_channel": -0.46801820483209555,
+      "p_channel": 0.6398915489711526,
+      "n_channel": 851,
+      "r_other": 0.0024905927858222708,
+      "t_other": -0.48954652564249496,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "GC=F",
+      "label": "Gold",
+      "lag": 4,
+      "channel": [
+        "Consumer Goods"
+      ],
+      "r_channel": -0.001746012767954863,
+      "t_channel": -0.11680183968781441,
+      "p_channel": 0.907044676951138,
+      "n_channel": 851,
+      "r_other": 0.0024103027349236155,
+      "t_other": -1.6779616187841468,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "USDINR=X",
+      "label": "USD/INR",
+      "lag": 1,
+      "channel": [
+        "Information Technology"
+      ],
+      "r_channel": 0.0019524268515343469,
+      "t_channel": 1.1398573216571783,
+      "p_channel": 0.2546916582852321,
+      "n_channel": 790,
+      "r_other": -0.0027064727293147073,
+      "t_other": -0.22068807556332637,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "USDINR=X",
+      "label": "USD/INR",
+      "lag": 2,
+      "channel": [
+        "Information Technology"
+      ],
+      "r_channel": -0.0014943172615825087,
+      "t_channel": -1.7250146579567336,
+      "p_channel": 0.08491643028378128,
+      "n_channel": 790,
+      "r_other": -0.00623385213613967,
+      "t_other": -1.8269496624059254,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "USDINR=X",
+      "label": "USD/INR",
+      "lag": 4,
+      "channel": [
+        "Information Technology"
+      ],
+      "r_channel": -0.007327781956763454,
+      "t_channel": -0.21075671496436763,
+      "p_channel": 0.8331315342693902,
+      "n_channel": 790,
+      "r_other": -0.0005124671254936173,
+      "t_other": -0.07360916617233512,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "DX-Y.NYB",
+      "label": "DXY",
+      "lag": 1,
+      "channel": [
+        "Information Technology",
+        "Materials"
+      ],
+      "r_channel": -0.003587060238234687,
+      "t_channel": -0.5602259473860192,
+      "p_channel": 0.5756494780558485,
+      "n_channel": 388,
+      "r_other": 4.293972895723893e-06,
+      "t_other": 1.118810774252659,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    },
+    {
+      "carrier": "DX-Y.NYB",
+      "label": "DXY",
+      "lag": 2,
+      "channel": [
+        "Information Technology",
+        "Materials"
+      ],
+      "r_channel": -0.010778623571079636,
+      "t_channel": -2.506586579667262,
+      "p_channel": 0.012599569119338743,
+      "n_channel": 388,
+      "r_other": -0.004639872759664472,
+      "t_other": -0.9878520987113021,
+      "sig_channel": true,
+      "sig_other": false,
+      "classification": "channel-specific candidate",
+      "by_clean": false
+    },
+    {
+      "carrier": "DX-Y.NYB",
+      "label": "DXY",
+      "lag": 4,
+      "channel": [
+        "Information Technology",
+        "Materials"
+      ],
+      "r_channel": -0.004557422860049803,
+      "t_channel": -1.1649926590883117,
+      "p_channel": 0.2447395519401516,
+      "n_channel": 388,
+      "r_other": 0.0020563841482215814,
+      "t_other": -0.025882693480313496,
+      "sig_channel": false,
+      "sig_other": false,
+      "classification": "null",
+      "by_clean": false
+    }
+  ],
+  "n_survivors": 0,
+  "n_beta": 0,
+  "max_abs_r": 0.013831537040110238,
+  "r_floor": 0.11,
+  "verdict": "NULL \u2014 cross-asset transmission retired"
+}

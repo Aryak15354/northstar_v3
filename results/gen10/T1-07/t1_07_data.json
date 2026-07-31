@@ -1,0 +1,69 @@
+{
+  "experiment": "T1-07",
+  "source": "results/AEP_PAPER_D/resolution_curve.json",
+  "m": 5,
+  "rows": [
+    {
+      "resolution": "weekly",
+      "n_obs": 1070,
+      "mi": 0.0027179447043395423,
+      "null_mean": 0.002473148266879087,
+      "null_p95": 0.005827506817508207,
+      "archived_sig": false,
+      "p_reconstructed": 0.8036235114142245,
+      "bonferroni_pass": false,
+      "bh_pass": false,
+      "by_pass": false
+    },
+    {
+      "resolution": "biweekly",
+      "n_obs": 535,
+      "mi": 0.007091951953423095,
+      "null_mean": 0.005109999610427983,
+      "null_p95": 0.011259990346810366,
+      "archived_sig": false,
+      "p_reconstructed": 0.3808186045993842,
+      "bonferroni_pass": false,
+      "bh_pass": false,
+      "by_pass": false
+    },
+    {
+      "resolution": "monthly",
+      "n_obs": 267,
+      "mi": 0.025769500012453313,
+      "null_mean": 0.010714216670556893,
+      "null_p95": 0.024544880802499315,
+      "archived_sig": true,
+      "p_reconstructed": 0.038350576553811716,
+      "bonferroni_pass": false,
+      "bh_pass": false,
+      "by_pass": false
+    },
+    {
+      "resolution": "6week",
+      "n_obs": 178,
+      "mi": 0.002819530114594987,
+      "null_mean": 0.014997746716823641,
+      "null_p95": 0.03738556613016622,
+      "archived_sig": false,
+      "p_reconstructed": 1.0,
+      "bonferroni_pass": false,
+      "bh_pass": false,
+      "by_pass": false
+    },
+    {
+      "resolution": "quarterly",
+      "n_obs": 82,
+      "mi": 0.05920824128894093,
+      "null_mean": 0.040797356144425284,
+      "null_p95": 0.09101444868393949,
+      "archived_sig": false,
+      "p_reconstructed": 0.33343312938765446,
+      "bonferroni_pass": false,
+      "bh_pass": false,
+      "by_pass": false
+    }
+  ],
+  "monthly_survives": false,
+  "verdict": "RETIRED \u2014 fails multiplicity across the five resolutions"
+}
