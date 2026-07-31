@@ -68,3 +68,6 @@ universe/
 alpha_dataset/
 alpha_lab_outputs/
 kaggle_architecture/
+vendor/
+.env.macro
+data/processed/iv_surface/
