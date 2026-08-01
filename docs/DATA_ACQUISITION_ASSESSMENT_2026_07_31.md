@@ -14,7 +14,7 @@ Constraint: no paid data.
 |---|---|---|---|
 | **1. Options-implied vol surface** | **ALREADY HAVE IT — 2.0 GB, 2010–2026** | ₹0 | **build a feature extractor, no acquisition** |
 | 2. Intraday microstructure | partially obtainable, **forward-only** | ₹0 | medium; no free deep history exists |
-| 3. PIT analyst consensus | **not obtainable free** | — | do not attempt |
+| 3. PIT analyst consensus | ~~not obtainable free~~ **CORRECTED — obtainable, 92% coverage, forward-only** | ₹0 | **collector built and running** |
 | 4. Supply-chain / shipping | obtainable free, but **low prior** | ₹0 | low effort, low expected value |
 
 ---
@@ -92,24 +92,67 @@ That is a real option but not a near-term one. **Do not prioritise this above §
 
 ---
 
-## 3. PIT analyst consensus — not obtainable free, do not attempt
+## 3. PIT analyst consensus — I WAS WRONG. Corrected 2026-07-31.
 
-Gen-1's R01–R08 family was already marked DATA-BLOCKED with "0/448 relevant columns", and that
-verdict stands. Point-in-time consensus estimates are the core product of Refinitiv/I-B-E-S,
-Bloomberg and FactSet, and are priced accordingly.
+**My original verdict here was "not obtainable free — do not attempt". That was asserted from
+priors, not measured, and it is wrong.** Yahoo Finance (via `yfinance`) carries analyst data
+for Indian equities, and coverage on the live 493-name universe is **455/493 = 92%**.
 
-**Why the free workarounds fail:**
-- Screener.in / Trendlyne / Tickertape surface *current* consensus, not point-in-time. Using
-  today's consensus as history is exactly the look-ahead bug that poisoned the `val_*` family
-  (see `reports/dataset_creation/`, "current-day Screener metadata broadcast into history").
-  **Scraping these to build a PIT series would reintroduce a bug you already fixed.**
-- Their terms of service also generally prohibit systematic scraping. I am not going to
-  recommend building on that.
+### What is and is not point-in-time — the distinction that actually matters
 
-**Action: leave closed.** This is the one gap where the honest answer is that the data costs
-money and there is no sound free substitute.
+**NOT PIT** (today's values only; writing them backwards is the `val_*` look-ahead bug):
+`numberOfAnalystOpinions`, `targetMedianPrice`, `recommendationKey`, estimate *levels*.
 
----
+**GENUINELY PIT-USABLE as of the collection date:**
+- **`eps_revisions`** — counts of analysts revising up/down over the trailing 7 and 30 days.
+  A *change* measure: "how many revised up in the last 30 days, as of today" is a legitimate
+  as-of-today feature. **This is exactly the analyst-revision-breadth construct Gen-1's
+  R01–R08 family wanted and was blocked on ("0/448 relevant columns").**
+- **`eps_trend`** — the consensus EPS estimate as it stood 7/30/60/90 days ago. A real, short
+  backward window; differences give revision *magnitude*.
+
+**NOT AVAILABLE for Indian names:** `upgrades_downgrades` returns an empty frame — there is no
+dated broker-action history. That part of my original assessment stands.
+
+### The binding constraint is history, not access
+
+**You cannot backfill.** Each weekly run appends one dated snapshot carrying a 90-day internal
+lookback. A usable PIT panel accrues *forward* from the first run. The 90-day window is a head
+start, not a substitute for waiting. At weekly frequency, ~30 snapshots (7 months) before the
+sign-stability screen has anything to chew on.
+
+### First snapshot — collected 2026-07-31
+
+`data/processed/analyst_consensus/consensus_2026W31.parquet`, 493 rows, **92% coverage**:
+
+```
+target_upside          455 non-null   median +13.1%
+rec_bull_share         455 non-null   median  74.1%   <- sell-side optimism, as expected
+eps_rev_mag_30d        196 non-null   median  +0.79%
+eps_rev_net_30d        339 non-null   median   0.00
+```
+
+### A construction flaw the first snapshot exposed
+
+The obvious breadth ratio `(up − dn)/(up + dn)` is **degenerate for thinly-covered names**.
+Most Indian stocks get at most one revision a month, so it collapses to exactly ±1 — of 146
+names with any revision, **90 were −1.0 and 49 were +1.0**, only 4 distinct values in total.
+It carries almost no cross-sectional gradation.
+
+Fixed to `eps_rev_net_scaled_30d` = (up − dn) / n_analysts, which separates "1 of 2 analysts
+cut" from "1 of 30 analysts cut" — **66 distinct values instead of 4**. The raw counts were
+stored, so the existing snapshot was recomputed without re-fetching.
+
+### On the other sources you listed
+
+Trendlyne, Moneycontrol, MarketScreener and Investing.com sit behind Cloudflare and
+JavaScript-rendered tables, and their terms prohibit systematic scraping. I have not built
+against them and would not — `yfinance` reaches a public endpoint through a standard library
+and gets 92% coverage, so the ToS-violating route buys nothing. FMP's free tier (250 calls/day)
+would need two days per 493-name snapshot and its India coverage is thinner than Yahoo's.
+
+**Action: run `scripts/gen11/collect_analyst_consensus.py` weekly.** It is idempotent per ISO
+week and never overwrites a snapshot.
 
 ## 4. Supply-chain / shipping — free, but the prior is poor
 

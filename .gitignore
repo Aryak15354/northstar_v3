@@ -71,3 +71,4 @@ kaggle_architecture/
 vendor/
 .env.macro
 data/processed/iv_surface/
+data/processed/analyst_consensus/
